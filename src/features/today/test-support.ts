@@ -61,6 +61,7 @@ export function fakeRepo(items: Item[] = [], areas: Area[] = []) {
       const item = items.find((i) => i.id === id);
       if (!item) throw new Error("not found");
       Object.assign(item, patch);
+      if (patch.status) item.completedAt = patch.status === "done" ? new Date() : null;
       return item;
     },
     async softDelete() {},
