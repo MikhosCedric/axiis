@@ -47,6 +47,13 @@ export function fakeRepo(items: Item[] = [], areas: Area[] = []) {
         unscheduled: items.filter((i) => i.schedule.kind === "unscheduled" && i.parentId === null),
       };
     },
+    async listRange(range) {
+      return items.filter(
+        (i) =>
+          (i.schedule.kind === "timed" && range.from <= i.schedule.start && i.schedule.start < range.to) ||
+          (i.schedule.kind === "day" && range.fromDate <= i.schedule.on && i.schedule.on < range.toDate),
+      );
+    },
     async listChildren(parentId) {
       return items.filter((i) => i.parentId === parentId);
     },
