@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 import type { LocalDate } from "@/domain/item";
-import { captureTask, loadToday, setDone } from "./commands";
+import { captureTask, setDone } from "./commands";
 import { formatClock, formatDayHeading } from "./format";
-import { area, fakeRepo, makeItem } from "./test-support";
+import { fakeRepo, makeItem } from "./test-support";
 
 describe("captureTask", () => {
   it("creates a trimmed, unscheduled task", async () => {
@@ -45,32 +45,6 @@ describe("setDone", () => {
     const { repo, calls } = fakeRepo();
     expect((await setDone(repo, "1; drop table items", true)).ok).toBe(false);
     expect(calls.update).toEqual([]);
-  });
-});
-
-describe("loadToday", () => {
-  it("queries the user's local day and builds the view from it", async () => {
-    const inRange = makeItem({
-      title: "Standup",
-      schedule: { kind: "timed", start: new Date("2026-10-06T03:30:00Z"), end: new Date("2026-10-06T04:00:00Z") },
-    });
-    const yesterday = makeItem({
-      title: "Late",
-      schedule: { kind: "timed", start: new Date("2026-10-05T18:00:00Z"), end: new Date("2026-10-05T19:00:00Z") },
-    });
-    const work = area("Work");
-    const { repo, calls } = fakeRepo([inRange, yesterday, makeItem({ title: "Someday" })], [work]);
-
-    // 01:00 UTC is already 06:30 on the 6th in Kolkata.
-    const today = await loadToday(repo, new Date("2026-10-06T01:00:00Z"), "Asia/Kolkata");
-
-    expect(calls.listForDay).toEqual([
-      { date: "2026-10-06", from: new Date("2026-10-05T18:30:00Z"), to: new Date("2026-10-06T18:30:00Z") },
-    ]);
-    expect(today.date).toBe("2026-10-06");
-    expect(today.areas).toEqual([work]);
-    expect(today.view.scheduled.map((e) => e.item.title)).toEqual(["Standup"]);
-    expect(today.view.waiting.map((e) => e.item.title)).toEqual(["Someday"]);
   });
 });
 

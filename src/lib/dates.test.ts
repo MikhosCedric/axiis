@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { LocalDate } from "@/domain/item";
-import { dayRangeFor, resolveTimeZone, toLocalDate } from "./dates";
+import { addDays, dayRangeFor, isSameDay, parseLocalDate, resolveTimeZone, toLocalDate } from "./dates";
 
 const d = (s: string) => s as LocalDate;
 const hours = (r: { from: Date; to: Date }) => (r.to.getTime() - r.from.getTime()) / 3_600_000;
@@ -96,5 +96,61 @@ describe("resolveTimeZone", () => {
     expect(resolveTimeZone("")).toBe("UTC");
     expect(resolveTimeZone("Mars/Olympus")).toBe("UTC");
     expect(resolveTimeZone("x".repeat(500))).toBe("UTC");
+  });
+});
+
+describe("addDays", () => {
+  it("steps across month and year ends in both directions", () => {
+    expect(addDays(d("2026-01-31"), 1)).toBe("2026-02-01");
+    expect(addDays(d("2026-12-31"), 1)).toBe("2027-01-01");
+    expect(addDays(d("2027-01-01"), -1)).toBe("2026-12-31");
+    expect(addDays(d("2026-03-01"), -1)).toBe("2026-02-28");
+  });
+
+  it("lands on and steps over a leap day", () => {
+    expect(addDays(d("2028-02-28"), 1)).toBe("2028-02-29");
+    expect(addDays(d("2028-02-29"), 1)).toBe("2028-03-01");
+    expect(addDays(d("2028-03-01"), -1)).toBe("2028-02-29");
+  });
+
+  it("is a calendar step, unaffected by daylight saving", () => {
+    expect(addDays(d("2026-03-08"), 1)).toBe("2026-03-09");
+    expect(addDays(d("2026-10-06"), 0)).toBe("2026-10-06");
+    expect(addDays(d("2026-10-06"), 365)).toBe("2027-10-06");
+  });
+
+  it("keeps years below 100 as written", () => {
+    expect(addDays(d("0050-12-31"), 1)).toBe("0051-01-01");
+  });
+});
+
+describe("parseLocalDate", () => {
+  it("accepts real calendar dates", () => {
+    expect(parseLocalDate("2026-10-06")).toBe("2026-10-06");
+    expect(parseLocalDate("2028-02-29")).toBe("2028-02-29");
+    expect(parseLocalDate("2000-02-29")).toBe("2000-02-29");
+    expect(parseLocalDate("0050-01-01")).toBe("0050-01-01");
+  });
+
+  it("rejects dates that do not exist", () => {
+    for (const raw of ["2026-02-30", "2026-02-29", "1900-02-29", "2026-04-31", "2026-13-01", "2026-00-10", "2026-01-00"]) {
+      expect(parseLocalDate(raw)).toBeNull();
+    }
+  });
+
+  it("rejects anything that is not strictly YYYY-MM-DD", () => {
+    const bad = ["2026-10-6", "26-10-06", "2026/10/06", " 2026-10-06", "2026-10-06\n", "2026-10-06T00:00", "20261006", ""];
+    for (const raw of [...bad, undefined, null, 20261006, ["2026-10-06"]]) {
+      expect(parseLocalDate(raw)).toBeNull();
+    }
+  });
+});
+
+describe("isSameDay", () => {
+  it("compares the date an instant falls on in the given zone", () => {
+    const now = new Date("2026-10-06T20:00:00Z");
+    expect(isSameDay(d("2026-10-06"), now, "UTC")).toBe(true);
+    expect(isSameDay(d("2026-10-06"), now, "Asia/Kolkata")).toBe(false);
+    expect(isSameDay(d("2026-10-07"), now, "Asia/Kolkata")).toBe(true);
   });
 });
