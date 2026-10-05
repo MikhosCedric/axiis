@@ -1,4 +1,4 @@
-import type { Area, DayRange, Item, ItemId, ItemPatch, NewItem } from "@/domain/item";
+import type { Area, DayRange, Item, ItemId, ItemPatch, NewItem, SpanRange } from "@/domain/item";
 
 export type ChildCount = { total: number; done: number };
 
@@ -14,6 +14,8 @@ export interface ItemsRepo {
    * A subtask with its own schedule is returned in `scheduled` like any other item.
    */
   listForDay(range: DayRange): Promise<{ scheduled: Item[]; unscheduled: Item[] }>;
+  /** Scheduled items across several days: timed in `[from, to)` or day-only in `[fromDate, toDate)`. Top-level and subtasks alike, soft-deleted excluded, ordered by time. */
+  listRange(range: SpanRange): Promise<Item[]>;
   /** Live children of one parent, ordered by position then creation. */
   listChildren(parentId: ItemId): Promise<Item[]>;
   /** Live child totals and done counts, keyed by parent id. Parents with no children are absent. */

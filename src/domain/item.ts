@@ -62,4 +62,7 @@ export type ItemPatch = Partial<Omit<NewItem, "type">> & { status?: ItemStatus; 
 /** Half-open UTC range `[from, to)` plus the local date it represents. */
 export type DayRange = { date: LocalDate; from: Date; to: Date };
 
+/** Half-open span of days: UTC instants `[from, to)` plus the local dates `[fromDate, toDate)` they cover. */
+export type SpanRange = { from: Date; to: Date; fromDate: LocalDate; toDate: LocalDate };
+
 export const MAX_SUBTASK_DEPTH = 2;
