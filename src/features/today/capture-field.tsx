@@ -1,10 +1,15 @@
 "use client";
 
 import { useEffect, useRef, useState, useTransition, type FormEvent } from "react";
-import { captureAction } from "./actions";
+import { captureAction as serverCapture } from "./actions";
+import type { ActionResult } from "./commands";
 import { TITLE_MAX } from "./model";
 
-export function CaptureField() {
+export function CaptureField({
+  captureAction = serverCapture,
+}: {
+  captureAction?: (title: string) => Promise<ActionResult>;
+}) {
   const input = useRef<HTMLInputElement>(null);
   const [value, setValue] = useState("");
   const [error, setError] = useState<string | null>(null);
