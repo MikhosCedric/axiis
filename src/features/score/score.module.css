@@ -1,0 +1,213 @@
+.staffBody {
+  position: relative;
+  flex: none;
+  background-image: linear-gradient(to right, var(--rule-soft) 1px, transparent 1px);
+  background-size: 76px 100%;
+  border-right: 3px double var(--rule);
+  transition: background-color 0.16s;
+}
+
+.over {
+  background-color: var(--accent-wash);
+}
+
+/* Five engraved lines behind each sub-row. */
+.lines {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 25px;
+  background: repeating-linear-gradient(to bottom, var(--rule-soft) 0 1px, transparent 1px 6px);
+  pointer-events: none;
+}
+
+.beam {
+  position: absolute;
+  height: 25px;
+  cursor: grab;
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  transition:
+    left 0.28s cubic-bezier(0.16, 1, 0.3, 1),
+    top 0.28s cubic-bezier(0.16, 1, 0.3, 1),
+    width 0.28s cubic-bezier(0.16, 1, 0.3, 1),
+    opacity 0.16s;
+}
+
+.beam:focus-visible {
+  outline-offset: 6px;
+}
+
+.beam .glyph {
+  position: absolute;
+  left: -6px;
+  right: 0;
+  top: 4.5px;
+  width: auto;
+}
+
+.lifted {
+  opacity: 0.35;
+}
+
+/* A drag is in progress: follow the pointer, no easing. */
+.tracking {
+  transition: none;
+}
+
+.label {
+  position: absolute;
+  left: -6px;
+  bottom: calc(100% + 1px);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 13px;
+  line-height: 20px;
+  font-weight: 500;
+  pointer-events: none;
+}
+
+.live .label {
+  font-weight: 700;
+}
+
+.done .label {
+  font-weight: 400;
+  color: var(--ink-3);
+}
+
+.selected .label {
+  text-decoration: underline;
+  text-decoration-color: var(--accent);
+  text-decoration-thickness: 2px;
+  text-underline-offset: 4px;
+}
+
+.count {
+  margin-left: 4px;
+  font-weight: 400;
+  color: var(--ink-2);
+  font-variant-numeric: tabular-nums;
+}
+
+.clock {
+  margin-left: 6px;
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--ink-3);
+}
+
+.grip {
+  position: absolute;
+  right: -6px;
+  top: 0;
+  bottom: 0;
+  width: 12px;
+  cursor: ew-resize;
+  touch-action: none;
+}
+
+@media (pointer: coarse) {
+  .grip {
+    right: -12px;
+    width: 24px;
+  }
+}
+
+.ghost {
+  position: absolute;
+  height: 25px;
+  pointer-events: none;
+  z-index: 5;
+}
+
+.ghost::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 8px;
+  height: 9px;
+  border: 1.5px dashed var(--accent);
+  border-radius: 4px;
+  background: var(--accent-wash);
+}
+
+.tip {
+  position: absolute;
+  left: 0;
+  bottom: calc(100% + 1px);
+  font-size: 12px;
+  line-height: 20px;
+  font-weight: 600;
+  color: var(--accent);
+  white-space: nowrap;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  max-width: 100%;
+  padding: 8px 12px;
+  border: 1px solid var(--rule);
+  border-radius: 8px;
+  background: var(--sheet);
+  font-weight: 500;
+  cursor: grab;
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  transition: opacity 0.16s;
+}
+
+.chip:hover {
+  border-color: var(--field);
+}
+
+.chip.selected {
+  border-color: var(--accent);
+  box-shadow: inset 0 0 0 1px var(--accent);
+}
+
+.chip.done {
+  color: var(--ink-3);
+  font-weight: 400;
+}
+
+.chip .glyph {
+  width: 28px;
+}
+
+.fly {
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 40;
+  pointer-events: none;
+  opacity: 0.94;
+  box-shadow: 0 6px 18px rgba(28, 27, 34, 0.22);
+}
+
+.dropZone {
+  outline: 2px dashed var(--accent);
+  outline-offset: 6px;
+  border-radius: 6px;
+}
+
+.dragging,
+.dragging * {
+  cursor: grabbing;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .beam,
+  .staffBody,
+  .chip {
+    transition: none;
+  }
+}

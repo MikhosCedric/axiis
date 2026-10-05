@@ -1,4 +1,4 @@
-import type { Area, AreaId, Item, LocalDate } from "@/domain/item";
+import type { Area, AreaId, Item, ItemId, LocalDate } from "@/domain/item";
 import type { TodayEntry, TodayView } from "@/features/today/model";
 import { localMinutes } from "@/lib/dates";
 
@@ -93,9 +93,14 @@ export type Staff = {
   height: number;
 };
 
+/** An item being dragged onto a staff, not yet saved. */
+export type Pending = { itemId: ItemId; areaId: AreaId | null; span: Span };
+
 export type ScoreLayout = {
   axis: Axis;
   staves: Staff[];
+  /** Where the pending item would be drawn: the first free sub-row of its staff, which grows by one if none is free. */
+  ghost: { staff: number; row: number } | null;
   /** Day-only items, shown in the Any time strip. */
   anyTime: TodayEntry[];
   waiting: TodayEntry[];
@@ -104,6 +109,18 @@ export type ScoreLayout = {
 };
 
 export const NO_AREA = "No area";
+
+/** First sub-row where `span` overlaps no drawn beam, ignoring the item being moved. */
+export function freeRow(beams: Beam[], span: Span, ignore: ItemId): number {
+  const taken = new Set(
+    beams
+      .filter((b) => b.value.item.id !== ignore && b.span.start < span.end && span.start < b.span.end)
+      .map((b) => b.row),
+  );
+  let row = 0;
+  while (taken.has(row)) row += 1;
+  return row;
+}
 
 export const staffHeight = (rows: number) => rows * ROW_PX + STAFF_FOOT_PX;
 /** Top of a beam's hit box inside its staff. */
@@ -115,6 +132,7 @@ export function layoutScore({
   date,
   timeZone,
   now,
+  pending = null,
 }: {
   view: TodayView;
   areas: Area[];
@@ -122,6 +140,7 @@ export function layoutScore({
   timeZone: string;
   /** Local minutes of now, or null when the day shown is not today. */
   now: number | null;
+  pending?: Pending | null;
 }): ScoreLayout {
   const known = new Set<AreaId>(areas.map((a) => a.id));
   const timed: { value: TodayEntry; span: Span }[] = [];
@@ -143,9 +162,16 @@ export function layoutScore({
   ];
 
   let top = 0;
-  const staves = keys.map(({ areaId, name }) => {
+  let ghost: ScoreLayout["ghost"] = null;
+  const staves = keys.map(({ areaId, name }, index) => {
     const mine = timed.filter((t) => areaOf(t.value) === areaId);
-    const { rows, placed } = packRows(mine, axis.end);
+    const packed = packRows(mine, axis.end);
+    let rows = packed.rows;
+    const placed = packed.placed;
+    if (pending && pending.areaId === areaId) {
+      ghost = { staff: index, row: freeRow(placed, pending.span, pending.itemId) };
+      rows = Math.max(rows, ghost.row + 1);
+    }
     const staff: Staff = {
       areaId,
       name,
@@ -159,7 +185,7 @@ export function layoutScore({
     return staff;
   });
 
-  return { axis, staves, anyTime, waiting: view.waiting, areaOrder: [...areas.map((a) => a.id), null] };
+  return { axis, staves, ghost, anyTime, waiting: view.waiting, areaOrder: [...areas.map((a) => a.id), null] };
 }
 
 /** Index of the staff under a y offset measured from the top of the first staff, or -1. */
