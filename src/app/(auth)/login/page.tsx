@@ -3,7 +3,7 @@ import { safeNextPath } from "@/lib/auth/next-path";
 import { signInWithGoogle } from "./actions";
 import { EmailForm } from "./email-form";
 
-export const metadata: Metadata = { title: "Sign in · Axiis" };
+export const metadata: Metadata = { title: "Sign in" };
 
 const ERRORS: Record<string, string> = {
   link: "That sign-in link has expired or was already used. Ask for a new one below.",
