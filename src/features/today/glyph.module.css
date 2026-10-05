@@ -1,0 +1,116 @@
+.glyph {
+  position: relative;
+  display: block;
+  width: 44px;
+  height: 16px;
+  flex: none;
+  color: var(--ink);
+}
+
+.beam {
+  position: absolute;
+  left: 6px;
+  right: 0;
+  top: 5px;
+  height: 7px;
+  border: 1.5px solid currentColor;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.head {
+  position: absolute;
+  left: 0;
+  top: 2px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.planned .beam {
+  border: 0;
+  height: 6px;
+  top: 5.5px;
+  border-radius: 0;
+  background: repeating-linear-gradient(to right, currentColor 0 7px, transparent 7px 11px);
+}
+
+.live {
+  color: var(--accent);
+}
+
+.live .beam {
+  background: currentColor;
+  height: 9px;
+  top: 4px;
+}
+
+.done {
+  color: var(--ink-3);
+}
+
+.done .head {
+  background: var(--paper);
+  border: 1.5px solid currentColor;
+}
+
+.checklist .head {
+  border-radius: 2px;
+}
+
+.event .head {
+  display: none;
+}
+
+.event::before,
+.event::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  width: 1.5px;
+  height: 16px;
+  background: currentColor;
+}
+
+.event::before {
+  left: 6px;
+}
+
+.event::after {
+  right: 0;
+}
+
+.sweep {
+  position: absolute;
+  inset: 0;
+  background: var(--ink);
+  transform: scaleX(0);
+  transform-origin: left;
+  opacity: 0;
+}
+
+.justDone .sweep {
+  animation: sweep 0.56s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes sweep {
+  0% {
+    transform: scaleX(0);
+    opacity: 1;
+  }
+  65% {
+    transform: scaleX(1);
+    opacity: 1;
+  }
+  100% {
+    transform: scaleX(1);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .justDone .sweep {
+    animation: none;
+  }
+}

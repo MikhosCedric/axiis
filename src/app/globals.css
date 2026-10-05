@@ -1,26 +1,128 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --paper: #ebe4d4;
+  --paper-2: #e2dac6;
+  --sheet: #f3eee1;
+  --ink: #1c1b22;
+  --ink-2: #4a4741;
+  --ink-3: #625e55;
+  --rule: rgba(28, 27, 34, 0.28);
+  --rule-soft: rgba(28, 27, 34, 0.12);
+  --field: rgba(28, 27, 34, 0.55);
+  --accent: #0a675a;
+  --accent-wash: rgba(10, 103, 90, 0.14);
+  --on-accent: #f3eee1;
+  color-scheme: light;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+/* Keep in sync with the prefers-color-scheme block below. */
+:root[data-theme="dark"] {
+  --paper: #16151b;
+  --paper-2: #1c1b22;
+  --sheet: #201f27;
+  --ink: #ece5d3;
+  --ink-2: #bdb7a8;
+  --ink-3: #9d978a;
+  --rule: rgba(236, 229, 211, 0.3);
+  --rule-soft: rgba(236, 229, 211, 0.12);
+  --field: rgba(236, 229, 211, 0.5);
+  --accent: #45c7b0;
+  --accent-wash: rgba(69, 199, 176, 0.16);
+  --on-accent: #10201d;
+  color-scheme: dark;
 }
 
 @media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+  :root:not([data-theme="light"]) {
+    --paper: #16151b;
+    --paper-2: #1c1b22;
+    --sheet: #201f27;
+    --ink: #ece5d3;
+    --ink-2: #bdb7a8;
+    --ink-3: #9d978a;
+    --rule: rgba(236, 229, 211, 0.3);
+    --rule-soft: rgba(236, 229, 211, 0.12);
+    --field: rgba(236, 229, 211, 0.5);
+    --accent: #45c7b0;
+    --accent-wash: rgba(69, 199, 176, 0.16);
+    --on-accent: #10201d;
+    color-scheme: dark;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@theme inline {
+  --color-paper: var(--paper);
+  --color-paper-2: var(--paper-2);
+  --color-sheet: var(--sheet);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-ink-3: var(--ink-3);
+  --color-rule: var(--rule);
+  --color-rule-soft: var(--rule-soft);
+  --color-field: var(--field);
+  --color-accent: var(--accent);
+  --color-accent-wash: var(--accent-wash);
+  --color-on-accent: var(--on-accent);
+  --font-serif: var(--font-besley), Georgia, serif;
+  --font-sans: var(--font-hanken), system-ui, -apple-system, "Segoe UI", sans-serif;
+  --ease-axiis: cubic-bezier(0.16, 1, 0.3, 1);
+  --breakpoint-rail: 760px;
+}
+
+@layer base {
+  html {
+    background: var(--paper);
+  }
+
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--font-sans);
+    font-size: 14px;
+    line-height: 1.45;
+    caret-color: var(--accent);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  ::selection {
+    background: var(--accent);
+    color: var(--on-accent);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
+    border-radius: 3px;
+  }
+
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--rule) transparent;
+  }
+
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: var(--rule);
+    border-radius: 6px;
+    border: 2px solid var(--paper);
+  }
+
+  time,
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+
+  a {
+    text-underline-offset: 3px;
+  }
+
+  ::placeholder {
+    color: var(--ink-3);
+    opacity: 1;
+  }
 }
