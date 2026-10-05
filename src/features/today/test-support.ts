@@ -44,8 +44,21 @@ export function fakeRepo(items: Item[] = [], areas: Area[] = []) {
             (i.schedule.kind === "timed" && range.from <= i.schedule.start && i.schedule.start < range.to) ||
             (i.schedule.kind === "day" && i.schedule.on === range.date),
         ),
-        unscheduled: items.filter((i) => i.schedule.kind === "unscheduled"),
+        unscheduled: items.filter((i) => i.schedule.kind === "unscheduled" && i.parentId === null),
       };
+    },
+    async listChildren(parentId) {
+      return items.filter((i) => i.parentId === parentId);
+    },
+    async childCounts(parentIds) {
+      const counts: Record<string, { total: number; done: number }> = {};
+      for (const i of items) {
+        if (i.parentId === null || !parentIds.includes(i.parentId)) continue;
+        const c = (counts[i.parentId] ??= { total: 0, done: 0 });
+        c.total += 1;
+        if (i.status === "done") c.done += 1;
+      }
+      return counts;
     },
     async get(id) {
       return items.find((i) => i.id === id) ?? null;
