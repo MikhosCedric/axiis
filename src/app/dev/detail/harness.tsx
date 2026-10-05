@@ -5,7 +5,7 @@ import { useState } from "react";
 import type { Area, AreaId, Item, ItemId, LocalDate } from "@/domain/item";
 import { setDone } from "@/features/today/commands";
 import { fakeRepo, makeItem } from "@/features/today/test-support";
-import { addSubtask, deleteItem, promoteSubtask, renameItem, setItemArea } from "@/features/detail/commands";
+import { addSubtask, deleteItem, parseItemId, promoteSubtask, renameItem, setItemArea } from "@/features/detail/commands";
 import { DetailSheet, MissingItem } from "@/features/detail/detail-sheet";
 import { buildDetail, type DetailActions } from "@/features/detail/model";
 
@@ -49,7 +49,7 @@ function fixtures(): Item[] {
       title:
         "Write the quarterly review and send the draft round before the Thursday planning session so there is time for comments",
       areaId: areaId(1),
-      schedule: { kind: "timed", start: new Date("2026-10-06T21:00:00Z"), end: new Date("2026-10-07T00:30:00Z") },
+      schedule: { kind: "timed", start: new Date("2026-10-06T14:00:00Z"), end: new Date("2026-10-06T17:30:00Z") },
     }),
     makeItem({ id: id(50), title: "An empty task with room for subtasks" }),
   ];
@@ -62,7 +62,7 @@ const FIXTURES: { id: string; label: string }[] = [
   { id: id(50), label: "Task with no subtasks" },
   { id: id(20), label: "Note" },
   { id: id(30), label: "Event" },
-  { id: id(40), label: "Long title, runs past midnight" },
+  { id: id(40), label: "Long title, runs past midnight in Manila" },
   { id: id(99), label: "An item that is gone" },
 ];
 
@@ -140,7 +140,7 @@ export function DetailHarness({ itemId, timeZone }: { itemId: string | null; tim
           Make every save fail
         </label>
       </main>
-      {itemId !== null && (
+      {parseItemId(itemId) && (
         <div className="border-t border-rule px-4 pt-5 pb-10 rail:border-t-0 rail:border-l rail:px-6 rail:pt-8">
           {view ? <DetailSheet key={view.item.id} view={view} actions={actions} /> : <MissingItem />}
         </div>

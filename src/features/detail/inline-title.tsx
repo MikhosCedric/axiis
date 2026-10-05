@@ -50,7 +50,7 @@ export function InlineTitle({
       value={draft ?? shown}
       aria-label={label}
       maxLength={TITLE_MAX}
-      spellCheck
+      spellCheck={draft !== null}
       onFocus={() => setDraft(shown)}
       onChange={(e) => setDraft(e.target.value.replace(/\s*\n\s*/g, " "))}
       onBlur={() => {
