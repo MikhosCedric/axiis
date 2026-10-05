@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
-import { ITEM_STATUSES, type Area, type DayRange, type Item, type ItemId, type ItemPatch, type NewItem } from "@/domain/item";
+import { ITEM_STATUSES, type Area, type DayRange, type Item, type ItemId, type ItemPatch, type NewItem, type SpanRange } from "@/domain/item";
 import { AREA_COLUMNS, ITEM_COLUMNS, areaFromRow, itemFromRow, newItemToInsert, patchToUpdate } from "./mappers";
 import type { ChildCount, ItemsRepo } from "./repo";
 
@@ -46,6 +46,14 @@ export class SupabaseItemsRepo implements ItemsRepo {
       scheduled: [...unwrap("listForDay", timed, itemList), ...unwrap("listForDay", dayOnly, itemList)],
       unscheduled: unwrap("listForDay", unscheduled, itemList),
     };
+  }
+
+  async listRange(range: SpanRange): Promise<Item[]> {
+    const [timed, dayOnly] = await Promise.all([
+      this.items().gte("start_at", range.from.toISOString()).lt("start_at", range.to.toISOString()).order("start_at"),
+      this.items().gte("scheduled_on", range.fromDate).lt("scheduled_on", range.toDate).order("scheduled_on").order("position"),
+    ]);
+    return [...unwrap("listRange", timed, itemList), ...unwrap("listRange", dayOnly, itemList)];
   }
 
   async listChildren(parentId: ItemId): Promise<Item[]> {
