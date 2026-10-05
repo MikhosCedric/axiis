@@ -5,13 +5,9 @@ import { localMinutes } from "@/lib/dates";
 export const DAY_MINUTES = 24 * 60;
 export const HOUR_PX = 76;
 export const PX_PER_MINUTE = HOUR_PX / 60;
-/** Height of one sub-row on a staff. */
 export const ROW_PX = 64;
-/** Height of the hit box a beam is drawn in. */
 export const BEAM_BOX_PX = 25;
-/** Space kept below the last sub-row of a staff. */
 const STAFF_FOOT_PX = 20;
-/** Staves are separated by a 1px rule. */
 const RULE_PX = 1;
 /** Gap kept between a label and the next beam in its sub-row. */
 const LABEL_GAP_PX = 8;

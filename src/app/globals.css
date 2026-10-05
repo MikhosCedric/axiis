@@ -126,7 +126,6 @@
     opacity: 1;
   }
 
-  /* An item is being dragged on the Score. */
   [data-score-dragging],
   [data-score-dragging] * {
     cursor: grabbing !important;

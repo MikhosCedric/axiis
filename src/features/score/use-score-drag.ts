@@ -29,7 +29,6 @@ type Gesture = {
   timer: number | null;
   /** Minutes between the pointer and the item's start, so a moved beam does not jump. */
   grab: number;
-  /** Pointer offset inside the floating copy. */
   dx: number;
   dy: number;
   target: DropTarget | null;
