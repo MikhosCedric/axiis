@@ -67,6 +67,60 @@ export function dayRangeFor(date: LocalDate, timeZone: string): DayRange {
   return { date, from: startOf(date, timeZone), to: startOf(addDays(date, 1), timeZone) };
 }
 
+const MINUTE = 60_000;
+const DAY = 86_400_000;
+const clocks = new Map<string, Intl.DateTimeFormat>();
+
+function clockFormatter(timeZone: string): Intl.DateTimeFormat {
+  let f = clocks.get(timeZone);
+  if (!f) {
+    f = new Intl.DateTimeFormat("en-CA", {
+      timeZone,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      hourCycle: "h23",
+    });
+    clocks.set(timeZone, f);
+  }
+  return f;
+}
+
+/** The wall clock at `at` in `timeZone`, written as if it were a UTC instant. */
+function wallAsUtc(at: number, timeZone: string): number {
+  const parts = clockFormatter(timeZone).formatToParts(new Date(at));
+  const get = (type: Intl.DateTimeFormatPartTypes) => Number(parts.find((p) => p.type === type)!.value);
+  return Date.UTC(get("year"), get("month") - 1, get("day"), get("hour"), get("minute"));
+}
+
+/**
+ * Wall-clock minutes from local midnight of `date` to `at`, so 09:30 is 570
+ * even on a day that is 23 or 25 hours long. Instants on the next local day
+ * count past 1440; seconds are dropped.
+ */
+export function localMinutes(at: Date, date: LocalDate, timeZone: string): number {
+  return (wallAsUtc(at.getTime(), timeZone) - Date.parse(`${date}T00:00:00Z`)) / MINUTE;
+}
+
+/**
+ * The instant whose wall clock on `date` reads `minutes` past midnight.
+ * A repeated time resolves to its first occurrence; a skipped time moves
+ * forward by the size of the gap, as clocks do.
+ */
+export function instantAt(date: LocalDate, minutes: number, timeZone: string): Date {
+  const wall = Date.parse(`${date}T00:00:00Z`) + minutes * MINUTE;
+  const offsetAt = (t: number) => wallAsUtc(t, timeZone) - Math.floor(t / MINUTE) * MINUTE;
+  // Offsets near `wall` give at most two candidates, one per side of a transition.
+  const candidates = [...new Set([offsetAt(wall - DAY / 2), offsetAt(wall), offsetAt(wall + DAY / 2)])]
+    .map((offset) => wall - offset)
+    .sort((a, b) => a - b);
+  const exact = candidates.find((t) => wallAsUtc(t, timeZone) === wall);
+  if (exact !== undefined) return new Date(exact);
+  return new Date(wall - offsetAt(candidates[0]));
+}
+
 /** Parse an untrusted time zone name, falling back to UTC. */
 export function resolveTimeZone(raw: string | undefined): string {
   if (!raw || raw.length > 64) return "UTC";
