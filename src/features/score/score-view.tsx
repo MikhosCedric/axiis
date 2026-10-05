@@ -222,7 +222,7 @@ export function ScoreView({
                 data-staff-label
                 className="sticky left-0 z-[4] w-[var(--lw)] flex-none border-r border-rule bg-paper px-2 py-3.5 rail:px-3"
               >
-                <span className="block truncate font-serif text-base leading-tight font-medium rail:text-[19px]">
+                <span className="block font-serif text-base leading-tight font-medium [overflow-wrap:anywhere] rail:text-[19px]">
                   {staff.name}
                 </span>
                 <span className="mt-1 block text-xs text-ink-3">{staff.open} open</span>
