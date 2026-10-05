@@ -1,0 +1,9 @@
+.agent/
+.claude/
+.cursor/
+.gemini/
+.opencode/
+.impeccable/config.local.json
+node_modules/
+.env*
+.DS_Store
