@@ -1,5 +1,6 @@
 import type { Area, AreaId, Item, ItemId, ItemType, LocalDate, Schedule } from "@/domain/item";
 import { toLocalDate } from "@/lib/dates";
+import type { ActionResult } from "@/features/today/commands";
 import { formatClock, formatDayHeading } from "@/features/today/format";
 
 /**
@@ -33,6 +34,16 @@ export type DetailView = {
   due: string | null;
   areas: { id: AreaId; name: string }[];
   nesting: Nesting;
+};
+
+/** The writes the sheet can ask for. Server actions in the app, in-memory fakes in the dev harness. */
+export type DetailActions = {
+  rename: (id: string, title: string) => Promise<ActionResult>;
+  setDone: (id: string, done: boolean) => Promise<ActionResult>;
+  setArea: (id: string, areaId: string | null) => Promise<ActionResult>;
+  addSubtask: (parentId: string, title: string) => Promise<ActionResult>;
+  promote: (id: string) => Promise<ActionResult>;
+  remove: (id: string) => Promise<ActionResult>;
 };
 
 export function describeWhen(schedule: Schedule, timeZone: string): string {
