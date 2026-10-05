@@ -199,11 +199,6 @@
   border-radius: 6px;
 }
 
-.dragging,
-.dragging * {
-  cursor: grabbing;
-}
-
 @media (prefers-reduced-motion: reduce) {
   .beam,
   .staffBody,
