@@ -1,5 +1,7 @@
 import type { AreaId, DayRange, Item } from "@/domain/item";
 
+export const TITLE_MAX = 500;
+
 /** How an item reads on the day: dashed planned, solid live beam, hollow done. */
 export type BeamState = "planned" | "live" | "done";
 

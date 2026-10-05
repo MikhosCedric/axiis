@@ -67,6 +67,7 @@
   --font-serif: var(--font-besley), Georgia, serif;
   --font-sans: var(--font-hanken), system-ui, -apple-system, "Segoe UI", sans-serif;
   --ease-axiis: cubic-bezier(0.16, 1, 0.3, 1);
+  --breakpoint-rail: 760px;
 }
 
 @layer base {
