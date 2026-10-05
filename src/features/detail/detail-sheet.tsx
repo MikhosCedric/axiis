@@ -40,6 +40,7 @@ export function DetailSheet({ view, actions }: { view: DetailView; actions: Deta
   const [areaId, setAreaId] = useOptimistic(item.areaId);
   const [justDone, setJustDone] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
+  const [promoted, setPromoted] = useState(false);
   const headingId = useId();
   const areaFieldId = useId();
 
@@ -164,6 +165,7 @@ export function DetailSheet({ view, actions }: { view: DetailView; actions: Deta
           subtasks={nesting.subtasks}
           actions={actions}
           onMarkParentDone={() => markDone(true)}
+          focusAdd={promoted}
         />
       )}
 
@@ -173,7 +175,15 @@ export function DetailSheet({ view, actions }: { view: DetailView; actions: Deta
           <button
             type="button"
             className={textButton}
-            onClick={() => write(() => actions.promote(item.id), () => setStatus("Now a task of its own, waiting for a time."))}
+            onClick={() =>
+              write(
+                () => actions.promote(item.id),
+                () => {
+                  setPromoted(true);
+                  setStatus("Now a task of its own, waiting for a time.");
+                },
+              )
+            }
           >
             <LiftIcon />
             Make it a task

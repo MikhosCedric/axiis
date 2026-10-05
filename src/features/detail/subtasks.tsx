@@ -30,12 +30,15 @@ export function Subtasks({
   subtasks,
   actions,
   onMarkParentDone,
+  focusAdd = false,
 }: {
   parentId: string;
   parentDone: boolean;
   subtasks: DetailSubtask[];
   actions: DetailActions;
   onMarkParentDone: () => void;
+  /** Set when the item has just become able to hold subtasks, so the field is where focus belongs. */
+  focusAdd?: boolean;
 }) {
   const [rows, change] = useOptimistic<Row[], Change>(subtasks, apply);
   const [status, setStatus] = useState<string | null>(null);
@@ -121,20 +124,20 @@ export function Subtasks({
               ) : (
                 <InlineTitle
                   value={row.title}
-                  label="Subtask title"
+                  label={`Subtask: ${row.title}`}
                   onSave={(title) => actions.rename(row.id, title)}
                   onError={setStatus}
                   className={row.done ? "text-ink-3" : "text-ink"}
                 />
               )}
               {!row.pending && (
-                <span className="flex items-center">
+                <span className="group/actions flex items-center">
                   <button
                     type="button"
                     aria-label={`Make ${row.title} a task`}
                     title="Make it a task"
                     onClick={() => lift(row.id)}
-                    className="grid size-8 place-items-center rounded-md text-ink-3 hover:bg-accent-wash hover:text-ink"
+                    className="grid size-8 place-items-center rounded-md text-ink-3 group-has-[[role=group]]/actions:hidden hover:bg-accent-wash hover:text-ink"
                   >
                     <LiftIcon />
                   </button>
@@ -154,6 +157,7 @@ export function Subtasks({
               type="button"
               onClick={() => {
                 setOffer(false);
+                addField.current?.focus();
                 onMarkParentDone();
               }}
               className="rounded-md px-2 py-1 font-medium text-ink underline decoration-rule underline-offset-3 hover:bg-accent-wash"
@@ -162,7 +166,10 @@ export function Subtasks({
             </button>
             <button
               type="button"
-              onClick={() => setOffer(false)}
+              onClick={() => {
+                setOffer(false);
+                addField.current?.focus();
+              }}
               className="rounded-md px-2 py-1 font-medium hover:bg-accent-wash"
             >
               Not yet
@@ -178,6 +185,7 @@ export function Subtasks({
         <input
           ref={addField}
           id={fieldId}
+          autoFocus={focusAdd}
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
           maxLength={TITLE_MAX}

@@ -40,7 +40,7 @@ export function ConfirmDelete({
       <span
         role="group"
         aria-label={prompt}
-        className="flex flex-wrap items-center justify-end gap-x-1 text-[13px]"
+        className={`flex flex-wrap items-center gap-x-1 text-[13px] ${compact ? "justify-end" : "-ml-1"}`}
         onKeyDown={(e) => {
           if (e.key === "Escape") {
             e.stopPropagation();
