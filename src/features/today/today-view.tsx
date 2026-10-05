@@ -1,6 +1,6 @@
 import type { Schedule } from "@/domain/item";
 import { CaptureField } from "./capture-field";
-import type { Today } from "./commands";
+import type { DayData } from "@/features/day/types";
 import { formatClock, formatDayHeading } from "./format";
 import { ItemRow } from "./item-row";
 import { summaryLine, type TodayEntry } from "./model";
@@ -18,7 +18,7 @@ function When({ schedule, timeZone }: { schedule: Schedule; timeZone: string }) 
   );
 }
 
-export function TodayView({ today }: { today: Today }) {
+export function TodayView({ today }: { today: DayData }) {
   const { view, timeZone, date, areas } = today;
   const areaName = new Map(areas.map((a) => [a.id, a.name]));
   const row = ({ item, state }: TodayEntry, timed: boolean) => (

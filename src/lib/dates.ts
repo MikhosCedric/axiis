@@ -19,9 +19,29 @@ export function toLocalDate(now: Date, timeZone: string): LocalDate {
   return `${get("year")}-${get("month")}-${get("day")}` as LocalDate;
 }
 
-function addDays(date: LocalDate, days: number): LocalDate {
+/** True when `instant` falls on `date` in `timeZone`. */
+export function isSameDay(date: LocalDate, instant: Date, timeZone: string): boolean {
+  return toLocalDate(instant, timeZone) === date;
+}
+
+// setUTCFullYear, unlike Date.UTC, does not map years 0..99 onto 1900..1999.
+function utcCalendarDay(y: number, m: number, d: number): string {
+  const t = new Date(0);
+  t.setUTCFullYear(y, m - 1, d);
+  return t.toISOString().slice(0, 10);
+}
+
+/** The calendar date `days` after `date` (negative goes back). */
+export function addDays(date: LocalDate, days: number): LocalDate {
   const [y, m, d] = date.split("-").map(Number);
-  return new Date(Date.UTC(y, m - 1, d + days)).toISOString().slice(0, 10) as LocalDate;
+  return utcCalendarDay(y, m, d + days) as LocalDate;
+}
+
+/** Parse an untrusted `YYYY-MM-DD`, or null when it is malformed or not a real calendar date. */
+export function parseLocalDate(raw: unknown): LocalDate | null {
+  if (typeof raw !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(raw)) return null;
+  const [y, m, d] = raw.split("-").map(Number);
+  return utcCalendarDay(y, m, d) === raw ? (raw as LocalDate) : null;
 }
 
 /**
