@@ -1,0 +1,45 @@
+import type { Area, AreaId } from "@/domain/item";
+import type { AreasRepo } from "./repo";
+
+let seq = 0;
+const nextId = () => `00000000-0000-4000-a000-${String(++seq).padStart(12, "0")}` as AreaId;
+
+type Stored = Area & { deletedAt: Date | null };
+
+/** In-memory AreasRepo for tests and dev harnesses. `rows` includes soft-deleted areas. */
+export function fakeAreasRepo(names: string[] = []) {
+  const rows: Stored[] = names.map((name, i) => ({ id: nextId(), name, position: i + 1, deletedAt: null }));
+  const live = () => rows.filter((r) => r.deletedAt === null).sort((a, b) => a.position - b.position);
+  const view = ({ id, name, position }: Stored): Area => ({ id, name, position });
+  const find = (id: AreaId) => {
+    const row = rows.find((r) => r.id === id && r.deletedAt === null);
+    if (!row) throw new Error(`area ${id} not found`);
+    return row;
+  };
+
+  const repo: AreasRepo = {
+    async list() {
+      return live().map(view);
+    },
+    async create(name) {
+      const row: Stored = { id: nextId(), name, position: (live().at(-1)?.position ?? 0) + 1, deletedAt: null };
+      rows.push(row);
+      return view(row);
+    },
+    async rename(id, name) {
+      const row = find(id);
+      row.name = name;
+      return view(row);
+    },
+    async softDelete(id) {
+      const row = rows.find((r) => r.id === id && r.deletedAt === null);
+      if (row) row.deletedAt = new Date();
+    },
+    async reorder(ids) {
+      ids.forEach((id, index) => {
+        find(id).position = index + 1;
+      });
+    },
+  };
+  return { repo, rows };
+}
