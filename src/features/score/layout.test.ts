@@ -190,6 +190,33 @@ describe("layoutScore", () => {
     expect(staffAt(score.staves, h.top + h.height + 1)).toBe(-1);
   });
 
+  it("lands a pending drop on the first sub-row with room, ignoring the item being moved", () => {
+    const a = timed("a", at(10), at(11), { areaId: work.id });
+    const b = timed("b", at(10, 30), at(11, 30), { areaId: work.id });
+    const items = [a, b, timed("c", at(13), at(14), { areaId: work.id })];
+    const lay = (pending: Parameters<typeof layoutScore>[0]["pending"]) =>
+      layoutScore({ view: buildToday({ scheduled: items, unscheduled: [] }, range, now), areas: [work, home], date, timeZone: zone, now: null, pending });
+
+    expect(lay({ itemId: area("x").id as never, areaId: work.id, span: span(780, 810) }).ghost).toEqual({ staff: 0, row: 1 });
+    expect(lay({ itemId: a.id, areaId: work.id, span: span(615, 645) }).ghost).toEqual({ staff: 0, row: 0 });
+    expect(lay({ itemId: b.id, areaId: home.id, span: span(615, 645) }).ghost).toEqual({ staff: 1, row: 0 });
+  });
+
+  it("grows the target staff by a row when no sub-row has room, without moving the staves above", () => {
+    const items = [timed("a", at(10), at(11), { areaId: home.id })];
+    const score = layoutScore({
+      view: buildToday({ scheduled: items, unscheduled: [] }, range, now),
+      areas: [work, home],
+      date,
+      timeZone: zone,
+      now: null,
+      pending: { itemId: area("x").id as never, areaId: home.id, span: span(630, 660) },
+    });
+    expect(score.ghost).toEqual({ staff: 1, row: 1 });
+    expect(score.staves[1].rows).toBe(2);
+    expect(score.staves[1].top).toBe(staffHeight(1) + 1);
+  });
+
   it("sits each sub-row's beam at the bottom of its row", () => {
     expect(beamTop(0)).toBe(39);
     expect(beamTop(1)).toBe(39 + 64);

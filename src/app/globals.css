@@ -125,4 +125,34 @@
     color: var(--ink-3);
     opacity: 1;
   }
+
+  /* An item is being dragged on the Score. */
+  [data-score-dragging],
+  [data-score-dragging] * {
+    cursor: grabbing !important;
+    user-select: none;
+  }
+}
+
+/* Items morph between Score and List; see ViewTransition share="morph". */
+::view-transition {
+  pointer-events: none;
+}
+
+::view-transition-group(.morph) {
+  animation-duration: 0.46s;
+  animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 0.2s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
+  }
 }

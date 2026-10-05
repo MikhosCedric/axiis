@@ -122,6 +122,14 @@ describe("summaryLine", () => {
     );
   });
 
+  it("does not say today about another day", () => {
+    expect(summaryLine(view([timed("a", at(12), at(13))]), false)).toBe("1 open.");
+    expect(summaryLine(view([timed("a", at(8), at(9), { status: "done" })]), false)).toBe(
+      "Everything planned for this day is done.",
+    );
+    expect(summaryLine(view([], [makeItem()]), false)).toBe("Nothing has a time on this day. 1 waiting for a time.");
+  });
+
   it("mentions waiting items when nothing has a time", () => {
     expect(summaryLine(view([], [makeItem(), makeItem()]))).toBe("Nothing has a time today. 2 waiting for a time.");
   });
