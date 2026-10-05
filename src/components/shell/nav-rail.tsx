@@ -1,5 +1,9 @@
+"use client";
+
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
+import type { LocalDate } from "@/domain/item";
 import { BrandMark, InboxIcon, ListsIcon, NotesIcon, SignOutIcon, TodayIcon } from "./icons";
 import { ThemeToggle } from "./theme-toggle";
 
@@ -20,7 +24,9 @@ function Soon({ icon, label }: { icon: ReactNode; label: string }) {
   );
 }
 
-export function NavRail({ areas }: { areas: NavArea[] }) {
+export function NavRail({ today, areas }: { today: LocalDate; areas: NavArea[] }) {
+  const pathname = usePathname();
+  const onToday = pathname === "/today" || pathname === `/day/${today}`;
   return (
     <nav
       aria-label="Primary"
@@ -35,8 +41,12 @@ export function NavRail({ areas }: { areas: NavArea[] }) {
         <li>
           <Link
             href="/today"
-            aria-current="page"
-            className="flex items-center gap-2.5 rounded-md bg-ink p-2 font-medium text-paper max-rail:px-2.5 max-rail:py-1.5"
+            aria-current={onToday ? "page" : undefined}
+            className={
+              onToday
+                ? "flex items-center gap-2.5 rounded-md bg-ink p-2 font-medium text-paper max-rail:px-2.5 max-rail:py-1.5"
+                : `${quiet} max-rail:px-2.5`
+            }
           >
             <TodayIcon />
             Today

@@ -1,12 +1,10 @@
 import { z } from "zod";
-import { idSchema, type Area, type ItemId, type LocalDate } from "@/domain/item";
-import { dayRangeFor, toLocalDate } from "@/lib/dates";
+import { idSchema, type ItemId } from "@/domain/item";
 import type { ItemsRepo } from "@/lib/items/repo";
-import { buildToday, type TodayView } from "./model";
+import { TITLE_MAX } from "./model";
 
 export type ActionResult = { ok: true } | { ok: false; error: string };
 
-import { TITLE_MAX } from "./model";
 const titleSchema = z.string().trim().min(1).max(TITLE_MAX);
 
 export async function captureTask(repo: ItemsRepo, raw: unknown): Promise<ActionResult> {
@@ -31,13 +29,4 @@ export async function setDone(repo: ItemsRepo, rawId: unknown, done: boolean): P
   } catch {
     return { ok: false, error: "That change did not save. Try again." };
   }
-}
-
-export type Today = { timeZone: string; date: LocalDate; areas: Area[]; view: TodayView };
-
-export async function loadToday(repo: ItemsRepo, now: Date, timeZone: string): Promise<Today> {
-  const date = toLocalDate(now, timeZone);
-  const range = dayRangeFor(date, timeZone);
-  const [areas, items] = await Promise.all([repo.listAreas(), repo.listForDay(range)]);
-  return { timeZone, date, areas, view: buildToday(items, range, now) };
 }

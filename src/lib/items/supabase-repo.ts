@@ -1,8 +1,8 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
-import type { Area, DayRange, Item, ItemId, ItemPatch, NewItem } from "@/domain/item";
+import { ITEM_STATUSES, type Area, type DayRange, type Item, type ItemId, type ItemPatch, type NewItem } from "@/domain/item";
 import { AREA_COLUMNS, ITEM_COLUMNS, areaFromRow, itemFromRow, newItemToInsert, patchToUpdate } from "./mappers";
-import type { ItemsRepo } from "./repo";
+import type { ChildCount, ItemsRepo } from "./repo";
 
 type QueryResult = { data: unknown; error: { message: string; code?: string } | null };
 
@@ -17,6 +17,7 @@ function unwrap<T>(operation: string, { data, error }: QueryResult, parse: (raw:
 
 const rowList = z.array(z.unknown());
 const itemList = (raw: unknown) => rowList.parse(raw).map(itemFromRow);
+const childRow = z.object({ parent_id: z.uuid(), status: z.enum(ITEM_STATUSES) });
 
 /** Row Level Security scopes every query to the client's signed-in user, and `user_id` defaults to `auth.uid()` on insert. */
 export class SupabaseItemsRepo implements ItemsRepo {
@@ -39,12 +40,35 @@ export class SupabaseItemsRepo implements ItemsRepo {
     const [timed, dayOnly, unscheduled] = await Promise.all([
       this.items().gte("start_at", range.from.toISOString()).lt("start_at", range.to.toISOString()).order("start_at"),
       this.items().eq("scheduled_on", range.date).order("position"),
-      this.items().is("start_at", null).is("scheduled_on", null).order("position"),
+      this.items().is("start_at", null).is("scheduled_on", null).is("parent_id", null).order("position"),
     ]);
     return {
       scheduled: [...unwrap("listForDay", timed, itemList), ...unwrap("listForDay", dayOnly, itemList)],
       unscheduled: unwrap("listForDay", unscheduled, itemList),
     };
+  }
+
+  async listChildren(parentId: ItemId): Promise<Item[]> {
+    const result = await this.items().eq("parent_id", parentId).order("position").order("created_at");
+    return unwrap("listChildren", result, itemList);
+  }
+
+  async childCounts(parentIds: ItemId[]): Promise<Record<string, ChildCount>> {
+    if (parentIds.length === 0) return {};
+    const result = await this.db
+      .from("items")
+      .select("parent_id,status")
+      .in("parent_id", parentIds)
+      .is("deleted_at", null);
+    return unwrap("childCounts", result, (raw) => {
+      const counts: Record<string, ChildCount> = {};
+      for (const row of z.array(childRow).parse(raw)) {
+        const c = (counts[row.parent_id] ??= { total: 0, done: 0 });
+        c.total += 1;
+        if (row.status === "done") c.done += 1;
+      }
+      return counts;
+    });
   }
 
   async get(id: ItemId): Promise<Item | null> {
