@@ -6,7 +6,7 @@ import { buildToday, type TodayView } from "./model";
 
 export type ActionResult = { ok: true } | { ok: false; error: string };
 
-export const TITLE_MAX = 500;
+import { TITLE_MAX } from "./model";
 const titleSchema = z.string().trim().min(1).max(TITLE_MAX);
 
 export async function captureTask(repo: ItemsRepo, raw: unknown): Promise<ActionResult> {
