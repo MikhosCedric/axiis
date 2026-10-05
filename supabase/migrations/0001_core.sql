@@ -152,6 +152,10 @@ create table public.item_tags (
   foreign key (user_id, tag_id) references public.tags (user_id, id) on delete cascade
 );
 
+-- Backlinks read links by their target; tag filters read item_tags by tag.
+create index links_user_to on public.links (user_id, to_id);
+create index item_tags_user_tag on public.item_tags (user_id, tag_id);
+
 -- updated_at triggers
 
 create trigger areas_set_updated_at before update on public.areas
