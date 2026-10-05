@@ -1,0 +1,707 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Axiis Today</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Besley:wght@400;500;600;700&family=Hanken+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --paper: #ebe4d4;
+  --paper-2: #e2dac6;
+  --sheet: #f3eee1;
+  --ink: #1c1b22;
+  --ink-2: #4a4741;
+  --ink-3: #625e55;
+  --rule: rgba(28, 27, 34, .28);
+  --rule-soft: rgba(28, 27, 34, .12);
+  --accent: #0b6e60;
+  --accent-wash: rgba(11, 110, 96, .14);
+  --on-accent: #f3eee1;
+  --hw: 76px;
+  --lw: 104px;
+  --row: 64px;
+  --serif: "Besley", "Georgia", serif;
+  --sans: "Hanken Grotesk", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --ease: cubic-bezier(.16, 1, .3, 1);
+  color-scheme: light;
+}
+:root[data-theme="dark"] {
+  --paper: #16151b;
+  --paper-2: #1c1b22;
+  --sheet: #201f27;
+  --ink: #ece5d3;
+  --ink-2: #bdb7a8;
+  --ink-3: #9d978a;
+  --rule: rgba(236, 229, 211, .3);
+  --rule-soft: rgba(236, 229, 211, .12);
+  --accent: #45c7b0;
+  --accent-wash: rgba(69, 199, 176, .16);
+  --on-accent: #10201d;
+  color-scheme: dark;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #16151b;
+    --paper-2: #1c1b22;
+    --sheet: #201f27;
+    --ink: #ece5d3;
+    --ink-2: #bdb7a8;
+    --ink-3: #9d978a;
+    --rule: rgba(236, 229, 211, .3);
+    --rule-soft: rgba(236, 229, 211, .12);
+    --accent: #45c7b0;
+    --accent-wash: rgba(69, 199, 176, .16);
+    --on-accent: #10201d;
+    color-scheme: dark;
+  }
+}
+:root[data-density="compact"] { --row: 50px; }
+
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font: 400 14px/1.45 var(--sans);
+  caret-color: var(--accent);
+  -webkit-font-smoothing: antialiased;
+}
+::selection { background: var(--accent); color: var(--on-accent); }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 3px; }
+button { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+* { scrollbar-width: thin; scrollbar-color: var(--rule) transparent; }
+::-webkit-scrollbar { height: 10px; width: 10px; }
+::-webkit-scrollbar-thumb { background: var(--rule); border-radius: 6px; border: 2px solid var(--paper); }
+input[type="checkbox"] { accent-color: var(--accent); width: 16px; height: 16px; margin: 0; }
+
+.app {
+  display: grid;
+  grid-template-columns: 216px minmax(0, 1fr) 328px;
+  min-height: 100dvh;
+}
+
+/* nav */
+.nav {
+  background: var(--paper-2);
+  border-right: 1px solid var(--rule);
+  padding: 24px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+.brand { display: flex; align-items: center; gap: 10px; padding: 0 8px; }
+.brand svg { width: 28px; height: 28px; flex: none; }
+.brand b { font: 600 22px/1 var(--serif); letter-spacing: -.01em; }
+.nav h2 { font: 600 12px/1 var(--sans); letter-spacing: .06em; text-transform: uppercase; color: var(--ink-3); margin: 0 8px 10px; }
+.nav ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+.nav li button, .nav li > span {
+  display: flex; align-items: center; gap: 10px; width: 100%;
+  padding: 8px; border-radius: 6px; text-align: left; color: var(--ink-2); font-weight: 500;
+}
+.nav li button[aria-current="page"] { background: var(--ink); color: var(--paper); }
+.nav li [aria-disabled="true"] { color: var(--ink-3); cursor: default; }
+.nav svg.ico { width: 18px; height: 18px; flex: none; stroke: currentColor; fill: none; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+.nav .soon { margin-left: auto; font-size: 12px; color: var(--ink-3); }
+.extent { margin-left: auto; height: 6px; border-radius: 3px; background: var(--ink-3); opacity: .55; }
+.nav .foot { margin-top: auto; font-size: 12px; color: var(--ink-3); padding: 0 8px; line-height: 1.5; }
+
+/* main */
+.main { padding: 32px 36px 56px; min-width: 0; }
+.head h1 { font: 500 clamp(28px, 3vw, 40px)/1.1 var(--serif); letter-spacing: -.015em; margin: 0; text-wrap: balance; }
+.head p { margin: 10px 0 0; color: var(--ink-2); font-size: 15px; }
+.bar { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin: 24px 0 20px; }
+.capture { flex: 1 1 280px; position: relative; max-width: 440px; }
+.capture input {
+  width: 100%; padding: 10px 40px 10px 14px; background: var(--sheet); color: var(--ink);
+  border: 1px solid var(--rule); border-radius: 8px; font: inherit;
+}
+.capture input::placeholder { color: var(--ink-3); }
+.capture kbd {
+  position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
+  font: 600 12px var(--sans); color: var(--ink-3); border: 1px solid var(--rule); border-radius: 4px; padding: 1px 6px;
+}
+.seg { display: inline-flex; border: 1px solid var(--rule); border-radius: 8px; overflow: hidden; }
+.seg button { padding: 8px 14px; font-weight: 500; color: var(--ink-2); }
+.seg button[aria-pressed="true"] { background: var(--ink); color: var(--paper); }
+.tool { border: 1px solid var(--rule); border-radius: 8px; padding: 8px 12px; font-weight: 500; color: var(--ink-2); display: inline-flex; gap: 8px; align-items: center; }
+.tool:hover, .seg button:hover:not([aria-pressed="true"]), .nav li button:hover:not([aria-current]) { background: var(--accent-wash); }
+.tool svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 1.5; stroke-linecap: round; }
+.spacer { flex: 1; }
+
+/* score */
+.score-scroll { overflow-x: auto; border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule); background: var(--paper); }
+.score-inner { position: relative; width: calc(var(--lw) + var(--tw)); }
+.axis { display: flex; height: 34px; border-bottom: 1px solid var(--rule); }
+.axis .corner { width: var(--lw); flex: none; position: sticky; left: 0; background: var(--paper); z-index: 4; border-right: 1px solid var(--rule); }
+.axis .ticks { position: relative; width: var(--tw); }
+.axis .h { position: absolute; top: 0; bottom: 0; padding: 9px 0 0 6px; font: 500 12px/1 var(--sans); font-variant-numeric: tabular-nums; color: var(--ink-3); border-left: 1px solid var(--rule); }
+.srow { display: flex; border-bottom: 1px solid var(--rule); }
+.srow:last-child { border-bottom: 0; }
+.plabel {
+  width: var(--lw); flex: none; position: sticky; left: 0; z-index: 4; background: var(--paper);
+  border-right: 1px solid var(--rule); padding: 14px 12px;
+}
+.pname { display: block; font: 500 19px/1.1 var(--serif); }
+.pmeta { display: block; margin-top: 4px; font-size: 12px; color: var(--ink-3); }
+.sbody {
+  position: relative; width: var(--tw);
+  background-image: linear-gradient(to right, var(--rule-soft) 1px, transparent 1px);
+  background-size: var(--hw) 100%;
+  border-right: 3px double var(--rule);
+}
+.sbody.over { background-color: var(--accent-wash); }
+.lines { position: absolute; left: 0; right: 0; height: 25px; background: repeating-linear-gradient(to bottom, var(--rule-soft) 0 1px, transparent 1px 6px); pointer-events: none; }
+.playhead { position: absolute; top: 0; bottom: 0; width: 2px; margin-left: -1px; background: var(--accent); z-index: 3; pointer-events: none; }
+.playhead span { position: absolute; top: 6px; left: 6px; font: 600 12px/1 var(--sans); font-variant-numeric: tabular-nums; color: var(--on-accent); background: var(--accent); padding: 4px 6px; border-radius: 4px; }
+
+.note { position: absolute; height: 25px; cursor: grab; touch-action: pan-x pan-y; user-select: none; }
+.note:active { cursor: grabbing; }
+.note:focus-visible { outline-offset: 10px; }
+.beam { position: absolute; left: 0; right: 0; top: 9px; height: 7px; border: 1.5px solid var(--ink); border-radius: 4px; overflow: hidden; }
+.head-dot { position: absolute; left: -6px; top: 6px; width: 12px; height: 12px; border-radius: 50%; background: var(--ink); }
+.state-planned .beam { border: 0; height: 6px; top: 9.5px; border-radius: 0; background: repeating-linear-gradient(to right, var(--ink) 0 7px, transparent 7px 11px); }
+.state-live .beam { border-color: var(--accent); background: var(--accent); height: 9px; top: 8px; }
+.state-live .head-dot { background: var(--accent); }
+.state-done .beam { border-color: var(--ink-3); background: transparent; }
+.state-done .head-dot { background: var(--paper); border: 1.5px solid var(--ink-3); }
+.type-checklist .head-dot { border-radius: 2px; }
+.type-event .head-dot { display: none; }
+.type-event .beam::before, .type-event .beam::after { content: none; }
+.type-event::before, .type-event::after { content: ""; position: absolute; top: 4px; width: 1.5px; height: 17px; background: currentColor; color: var(--ink); }
+.type-event::before { left: 0; }
+.type-event::after { right: 0; }
+.type-event.state-live::before, .type-event.state-live::after { color: var(--accent); }
+.type-event.state-done::before, .type-event.state-done::after { color: var(--ink-3); }
+.label {
+  position: absolute; left: -6px; bottom: calc(100% + 1px);
+  max-width: var(--avail); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  font-size: 13px; line-height: 20px; font-weight: 600;
+}
+.label time { font-variant-numeric: tabular-nums; color: var(--ink-3); font-weight: 400; margin-left: 6px; font-size: 12px; }
+.label .count { font-variant-numeric: tabular-nums; font-weight: 400; color: var(--ink-2); margin-left: 4px; }
+.state-planned .label { font-weight: 500; }
+.state-done .label { font-weight: 400; color: var(--ink-3); }
+.state-live .label { font-weight: 700; }
+.note.sel .label { text-decoration: underline; text-decoration-color: var(--accent); text-decoration-thickness: 2px; text-underline-offset: 4px; }
+.grip { position: absolute; right: -6px; top: 0; bottom: 0; width: 12px; cursor: ew-resize; touch-action: none; }
+.sweep { position: absolute; inset: 0; background: var(--ink); transform: scaleX(0); transform-origin: left; opacity: 0; }
+.just-done .sweep { animation: sweep .56s var(--ease) forwards; }
+@keyframes sweep { 0% { transform: scaleX(0); opacity: 1; } 65% { transform: scaleX(1); opacity: 1; } 100% { transform: scaleX(1); opacity: 0; } }
+.ghost { position: absolute; height: 25px; pointer-events: none; z-index: 5; }
+.ghost .beam { border: 1.5px dashed var(--accent); background: var(--accent-wash); }
+.ghost .tip { position: absolute; left: 0; bottom: calc(100% + 1px); font: 600 12px/20px var(--sans); font-variant-numeric: tabular-nums; color: var(--accent); white-space: nowrap; }
+.dragging-chip { position: fixed; z-index: 20; pointer-events: none; opacity: .92; box-shadow: 0 6px 18px rgba(28, 27, 34, .22); }
+
+/* tray */
+.tray { margin-top: 28px; padding: 16px 0 0; }
+.tray.drop { outline: 2px dashed var(--accent); outline-offset: 8px; border-radius: 6px; }
+.tray h2, .panel h2 { font: 500 18px/1.2 var(--serif); margin: 0; }
+.tray p { margin: 4px 0 14px; color: var(--ink-3); font-size: 13px; }
+.chips { display: flex; flex-wrap: wrap; gap: 10px; }
+.chip {
+  display: inline-flex; gap: 10px; align-items: center; padding: 8px 12px; background: var(--sheet);
+  border: 1px solid var(--rule); border-radius: 8px; cursor: grab; touch-action: none; user-select: none; font-weight: 500;
+}
+.chip .dur { font-variant-numeric: tabular-nums; color: var(--ink-3); font-weight: 400; font-size: 12px; }
+.chip .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--ink); opacity: .7; }
+.empty { color: var(--ink-3); font-size: 13px; }
+
+/* list */
+.list { width: 100%; border-collapse: collapse; border-top: 1px solid var(--rule); }
+.list th { text-align: left; font: 600 12px/1 var(--sans); letter-spacing: .05em; text-transform: uppercase; color: var(--ink-3); padding: 12px 12px 10px; border-bottom: 1px solid var(--rule); }
+.list td { padding: 14px 12px; border-bottom: 1px solid var(--rule-soft); vertical-align: middle; }
+.list tr.row { cursor: pointer; }
+.list tr.row:hover td { background: var(--accent-wash); }
+.list tr.row.sel td { background: var(--accent-wash); }
+.list .t { font-variant-numeric: tabular-nums; color: var(--ink-2); white-space: nowrap; width: 150px; }
+.list .ttl { display: flex; align-items: center; gap: 14px; font-weight: 500; }
+.list .state-live .ttl, .list .ttl.state-live { font-weight: 700; }
+.list .state-done .ttl { color: var(--ink-3); font-weight: 400; }
+.glyph { position: relative; width: 44px; height: 16px; flex: none; }
+.glyph .beam { left: 6px; right: 0; top: 5px; }
+.glyph .head-dot { left: 0; top: 2px; }
+.glyph.state-planned .beam { top: 5.5px; }
+.glyph.state-live .beam { top: 4px; }
+.glyph.type-event::before, .glyph.type-event::after { top: 0; height: 16px; }
+.list .sub td { padding-top: 26px; font: 500 16px/1 var(--serif); border-bottom: 1px solid var(--rule); }
+.conn { color: var(--ink-3); font-size: 13px; }
+
+/* panel */
+.panel { background: var(--sheet); border-left: 1px solid var(--rule); padding: 32px 24px; min-width: 0; }
+.panel .meta { color: var(--ink-3); font-size: 13px; margin: 0 0 8px; }
+.panel h2.t { font: 500 24px/1.2 var(--serif); letter-spacing: -.01em; margin-bottom: 10px; text-wrap: balance; }
+.panel .when { font-variant-numeric: tabular-nums; color: var(--ink-2); margin: 0 0 18px; }
+.panel .btnrow { display: flex; gap: 10px; margin-bottom: 26px; }
+.btn { border: 1px solid var(--ink); border-radius: 8px; padding: 8px 14px; font-weight: 600; }
+.btn:hover { background: var(--ink); color: var(--paper); }
+.panel h3 { font: 600 12px/1 var(--sans); letter-spacing: .06em; text-transform: uppercase; color: var(--ink-3); margin: 0 0 12px; padding-top: 18px; border-top: 1px solid var(--rule); }
+.cn { margin: 0 0 22px; }
+.cn h4 { font: 500 16px/1.3 var(--serif); margin: 0 0 4px; }
+.cn p { margin: 0; color: var(--ink-2); font-size: 14px; max-width: 46ch; }
+.cn .k { font-size: 12px; color: var(--ink-3); margin-bottom: 2px; display: block; }
+.ck { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 6px; }
+.ck label { display: flex; gap: 10px; align-items: center; cursor: pointer; }
+.ck input:checked + span { color: var(--ink-3); text-decoration: line-through; text-decoration-color: var(--rule); }
+.hint { color: var(--ink-2); max-width: 30ch; }
+
+/* toast */
+.toast { position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%); background: var(--ink); color: var(--paper); padding: 8px 14px; border-radius: 8px; font-weight: 500; opacity: 0; pointer-events: none; transition: opacity .2s; z-index: 30; }
+.toast.on { opacity: 1; }
+
+/* morph */
+::view-transition-group(*) { animation-duration: .46s; animation-timing-function: var(--ease); }
+::view-transition-old(root), ::view-transition-new(root) { animation-duration: .2s; }
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*), ::view-transition-old(*), ::view-transition-new(*) { animation: none !important; }
+  .just-done .sweep { animation: none; }
+}
+
+@media (max-width: 1180px) {
+  .app { grid-template-columns: 216px minmax(0, 1fr); }
+  .panel { grid-column: 2; border-left: 0; border-top: 1px solid var(--rule); padding: 28px 36px 48px; }
+}
+@media (max-width: 760px) {
+  .app { grid-template-columns: 1fr; }
+  .nav { flex-direction: row; align-items: center; padding: 12px 16px; gap: 14px; border-right: 0; border-bottom: 1px solid var(--rule); overflow-x: auto; }
+  .nav .navsec { display: none; }
+  .nav .navsec.today { display: block; }
+  .nav h2, .nav .foot, .extent { display: none; }
+  .main { padding: 24px 16px 40px; }
+  .panel { grid-column: 1; padding: 24px 16px 40px; }
+  .spacer { display: none; }
+  .list .conn-col, .list td.conn { display: none; }
+  .glyph { display: none; }
+  :root { --lw: 80px; }
+  .plabel { padding: 12px 8px; }
+  .pname { font-size: 16px; }
+  .nav li span[aria-disabled="true"] { display: none; }
+  .nav #nav-main { display: flex; }
+  .brand b { font-size: 20px; }
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <nav class="nav" aria-label="Primary">
+    <div class="brand">
+      <svg viewBox="0 0 28 28" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 18.5h22"/><path d="M11 3v22"/><path d="M7 15.5v6M15 15.5v6M19 15.5v6M23 15.5v6" stroke-width="1.4"/><circle cx="11" cy="18.5" r="2.6" fill="var(--accent)" stroke="none"/></svg>
+      <b>Axiis</b>
+    </div>
+    <div class="navsec today">
+      <ul id="nav-main"></ul>
+    </div>
+    <div class="navsec">
+      <h2>Parts</h2>
+      <ul id="nav-parts"></ul>
+    </div>
+    <p class="foot">Prototype with sample data. Nothing is saved. It is always 10:40 here.</p>
+  </nav>
+
+  <main class="main">
+    <header class="head">
+      <h1 id="date"></h1>
+      <p id="summary"></p>
+    </header>
+    <div class="bar" role="toolbar" aria-label="Today controls">
+      <form class="capture" id="capture" autocomplete="off">
+        <label class="sr" for="cap">Capture anything</label>
+        <input id="cap" placeholder="Capture anything, then place it later" maxlength="120">
+        <kbd aria-hidden="true">C</kbd>
+      </form>
+      <div class="seg" role="group" aria-label="View">
+        <button type="button" data-view="score" aria-pressed="true">Score</button>
+        <button type="button" data-view="list" aria-pressed="false">List</button>
+      </div>
+      <span class="spacer"></span>
+      <button type="button" class="tool" id="density" aria-pressed="false">
+        <svg viewBox="0 0 16 16"><path d="M2 4h12M2 8h12M2 12h12"/></svg><span>Spacious</span>
+      </button>
+      <button type="button" class="tool" id="theme" aria-label="Switch theme">
+        <svg viewBox="0 0 16 16"><circle cx="8" cy="8" r="5.5"/><path d="M8 2.5v11" /></svg><span>Theme</span>
+      </button>
+    </div>
+    <div id="stage"></div>
+  </main>
+
+  <aside class="panel" id="panel" aria-label="Details"></aside>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+const START = 7 * 60, END = 20 * 60, SNAP = 15, HW = 76;
+const lw = () => parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--lw")) || 104;
+const ppm = HW / 60;
+const TW = (END - START) * ppm;
+const NOW = 10 * 60 + 40;
+
+const PARTS = [
+  { id: "work", name: "Work" },
+  { id: "home", name: "Home" },
+  { id: "health", name: "Health" }
+];
+
+const items = [
+  { id: "t1", type: "task", title: "Plan the week", part: "work", start: 8 * 60 + 30, dur: 45, status: "done", links: [] },
+  { id: "t2", type: "task", title: "Write the launch brief", part: "work", start: 10 * 60, dur: 90, status: "planned", links: ["n1"] },
+  { id: "e1", type: "event", title: "Design sync", part: "work", start: 13 * 60, dur: 60, status: "planned", links: [] },
+  { id: "t3", type: "task", title: "Review pull requests", part: "work", start: 15 * 60, dur: 75, status: "planned", links: [] },
+  { id: "t4", type: "task", title: "Water the plants", part: "home", start: 7 * 60 + 30, dur: 15, status: "done", links: [] },
+  { id: "t5", type: "task", title: "Call the landlord", part: "home", start: 12 * 60, dur: 30, status: "planned", links: ["n2"] },
+  { id: "c1", type: "checklist", title: "Weekly shop", part: "home", start: 17 * 60 + 30, dur: 45, status: "planned", links: [],
+    list: [{ t: "Oats", d: true }, { t: "Lemons", d: true }, { t: "Coffee beans", d: false }, { t: "Bin bags", d: false }, { t: "Dish soap", d: false }] },
+  { id: "t6", type: "task", title: "Cook dinner", part: "home", start: 18 * 60 + 30, dur: 60, status: "planned", links: [] },
+  { id: "t7", type: "task", title: "Run", part: "health", start: 7 * 60, dur: 45, status: "done", links: [] },
+  { id: "t8", type: "task", title: "Stretch", part: "health", start: 17 * 60, dur: 30, status: "planned", links: [] },
+  { id: "u1", type: "task", title: "Renew passport", part: null, start: null, dur: 30, status: "planned", links: [] },
+  { id: "u2", type: "task", title: "Reply to Marcus about the invoice", part: null, start: null, dur: 15, status: "planned", links: [] },
+  { id: "u3", type: "task", title: "Book the dentist", part: null, start: null, dur: 15, status: "planned", links: [] },
+  { id: "u4", type: "task", title: "Read the chapter on ownership", part: null, start: null, dur: 45, status: "planned", links: [] },
+  { id: "n1", type: "note", title: "Launch brief v2", part: "work", start: null, dur: 0, status: "planned", links: ["t2"],
+    body: "Positioning is settled. The pricing slide is still open. Ask Priya for the metrics export before Thursday." },
+  { id: "n2", type: "note", title: "Lease renewal", part: "home", start: null, dur: 0, status: "planned", links: ["t5"],
+    body: "Ask whether the end date can move to March, and whether the deposit rolls over." }
+];
+
+const state = { view: "score", selected: "t2", justDone: null, uid: 100 };
+const root = document.documentElement;
+const $ = (s, r = document) => r.querySelector(s);
+const stage = $("#stage");
+const get = id => items.find(i => i.id === id);
+const pad = n => String(n).padStart(2, "0");
+const fmt = m => pad(Math.floor(m / 60)) + ":" + pad(m % 60);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const partName = id => (PARTS.find(p => p.id === id) || {}).name || "";
+const isScheduled = i => i.type !== "note" && i.start != null;
+const isUnplaced = i => i.type !== "note" && i.start == null;
+const snap = m => Math.round(m / SNAP) * SNAP;
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+function status(it) {
+  if (it.status === "done") return "done";
+  if (it.start != null && NOW >= it.start && NOW < it.start + it.dur) return "live";
+  return "planned";
+}
+
+function toast(msg) {
+  const t = $("#toast");
+  t.textContent = msg;
+  t.classList.add("on");
+  clearTimeout(toast.h);
+  toast.h = setTimeout(() => t.classList.remove("on"), 1800);
+}
+
+/* ---------- rendering ---------- */
+function layoutPart(partId) {
+  const placed = items.filter(i => i.part === partId && isScheduled(i)).sort((a, b) => a.start - b.start || a.id.localeCompare(b.id));
+  const ends = [];
+  const out = placed.map(it => {
+    let r = ends.findIndex(e => e <= it.start);
+    if (r < 0) { r = ends.length; ends.push(0); }
+    ends[r] = it.start + it.dur;
+    return { it, r };
+  });
+  out.forEach(o => {
+    const next = out.find(p => p.r === o.r && p.it.start >= o.it.start + o.it.dur);
+    o.avail = ((next ? next.it.start : END) - o.it.start) * ppm - 8;
+  });
+  return { out, rows: Math.max(1, ends.length) };
+}
+
+function noteHTML(o, rowH) {
+  const it = o.it, st = status(it);
+  const left = (it.start - START) * ppm;
+  const width = Math.max(14, Math.min(it.dur, END - it.start) * ppm);
+  const top = 12 + o.r * rowH + (rowH - 25 - 12) ;
+  const checks = it.type === "checklist" ? `<span class="count">${it.list.filter(x => x.d).length}/${it.list.length}</span>` : "";
+  const cls = ["note", "type-" + it.type, "state-" + st, state.selected === it.id ? "sel" : "", state.justDone === it.id ? "just-done" : ""].join(" ");
+  return `<div class="${cls}" role="button" tabindex="0" data-id="${it.id}" aria-pressed="${state.selected === it.id}"
+    aria-label="${esc(it.title)}, ${fmt(it.start)} to ${fmt(it.start + it.dur)}, ${partName(it.part)}, ${st}"
+    style="left:${left}px;top:${top}px;width:${width}px;--avail:${o.avail}px;view-transition-name:it-${it.id}">
+    <span class="label" title="${esc(it.title)}">${esc(it.title)}${checks}<time>${fmt(it.start)}</time></span>
+    <span class="beam"><span class="sweep"></span></span><span class="head-dot"></span><span class="grip" data-grip></span></div>`;
+}
+
+function scoreHTML() {
+  const rowH = parseFloat(getComputedStyle(root).getPropertyValue("--row")) || 64;
+  let ticks = "";
+  for (let h = START / 60; h < END / 60; h++) ticks += `<span class="h" style="left:${(h * 60 - START) * ppm}px">${pad(h)}</span>`;
+  const rows = PARTS.map(p => {
+    const { out, rows: n } = layoutPart(p.id);
+    const open = items.filter(i => i.part === p.id && isScheduled(i) && i.status !== "done").length;
+    const height = n * rowH + 20;
+    const lines = Array.from({ length: n }, (_, r) => `<div class="lines" style="top:${12 + r * rowH + (rowH - 25 - 12)}px"></div>`).join("");
+    return `<div class="srow"><div class="plabel"><span class="pname">${p.name}</span><span class="pmeta">${open} open</span></div>
+      <div class="sbody" data-part="${p.id}" style="height:${height}px">${lines}${out.map(o => noteHTML(o, rowH)).join("")}</div></div>`;
+  }).join("");
+  const unplaced = items.filter(isUnplaced);
+  const chips = unplaced.length
+    ? unplaced.map(i => `<div class="chip" data-chip="${i.id}" role="button" tabindex="0" aria-label="${esc(i.title)}, ${i.dur} minutes, unplaced"><span class="dot"></span>${esc(i.title)}<span class="dur">${i.dur}m</span></div>`).join("")
+    : `<p class="empty">Everything has a time. Capture something new above.</p>`;
+  return `<div class="score-scroll" id="scroll"><div class="score-inner" style="--tw:${TW}px">
+      <div class="axis"><div class="corner"></div><div class="ticks">${ticks}</div></div>
+      ${rows}
+      <div class="playhead" style="left:${lw() + (NOW - START) * ppm}px"><span>${fmt(NOW)}</span></div>
+    </div></div>
+    <section class="tray" id="tray" aria-labelledby="tray-h"><h2 id="tray-h">Waiting for a time</h2>
+      <p>Drag one onto a part to give it a time. Drag a placed item back here to unschedule it.</p>
+      <div class="chips">${chips}</div></section>`;
+}
+
+function glyph(it, st) {
+  return `<span class="glyph type-${it.type} state-${st}" style="view-transition-name:it-${it.id}"><span class="beam"></span><span class="head-dot"></span></span>`;
+}
+
+function connCount(it) {
+  const n = it.links.length + items.filter(o => o.links.includes(it.id) && !it.links.includes(o.id)).length;
+  return n ? `${n} connected` : "";
+}
+
+function listHTML() {
+  const sched = items.filter(isScheduled).sort((a, b) => a.start - b.start);
+  const un = items.filter(isUnplaced);
+  const row = it => {
+    const st = status(it);
+    const when = it.start != null ? `${fmt(it.start)} to ${fmt(it.start + it.dur)}` : `${it.dur} min`;
+    return `<tr class="row ${state.selected === it.id ? "sel" : ""} state-${st}" data-row="${it.id}" tabindex="0">
+      <td class="t">${when}</td><td><div class="ttl">${glyph(it, st)}<span>${esc(it.title)}</span></div></td>
+      <td>${partName(it.part) || "Unassigned"}</td><td class="conn">${connCount(it)}</td></tr>`;
+  };
+  return `<table class="list"><caption class="sr">Today ordered by time</caption>
+    <thead><tr><th scope="col">Time</th><th scope="col">Item</th><th scope="col">Part</th><th scope="col" class="conn-col">Connected</th></tr></thead>
+    <tbody>${sched.map(row).join("")}${un.length ? `<tr class="sub"><td colspan="4">Waiting for a time</td></tr>${un.map(row).join("")}` : ""}</tbody></table>`;
+}
+
+function panelHTML() {
+  const it = get(state.selected);
+  if (!it) return `<h2>Details</h2><p class="hint">Select anything on the score to see what it connects to.</p>`;
+  const kind = { task: "Task", event: "Event", checklist: "Checklist", note: "Note" }[it.type];
+  const when = isScheduled(it) ? `${fmt(it.start)} to ${fmt(it.start + it.dur)} · ${partName(it.part)}` : (it.type === "note" ? partName(it.part) : `${it.dur} min · waiting for a time`);
+  const linked = it.links.map(get).concat(items.filter(o => o.links.includes(it.id) && !it.links.includes(o.id))).filter(Boolean);
+  const own = it.type === "checklist" ? `<div class="cn"><span class="k">Items</span><ul class="ck">${it.list.map((x, i) => `<li><label><input type="checkbox" data-ck="${it.id}:${i}" ${x.d ? "checked" : ""}><span>${esc(x.t)}</span></label></li>`).join("")}</ul></div>` : "";
+  const body = it.type === "note" ? `<div class="cn"><p>${esc(it.body)}</p></div>` : "";
+  const conn = linked.map(o => o.type === "note"
+    ? `<div class="cn"><span class="k">Note</span><h4>${esc(o.title)}</h4><p>${esc(o.body)}</p></div>`
+    : `<div class="cn"><span class="k">${{ task: "Task", event: "Event", checklist: "Checklist" }[o.type]}</span><h4><button type="button" data-open="${o.id}">${esc(o.title)}</button></h4></div>`).join("");
+  const action = it.type === "note" ? "" : `<div class="btnrow"><button class="btn" type="button" data-toggle="${it.id}">${it.status === "done" ? "Reopen" : "Mark done"}</button></div>`;
+  return `<p class="meta">${kind}</p><h2 class="t">${esc(it.title)}</h2><p class="when">${when}</p>${action}${body}${own}
+    <h3>Connected</h3>${conn || `<p class="empty">Nothing linked yet.</p>`}`;
+}
+
+function navHTML() {
+  const ico = d => `<svg class="ico" viewBox="0 0 18 18" aria-hidden="true">${d}</svg>`;
+  $("#nav-main").innerHTML = `
+    <li><button type="button" aria-current="page">${ico('<path d="M2 11.5h14M7 2v14"/>')}Today</button></li>
+    <li><span aria-disabled="true">${ico('<path d="M2.5 10.5l2-6h9l2 6v4h-13z"/><path d="M2.5 10.5h4l1 2h3l1-2h4"/>')}Inbox<span class="soon">${items.filter(isUnplaced).length}</span></span></li>
+    <li><span aria-disabled="true">${ico('<path d="M4 2.5h7l3 3v10H4z"/><path d="M7 9h5M7 12h5"/>')}Notes<span class="soon">soon</span></span></li>
+    <li><span aria-disabled="true">${ico('<path d="M3 5l1.5 1.5L7 4M3 10l1.5 1.5L7 9M9 5h6M9 10h6M3 15h.01M9 15h6"/>')}Lists<span class="soon">soon</span></span></li>`;
+  $("#nav-parts").innerHTML = PARTS.map(p => {
+    const n = items.filter(i => i.part === p.id && i.type !== "note" && i.status !== "done").length;
+    return `<li><span>${p.name}<span class="extent" style="width:${8 + n * 7}px" title="${n} open"></span></span></li>`;
+  }).join("");
+}
+
+function render() {
+  const sc = $("#scroll"), sl = sc ? sc.scrollLeft : null;
+  stage.innerHTML = state.view === "score" ? scoreHTML() : listHTML();
+  $("#panel").innerHTML = panelHTML();
+  navHTML();
+  const open = items.filter(i => isScheduled(i) && i.status !== "done").length;
+  const un = items.filter(isUnplaced).length;
+  $("#summary").textContent = `${open} to do on the score today${un ? `, ${un} waiting for a time.` : "."}`;
+  document.querySelectorAll("[data-view]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.view === state.view)));
+  const s2 = $("#scroll");
+  if (s2) s2.scrollLeft = sl != null ? sl : Math.max(0, (NOW - START) * ppm - 0.3 * (s2.clientWidth - lw()));
+}
+
+function setView(v) {
+  if (v === state.view) return;
+  const apply = () => { state.view = v; render(); };
+  if (document.startViewTransition && !reduce) document.startViewTransition(apply); else apply();
+}
+
+/* ---------- interaction ---------- */
+function select(id) { state.selected = id; render(); }
+
+function toggleDone(id) {
+  const it = get(id);
+  if (!it) return;
+  it.status = it.status === "done" ? "planned" : "done";
+  state.justDone = it.status === "done" ? id : null;
+  render();
+  if (state.justDone) setTimeout(() => { state.justDone = null; }, 700);
+  toast(it.status === "done" ? "Marked done" : "Reopened");
+}
+
+document.addEventListener("click", e => {
+  const v = e.target.closest("[data-view]"); if (v) return setView(v.dataset.view);
+  const t = e.target.closest("[data-toggle]"); if (t) return toggleDone(t.dataset.toggle);
+  const o = e.target.closest("[data-open]"); if (o) return select(o.dataset.open);
+  const r = e.target.closest("[data-row]"); if (r) return select(r.dataset.row);
+});
+document.addEventListener("change", e => {
+  const c = e.target.closest("[data-ck]"); if (!c) return;
+  const [id, i] = c.dataset.ck.split(":");
+  get(id).list[+i].d = c.checked;
+  render();
+});
+document.addEventListener("keydown", e => {
+  const typing = /input|textarea/i.test(e.target.tagName);
+  if (!typing && (e.key === "c" || e.key === "C") && !e.metaKey && !e.ctrlKey) { e.preventDefault(); $("#cap").focus(); return; }
+  const row = e.target.closest && e.target.closest("[data-row]");
+  if (row && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); select(row.dataset.row); return; }
+  const n = e.target.closest && e.target.closest(".note");
+  if (n) {
+    const it = get(n.dataset.id), step = e.shiftKey ? 60 : SNAP;
+    const refocus = () => { const el = document.querySelector(`.note[data-id="${it.id}"]`); if (el) el.focus(); };
+    if (e.key === "Enter") { e.preventDefault(); select(it.id); refocus(); }
+    else if (e.key === " ") { e.preventDefault(); toggleDone(it.id); refocus(); }
+    else if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
+      e.preventDefault();
+      it.start = clamp(it.start + (e.key === "ArrowRight" ? step : -step), START, END - it.dur);
+      render(); refocus(); toast(`${it.title} at ${fmt(it.start)}`);
+    } else if (e.key === "ArrowUp" || e.key === "ArrowDown") {
+      e.preventDefault();
+      const i = PARTS.findIndex(p => p.id === it.part), j = clamp(i + (e.key === "ArrowDown" ? 1 : -1), 0, PARTS.length - 1);
+      it.part = PARTS[j].id; render(); refocus(); toast(`${it.title} moved to ${PARTS[j].name}`);
+    } else if (e.key === "Delete" || e.key === "Backspace") {
+      e.preventDefault(); it.start = null; it.part = null; render(); toast(`${it.title} is waiting for a time`);
+    }
+  }
+  const chip = e.target.closest && e.target.closest("[data-chip]");
+  if (chip && e.key === "Enter") { select(chip.dataset.chip); }
+});
+
+$("#capture").addEventListener("submit", e => {
+  e.preventDefault();
+  const inp = $("#cap"), v = inp.value.trim();
+  if (!v) return;
+  items.push({ id: "u" + (++state.uid), type: "task", title: v, part: null, start: null, dur: 30, status: "planned", links: [] });
+  inp.value = "";
+  render();
+  toast("Captured. It is waiting for a time.");
+});
+$("#cap").addEventListener("keydown", e => { if (e.key === "Escape") e.target.blur(); });
+
+$("#density").addEventListener("click", e => {
+  const compact = root.dataset.density !== "compact";
+  root.dataset.density = compact ? "compact" : "spacious";
+  e.currentTarget.setAttribute("aria-pressed", String(compact));
+  e.currentTarget.lastElementChild.textContent = compact ? "Compact" : "Spacious";
+  render();
+});
+$("#theme").addEventListener("click", () => {
+  const dark = (root.dataset.theme || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light")) === "dark";
+  root.dataset.theme = dark ? "light" : "dark";
+  try { localStorage.setItem("axiis-theme", root.dataset.theme); } catch (_) {}
+});
+try { const t = localStorage.getItem("axiis-theme"); if (t) root.dataset.theme = t; } catch (_) {}
+
+/* drag: chips onto staves, notes along and across staves, grip to resize */
+let drag = null;
+document.addEventListener("pointerdown", e => {
+  if (e.button !== 0) return;
+  const grip = e.target.closest("[data-grip]");
+  const note = e.target.closest(".note");
+  const chip = e.target.closest("[data-chip]");
+  if (grip && note) {
+    const it = get(note.dataset.id);
+    drag = { kind: "resize", it, el: note, x0: e.clientX, y0: e.clientY, moved: false };
+  } else if (note) {
+    const it = get(note.dataset.id);
+    const body = note.parentElement.getBoundingClientRect();
+    drag = { kind: "move", it, el: note, x0: e.clientX, y0: e.clientY, moved: false, off: START + (e.clientX - body.left) / ppm - it.start };
+  } else if (chip) {
+    const it = get(chip.dataset.chip);
+    drag = { kind: "place", it, el: chip, x0: e.clientX, y0: e.clientY, moved: false, off: 0 };
+  }
+});
+document.addEventListener("pointermove", e => {
+  if (!drag) return;
+  if (!drag.moved && Math.hypot(e.clientX - drag.x0, e.clientY - drag.y0) < 5) return;
+  if (!drag.moved) {
+    drag.moved = true;
+    document.body.style.userSelect = "none";
+    if (drag.kind === "place") {
+      const r = drag.el.getBoundingClientRect();
+      drag.fly = drag.el.cloneNode(true);
+      drag.fly.className = "chip dragging-chip";
+      drag.fly.style.width = r.width + "px";
+      drag.dx = e.clientX - r.left; drag.dy = e.clientY - r.top;
+      document.body.appendChild(drag.fly);
+    }
+    if (drag.kind !== "resize") drag.el.style.opacity = ".35";
+  }
+  if (drag.fly) { drag.fly.style.left = e.clientX - drag.dx + "px"; drag.fly.style.top = e.clientY - drag.dy + "px"; }
+  updateGhost(e);
+});
+function updateGhost(e) {
+  document.querySelectorAll(".sbody.over").forEach(b => b.classList.remove("over"));
+  const tray = $("#tray"); if (tray) tray.classList.remove("drop");
+  const hit = document.elementsFromPoint(e.clientX, e.clientY);
+  if (drag.kind === "resize") {
+    const body = drag.el.parentElement.getBoundingClientRect();
+    const m = START + (e.clientX - body.left) / ppm;
+    drag.dur = clamp(snap(m - drag.it.start), SNAP, END - drag.it.start);
+    drag.el.style.width = drag.dur * ppm + "px";
+    showGhost(null); return;
+  }
+  const body = hit.find(el => el.classList && el.classList.contains("sbody"));
+  if (body) {
+    body.classList.add("over");
+    const r = body.getBoundingClientRect();
+    const start = clamp(snap(START + (e.clientX - r.left) / ppm - drag.off), START, END - drag.it.dur);
+    drag.target = { part: body.dataset.part, start, body };
+    showGhost(body, start, drag.it.dur);
+  } else {
+    showGhost(null);
+    drag.target = null;
+    const tr = hit.find(el => el.id === "tray");
+    if (tr && drag.kind === "move") { tr.classList.add("drop"); drag.target = { tray: true }; }
+  }
+}
+function showGhost(body, start, dur) {
+  let g = $(".ghost");
+  if (!body) { if (g) g.remove(); return; }
+  if (!g) { g = document.createElement("div"); g.className = "ghost"; g.innerHTML = `<span class="tip"></span><span class="beam"></span>`; }
+  if (g.parentElement !== body) body.appendChild(g);
+  g.style.left = (start - START) * ppm + "px";
+  g.style.width = dur * ppm + "px";
+  g.style.top = body.clientHeight / 2 - 12 + "px";
+  g.firstChild.textContent = `${fmt(start)} to ${fmt(start + dur)}`;
+}
+document.addEventListener("pointerup", () => {
+  if (!drag) return;
+  const d = drag; drag = null;
+  document.body.style.userSelect = "";
+  if (d.fly) d.fly.remove();
+  const g = $(".ghost"); if (g) g.remove();
+  if (!d.moved) {
+    if (d.kind !== "resize") select(d.it.id);
+    return;
+  }
+  if (d.kind === "resize") {
+    if (d.dur) d.it.dur = d.dur;
+    render(); toast(`${d.it.title} runs ${d.it.dur} minutes`); return;
+  }
+  if (d.target && d.target.tray) { d.it.start = null; d.it.part = null; render(); toast(`${d.it.title} is waiting for a time`); return; }
+  if (d.target && d.target.part) {
+    d.it.part = d.target.part; d.it.start = d.target.start;
+    state.selected = d.it.id;
+    render(); toast(`${d.it.title} at ${fmt(d.it.start)} in ${partName(d.it.part)}`);
+    return;
+  }
+  render();
+});
+document.addEventListener("pointercancel", () => { if (drag) { if (drag.fly) drag.fly.remove(); drag = null; render(); } });
+
+/* boot */
+$("#date").textContent = new Intl.DateTimeFormat("en-GB", { weekday: "long", day: "numeric", month: "long" }).format(new Date());
+render();
+</script>
+</body>
+</html>
