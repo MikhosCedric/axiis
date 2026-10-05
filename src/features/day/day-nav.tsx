@@ -10,7 +10,7 @@ import { dayHref, isTypingTarget, navTarget, shortcutAction } from "./nav";
 import type { DayViewMode } from "./types";
 
 const step =
-  "inline-flex size-9 flex-none items-center justify-center rounded-md border border-rule text-ink-2 hover:bg-paper-2 hover:text-ink";
+  "inline-flex h-9 flex-none items-center gap-1.5 rounded-md border border-rule px-3 font-medium text-ink hover:bg-paper-2";
 
 function Chevron({ back }: { back?: boolean }) {
   return (
@@ -51,9 +51,11 @@ export function DayNav({ date, today, mode }: { date: LocalDate; today: LocalDat
     <nav aria-label="Day" className="mb-5 flex flex-wrap items-center gap-2">
       <Link href={dayHref(previous, today, mode)} className={step} aria-keyshortcuts="[" title="Previous day ( [ )">
         <Chevron back />
+        <span aria-hidden="true">Previous</span>
         <span className="sr-only">Previous day, {formatDayHeading(previous)}</span>
       </Link>
       <Link href={dayHref(next, today, mode)} className={step} aria-keyshortcuts="]" title="Next day ( ] )">
+        <span aria-hidden="true">Next</span>
         <Chevron />
         <span className="sr-only">Next day, {formatDayHeading(next)}</span>
       </Link>
