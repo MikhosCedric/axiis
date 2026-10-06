@@ -67,6 +67,7 @@ axe reported **no violations on any of the 24 loads**, nor with the detail panel
    - **Where.** The key help paragraph in `score-view.tsx:280-285`, the `C` key hint in `capture-field.tsx:70-75`, and the tray copy at `score-view.tsx:295-297`.
    - **Evidence.** At 375px with touch, the Score shows four lines of arrow-key, Shift, Space and Backspace instructions, and the capture field shows a `C` key. Picking a beam up by touch needs a 280ms hold (`LONG_PRESS_MS`), but the copy says only "Drag a beam".
    - **Fix.** Under `(pointer: coarse)`, swap the paragraph for "Press and hold a beam, then drag it" and hide the `kbd` hints. Keep the paragraph as the `aria-describedby` text for keyboard users. Suggested command `/impeccable clarify`.
+   - **Status. Fixed.** Under a coarse pointer the Score shows "Press and hold a beam, then drag it to move it, or hold and drag its right end to change its length", the tray says to press and hold one before dragging it onto an area, and the capture field's `C` is hidden. The key help becomes visually hidden but stays every beam's description. `e2e/harness.spec.ts` checks both the touch and the mouse copy.
 
 8. **[P2, Accessibility] The note body hides its focus ring.**
    - **Where.** `src/features/notes/editor.module.css:11-13` (`.prose:focus-visible { outline: none; }`).

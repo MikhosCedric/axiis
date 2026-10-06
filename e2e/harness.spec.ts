@@ -514,8 +514,35 @@ test.describe("on a phone", () => {
   });
 });
 
+test("with a mouse, the Score shows the keyboard help and no press-and-hold hint", async ({ page }) => {
+  await page.goto("/dev/score");
+  const keys = page.getByText(/^Drag a beam to move it/);
+  await expect(keys).toBeVisible();
+  expect(await keys.evaluate((el) => el.getBoundingClientRect().width)).toBeGreaterThan(100);
+  await expect(page.getByText(/^Drag one onto an area/)).toBeVisible();
+  await expect(page.locator("kbd", { hasText: /^C$/ })).toBeVisible();
+  await expect(page.getByText(/Press and hold/)).toHaveCount(2);
+  for (const hint of await page.getByText(/Press and hold/).all()) await expect(hint).toBeHidden();
+});
+
 test.describe("on a touch phone", () => {
   test.use({ viewport: { width: 375, height: 812 }, hasTouch: true, isMobile: true });
+
+  test("the Score says to press and hold before dragging, and keeps the key help for screen readers", async ({
+    page,
+  }) => {
+    await page.goto("/dev/score");
+    await expect(page.getByText(/^Press and hold a beam, then drag it/)).toBeVisible();
+    await expect(page.getByText(/^Press and hold one, then drag it onto an area/)).toBeVisible();
+    await expect(page.getByText(/^Drag one onto an area/)).toBeHidden();
+    await expect(page.locator("kbd", { hasText: /^C$/ })).toBeHidden();
+
+    const keys = page.getByText(/^Drag a beam to move it/);
+    expect(await keys.evaluate((el) => el.getBoundingClientRect().width)).toBeLessThanOrEqual(1);
+    await expect(page.getByRole("button", { name: /^Design sync, / })).toHaveAccessibleDescription(
+      /Space marks it done/,
+    );
+  });
 
   test("the detail panel's icon buttons are 44px touch targets, and a tag's remove button at least 24px", async ({
     page,

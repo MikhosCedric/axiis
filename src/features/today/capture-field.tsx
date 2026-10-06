@@ -69,7 +69,7 @@ export function CaptureField({
         />
         <kbd
           aria-hidden="true"
-          className="absolute top-1/2 right-2.5 -translate-y-1/2 rounded border border-rule px-1.5 font-sans text-xs font-semibold text-ink-3"
+          className="absolute top-1/2 right-2.5 -translate-y-1/2 rounded border border-rule px-1.5 font-sans text-xs font-semibold text-ink-3 pointer-coarse:hidden"
         >
           C
         </kbd>
