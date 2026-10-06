@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, type ChangeEvent, type KeyboardEvent as ReactKeyboardEvent } from "react";
 import type { LocalDate } from "@/domain/item";
 import { formatDayHeading } from "@/features/today/format";
+import { weekHref } from "@/features/week/model";
+import { SpanSwitch } from "@/features/week/span-switch";
 import { parseLocalDate } from "@/lib/dates";
 import { dayHref, isTypingTarget, navTarget, shortcutAction } from "./nav";
 import type { DayViewMode } from "./types";
@@ -49,6 +51,7 @@ export function DayNav({ date, today, mode }: { date: LocalDate; today: LocalDat
 
   return (
     <nav aria-label="Day" className="mb-5 flex flex-wrap items-center gap-2">
+      <SpanSwitch current="day" dayHref={dayHref(date, today, mode)} weekHref={weekHref(date, today)} />
       <Link href={dayHref(previous, today, mode)} className={step} aria-keyshortcuts="[" title="Previous day ( [ )">
         <Chevron back />
         <span aria-hidden="true">Previous</span>
