@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { AreaId, Item, ItemId } from "@/domain/item";
+import type { AreaId, Item, ItemId, LocalDate } from "@/domain/item";
 import { fakeNotesRepo, type NotesStore } from "@/lib/notes/fake";
 import { area, fakeRepo, makeItem } from "@/features/today/test-support";
 import {
@@ -23,7 +23,8 @@ function world(items: Item[] = []) {
   const store: NotesStore = { items, bodyText: new Map(), links: [] };
   let tick = NOW.getTime();
   const notes = fakeNotesRepo(store, () => new Date((tick += 1000)));
-  return { store, notes, items: fakeRepo(items, [home]).repo };
+  const fake = fakeRepo(items, [home]);
+  return { store, notes, items: fake.repo, tag: fake.tag };
 }
 
 const doc = (text: string) => ({ type: "doc", content: [{ type: "paragraph", content: [{ type: "text", text }] }] });
@@ -161,13 +162,60 @@ describe("searchItems", () => {
     const note = makeItem({ type: "note", title: "Ferry times" });
     const task = makeItem({ title: "Book the ferry" });
     const w = world([note, task]);
-    const rows = await searchItems(w.notes, " ferry ");
+    const rows = await searchItems(w.notes, w.items, " ferry ");
     expect(rows.map((r) => r.href).sort()).toEqual([`/notes/${note.id}`, `/today?item=${task.id}`].sort());
   });
 
   it("does not search for nothing", async () => {
     const w = world([makeItem({ title: "x" })]);
-    expect(await searchItems(w.notes, "   ")).toEqual([]);
-    expect(await searchItems(w.notes, "x".repeat(201))).toEqual([]);
+    expect(await searchItems(w.notes, w.items, "   ")).toEqual([]);
+    expect(await searchItems(w.notes, w.items, "x".repeat(201))).toEqual([]);
+  });
+
+  describe("with #tags", () => {
+    const at = (iso: string) => new Date(iso);
+    const ferryTask = makeItem({ title: "Book the ferry", updatedAt: at("2026-10-01T00:00:00Z") });
+    const ferryNote = makeItem({ type: "note", title: "Ferry times", updatedAt: at("2026-10-03T00:00:00Z") });
+    const bulbs = makeItem({ title: "Buy bulbs", status: "done", updatedAt: at("2026-10-02T00:00:00Z") });
+    const series = makeItem({
+      title: "Water the ferns",
+      schedule: { kind: "day", on: "2026-10-01" as LocalDate },
+      recurrence: { kind: "series", rule: { freq: "daily", interval: 1, end: { kind: "never" } } },
+    });
+    const override = makeItem({
+      title: "Water the ferns by the ferry",
+      schedule: { kind: "day", on: "2026-10-02" as LocalDate },
+      recurrence: { kind: "override", seriesId: series.id, originalOn: "2026-10-02" as LocalDate },
+    });
+    function tagged() {
+      const w = world([ferryTask, ferryNote, bulbs, series, override].map((i) => ({ ...i })));
+      w.tag(ferryTask.id, "Trip");
+      w.tag(bulbs.id, "trip", "garden");
+      w.tag(series.id, "garden");
+      return w;
+    }
+    const titles = (rows: { title: string }[]) => rows.map((r) => r.title);
+
+    it("keeps word matches to items carrying the tag, in any case", async () => {
+      const w = tagged();
+      expect(titles(await searchItems(w.notes, w.items, "ferry #TRIP"))).toEqual(["Book the ferry"]);
+    });
+
+    it("lists everything carrying the tags when there are no words, most recently edited first", async () => {
+      const w = tagged();
+      expect(titles(await searchItems(w.notes, w.items, "#trip"))).toEqual(["Buy bulbs", "Book the ferry"]);
+      expect(titles(await searchItems(w.notes, w.items, "#trip #garden"))).toEqual(["Buy bulbs"]);
+    });
+
+    it("counts an override as wearing its series' tags", async () => {
+      const w = tagged();
+      expect(titles(await searchItems(w.notes, w.items, "ferry #garden"))).toEqual(["Water the ferns by the ferry"]);
+    });
+
+    it("finds nothing for a tag that does not exist, words or not", async () => {
+      const w = tagged();
+      expect(await searchItems(w.notes, w.items, "#nope")).toEqual([]);
+      expect(await searchItems(w.notes, w.items, "ferry #trip #nope")).toEqual([]);
+    });
   });
 });

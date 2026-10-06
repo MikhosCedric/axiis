@@ -103,7 +103,7 @@ export const actions: NotesActions = {
   save: slow((noteId: string, c: { title: string; body: unknown }) => saveNote(store.notes, noteId, c.title, c.body)),
   setArea: slow((noteId: string, a: string | null) => setItemArea(store.items, noteId, a, "UTC")),
   remove: slow((noteId: string) => deleteItem(store.items, noteId, "UTC")),
-  search: async (q) => (await searchItems(store.notes, q)).map((r) => ({ ...r, href: harnessHref(r) })),
+  search: async (q) => (await searchItems(store.notes, store.items, q)).map((r) => ({ ...r, href: harnessHref(r) })),
   link: slow((a: string, b: string) => linkItems(store.notes, a, b)),
   unlink: slow((l: string) => unlinkItems(store.notes, l)),
 };
