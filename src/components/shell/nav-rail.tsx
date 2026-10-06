@@ -4,7 +4,17 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 import type { LocalDate } from "@/domain/item";
-import { BrandMark, InboxIcon, ListsIcon, NotesIcon, SettingsIcon, SignOutIcon, TodayIcon, WeekIcon } from "./icons";
+import {
+  BrandMark,
+  InboxIcon,
+  ListsIcon,
+  NotesIcon,
+  SearchIcon,
+  SettingsIcon,
+  SignOutIcon,
+  TodayIcon,
+  WeekIcon,
+} from "./icons";
 import { ThemeToggle } from "./theme-toggle";
 
 export type NavArea = { id: string; name: string; open: number };
@@ -48,6 +58,8 @@ export function NavRail({ today, areas }: { today: LocalDate; areas: NavArea[] }
   const onToday = pathname === "/today" || pathname === `/day/${today}`;
   const onWeek = pathname === "/week" || pathname.startsWith("/week/");
   const onSettings = pathname === "/settings" || pathname.startsWith("/settings/");
+  const onNotes = pathname === "/notes" || pathname.startsWith("/notes/");
+  const onSearch = pathname === "/search";
   return (
     <nav
       aria-label="Primary"
@@ -62,7 +74,8 @@ export function NavRail({ today, areas }: { today: LocalDate; areas: NavArea[] }
         <NavLink href="/today" current={onToday} icon={<TodayIcon />} label="Today" />
         <NavLink href="/week" current={onWeek} icon={<WeekIcon />} label="Week" />
         <Soon icon={<InboxIcon />} label="Inbox" />
-        <Soon icon={<NotesIcon />} label="Notes" />
+        <NavLink href="/notes" current={onNotes} icon={<NotesIcon />} label="Notes" />
+        <NavLink href="/search" current={onSearch} icon={<SearchIcon />} label="Search" />
         <Soon icon={<ListsIcon />} label="Lists" />
       </ul>
 

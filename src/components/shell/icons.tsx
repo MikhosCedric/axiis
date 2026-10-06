@@ -94,3 +94,10 @@ export const SettingsIcon = () => (
     <circle cx="11.5" cy="12.5" r="1.6" fill="var(--paper-2)" />
   </Icon>
 );
+
+export const SearchIcon = () => (
+  <Icon>
+    <circle cx="8" cy="8" r="4.6" />
+    <path d="M11.5 11.5L15.5 15.5" />
+  </Icon>
+);
