@@ -4,7 +4,7 @@ import { refresh } from "next/cache";
 import { getNow, getTimeZone } from "@/features/day/server";
 import { getItemsRepo } from "@/lib/items";
 import type { ActionResult } from "@/features/today/commands";
-import { addSubtask, deleteItem, promoteSubtask, renameItem, setItemArea, setRepeat, stopRepeating } from "./commands";
+import { addSubtask, deleteItem, promoteSubtask, renameItem, setItemArea, setRepeat, setTime, stopRepeating } from "./commands";
 
 // The repo is bound to the signed-in user's session and RLS scopes every
 // write, so a direct POST without a session cannot touch anyone's rows.
@@ -21,6 +21,10 @@ export async function renameItemAction(id: string, title: string, scope?: unknow
 
 export async function setAreaAction(id: string, areaId: string | null, scope?: unknown): Promise<ActionResult> {
   return refreshed(await setItemArea(await getItemsRepo(), id, areaId, await getTimeZone(), scope));
+}
+
+export async function setTimeAction(id: string, time: unknown, scope?: unknown): Promise<ActionResult> {
+  return refreshed(await setTime(await getItemsRepo(), id, time, await getTimeZone(), scope));
 }
 
 export async function addSubtaskAction(parentId: string, title: string): Promise<ActionResult> {

@@ -1,7 +1,7 @@
 import { isStored, repeats, type Area, type AreaId, type Item, type ItemId, type ItemType, type LocalDate, type Schedule, type ShownItem } from "@/domain/item";
 import type { ItemKey } from "@/domain/item-key";
 import type { Rule, RuleEnd } from "@/domain/recurrence";
-import { addDays, toLocalDate } from "@/lib/dates";
+import { addDays, localMinutes, toLocalDate } from "@/lib/dates";
 import { describeRule, presetOf, type RepeatChoice, type RepeatPreset } from "./repeat";
 import type { ActionResult } from "@/features/today/commands";
 import { formatClock, formatDayHeading } from "@/features/today/format";
@@ -25,6 +25,9 @@ export function subtaskPolicy(item: Pick<ShownItem, "type" | "parentId" | "recur
 
 /** Which way a change to one occurrence goes: to that occurrence alone, or to the whole series. */
 export type Scope = "one" | "all";
+
+/** A time of day as the client sends it: local wall-clock minutes past midnight and a length in minutes. */
+export type TimeOfDay = { start: number; length: number };
 
 /**
  * How the item takes part in repetition, as the sheet shows it. Only a top-level
@@ -64,6 +67,8 @@ export type DetailView = {
   item: { id: ItemKey; type: ItemType; title: string; done: boolean; areaId: AreaId | null };
   /** Null for notes, which never sit in time. */
   when: string | null;
+  /** The clock time of a timed item on its first day, null for anything without one. */
+  time: TimeOfDay | null;
   due: string | null;
   areas: { id: AreaId; name: string }[];
   nesting: Nesting;
@@ -77,6 +82,7 @@ export type DetailActions = {
   rename: (id: string, title: string, scope?: Scope) => Promise<ActionResult>;
   setDone: (id: string, done: boolean) => Promise<ActionResult>;
   setArea: (id: string, areaId: string | null, scope?: Scope) => Promise<ActionResult>;
+  setTime: (id: string, time: TimeOfDay, scope?: Scope) => Promise<ActionResult>;
   addSubtask: (parentId: string, title: string) => Promise<ActionResult>;
   promote: (id: string) => Promise<ActionResult>;
   remove: (id: string, scope?: Scope) => Promise<ActionResult>;
@@ -104,6 +110,13 @@ function firstDay(schedule: Schedule, timeZone: string): LocalDate | null {
   if (schedule.kind === "day") return schedule.on;
   if (schedule.kind === "timed") return toLocalDate(schedule.start, timeZone);
   return null;
+}
+
+function timeOf(schedule: Schedule, timeZone: string): TimeOfDay | null {
+  if (schedule.kind !== "timed") return null;
+  const on = toLocalDate(schedule.start, timeZone);
+  const start = localMinutes(schedule.start, on, timeZone);
+  return { start, length: localMinutes(schedule.end, on, timeZone) - start };
 }
 
 function repeatView(item: ShownItem, series: Item | null, subtasks: Item[], timeZone: string): RepeatView {
@@ -150,6 +163,7 @@ export function buildDetail(input: {
   return {
     item: { id: item.id, type: item.type, title: item.title, done: item.status === "done", areaId: item.areaId },
     when: item.type === "note" ? null : describeWhen(item.schedule, timeZone),
+    time: timeOf(item.schedule, timeZone),
     due: describeDue(item.dueOn),
     areas: areas.map((a) => ({ id: a.id, name: a.name })),
     nesting,
