@@ -39,6 +39,10 @@ test.describe("capture field", () => {
     await page.goto("/dev/score");
     await field(page).fill("Read chapter 9");
     await expect(page.locator("#capture-preview")).toHaveCount(0);
+    await field(page).fill("Groceries for Sunday");
+    await expect(page.locator("#capture-preview")).toHaveCount(0);
+    await field(page).fill("Groceries by Sunday");
+    await expect(page.locator("#capture-preview")).toHaveText("Understood: Sunday");
     await field(page).fill("call \\friday");
     await expect(page.locator("#capture-preview")).toHaveCount(0);
     await field(page).press("Enter");
