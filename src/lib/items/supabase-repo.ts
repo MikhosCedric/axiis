@@ -11,8 +11,9 @@ import {
   type NewItem,
   type SpanRange,
 } from "@/domain/item";
+import { sameTag, type Tag, type TagId, type TagName, type TagSummary } from "@/domain/tag";
 import { AREA_COLUMNS, ITEM_COLUMNS, areaFromRow, itemFromRow, newItemToInsert, patchToUpdate } from "./mappers";
-import { INBOX_LIMIT, MAX_SERIES, type ChildCount, type ItemsRepo } from "./repo";
+import { INBOX_LIMIT, MAX_SERIES, TAGGED_LIMIT, type ChildCount, type ItemsRepo } from "./repo";
 
 type QueryResult = { data: unknown; error: { message: string; code?: string } | null };
 
@@ -28,6 +29,13 @@ function unwrap<T>(operation: string, { data, error }: QueryResult, parse: (raw:
 const rowList = z.array(z.unknown());
 const itemList = (raw: unknown) => rowList.parse(raw).map(itemFromRow);
 const childRow = z.object({ parent_id: z.uuid(), status: z.enum(ITEM_STATUSES) });
+
+const TAG_COLUMNS = "id,name";
+const tagRow = z.object({ id: z.uuid(), name: z.string() }).transform((r): Tag => ({ id: r.id as TagId, name: r.name as TagName }));
+const tagList = (raw: unknown) => z.array(tagRow).parse(raw);
+const itemTagRow = z.object({ item_id: z.uuid(), tags: tagRow });
+const COUNT_PAGE = 1000;
+const UNIQUE_VIOLATION = "23505";
 
 /** Row Level Security scopes every query to the client's signed-in user, and `user_id` defaults to `auth.uid()` on insert. */
 export class SupabaseItemsRepo implements ItemsRepo {
@@ -147,5 +155,90 @@ export class SupabaseItemsRepo implements ItemsRepo {
       .eq("id", id)
       .is("deleted_at", null);
     unwrap("softDelete", result, () => undefined);
+  }
+
+  private async allTags(): Promise<Tag[]> {
+    return unwrap("listTags", await this.db.from("tags").select(TAG_COLUMNS), tagList);
+  }
+
+  /**
+   * Open counts per tag id, from the links whose item is open and live. Read in
+   * pages, advancing by the rows returned, so a server cap on rows per reply
+   * cannot cut the count short.
+   */
+  private async openCounts(): Promise<Map<string, number>> {
+    const counts = new Map<string, number>();
+    for (let read = 0; ; ) {
+      const result = await this.db
+        .from("item_tags")
+        .select("tag_id,items!inner(id)")
+        .eq("items.status", "open")
+        .is("items.deleted_at", null)
+        .order("item_id")
+        .order("tag_id")
+        .range(read, read + COUNT_PAGE - 1);
+      const page = unwrap("listTags", result, (raw) => z.array(z.object({ tag_id: z.uuid() })).parse(raw));
+      if (page.length === 0) return counts;
+      for (const { tag_id } of page) counts.set(tag_id, (counts.get(tag_id) ?? 0) + 1);
+      read += page.length;
+    }
+  }
+
+  async listTags(): Promise<TagSummary[]> {
+    const [tags, counts] = await Promise.all([this.allTags(), this.openCounts()]);
+    return tags.map((t) => ({ ...t, open: counts.get(t.id) ?? 0 }));
+  }
+
+  async tagsForItems(ids: ItemId[]): Promise<Record<string, Tag[]>> {
+    if (ids.length === 0) return {};
+    const result = await this.db.from("item_tags").select(`item_id,tags!inner(${TAG_COLUMNS})`).in("item_id", ids);
+    return unwrap("tagsForItems", result, (raw) => {
+      const byItem: Record<string, Tag[]> = {};
+      for (const row of z.array(itemTagRow).parse(raw)) (byItem[row.item_id] ??= []).push(row.tags);
+      return byItem;
+    });
+  }
+
+  async listTagged(tagId: TagId): Promise<Item[]> {
+    const result = await this.db
+      .from("items")
+      .select(`${ITEM_COLUMNS},item_tags!inner(tag_id)`)
+      .eq("item_tags.tag_id", tagId)
+      .is("deleted_at", null)
+      .neq("status", "dropped")
+      // The status enum is declared open, done, dropped, so this puts open first.
+      .order("status")
+      .order("created_at", { ascending: false })
+      .limit(TAGGED_LIMIT);
+    return unwrap("listTagged", result, itemList);
+  }
+
+  async addTag(itemId: ItemId, name: TagName): Promise<Tag> {
+    const named = async () => (await this.allTags()).find((t) => sameTag(t.name, name)) ?? null;
+    let tag = await named();
+    if (!tag) {
+      const made = await this.db.from("tags").insert({ name }).select(TAG_COLUMNS).single();
+      // Another request made the same tag first: the unique index on lower(name) refused this one, so use theirs.
+      tag = made.error?.code === UNIQUE_VIOLATION ? await named() : unwrap("addTag", made, tagRow.parse);
+      if (!tag) throw new ItemsRepoError(`items.addTag failed: no tag named ${name} after a clash`);
+    }
+    const linked = await this.db
+      .from("item_tags")
+      .upsert({ item_id: itemId, tag_id: tag.id }, { onConflict: "item_id,tag_id", ignoreDuplicates: true });
+    unwrap("addTag", linked, () => undefined);
+    return tag;
+  }
+
+  async removeTag(itemId: ItemId, tagId: TagId): Promise<void> {
+    unwrap("removeTag", await this.db.from("item_tags").delete().eq("item_id", itemId).eq("tag_id", tagId), () => undefined);
+  }
+
+  async renameTag(tagId: TagId, name: TagName): Promise<Tag> {
+    const result = await this.db.from("tags").update({ name }).eq("id", tagId).select(TAG_COLUMNS).single();
+    return unwrap("renameTag", result, tagRow.parse);
+  }
+
+  async deleteTag(tagId: TagId): Promise<void> {
+    unwrap("deleteTag", await this.db.from("tags").delete().eq("id", tagId), () => undefined);
   }
 }
