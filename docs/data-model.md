@@ -48,6 +48,13 @@ A typed edge between two items, so notes reference tasks and backlinks work. `id
 ### `tags`, `item_tags`
 `tags`: `id`, `name`, `unique (user_id, lower(name))`. `item_tags`: `(item_id, tag_id)` primary key, composite FKs for same-user integrity, `on delete cascade`.
 
+How the app uses them (`src/domain/tag.ts`, `src/features/tags/`):
+- A name is stored as typed but trimmed, with runs of spaces collapsed and a leading `#` dropped, 1 to 32 characters. Two names are one tag when they match without case. Limits: 10 tags per item, 200 per user, checked by the commands.
+- Tags are hard-deleted. Deleting a tag removes its `item_tags` rows by cascade and never touches an item. Rename changes the one `tags` row.
+- A series carries the tags for all its occurrences. An override of a live series has no tag rows of its own; it shows and edits the series' (`tagOwner`). See `docs/recurrence.md`.
+- Open counts count live items whose status is `open`. A tag's page lists live items that are not dropped, open first, then newest, at most 200.
+- Search reads `#name` words as a filter: words narrow the text hits to items carrying every named tag, or an override whose series carries them; tags alone list every item carrying them.
+
 ## Day query
 
 A day is a half-open UTC range `[from, to)` computed by the client from the user's time zone. Items on that day are: timed items with `start_at` in range, plus day-only items with `scheduled_on` equal to the local date, leaving out series. Each live series is then expanded into its occurrences for the day, minus the dates a live override stands for. The database never stores a time zone or a "today".
