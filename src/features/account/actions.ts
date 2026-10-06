@@ -3,6 +3,7 @@
 import { refresh } from "next/cache";
 import { redirect } from "next/navigation";
 import { getAreasRepo } from "@/lib/areas";
+import { endFakeSession, getFakeAccount } from "@/lib/supabase/fake-session";
 import { createClient } from "@/lib/supabase/server";
 import type { ActionResult } from "@/features/today/commands";
 import { addArea, deleteAccount, moveArea, removeArea, renameArea } from "./commands";
@@ -33,6 +34,13 @@ export async function moveAreaAction(id: string, direction: string): Promise<Act
 
 /** Deletes the signed-in user's account and everything in it, then sends them to the sign-in page. */
 export async function deleteAccountAction(phrase: string): Promise<ActionResult> {
+  const fake = await getFakeAccount();
+  if (fake) {
+    const result = await deleteAccount({ deleteMyAccount: async () => fake.reset(), signOut: endFakeSession }, phrase);
+    if (!result.ok) return result;
+    redirect("/login?deleted=1");
+  }
+
   const supabase = await createClient();
   const { data } = await supabase.auth.getClaims();
   if (!data?.claims) return { ok: false, error: "Your session has ended. Sign in again to delete your account." };

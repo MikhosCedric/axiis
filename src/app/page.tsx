@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { SiteFooter, SiteHeader, primaryAction, quietAction, siteWrap } from "@/components/public/site-chrome";
 import { Glyph } from "@/features/today/glyph";
 import { SampleScore } from "@/features/landing/sample-score";
+import { getFakeAccount } from "@/lib/supabase/fake-session";
 import { createClient } from "@/lib/supabase/server";
 import { SITE_DESCRIPTION } from "@/lib/site";
 import styles from "./landing.module.css";
@@ -32,6 +33,7 @@ const NOW = [
 ];
 
 export default async function Home() {
+  if (await getFakeAccount()) redirect("/today");
   const supabase = await createClient();
   const { data } = await supabase.auth.getClaims();
   if (data?.claims) redirect("/today");
