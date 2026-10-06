@@ -26,6 +26,8 @@ A solo productivity web app. One connected set of items, shown through many view
 
 **View**: a query over items, never its own data. Score, List, Week and Today are views.
 
+**Lists**: the view of every top-level checklist, open first, each with how many of its lines are done. A checklist's subtasks are called its lines there. A repeating checklist shows once, as its series.
+
 **Today**: the view of one local day: timed items in that day's range, day-only items on that date, and everything unscheduled.
 
 **Score**: the Today view drawn as parallel staves, one per area, sharing one hour axis. The signature view of Axiis.
