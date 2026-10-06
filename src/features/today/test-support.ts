@@ -1,5 +1,5 @@
 import type { Area, AreaId, DayRange, Item, ItemId, ItemPatch, NewItem } from "@/domain/item";
-import type { ItemsRepo } from "@/lib/items/repo";
+import { MAX_SERIES, type ItemsRepo } from "@/lib/items/repo";
 
 let seq = 0;
 const uuid = () => `00000000-0000-4000-8000-${String(++seq).padStart(12, "0")}`;
@@ -39,19 +39,31 @@ export function fakeRepo(items: Item[] = [], areas: Area[] = []) {
     async listForDay(range) {
       calls.listForDay.push(range);
       return {
-        scheduled: items.filter(
+        scheduled: single().filter(
           (i) =>
             (i.schedule.kind === "timed" && range.from <= i.schedule.start && i.schedule.start < range.to) ||
             (i.schedule.kind === "day" && i.schedule.on === range.date),
         ),
-        unscheduled: items.filter((i) => i.schedule.kind === "unscheduled" && i.parentId === null),
+        unscheduled: single().filter((i) => i.schedule.kind === "unscheduled" && i.parentId === null),
       };
     },
     async listRange(range) {
-      return items.filter(
+      return single().filter(
         (i) =>
           (i.schedule.kind === "timed" && range.from <= i.schedule.start && i.schedule.start < range.to) ||
           (i.schedule.kind === "day" && range.fromDate <= i.schedule.on && i.schedule.on < range.toDate),
+      );
+    },
+    async listSeries() {
+      return items.filter((i) => i.recurrence.kind === "series").slice(0, MAX_SERIES);
+    },
+    async listOverrides(fromDate, toDate, seriesId) {
+      return items.filter(
+        (i) =>
+          i.recurrence.kind === "override" &&
+          fromDate <= i.recurrence.originalOn &&
+          i.recurrence.originalOn < toDate &&
+          (seriesId === undefined || i.recurrence.seriesId === seriesId),
       );
     },
     async listChildren(parentId) {
@@ -72,6 +84,13 @@ export function fakeRepo(items: Item[] = [], areas: Area[] = []) {
     },
     async create(input) {
       calls.create.push(input);
+      const r = input.recurrence;
+      if (
+        r?.kind === "override" &&
+        items.some((i) => i.recurrence.kind === "override" && i.recurrence.seriesId === r.seriesId && i.recurrence.originalOn === r.originalOn)
+      ) {
+        throw new Error('duplicate key value violates unique constraint "items_series_original"');
+      }
       const item = makeItem({ ...input, schedule: input.schedule ?? { kind: "unscheduled" } } as Partial<Item>);
       items.push(item);
       return item;
@@ -84,8 +103,12 @@ export function fakeRepo(items: Item[] = [], areas: Area[] = []) {
       if (patch.status) item.completedAt = patch.status === "done" ? new Date() : null;
       return item;
     },
-    async softDelete() {},
+    async softDelete(id) {
+      const at = items.findIndex((i) => i.id === id);
+      if (at !== -1) items.splice(at, 1);
+    },
   };
+  const single = () => items.filter((i) => i.recurrence.kind !== "series");
   return { repo, calls, items };
 }
 

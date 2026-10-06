@@ -37,4 +37,20 @@ describe("loadWeek", () => {
     expect(week.scheduled.map((i) => i.title)).toEqual(["Monday"]);
     expect(week.unscheduled.map((i) => i.title)).toEqual(["Someday"]);
   });
+
+  it("adds each occurrence in the week and leaves the stored series out", async () => {
+    const series = makeItem({
+      title: "Gym",
+      schedule: { kind: "day", on: d("2026-09-28") },
+      recurrence: { kind: "series", rule: { freq: "weekly", interval: 1, byDay: ["MO", "TH"], end: { kind: "never" } } },
+    });
+    const skipped = makeItem({
+      status: "dropped",
+      schedule: { kind: "day", on: d("2026-10-08") },
+      recurrence: { kind: "override", seriesId: series.id, originalOn: d("2026-10-08") },
+    });
+    const { repo } = fakeRepo([series, skipped]);
+    const week = await loadWeek(repo, d("2026-10-08"), new Date("2026-10-07T20:00:00Z"), "UTC");
+    expect(week.scheduled.map((i) => i.id)).toEqual([skipped.id, `${series.id}~2026-10-05`]);
+  });
 });

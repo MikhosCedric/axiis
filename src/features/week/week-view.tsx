@@ -13,7 +13,8 @@ import {
   type PointerEvent as ReactPointerEvent,
   type ReactNode,
 } from "react";
-import type { Item, ItemId, LocalDate } from "@/domain/item";
+import type { LocalDate, ShownItem } from "@/domain/item";
+import type { ItemKey } from "@/domain/item-key";
 import { dayHref } from "@/features/day/nav";
 import { SELECTED_ITEM_PARAM } from "@/features/day/types";
 import { STATE_WORD } from "@/features/score/score-view";
@@ -47,7 +48,7 @@ export type WeekActions = {
 
 const serverActions: WeekActions = { move: moveAction, setDone: setDoneAction, capture: captureAction };
 
-type Patch = { id: ItemId; changes: Partial<Pick<Item, "schedule" | "status" | "completedAt">> };
+type Patch = { id: ItemKey; changes: Partial<Pick<ShownItem, "schedule" | "status" | "completedAt">> };
 
 const KEYS_ID = "week-keys";
 
@@ -87,7 +88,7 @@ export function WeekView({
   const now = useNow(data.nowIso, days.includes(today));
 
   const saved = useMemo(() => [...data.scheduled, ...data.unscheduled], [data.scheduled, data.unscheduled]);
-  const [items, patch] = useOptimistic(saved, (current: Item[], p: Patch) =>
+  const [items, patch] = useOptimistic(saved, (current: ShownItem[], p: Patch) =>
     current.map((i) => (i.id === p.id ? { ...i, ...p.changes } : i)),
   );
   const week = useMemo(
@@ -103,7 +104,7 @@ export function WeekView({
       ).waiting,
     [items, today, timeZone, now],
   );
-  const areaName = (item: Item) => areas.find((a) => a.id === item.areaId)?.name ?? null;
+  const areaName = (item: ShownItem) => areas.find((a) => a.id === item.areaId)?.name ?? null;
 
   function select(id: string | null) {
     startTransition(() => {
@@ -116,14 +117,14 @@ export function WeekView({
     });
   }
 
-  function describe(item: Item, to: Destination) {
+  function describe(item: ShownItem, to: Destination) {
     if (to === "tray") return `${item.title} is waiting for a time.`;
     const s = moveTo(item, to, timeZone).schedule;
     const at = s.kind === "timed" ? ` at ${formatClock(s.start, timeZone)}` : "";
     return `${item.title} is on ${formatDayHeading(to)}${at}.`;
   }
 
-  function move(item: Item, to: Destination) {
+  function move(item: ShownItem, to: Destination) {
     if (!moves(item, to, timeZone)) return;
     setStatus(null);
     startTransition(async () => {
@@ -133,7 +134,7 @@ export function WeekView({
     });
   }
 
-  function toggleDone(item: Item) {
+  function toggleDone(item: ShownItem) {
     const done = item.status !== "done";
     setStatus(null);
     setJustDone(done ? item.id : null);
@@ -155,7 +156,7 @@ export function WeekView({
     if (el) refocus.current = null;
   });
 
-  function keyDown(e: KeyboardEvent<HTMLElement>, item: Item) {
+  function keyDown(e: KeyboardEvent<HTMLElement>, item: ShownItem) {
     if (e.altKey || e.ctrlKey || e.metaKey) return;
     if (e.key === "Enter") {
       e.preventDefault();

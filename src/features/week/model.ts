@@ -1,4 +1,4 @@
-import type { Item, ItemPatch, LocalDate, Schedule, SpanRange } from "@/domain/item";
+import type { ShownItem, ItemPatch, LocalDate, Schedule, SpanRange } from "@/domain/item";
 import { buildToday, type TodayEntry } from "@/features/today/model";
 import { addDays, dayRangeFor, instantAt, localMinutes, toLocalDate } from "@/lib/dates";
 
@@ -26,7 +26,7 @@ export function weekRange(days: LocalDate[], timeZone: string): SpanRange {
 }
 
 /** The local date an item is planned for: a timed item by its start, a day-only item by its date. */
-export function dayOf(item: Item, timeZone: string): LocalDate | null {
+export function dayOf(item: ShownItem, timeZone: string): LocalDate | null {
   const s = item.schedule;
   if (s.kind === "timed") return toLocalDate(s.start, timeZone);
   if (s.kind === "day") return s.on;
@@ -40,8 +40,8 @@ export type WeekDay = { date: LocalDate; entries: TodayEntry[] };
  * first, then timed items by start, with the same filtering as the day view.
  * Items whose day is outside `days` are left out.
  */
-export function bucketWeek(items: Item[], days: LocalDate[], timeZone: string, now: Date): WeekDay[] {
-  const byDay = new Map<LocalDate, Item[]>(days.map((d) => [d, []]));
+export function bucketWeek(items: ShownItem[], days: LocalDate[], timeZone: string, now: Date): WeekDay[] {
+  const byDay = new Map<LocalDate, ShownItem[]>(days.map((d) => [d, []]));
   for (const item of items) {
     const day = dayOf(item, timeZone);
     if (day) byDay.get(day)?.push(item);
@@ -63,7 +63,7 @@ export type SchedulePatch = ItemPatch & { schedule: Schedule };
  * and wall-clock length, so 09:00 to 10:30 stays 09:00 to 10:30 across a DST
  * change. A day-only item stays day-only; an unscheduled item becomes day-only.
  */
-export function moveToDay(item: Item, target: LocalDate, timeZone: string): SchedulePatch {
+export function moveToDay(item: ShownItem, target: LocalDate, timeZone: string): SchedulePatch {
   const s = item.schedule;
   if (s.kind !== "timed") return { schedule: { kind: "day", on: target } };
   const from = toLocalDate(s.start, timeZone);
@@ -72,12 +72,12 @@ export function moveToDay(item: Item, target: LocalDate, timeZone: string): Sche
   return { schedule: { kind: "timed", start: instantAt(target, start, timeZone), end: instantAt(target, end, timeZone) } };
 }
 
-export function moveTo(item: Item, to: Destination, timeZone: string): SchedulePatch {
+export function moveTo(item: ShownItem, to: Destination, timeZone: string): SchedulePatch {
   return to === "tray" ? { schedule: { kind: "unscheduled" } } : moveToDay(item, to, timeZone);
 }
 
 /** Whether sending `item` to `to` would change where it sits. */
-export function moves(item: Item, to: Destination, timeZone: string): boolean {
+export function moves(item: ShownItem, to: Destination, timeZone: string): boolean {
   return to === "tray" ? item.schedule.kind !== "unscheduled" : dayOf(item, timeZone) !== to;
 }
 
@@ -91,7 +91,7 @@ export function anchorDay(days: LocalDate[], today: LocalDate): LocalDate {
  * here or would leave the week. On a day: left and right step a day,
  * Backspace or Delete return it to the tray. In the tray: up gives it a day.
  */
-export function keyDestination(item: Item, days: LocalDate[], today: LocalDate, timeZone: string, key: string): Destination | null {
+export function keyDestination(item: ShownItem, days: LocalDate[], today: LocalDate, timeZone: string, key: string): Destination | null {
   const day = dayOf(item, timeZone);
   if (day === null) return key === "ArrowUp" ? anchorDay(days, today) : null;
   if (key === "Backspace" || key === "Delete") return "tray";

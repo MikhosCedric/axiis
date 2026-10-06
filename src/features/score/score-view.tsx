@@ -10,7 +10,7 @@ import {
   type KeyboardEvent,
   type PointerEvent as ReactPointerEvent,
 } from "react";
-import type { Area, Item, LocalDate } from "@/domain/item";
+import type { Area, ShownItem, LocalDate } from "@/domain/item";
 import { formatClock } from "@/features/today/format";
 import { Glyph } from "@/features/today/glyph";
 import type { BeamState, TodayEntry, TodayView } from "@/features/today/model";
@@ -34,8 +34,8 @@ import { useScoreDrag, type DragPreview } from "./use-score-drag";
 
 export type ScoreHandlers = {
   onSelect: (id: string | null) => void;
-  onPlace: (item: Item, placement: Placement) => void;
-  onToggleDone: (item: Item) => void;
+  onPlace: (item: ShownItem, placement: Placement) => void;
+  onToggleDone: (item: ShownItem) => void;
 };
 
 export const STATE_WORD: Record<BeamState, string> = { planned: "planned", live: "happening now", done: "done" };
@@ -105,7 +105,7 @@ export function ScoreView({
   );
   const width = axisWidth(axis);
   const totalHeight = staves.reduce((h, s) => h + s.height + 1, 0);
-  const areaName = (item: Item) => staves.find((s) => s.areaId === item.areaId)?.name ?? "No area";
+  const areaName = (item: ShownItem) => staves.find((s) => s.areaId === item.areaId)?.name ?? "No area";
 
   function syncAxis() {
     if (ticks.current && scroller.current) ticks.current.style.transform = `translateX(${-scroller.current.scrollLeft}px)`;
@@ -133,7 +133,7 @@ export function ScoreView({
     if (el) refocus.current = null;
   });
 
-  function keyDown(e: KeyboardEvent<HTMLElement>, item: Item) {
+  function keyDown(e: KeyboardEvent<HTMLElement>, item: ShownItem) {
     if (e.key === "Enter") {
       e.preventDefault();
       onSelect(item.id);
