@@ -1,13 +1,12 @@
 import type { Area, AreaId } from "@/domain/item";
 import type { AreasRepo } from "./repo";
 
-let seq = 0;
-const nextId = () => `00000000-0000-4000-a000-${String(++seq).padStart(12, "0")}` as AreaId;
-
 type Stored = Area & { deletedAt: Date | null };
 
-/** In-memory AreasRepo for tests and dev harnesses. `rows` includes soft-deleted areas. */
+/** In-memory AreasRepo for tests and dev harnesses. `rows` includes soft-deleted areas. Ids are stable per repo, so server and client renders agree. */
 export function fakeAreasRepo(names: string[] = []) {
+  let seq = 0;
+  const nextId = () => `00000000-0000-4000-a000-${String(++seq).padStart(12, "0")}` as AreaId;
   const rows: Stored[] = names.map((name, i) => ({ id: nextId(), name, position: i + 1, deletedAt: null }));
   const live = () => rows.filter((r) => r.deletedAt === null).sort((a, b) => a.position - b.position);
   const view = ({ id, name, position }: Stored): Area => ({ id, name, position });
