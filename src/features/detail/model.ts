@@ -70,12 +70,14 @@ export type RuleView = {
   preset: RepeatPreset | null;
   end: RuleEnd;
   summary: string;
+  /** The series' first date. */
+  firstOn: LocalDate;
   /** Where the end date starts when someone first picks "On a date". */
   defaultUntil: LocalDate;
 };
 
 function ruleView(rule: Rule, firstOn: LocalDate, shownOn: LocalDate): RuleView {
-  return { preset: presetOf(rule), end: rule.end, summary: describeRule(rule, firstOn), defaultUntil: addDays(shownOn, 28) };
+  return { preset: presetOf(rule), end: rule.end, summary: describeRule(rule, firstOn), firstOn, defaultUntil: addDays(shownOn, 28) };
 }
 
 export type DetailSubtask = { id: ItemId; title: string; done: boolean };
@@ -108,6 +110,10 @@ export type DetailActions = {
   setDone: (id: string, done: boolean) => Promise<ActionResult>;
   setArea: (id: string, areaId: string | null, scope?: Scope) => Promise<ActionResult>;
   setTime: (id: string, time: TimeOfDay, scope?: Scope) => Promise<ActionResult>;
+  /** Leaves it on its day at any time. */
+  clearTime: (id: string, scope?: Scope) => Promise<ActionResult>;
+  /** Moves the first date of the series the item belongs to. */
+  setFirstDay: (id: string, on: LocalDate) => Promise<ActionResult>;
   addSubtask: (parentId: string, title: string) => Promise<ActionResult>;
   promote: (id: string) => Promise<ActionResult>;
   remove: (id: string, scope?: Scope) => Promise<ActionResult>;

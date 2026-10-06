@@ -8,10 +8,12 @@ import { setDone } from "@/features/today/commands";
 import { fakeRepo, makeItem } from "@/features/today/test-support";
 import {
   addSubtask,
+  clearTime,
   deleteItem,
   loadDetail,
   promoteSubtask,
   renameItem,
+  setFirstDay,
   setItemArea,
   setRepeat,
   setTime,
@@ -136,7 +138,7 @@ export function DetailHarness({ itemId, timeZone }: { itemId: string | null; tim
   const [store] = useState(createStore);
   const [version, setVersion] = useState(0);
   const [failing, setFailing] = useState(false);
-  const [loaded, setLoaded] = useState<{ key: string; version: number; view: DetailView | null } | null>(null);
+  const [loaded, setLoaded] = useState<{ key: string; view: DetailView | null } | null>(null);
 
   function fake<A extends unknown[]>(command: (repo: typeof store.repo, ...args: A) => ReturnType<DetailActions["promote"]>) {
     return async (...args: A) => {
@@ -153,6 +155,8 @@ export function DetailHarness({ itemId, timeZone }: { itemId: string | null; tim
     setDone: fake((repo, key: string, done: boolean) => setDone(repo, key, done, timeZone)),
     setArea: fake((repo, key: string, area: string | null, scope?: unknown) => setItemArea(repo, key, area, timeZone, scope)),
     setTime: fake((repo, key: string, time: unknown, scope?: unknown) => setTime(repo, key, time, timeZone, scope)),
+    clearTime: fake((repo, key: string, scope?: unknown) => clearTime(repo, key, timeZone, scope)),
+    setFirstDay: fake((repo, key: string, on: string) => setFirstDay(repo, key, on, timeZone)),
     addSubtask: fake(addSubtask),
     promote: fake(promoteSubtask),
     remove: fake((repo, key: string, scope?: unknown) => deleteItem(repo, key, timeZone, scope)),
@@ -170,7 +174,7 @@ export function DetailHarness({ itemId, timeZone }: { itemId: string | null; tim
     if (!key || !itemId) return;
     let live = true;
     loadDetail(store.repo, key, timeZone).then((view) => {
-      if (live) setLoaded({ key: itemId, version, view });
+      if (live) setLoaded({ key: itemId, view });
     });
     return () => {
       live = false;
@@ -210,7 +214,7 @@ export function DetailHarness({ itemId, timeZone }: { itemId: string | null; tim
         <div className="border-t border-rule px-4 pt-5 pb-10 rail:border-t-0 rail:border-l rail:px-6 rail:pt-8">
           {current.view ? (
             <DetailSheet
-              key={`${current.view.item.id}:${current.version}`}
+              key={current.view.item.id}
               view={current.view}
               actions={actions}
               linkedNotes={linkedNotesOf(store.notesStore, current.view.notesFor)}

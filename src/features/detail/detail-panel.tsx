@@ -7,10 +7,12 @@ import { getItemsRepo } from "@/lib/items";
 import { getNotesRepo } from "@/lib/notes";
 import {
   addSubtaskAction,
+  clearTimeAction,
   deleteItemAction,
   promoteSubtaskAction,
   renameItemAction,
   setAreaAction,
+  setFirstDayAction,
   setRepeatAction,
   setTimeAction,
   stopRepeatingAction,
@@ -24,6 +26,8 @@ const actions: DetailActions = {
   setDone: setDoneAction,
   setArea: setAreaAction,
   setTime: setTimeAction,
+  clearTime: clearTimeAction,
+  setFirstDay: setFirstDayAction,
   addSubtask: addSubtaskAction,
   promote: promoteSubtaskAction,
   remove: deleteItemAction,
