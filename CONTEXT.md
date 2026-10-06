@@ -18,7 +18,7 @@ A solo productivity web app. One connected set of items, shown through many view
 
 **Occurrence**: one time a series happens. Not stored: expanded at read time and named by the key `<seriesId>~<YYYY-MM-DD>`.
 
-**Override**: a stored item that stands in for one occurrence, with its own title, schedule, area and status. Made the first time that occurrence is changed. A skipped occurrence is an override that is dropped. Never "exception" in the UI.
+**Override**: a stored item that stands in for one occurrence, with its own title, schedule, area and status. Made the first time that occurrence is changed. A skipped occurrence is an override that is dropped; restoring it opens that override again. Never "exception" in the UI.
 
 **Tag**: a short label the user puts on any item, shown as `#name`. One item can carry several and one tag spans every area. Matched without case. On a series, the tag belongs to every occurrence. Never "label" or "category" in the UI.
 
