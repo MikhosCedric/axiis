@@ -146,6 +146,27 @@ test("detail: all of them can go back to any time and start on another day", asy
   await expect(when("When")).toHaveText(wednesday!);
 });
 
+test("detail: the series itself has a Time and a First day row", async ({ page }) => {
+  const when = (label: string) => page.getByRole("complementary").locator("dt", { hasText: label }).locator("+ dd");
+  await page.goto("/dev/detail?item=00000000-0000-4000-8000-000000000060");
+  await expect(page.getByText("This one")).toHaveCount(0);
+  const time = page.getByRole("group", { name: "Time" });
+  await expect(time.getByLabel("Starts at")).toHaveValue("06:30");
+  await time.getByLabel("Starts at").fill("0700");
+  await time.getByLabel("Starts at").press("Enter");
+  await expect(page.getByRole("status").filter({ hasText: "All of them are at 07:00 now." })).toBeVisible();
+  await expect(when("Starts")).toHaveText("Monday 5 October, 07:00 to 07:15");
+
+  const first = page.getByLabel("First day");
+  await expect(first).toHaveValue("2026-10-05");
+  await first.fill("2026-10-07");
+  await first.press("Enter");
+  await expect(when("Starts")).toHaveText("Wednesday 7 October, 07:00 to 07:15");
+
+  await page.getByRole("button", { name: "Any time" }).click();
+  await expect(when("Starts")).toHaveText("Wednesday 7 October");
+});
+
 test("detail: times are typed and shown on the 24-hour clock, and an unreadable one is not saved", async ({ page }) => {
   const when = (label: string) => page.getByRole("complementary").locator("dt", { hasText: label }).locator("+ dd");
   await page.goto("/dev/detail?item=00000000-0000-4000-8000-000000000070~2026-10-11");

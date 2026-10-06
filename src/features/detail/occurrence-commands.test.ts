@@ -292,6 +292,17 @@ describe("clearTime", () => {
     expect(next.occurrences.map((o) => o.schedule)).toEqual([{ kind: "day", on: "2026-10-09" }]);
   });
 
+  it("from the series itself, changes the series and no override", async () => {
+    const w = world();
+    await renameItem(w.repo, w.key("2026-10-07"), "Kept", TZ);
+    const before = structuredClone(w.overrides());
+    expect(await clearTime(w.repo, w.series.id, TZ, "all")).toEqual({ ok: true });
+    expect(w.series.schedule).toEqual({ kind: "day", on: "2026-10-05" });
+    expect(await setTime(w.repo, w.series.id, { start: 7 * 60, length: 20 }, TZ, "all")).toEqual({ ok: true });
+    expect(w.series.schedule).toEqual({ kind: "timed", start: new Date("2026-10-05T07:00:00Z"), end: new Date("2026-10-05T07:20:00Z") });
+    expect(w.overrides()).toEqual(before);
+  });
+
   it("with scope one, clears that occurrence only", async () => {
     const w = world();
     expect(await clearTime(w.repo, w.key("2026-10-08"), TZ, "one")).toEqual({ ok: true });
