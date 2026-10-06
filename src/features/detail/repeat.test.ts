@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { LocalDate } from "@/domain/item";
 import type { Rule } from "@/domain/recurrence";
-import { REPEAT_PRESETS, describeRule, presetOf, ruleFor, weekdayOf } from "./repeat";
+import { REPEAT_PRESETS, describeRule, presetOf, ruleFor, startsRepeating, weekdayOf } from "./repeat";
 
 const d = (s: string) => s as LocalDate;
 const never = { kind: "never" } as const;
@@ -43,5 +43,21 @@ describe("describeRule", () => {
 
   it("names weekdays from a local date", () => {
     expect(["2026-10-05", "2026-10-11"].map((s) => weekdayOf(d(s)))).toEqual(["MO", "SU"]);
+  });
+});
+
+describe("startsRepeating", () => {
+  const today = d("2026-10-06");
+
+  it("says a waiting item repeats from today, and a planned one from its own day", () => {
+    expect(startsRepeating({ preset: "daily", end: never }, null, today)).toBe("Repeats every day from today.");
+    expect(startsRepeating({ preset: "weekly", end: never }, d("2026-10-08"), today)).toBe(
+      "Repeats every week on Thursday from Thursday 8 October.",
+    );
+    expect(startsRepeating({ preset: "weekdays", end: never }, d("2026-10-07"), today)).toBe("Repeats every weekday from tomorrow.");
+  });
+
+  it("says nothing when it stops repeating", () => {
+    expect(startsRepeating({ preset: "none", end: never }, null, today)).toBeNull();
   });
 });

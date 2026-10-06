@@ -91,7 +91,7 @@ export type NewItem = {
   recurrence?: Recurrence;
 };
 
-export type ItemPatch = Partial<Omit<NewItem, "type">> & { status?: ItemStatus; position?: number };
+export type ItemPatch = Partial<NewItem> & { status?: ItemStatus; position?: number };
 
 /** Half-open UTC range `[from, to)` plus the local date it represents. */
 export type DayRange = { date: LocalDate; from: Date; to: Date };
