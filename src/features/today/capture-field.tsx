@@ -7,8 +7,12 @@ import { TITLE_MAX } from "./model";
 
 export function CaptureField({
   captureAction = serverCapture,
+  label = "Capture anything",
+  placeholder = "Capture anything, then place it later",
 }: {
   captureAction?: (title: string) => Promise<ActionResult>;
+  label?: string;
+  placeholder?: string;
 }) {
   const input = useRef<HTMLInputElement>(null);
   const [value, setValue] = useState("");
@@ -47,7 +51,7 @@ export function CaptureField({
   return (
     <form onSubmit={submit} autoComplete="off" className="max-w-[440px]">
       <label htmlFor="capture" className="sr-only">
-        Capture anything
+        {label}
       </label>
       <div className="relative">
         <input
@@ -58,7 +62,7 @@ export function CaptureField({
           onChange={(e) => setValue(e.target.value)}
           onKeyDown={(e) => e.key === "Escape" && e.currentTarget.blur()}
           maxLength={TITLE_MAX}
-          placeholder="Capture anything, then place it later"
+          placeholder={placeholder}
           aria-keyshortcuts="c"
           aria-describedby="capture-status"
           className="w-full rounded-lg border border-field bg-sheet py-2.5 pr-10 pl-3.5 text-ink"

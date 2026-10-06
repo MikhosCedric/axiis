@@ -3,23 +3,11 @@
 import { useEffect, useState } from "react";
 import type { TagSummary } from "@/domain/tag";
 import { parseItemKey } from "@/domain/item-key";
-import { setDone } from "@/features/today/commands";
-import {
-  addSubtask,
-  clearTime,
-  deleteItem,
-  loadDetail,
-  promoteSubtask,
-  renameItem,
-  setFirstDay,
-  setItemArea,
-  setRepeat,
-  setTime,
-  stopRepeating,
-} from "@/features/detail/commands";
+import { loadDetail } from "@/features/detail/commands";
 import { DetailSheet, MissingItem } from "@/features/detail/detail-sheet";
 import type { DetailActions, DetailView } from "@/features/detail/model";
-import { addTag, loadTagged, loadTagIndex, removeTag, type TaggedData } from "@/features/tags/commands";
+import { loadTagged, loadTagIndex, type TaggedData } from "@/features/tags/commands";
+import { harnessDetailActions } from "../detail-actions";
 import { TagIndexView } from "@/features/tags/tag-index-view";
 import { TaggedView } from "@/features/tags/tagged-view";
 import { BASE, harnessTagHref, settings, store } from "./store";
@@ -82,31 +70,14 @@ export function TaggedHarness({ name, itemId }: { name: string; itemId: string |
     };
   }, [itemId, version]);
 
-  function fake<A extends unknown[]>(command: (...args: A) => ReturnType<DetailActions["promote"]>) {
-    return async (...args: A) => {
+  const actions: DetailActions = {
+    ...harnessDetailActions(store.repo, TZ, async (command) => {
       await pause();
-      if (settings.failing) return { ok: false as const, error: "That change did not save. Try again." };
-      const result = await command(...args);
+      if (settings.failing) return { ok: false, error: "That change did not save. Try again." };
+      const result = await command();
       if (result.ok) setVersion((v) => v + 1);
       return result;
-    };
-  }
-
-  const repo = store.repo;
-  const actions: DetailActions = {
-    rename: fake((key: string, title: string, scope?: unknown) => renameItem(repo, key, title, TZ, scope)),
-    setDone: fake((key: string, done: boolean) => setDone(repo, key, done, TZ)),
-    setArea: fake((key: string, area: string | null, scope?: unknown) => setItemArea(repo, key, area, TZ, scope)),
-    setTime: fake((key: string, time: unknown, scope?: unknown) => setTime(repo, key, time, TZ, scope)),
-    clearTime: fake((key: string, scope?: unknown) => clearTime(repo, key, TZ, scope)),
-    setFirstDay: fake((key: string, on: string) => setFirstDay(repo, key, on, TZ)),
-    addSubtask: fake((parent: string, title: string) => addSubtask(repo, parent, title)),
-    promote: fake((key: string) => promoteSubtask(repo, key)),
-    remove: fake((key: string, scope?: unknown) => deleteItem(repo, key, TZ, scope)),
-    setRepeat: fake((key: string, choice: unknown) => setRepeat(repo, key, choice, new Date(), TZ)),
-    stopRepeating: fake((key: string) => stopRepeating(repo, key, TZ)),
-    addTag: fake((key: string, tag: string) => addTag(repo, key, tag, TZ)),
-    removeTag: fake((key: string, tag: string) => removeTag(repo, key, tag, TZ)),
+    }),
     newLinkedNote: async () => ({ ok: false, error: "Notes are not part of this harness." }),
   };
 

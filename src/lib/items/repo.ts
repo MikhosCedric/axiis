@@ -10,6 +10,9 @@ export const INBOX_LIMIT = 200;
 /** Most items one tag's list returns. */
 export const TAGGED_LIMIT = 200;
 
+/** Most checklists one read of the Lists page returns. */
+export const LISTS_LIMIT = 200;
+
 export type ChildCount = { total: number; done: number };
 
 /**
@@ -36,6 +39,12 @@ export interface ItemsRepo {
    * belong to no series. At most `INBOX_LIMIT`, newest first.
    */
   listInbox(): Promise<Item[]>;
+  /**
+   * Live top-level checklists, with or without a schedule, that are not
+   * dropped. A repeating one comes once, as its series; overrides are left
+   * out. Open first, then done, newest first, at most `LISTS_LIMIT`.
+   */
+  listChecklists(): Promise<Item[]>;
   /** Live overrides whose `originalOn` is in `[fromDate, toDate)`, skipped ones included, of one series when given. */
   listOverrides(fromDate: LocalDate, toDate: LocalDate, seriesId?: ItemId): Promise<Item[]>;
   /** Live children of one parent, ordered by position then creation. */

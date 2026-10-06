@@ -45,7 +45,10 @@ test.describe("score", () => {
     await beam.focus();
     await page.keyboard.press("ArrowRight");
 
-    const moved = page.getByRole("button", { name: `Design sync, ${later(start)} to ${later(end)}, Work, planned` });
+    // The fixture fixes this event at 13:00, so when the suite runs near then the moved beam covers now.
+    const moved = page.getByRole("button", {
+      name: new RegExp(`^Design sync, ${later(start)} to ${later(end)}, Work, (planned|happening now)$`),
+    });
     await expect(moved).toBeVisible();
     await expect(moved).toBeFocused();
     await expect(page.getByRole("status").filter({ hasText: /^Design sync, / })).toBeVisible();
@@ -356,6 +359,68 @@ test.describe("inbox", () => {
     await page.getByLabel("Capture anything").press("Enter");
     await expect(page.getByRole("button", { name: "Plan for: Fix the gate" })).toBeVisible();
     await expect(page.getByText("1 item waiting for a day.")).toBeVisible();
+  });
+});
+
+test.describe("lists", () => {
+  test("checklists show open first with their progress, a repeating one once", async ({ page }) => {
+    await page.goto("/dev/lists");
+    await expect(page.getByRole("heading", { level: 1, name: "Lists" })).toBeVisible();
+    await expect(page.getByText("4 open, 1 done.")).toBeVisible();
+    await expect(page.getByRole("list").first().getByRole("button")).toHaveText([
+      "Ideas for the garden",
+      "Pack for the coast",
+      "Launch day",
+      /^Weekly reset\s*, repeats$/,
+      "Move the flat, done",
+    ]);
+    await expect(page.getByRole("button", { name: "Pack for the coast" })).toHaveAccessibleDescription("1 of 3 done Home");
+    await expect(page.getByRole("button", { name: /^Weekly reset/ })).toHaveAccessibleDescription(
+      "Repeats every week on Sunday",
+    );
+    await expect(page.getByRole("button", { name: "Ideas for the garden" })).toHaveAccessibleDescription("No lines yet");
+  });
+
+  test("a row opens the checklist beside the list, and ticking a line there moves its progress", async ({ page }) => {
+    await page.goto("/dev/lists");
+    const row = page.getByRole("button", { name: "Pack for the coast" });
+    await row.click();
+    await expect(page).toHaveURL(/\?item=f3000000-0000-4000-8000-000000000001$/);
+    const details = page.getByRole("complementary", { name: "Details" });
+    await expect(details.getByRole("textbox", { name: "Title" })).toHaveValue("Pack for the coast");
+
+    // The box is drawn by a glyph over a visually hidden input, so it is ticked from the keyboard.
+    await details.getByRole("checkbox", { name: "Sunscreen" }).focus();
+    await page.keyboard.press("Space");
+    await expect(row).toHaveAccessibleDescription("2 of 3 done Home");
+  });
+
+  test("a new checklist opens at once, ready for its lines", async ({ page }) => {
+    await page.goto("/dev/lists?empty");
+    await expect(page.getByText("No checklists yet.")).toBeVisible();
+    await expect(page.getByText(/^A checklist keeps the small steps of one thing together/)).toBeVisible();
+
+    const field = page.getByLabel("New checklist");
+    await field.fill("Groceries for Sunday");
+    await field.press("Enter");
+    const details = page.getByRole("complementary", { name: "Details" });
+    await expect(details.getByRole("textbox", { name: "Title" })).toHaveValue("Groceries for Sunday");
+    await expect(page.getByText("1 checklist open.")).toBeVisible();
+
+    await details.getByRole("textbox", { name: "Add a subtask" }).fill("Bread");
+    await details.getByRole("textbox", { name: "Add a subtask" }).press("Enter");
+    await expect(page.getByRole("button", { name: "Groceries for Sunday" })).toHaveAccessibleDescription("0 of 1 done");
+  });
+
+  test("a failed capture keeps the words and says so", async ({ page }) => {
+    await page.goto("/dev/lists");
+    await page.getByLabel("Make every save fail").check();
+    const field = page.getByLabel("New checklist");
+    await field.fill("Car service");
+    await field.press("Enter");
+    await expect(page.getByText("That did not save. Your words are still here, so try again.")).toBeVisible();
+    await expect(field).toHaveValue("Car service");
+    await expect(page.getByRole("complementary", { name: "Details" })).toHaveCount(0);
   });
 });
 

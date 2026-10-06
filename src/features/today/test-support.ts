@@ -1,8 +1,10 @@
 import type { Area, AreaId, DayRange, Item, ItemId, ItemPatch, NewItem } from "@/domain/item";
 import { sameTag, type Tag, type TagId, type TagName } from "@/domain/tag";
-import { INBOX_LIMIT, MAX_SERIES, TAGGED_LIMIT, type ItemsRepo } from "@/lib/items/repo";
+import { INBOX_LIMIT, LISTS_LIMIT, MAX_SERIES, TAGGED_LIMIT, type ItemsRepo } from "@/lib/items/repo";
 
 let seq = 0;
+/** Status order where open comes first, as the database's enum declares it. */
+const RANK = { open: 0, done: 1, dropped: 2 } as const;
 const uuid = () => `00000000-0000-4000-8000-${String(++seq).padStart(12, "0")}`;
 
 export function makeItem(over: Partial<Item> = {}): Item {
@@ -72,6 +74,12 @@ export function fakeRepo(items: Item[] = [], areas: Area[] = []) {
         .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
         .slice(0, INBOX_LIMIT);
     },
+    async listChecklists() {
+      return items
+        .filter((i) => i.type === "checklist" && i.parentId === null && i.recurrence.kind !== "override" && i.status !== "dropped")
+        .sort((a, b) => RANK[a.status] - RANK[b.status] || b.createdAt.getTime() - a.createdAt.getTime())
+        .slice(0, LISTS_LIMIT);
+    },
     async listOverrides(fromDate, toDate, seriesId) {
       return items.filter(
         (i) =>
@@ -137,10 +145,9 @@ export function fakeRepo(items: Item[] = [], areas: Area[] = []) {
       return byItem;
     },
     async listTagged(tagId) {
-      const rank = { open: 0, done: 1, dropped: 2 };
       return items
         .filter((i) => i.status !== "dropped" && itemTags.some((l) => l.itemId === i.id && l.tagId === tagId))
-        .sort((a, b) => rank[a.status] - rank[b.status] || b.createdAt.getTime() - a.createdAt.getTime())
+        .sort((a, b) => RANK[a.status] - RANK[b.status] || b.createdAt.getTime() - a.createdAt.getTime())
         .slice(0, TAGGED_LIMIT);
     },
     async addTag(itemId, name) {
