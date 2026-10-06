@@ -44,3 +44,20 @@ export const BackIcon = () => (
     <path d="M10.5 4.5L6 9l4.5 4.5" />
   </Icon>
 );
+
+/** Stepping over one occurrence. */
+export const SkipIcon = () => (
+  <Icon>
+    <path d="M3 12.5c1.5-4.5 6.5-6 10-3" />
+    <path d="M13.5 6.5v3.2h-3.2" />
+    <path d="M4 15.5h2M12 15.5h2" />
+  </Icon>
+);
+
+/** A line that ends at a bar, for ending a series. */
+export const StopIcon = () => (
+  <Icon>
+    <path d="M2.5 9h9" />
+    <path d="M14.5 4.5v9" />
+  </Icon>
+);
