@@ -77,7 +77,7 @@ export function ConfirmDelete({
       onClick={() => setAsking(true)}
       className={
         compact
-          ? "grid size-8 place-items-center rounded-md text-ink-3 hover:bg-accent-wash hover:text-ink"
+          ? "grid size-8 pointer-coarse:size-11 place-items-center rounded-md text-ink-3 hover:bg-accent-wash hover:text-ink"
           : `${quiet} -ml-2 inline-flex items-center gap-2 text-ink-2 hover:text-ink`
       }
     >

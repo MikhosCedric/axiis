@@ -23,7 +23,7 @@ import { TagField } from "@/features/tags/tag-field";
 
 const TYPE_WORD: Record<ItemType, string> = { task: "Task", event: "Event", note: "Note", checklist: "Checklist" };
 
-const iconButton = "grid size-8 place-items-center rounded-md text-ink-2 hover:bg-accent-wash hover:text-ink";
+const iconButton = "grid size-8 pointer-coarse:size-11 place-items-center rounded-md text-ink-2 hover:bg-accent-wash hover:text-ink";
 const textButton = "-ml-2 inline-flex items-center gap-2 rounded-md px-2 py-1 font-medium text-ink-2 hover:bg-accent-wash hover:text-ink";
 
 /** Shown when the URL names an item that was deleted or never existed. */

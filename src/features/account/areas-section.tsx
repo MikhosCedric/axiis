@@ -37,7 +37,7 @@ function apply(areas: Area[], change: Change): Area[] {
 }
 
 const iconButton =
-  "grid size-8 place-items-center rounded-md text-ink-3 hover:bg-accent-wash hover:text-ink aria-disabled:cursor-default aria-disabled:opacity-35 aria-disabled:hover:bg-transparent aria-disabled:hover:text-ink-3";
+  "grid size-8 pointer-coarse:size-11 place-items-center rounded-md text-ink-3 hover:bg-accent-wash hover:text-ink aria-disabled:cursor-default aria-disabled:opacity-35 aria-disabled:hover:bg-transparent aria-disabled:hover:text-ink-3";
 
 export function AreasSection({ areas, actions }: { areas: Area[]; actions: AreaActions }) {
   const [shown, change] = useOptimistic(areas, apply);
