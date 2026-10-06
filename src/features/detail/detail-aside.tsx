@@ -46,7 +46,7 @@ export function DetailAside({ pending, children }: { pending: boolean; children:
       tabIndex={-1}
       aria-label="Details"
       aria-busy={pending}
-      className="scroll-mt-2 border-t border-rule bg-sheet outline-none min-[1180px]:border-t-0 min-[1180px]:border-l"
+      className="scroll-mt-2 border-t border-rule bg-sheet outline-none min-[1180px]:min-h-dvh min-[1180px]:border-t-0 min-[1180px]:border-l"
     >
       <div className="px-4 py-6 rail:px-9 min-[1180px]:sticky min-[1180px]:top-0 min-[1180px]:max-h-dvh min-[1180px]:overflow-y-auto min-[1180px]:px-6 min-[1180px]:py-8">
         {/* The fade waits a beat, so a quick switch does not flicker. */}
