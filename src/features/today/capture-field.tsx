@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useRef, useState, useTransition, type FormEvent } from "react";
+import { HelpHint } from "@/components/help-hint";
 import { captureAction as serverCapture } from "./actions";
 import type { ActionResult, CaptureResult } from "./commands";
-import { capturedLine } from "./capture-syntax";
+import { capturedLine, parseCapture, previewWords } from "./capture-syntax";
 import { TITLE_MAX } from "./model";
 
 /** How long a new item wears the accent ring once it shows up. */
@@ -55,6 +56,7 @@ export function CaptureField({
   const [status, setStatus] = useState<{ text: string; error: boolean } | null>(null);
   const [pending, startTransition] = useTransition();
   const unmark = useRef<() => void>(() => {});
+  const preview = previewWords(parseCapture(value));
 
   useEffect(() => () => unmark.current(), []);
 
@@ -109,7 +111,7 @@ export function CaptureField({
           maxLength={TITLE_MAX}
           placeholder={placeholder}
           aria-keyshortcuts="c"
-          aria-describedby="capture-status"
+          aria-describedby="capture-status capture-preview"
           className="w-full rounded-lg border border-field bg-sheet py-2.5 pr-10 pl-3.5 text-ink"
         />
         <kbd
@@ -119,13 +121,26 @@ export function CaptureField({
           C
         </kbd>
       </div>
-      <p
-        id="capture-status"
-        role="status"
-        className={`mt-1.5 min-h-5 text-[13px] ${status?.error ? "font-medium text-ink" : "text-ink-2"}`}
-      >
-        {pending ? "Saving" : status?.text}
-      </p>
+      <div className="mt-1.5 flex items-start gap-2.5">
+        <HelpHint id="capture-help" label="How capture reads days, times and tags" className="flex-none">
+          Put a day, a time or tags at the start or end, as in “dentist tomorrow 9:00 #health”. Days: today, tomorrow, a
+          weekday, next friday, in 3 days, 2026-12-24. Times: 9:00, 14:30, 9am, 2:30pm, at 9, or 9 and 0930 right after a
+          day. A length after a time, for 45m or for 1h 30m; otherwise 30 minutes. Anything else stays in the title. A
+          backslash keeps a word as typed (\friday), and so do quotes around the whole line.
+        </HelpHint>
+        <div className="min-h-6 min-w-0 flex-1 pt-0.5 text-[13px]">
+          {/* While the line reads as a plan, the preview takes the status line's place; the status stays for screen readers. */}
+          <p id="capture-status" role="status" className={preview ? "sr-only" : status?.error ? "font-medium text-ink" : "text-ink-2"}>
+            {pending ? "Saving" : status?.text}
+          </p>
+          {preview && (
+            <p id="capture-preview" className="text-ink-2">
+              <span className="sr-only">Understood: </span>
+              <span className="rounded border border-rule px-1.5 py-px">{preview}</span>
+            </p>
+          )}
+        </div>
+      </div>
     </form>
   );
 }
