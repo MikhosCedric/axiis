@@ -1,4 +1,4 @@
-import type { Item, ItemPatch, LocalDate, SpanRange } from "@/domain/item";
+import type { Item, ItemPatch, LocalDate, Schedule, SpanRange } from "@/domain/item";
 import { buildToday, type TodayEntry } from "@/features/today/model";
 import { addDays, dayRangeFor, instantAt, localMinutes, toLocalDate } from "@/lib/dates";
 
@@ -55,12 +55,15 @@ export function bucketWeek(items: Item[], days: LocalDate[], timeZone: string, n
 /** Where an item can be sent on the week: a day, or back to the tray. */
 export type Destination = LocalDate | "tray";
 
+/** A move only ever changes the schedule. */
+export type SchedulePatch = ItemPatch & { schedule: Schedule };
+
 /**
  * The schedule an item gets on `target`. A timed item keeps its local start
  * and wall-clock length, so 09:00 to 10:30 stays 09:00 to 10:30 across a DST
  * change. A day-only item stays day-only; an unscheduled item becomes day-only.
  */
-export function moveToDay(item: Item, target: LocalDate, timeZone: string): ItemPatch {
+export function moveToDay(item: Item, target: LocalDate, timeZone: string): SchedulePatch {
   const s = item.schedule;
   if (s.kind !== "timed") return { schedule: { kind: "day", on: target } };
   const from = toLocalDate(s.start, timeZone);
@@ -69,7 +72,7 @@ export function moveToDay(item: Item, target: LocalDate, timeZone: string): Item
   return { schedule: { kind: "timed", start: instantAt(target, start, timeZone), end: instantAt(target, end, timeZone) } };
 }
 
-export function moveTo(item: Item, to: Destination, timeZone: string): ItemPatch {
+export function moveTo(item: Item, to: Destination, timeZone: string): SchedulePatch {
   return to === "tray" ? { schedule: { kind: "unscheduled" } } : moveToDay(item, to, timeZone);
 }
 
