@@ -136,7 +136,10 @@ export function AreasSection({ areas, actions }: { areas: Area[]; actions: AreaA
   );
 }
 
-/** The area's name, editable in place. Enter or leaving the field saves; Escape puts the saved name back. */
+/**
+ * The area's name, editable in place. Enter or leaving the field saves; Escape puts the saved name back.
+ * `draft` is null whenever there is nothing unsaved, so a blur after Enter does not save twice.
+ */
 function AreaName({
   area,
   onSave,
@@ -166,15 +169,14 @@ function AreaName({
       maxLength={AREA_NAME_MAX}
       spellCheck={draft !== null}
       autoComplete="off"
-      onFocus={() => setDraft(area.name)}
       onChange={(e) => setDraft(e.target.value)}
       onBlur={() => draft !== null && commit(draft)}
       onKeyDown={(e) => {
         if (e.key === "Enter") {
           e.preventDefault();
-          e.currentTarget.blur();
+          commit(e.currentTarget.value);
         } else if (e.key === "Escape") {
-          setDraft(area.name);
+          setDraft(null);
           onError(null);
         }
       }}
