@@ -59,5 +59,9 @@ How the app uses them (`src/domain/tag.ts`, `src/features/tags/`):
 
 A day is a half-open UTC range `[from, to)` computed by the client from the user's time zone. Items on that day are: timed items with `start_at` in range, plus day-only items with `scheduled_on` equal to the local date, leaving out series. Each live series is then expanded into its occurrences for the day, minus the dates a live override stands for. The database never stores a time zone or a "today".
 
+## Lists query
+
+The Lists page reads live top-level checklists that are not dropped and are not overrides, with or without a schedule (`listChecklists`). A repeating checklist comes once, as its series. Open ones come first, then done, newest first, at most 200. Line progress comes from one `childCounts` read for all of them.
+
 ## Not in Phase 1
 Realtime, sharing, attachments. The schema leaves room (an owner column, no unique constraint blocking sharing) but builds none of it.

@@ -17,6 +17,7 @@ A free, solo-user productivity web app. Tasks, a planner, checklists and notes s
 | Detail panel and subtasks | `src/features/detail/` |
 | Week planner | `src/features/week/`, `src/app/(app)/week/` |
 | Inbox (open items with no day, plan for a day) | `src/features/inbox/`, `src/app/(app)/inbox/`, harness `src/app/dev/inbox/` |
+| Lists (top-level checklists with progress, capture a checklist) | `src/features/lists/`, `src/app/(app)/lists/`, harness `src/app/dev/lists/` |
 | Notes, links, search | `src/features/notes/`, `src/lib/notes/`, `src/app/(app)/{notes,search}/` |
 | Tags (pages, detail field, row lines, Settings section) | `src/domain/tag.ts`, `src/features/tags/`, `src/app/(app)/tags/`, harness `src/app/dev/tags/` |
 | Settings, areas, export, account deletion | `src/features/account/`, `src/lib/areas/`, `src/app/(app)/settings/` |
@@ -26,7 +27,7 @@ A free, solo-user productivity web app. Tasks, a planner, checklists and notes s
 | Shell (nav rail, theme, tz cookie) | `src/components/shell/` |
 | Design tokens | `src/app/globals.css` |
 | Database | `supabase/migrations/`, tests in `tests/db/` (PGlite, no Docker) |
-| Dev-only harness pages (blocked in production) | `src/app/dev/{score,week,inbox,detail,notes,settings,palette,tags}/` |
+| Dev-only harness pages (blocked in production) | `src/app/dev/{score,week,inbox,lists,detail,notes,settings,palette,tags}/`, their shared detail actions in `src/app/dev/detail-actions.ts` |
 | Visual prototype that set the direction | `prototypes/today-score/index.html` |
 
 ## Conventions that matter
@@ -64,7 +65,7 @@ Updated: see the log at the bottom. Phases:
 | 6 Public site (landing, legal drafts, metadata, PWA, error states) | done, merged (PR #6) |
 | 7 Command palette, shortcuts help, browser tests (e2e + axe) | done, merged (#10, #12) |
 | 8 Recurring tasks | done, merged (#13), migration 0004 applied |
-| 9 Tags, Inbox, Lists, DESIGN.md, audits | in progress: Inbox (#15), series time (#16) and series quality (#17) merged, tags in review (#18, `feat-tags`); Lists and the rest next |
+| 9 Tags, Inbox, Lists, DESIGN.md, audits | in progress: Inbox (#15), series time (#16), series quality (#17) and tags (#18) merged; Lists in review (#19, `feat-lists`); DESIGN.md and audits next |
 
 ## Accepted advisories (Supabase security advisor)
 - `delete_my_account` is executable by `authenticated` through RPC. Intended: it only deletes the caller's own account (`auth.uid()`), and `anon`/`public` are revoked.
@@ -79,8 +80,8 @@ Updated: see the log at the bottom. Phases:
 
 ## Next up (suggested order)
 1. Recurrence follow-ups: un-skip, years in `describeRule`, a Time and First day row when the series itself is opened (today they show on an occurrence only). Series "Any time" and first day are in review on `feat-series-quality`.
-2. Tags are in review (#18). Once merged, check them in a signed-in session: add, remove, rename, delete, `/tags/[name]`, `#tag` search.
-3. A Lists page (checklists with progress). The Inbox is in review; once merged, check it in a signed-in session.
+2. Tags are merged (#18). Check them in a signed-in session: add, remove, rename, delete, `/tags/[name]`, `#tag` search.
+3. Lists are in review (#19). Once merged, check `/lists` in a signed-in session: capture a checklist, add and tick its lines, see a repeating checklist once. Check the Inbox there too.
 4. Extend e2e once a test user can sign in without the magic link.
 5. `DESIGN.md` via `impeccable document`, an a11y and `impeccable audit` pass, and a partial unique index on `areas (user_id, lower(name)) where deleted_at is null`.
 6. Order search by rank (RPC), flush pending note saves before nav-rail navigation, subtask counts on week rows, shared date picker for the day and week navs.
@@ -94,6 +95,8 @@ Updated: see the log at the bottom. Phases:
 - The detail panel goes inert and `aria-busy` while the day, week or inbox screen switches items. A link inside the panel (the "Part of" parent link) navigates without that pending state.
 - Tags are verified by unit tests against `fakeRepo`, a stubbed PostgREST test, a PGlite export test and the tags and settings harnesses (e2e and axe), not by a signed-in session. A `#tag` search with words filters the 30 text hits search returns, so a common word can hide older tagged matches. A tag-only search lists stored items, so an override of a tagged series shows only under its series.
 - The Inbox is verified by unit tests, a stubbed PostgREST query test and its dev harness (e2e and axe), not by a signed-in session.
+- Lists are verified by unit tests against `fakeRepo`, a stubbed PostgREST query test and the `/dev/lists` harness (e2e and axe, with an item open), not by a signed-in session. A series cannot have subtasks, so a repeating checklist's row shows how it repeats instead of progress. Progress counts every live line, so a dropped line counts as not done, as the Inbox and Score counts already do.
+- The tags and lists harnesses keep their store in memory, so a page reload from `next dev` after a cold compile empties it. The e2e warm-up compiles both first.
 - Notes, week, settings, export and deletion are verified by unit tests, rolled-back SQL on the hosted project and dev harnesses, not by a signed-in browser session.
 - `[`/`]` shortcuts do nothing on layouts where those keys need AltGr; the on-screen buttons work everywhere.
 
@@ -102,6 +105,7 @@ Updated: see the log at the bottom. Phases:
 - Put real name and contact email into the privacy policy and terms (placeholders are marked).
 
 ## Log
+- 2026-10-06 (lists): `/lists` with checklists open first, a line-form progress meter, and capture that opens the new checklist beside the list; Lists in the nav and the palette; `listChecklists` on the repo; selected Inbox rows readable on the accent wash (axe now checks the Inbox and Lists with an item open). PR #19 from `feat-lists`. No migration.
 - 2026-10-06 (tags): Tags section in the detail panel, `#tag` lines on rows, `/tags` and `/tags/[name]`, nav and palette (`#name`), rename and delete in Settings, `#tag` in search, tags on a series shared by its occurrences. PR #18 from `feat-tags`. No migration.
 - 2026-10-06 (series quality): `clearTime` and `setFirstDay` for a whole series from the detail panel; the old panel is inert while the next item loads (shared `DetailAside`); empty-tray copy no longer says everything has a time; Time row typed on the 24-hour clock. PR open from `feat-series-quality`. No migration.
 - 2026-10-06 (series time): owner found that dragging one day of a day-only series to 14:00 timed only that day. `setTime` command, "Same time every day" on the Score's status line, a Time row in the detail panel for occurrences. PR open from `feat-series-time`. No migration.
