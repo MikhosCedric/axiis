@@ -69,6 +69,12 @@ Updated: see the log at the bottom. Phases:
 ## Migrations applied to the hosted project
 `0001_core`, `0002_account` (applied as `account_deletion`), `0003_search` (applied as `search_and_excerpt`). Any new file in `supabase/migrations/` must be applied with the Supabase MCP `apply_migration`, after a rolled-back `DO` block check, then `get_advisors`.
 
+## In flight when the last session stopped
+- `feat-palette` merged (PR #10): command palette (Ctrl/Cmd+K) and `?` shortcuts help.
+- `fix-mobile-nav`: phone top bar now scrolls inside itself instead of widening the page (body width measured 375; verify on a real phone).
+- Branch `worktree-agent-a7a28353d12dae488` / local worktree holds the finished, UNMERGED Playwright e2e + axe suite (`feat-e2e`, 3 commits, 68 tests, adds `@playwright/test` and `@axe-core/playwright`, adds an `e2e` CI job). To land it: push the branch, merge `origin/main` into it (the palette added nav changes), open a PR, and let the new e2e CI job run. Expect to fix any new axe findings from the palette.
+- Recurrence (`feat-recurrence`, design in the session scratchpad, to be committed as `docs/recurrence.md`) was still being built by a background agent. Check `git branch -a` and `git worktree list` for its worktree and finish or restart it; migration 0004 is not applied.
+
 ## Next up (suggested order)
 1. Recurring tasks: `rrule` expansion in day and week queries, a repeat control, per-occurrence skip and completion (needs exception rows; design in `docs/data-model.md` first).
 2. Tags: UI, filters, `tags`/`item_tags` already exist.
@@ -91,4 +97,5 @@ Updated: see the log at the bottom. Phases:
 
 ## Log
 - 2026-10-05: Phases 0 to 2 merged to `main` (PRs #1 to #3). Owner away; overnight run started.
+- 2026-10-06 (later): palette merged (#10); usage limit reached while e2e and recurrence were pending.
 - 2026-10-06: Prep (#4), week planner (#5), public site (#6), account (#7), notes and search (#8) merged. Migrations 0002 and 0003 applied to the hosted project and verified in rolled-back blocks. Nav links and copy refresh in progress.
