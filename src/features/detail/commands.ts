@@ -7,7 +7,7 @@ import type { ItemsRepo } from "@/lib/items/repo";
 import type { ActionResult } from "@/features/today/commands";
 import { TITLE_MAX } from "@/features/today/model";
 import { DAY_MINUTES } from "@/features/score/layout";
-import { buildDetail, firstDay, subtaskPolicy, type DetailView, type Scope, type TimeOfDay } from "./model";
+import { buildDetail, firstDay, retypable, subtaskPolicy, takesDue, TYPE_CHOICES, type DetailView, type Scope, type TimeOfDay } from "./model";
 import { repeatSchema, ruleFor } from "./repeat";
 import { byName } from "@/domain/tag";
 import { byUse } from "@/features/tags/model";
@@ -193,6 +193,57 @@ export async function setTime(
 /** Takes the time away, leaving the item on its day at any time, for this one or all of them. */
 export async function clearTime(repo: ItemsRepo, rawKey: unknown, timeZone: string, rawScope?: unknown): Promise<ActionResult> {
   return scheduleOnOwnDay(repo, rawKey, rawScope, timeZone, (on) => ({ kind: "day", on }));
+}
+
+/**
+ * Sets a deadline, or clears it with null. Only a date comes from the client.
+ * Only a task or checklist that does not repeat takes one; doing it twice
+ * writes once.
+ */
+export async function setDue(repo: ItemsRepo, rawId: unknown, rawOn: unknown): Promise<ActionResult> {
+  const id = parseItemId(rawId);
+  if (!id) return { ok: false, error: MISSING };
+  const on = rawOn === null ? null : parseLocalDate(rawOn);
+  if (rawOn !== null && !on) return { ok: false, error: "That date is not one Axiis can use." };
+  return attempt(async () => {
+    const item = await repo.get(id);
+    if (!item) return { ok: false, error: MISSING };
+    if (!takesDue(item)) return { ok: false, error: "Only a task or checklist that does not repeat has a due date." };
+    if (item.dueOn !== on) await repo.update(id, { dueOn: on });
+  });
+}
+
+const typeSchema = z.enum(TYPE_CHOICES);
+
+/**
+ * Makes an item a task, an event or a checklist. Type belongs to the whole of
+ * something that repeats, so on an occurrence or override it changes the series
+ * and every override, with no "This one". A note and a subtask keep their type,
+ * and an event can neither hold subtasks nor be one, as the database requires.
+ * Nothing about the schedule changes: an event with no time waits for one.
+ */
+export async function setType(repo: ItemsRepo, rawKey: unknown, rawType: unknown, timeZone: string): Promise<ActionResult> {
+  const key = parseItemKey(rawKey);
+  if (!key) return { ok: false, error: MISSING };
+  const type = typeSchema.safeParse(rawType);
+  if (!type.success) return { ok: false, error: "That type is not one Axiis knows." };
+  return attempt(async () => {
+    const found = await resolveKey(repo, key, timeZone);
+    if (!found) return { ok: false, error: MISSING };
+    const series = found.kind === "virtual" ? found.series : await seriesOf(repo, found.item);
+    const owner = series ?? (found.kind === "stored" ? found.item : null);
+    if (!owner) return { ok: false, error: MISSING };
+    if (!retypable(owner)) {
+      return { ok: false, error: owner.type === "note" ? "A note stays a note." : "A subtask stays a task." };
+    }
+    if (type.data === "event" && (await repo.listChildren(owner.id)).length > 0) {
+      return { ok: false, error: "Something with subtasks cannot be an event." };
+    }
+    const overrides = series ? await repo.listOverrides("0001-01-01" as LocalDate, "9999-12-31" as LocalDate, series.id) : [];
+    for (const target of [owner, ...overrides]) {
+      if (target.type !== type.data) await repo.update(target.id, { type: type.data });
+    }
+  });
 }
 
 /**
