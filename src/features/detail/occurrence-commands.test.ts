@@ -184,6 +184,18 @@ describe("restoreOccurrence", () => {
     const after = await loadDetail(w.repo, { kind: "item", id: w.series.id as ItemId }, NOW, TZ);
     expect(after?.repeat).toMatchObject({ skipped: [{ key: w.key("2027-01-04") }] });
   });
+
+  it("a skipped occurrence's own panel names the key that restores it, opened by its key or its stored id", async () => {
+    const w = world();
+    await deleteItem(w.repo, w.key("2026-10-09"), TZ);
+    const restoring = { key: w.key("2026-10-09"), on: "Friday 9 October" };
+    const byKey = await loadDetail(w.repo, { kind: "occurrence", seriesId: w.series.id as ItemId, originalOn: d("2026-10-09") }, NOW, TZ);
+    const byId = await loadDetail(w.repo, { kind: "item", id: w.overrides()[0].id as ItemId }, NOW, TZ);
+    expect(byKey?.repeat).toMatchObject({ kind: "occurrence", skipped: restoring });
+    expect(byId?.repeat).toMatchObject({ kind: "occurrence", skipped: restoring });
+    const open = await loadDetail(w.repo, { kind: "occurrence", seriesId: w.series.id as ItemId, originalOn: d("2026-10-08") }, NOW, TZ);
+    expect(open?.repeat).toMatchObject({ kind: "occurrence", skipped: null });
+  });
 });
 
 describe("setRepeat", () => {

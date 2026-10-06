@@ -69,10 +69,14 @@ export type RepeatView =
   | { kind: "unavailable"; reason: string }
   | { kind: "off" }
   | ({ kind: "series"; skipped: SkippedDate[] } & RuleView)
-  | ({ kind: "occurrence"; on: string } & RuleView);
+  | ({ kind: "occurrence"; on: string; skipped: SkippedDate | null } & RuleView);
 
 /** A skipped occurrence of a series: the key that restores it and its date for reading. */
 export type SkippedDate = { key: ItemKey; on: string };
+
+function skippedDate(seriesId: ItemId, on: LocalDate, today: LocalDate): SkippedDate {
+  return { key: occurrenceKey(seriesId, on), on: formatDayIn(on, today) };
+}
 
 /** A series' rule as the sheet edits it. `preset` is null for a rule the menu cannot make. */
 export type RuleView = {
@@ -191,7 +195,7 @@ function repeatView(
     const firstOn = firstDay(item.schedule, timeZone)!;
     return {
       kind: "series",
-      skipped: skipped.toSorted().map((on) => ({ key: occurrenceKey(item.id as ItemId, on), on: formatDayIn(on, today) })),
+      skipped: skipped.toSorted().map((on) => skippedDate(item.id as ItemId, on, today)),
       ...ruleView(r.rule, firstOn, firstOn, today),
     };
   }
@@ -199,7 +203,8 @@ function repeatView(
   if (series?.recurrence.kind !== "series") return { kind: "hidden" };
   return {
     kind: "occurrence",
-    on: formatDayHeading(r.originalOn),
+    on: formatDayIn(r.originalOn, today),
+    skipped: item.status === "dropped" ? skippedDate(r.seriesId, r.originalOn, today) : null,
     ...ruleView(series.recurrence.rule, firstDay(series.schedule, timeZone)!, r.originalOn, today),
   };
 }
