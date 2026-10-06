@@ -25,7 +25,7 @@ export const LISTS_PATH = "/lists";
 
 /** How far along a checklist is, as a share of 1 for the meter. Nothing to do reads as nothing done. */
 export function progressShare({ done, total }: ChildCount): number {
-  return total === 0 ? 0 : Math.min(done / total, 1);
+  return total === 0 ? 0 : done / total;
 }
 
 export function progressWords({ done, total }: ChildCount): string {
