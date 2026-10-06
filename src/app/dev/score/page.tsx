@@ -8,14 +8,16 @@ import { ScoreHarness } from "./harness";
 
 export const metadata: Metadata = { title: "Score harness" };
 
-/** Dev-only page that renders the day screen from fixture data, for checking the Score without a session. */
+/** Dev-only page that renders the day screen from fixture data, for checking the Score without a session. `?tray=empty` leaves nothing waiting for a time. */
 export default async function ScoreHarnessPage({ searchParams }: PageProps<"/dev/score">) {
   if (process.env.NODE_ENV === "production") notFound();
   const params = await searchParams;
   const one = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v);
   const timeZone = resolveTimeZone(one(params.tz));
   const now = new Date();
-  const { items, areas } = seedFixture(now, timeZone);
+  const seeded = seedFixture(now, timeZone);
+  const { areas } = seeded;
+  const items = params.tray === "empty" ? seeded.items.filter((i) => i.schedule.kind !== "unscheduled") : seeded.items;
   const initial = await loadDayData(fakeRepo(structuredClone(items), areas).repo, now, timeZone);
   return (
     <ScoreHarness

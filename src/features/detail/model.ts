@@ -38,20 +38,25 @@ export function clockOf(minutes: number): string {
   return `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`;
 }
 
-function minutesOf(clock: string): number | null {
-  const m = /^([01]\d|2[0-3]):([0-5]\d)$/.exec(clock);
-  return m ? Number(m[1]) * 60 + Number(m[2]) : null;
+/** Minutes past midnight for a 24-hour clock typed loosely ("14:30", "14.30", "1430", "930", "9"), or null. */
+export function minutesOf(clock: string): number | null {
+  const m = /^(\d{1,2})(?:[:.]?(\d{2}))?$/.exec(clock.trim());
+  if (!m) return null;
+  const [hours, minutes] = [Number(m[1]), Number(m[2] ?? 0)];
+  return hours < 24 && minutes < 60 ? hours * 60 + minutes : null;
 }
 
 /**
- * The time two `HH:MM` fields describe, or null without a start. An end at or
- * before the start runs past midnight; no end gives the default length.
+ * The time two clock fields describe, or null without a readable start or
+ * with an end that cannot be read. An end at or before the start runs past
+ * midnight; no end gives the default length.
  */
 export function timeFrom(start: string, end: string): TimeOfDay | null {
   const from = minutesOf(start);
   if (from === null) return null;
+  if (end.trim() === "") return { start: from, length: DEFAULT_MINUTES };
   const to = minutesOf(end);
-  return { start: from, length: to === null ? DEFAULT_MINUTES : (to - from + DAY_MINUTES) % DAY_MINUTES || DAY_MINUTES };
+  return to === null ? null : { start: from, length: (to - from + DAY_MINUTES) % DAY_MINUTES || DAY_MINUTES };
 }
 
 /**
@@ -70,12 +75,14 @@ export type RuleView = {
   preset: RepeatPreset | null;
   end: RuleEnd;
   summary: string;
+  /** The series' first date. */
+  firstOn: LocalDate;
   /** Where the end date starts when someone first picks "On a date". */
   defaultUntil: LocalDate;
 };
 
 function ruleView(rule: Rule, firstOn: LocalDate, shownOn: LocalDate): RuleView {
-  return { preset: presetOf(rule), end: rule.end, summary: describeRule(rule, firstOn), defaultUntil: addDays(shownOn, 28) };
+  return { preset: presetOf(rule), end: rule.end, summary: describeRule(rule, firstOn), firstOn, defaultUntil: addDays(shownOn, 28) };
 }
 
 export type DetailSubtask = { id: ItemId; title: string; done: boolean };
@@ -108,6 +115,10 @@ export type DetailActions = {
   setDone: (id: string, done: boolean) => Promise<ActionResult>;
   setArea: (id: string, areaId: string | null, scope?: Scope) => Promise<ActionResult>;
   setTime: (id: string, time: TimeOfDay, scope?: Scope) => Promise<ActionResult>;
+  /** Leaves it on its day at any time. */
+  clearTime: (id: string, scope?: Scope) => Promise<ActionResult>;
+  /** Moves the first date of the series the item belongs to. */
+  setFirstDay: (id: string, on: LocalDate) => Promise<ActionResult>;
   addSubtask: (parentId: string, title: string) => Promise<ActionResult>;
   promote: (id: string) => Promise<ActionResult>;
   remove: (id: string, scope?: Scope) => Promise<ActionResult>;

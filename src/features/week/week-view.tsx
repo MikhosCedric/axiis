@@ -18,13 +18,14 @@ import { RepeatMark } from "@/features/today/repeat-mark";
 import { selectedIn, type ItemKey } from "@/domain/item-key";
 import { dayHref } from "@/features/day/nav";
 import { SELECTED_ITEM_PARAM } from "@/features/day/types";
+import { DetailAside } from "@/features/detail/detail-aside";
 import { STATE_WORD } from "@/features/score/score-view";
 import { captureAction, setDoneAction } from "@/features/today/actions";
 import { CaptureField } from "@/features/today/capture-field";
 import type { ActionResult } from "@/features/today/commands";
 import { formatClock, formatDayHeading } from "@/features/today/format";
 import { Glyph } from "@/features/today/glyph";
-import { buildToday, stateOf, type TodayEntry } from "@/features/today/model";
+import { buildToday, EMPTY_TRAY, stateOf, type TodayEntry } from "@/features/today/model";
 import { dayRangeFor } from "@/lib/dates";
 import { moveAction } from "./actions";
 import type { WeekData } from "./load";
@@ -256,7 +257,7 @@ export function WeekView({
               ))}
             </ul>
           ) : (
-            <p className="text-[13px] text-ink-3">Everything has a day. Capture something new above.</p>
+            <p className="text-[13px] text-ink-3">{EMPTY_TRAY}</p>
           )}
         </section>
 
@@ -275,13 +276,7 @@ export function WeekView({
         </div>
       </div>
 
-      {selectedParam && (
-        <aside aria-label="Details" className="border-t border-rule bg-sheet min-[1180px]:border-t-0 min-[1180px]:border-l">
-          <div className="px-4 py-6 rail:px-9 min-[1180px]:sticky min-[1180px]:top-0 min-[1180px]:max-h-dvh min-[1180px]:overflow-y-auto min-[1180px]:px-6 min-[1180px]:py-8">
-            {detail}
-          </div>
-        </aside>
-      )}
+      {selectedParam && <DetailAside pending={selectedId !== selectedParam}>{detail}</DetailAside>}
     </div>
   );
 }
