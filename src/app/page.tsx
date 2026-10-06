@@ -19,14 +19,17 @@ const NOW = [
   "Drag a task onto a line to give it a time; drag its end to change how long",
   "The same moves from the keyboard",
   "Subtasks, counted on the beam they belong to",
+  "Tasks that repeat daily, on weekdays, weekly, monthly or yearly",
+  "An inbox of everything captured and not yet planned",
+  "Checklists gathered in one place, each with how many lines are done",
+  "Tags on any item, with a page for each tag",
   "A list view of the same day",
   "A week view, with items dragged from one day to another",
   "Notes that link to tasks, and search across both",
+  "A command palette, on Ctrl or Cmd K, to find anything or go anywhere",
   "Export all your data, or delete your account, from settings",
   "Light and dark",
 ];
-
-const COMING = ["Repeating tasks", "Tags", "A command palette"];
 
 export default async function Home() {
   const supabase = await createClient();
@@ -99,8 +102,8 @@ export default async function Home() {
             <li className={styles.measure}>
               <h3 className={styles.measureTitle}>See how it connects</h3>
               <p className={styles.measureText}>
-                Break a task into subtasks and its beam keeps count. Open any item to see what it carries. Notes
-                that link to your tasks come next.
+                Break a task into subtasks and its beam keeps count. Open any item to see what it carries, and the
+                notes linked to it.
               </p>
               <div className={styles.figure} aria-hidden="true">
                 <span className={styles.miniStaff}>
@@ -117,26 +120,14 @@ export default async function Home() {
         </section>
 
         <section className={`${siteWrap} mt-24 sm:mt-32`} aria-labelledby="state-title">
-          <div className="grid gap-x-16 gap-y-10 md:grid-cols-[minmax(0,5fr)_minmax(0,4fr)]">
-            <div>
-              <h2 id="state-title" className={styles.heading}>
-                What it does today
-              </h2>
-              <ul className={styles.ledger}>
-                {NOW.map((line) => (
-                  <li key={line}>{line}</li>
-                ))}
-              </ul>
-            </div>
-            <div>
-              <h2 className={styles.heading}>Coming</h2>
-              <ul className={`${styles.ledger} ${styles.ledgerQuiet}`}>
-                {COMING.map((line) => (
-                  <li key={line}>{line}</li>
-                ))}
-              </ul>
-            </div>
-          </div>
+          <h2 id="state-title" className={styles.heading}>
+            What it does today
+          </h2>
+          <ul className={styles.ledger}>
+            {NOW.map((line) => (
+              <li key={line}>{line}</li>
+            ))}
+          </ul>
         </section>
 
         <section className={`${siteWrap} mt-24 sm:mt-32`} aria-labelledby="data-title">

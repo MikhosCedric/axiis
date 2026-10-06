@@ -45,6 +45,7 @@ axe reported **no violations on any of the 24 loads**, nor with the detail panel
    - **Where.** `src/app/page.tsx`: the `COMING` array and the third "How it works" measure.
    - **Evidence.** "Coming" lists "Repeating tasks", "Tags" and "A command palette". All three ship (`src/features/detail/repeat.ts`, `src/features/tags/`, `src/features/palette/`). The third measure says "Notes that link to your tasks come next", while "What it does today" already lists "Notes that link to tasks, and search across both". Lists and the Inbox appear nowhere. The surface brief requires the page to claim only what ships, so understating counts too.
    - **Fix.** Move the three items into `NOW`, add Lists and the Inbox, rewrite the measure's last sentence, and decide whether "Coming" still has anything to list. Suggested command `/impeccable clarify`.
+   - **Status. Fixed.** "What it does today" now lists repeating tasks, the Inbox, Lists, tags and the command palette, set in two columns from 820px. The third measure says an open item shows its linked notes. "Coming" is gone, since nothing unshipped is promised. `e2e/public.spec.ts` checks the shipped lines and the absence of "Coming" and "come next".
 
 4. **[P2, Accessibility] Beam labels collapse, and the playhead strikes through them.**
    - **Where.** `src/features/score/score-view.tsx:398` (the label's `maxWidth: labelWidth(beam.free)`) and `:269-275` (the playhead, `z-[3]`).
