@@ -5,24 +5,38 @@ import { NavRail } from "@/components/shell/nav-rail";
 import type { LocalDate } from "@/domain/item";
 import { isTypingTarget, shortcutAction } from "@/features/day/nav";
 import { PaletteProvider, type PaletteActions } from "@/features/palette/palette";
+import { planItem } from "@/features/inbox/commands";
+import { describeItem } from "@/features/palette/commands";
+import { addTag } from "@/features/tags/commands";
 import { CaptureField } from "@/features/today/capture-field";
-import { captureTask } from "@/features/today/commands";
+import { captureTask, setDone, type ActionResult } from "@/features/today/commands";
 import { actions as notesActions, AREAS, settings, store } from "../notes/store";
 
 const pause = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+// The notes store plans and tags in UTC, as its own actions do.
+const ZONE = "UTC";
 
 const actions: PaletteActions = {
   async capture(title) {
     await pause(450);
     if (settings.failing) return { ok: false, error: "That did not save. Your words are still here, so try again." };
-    return captureTask(store.items, title);
+    return captureTask(store.items, title, new Date(), ZONE);
   },
   async search(query) {
     await pause(300);
     if (settings.failing) throw new Error("harness: search is set to fail");
     return notesActions.search(query);
   },
+  describe: (key) => describeItem(store.items, key, ZONE),
+  setDone: (key, done) => write(() => setDone(store.items, key, done, ZONE)),
+  plan: (key, when) => write(() => planItem(store.items, key, when, new Date(), ZONE)),
+  tag: (key, name) => write(() => addTag(store.items, key, name, ZONE)),
 };
+
+async function write(command: () => Promise<ActionResult>): Promise<ActionResult> {
+  await pause(450);
+  return settings.failing ? { ok: false, error: "That change did not save. Try again." } : command();
+}
 
 /** Records what the day nav would do with each key, so a dialog that swallows them can be seen to. */
 function KeyLog() {
