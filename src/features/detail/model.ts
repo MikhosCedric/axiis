@@ -1,5 +1,8 @@
-import type { Area, AreaId, Item, ItemId, ItemType, LocalDate, Schedule } from "@/domain/item";
+import { isStored, repeats, type Area, type AreaId, type Item, type ItemId, type ItemType, type LocalDate, type Schedule, type ShownItem } from "@/domain/item";
+import type { ItemKey } from "@/domain/item-key";
+import type { RuleEnd } from "@/domain/recurrence";
 import { toLocalDate } from "@/lib/dates";
+import { describeRule, presetOf, type RepeatChoice, type RepeatPreset } from "./repeat";
 import type { ActionResult } from "@/features/today/commands";
 import { formatClock, formatDayHeading } from "@/features/today/format";
 import type { Created } from "@/features/notes/model";
@@ -13,11 +16,26 @@ export type SubtaskPolicy =
   | { kind: "is-subtask"; parentId: ItemId }
   | { kind: "no-subtasks" };
 
-export function subtaskPolicy(item: Pick<Item, "type" | "parentId">): SubtaskPolicy {
+export function subtaskPolicy(item: Pick<ShownItem, "type" | "parentId" | "recurrence">): SubtaskPolicy {
   if (item.parentId !== null) return { kind: "is-subtask", parentId: item.parentId };
+  if (repeats(item)) return { kind: "no-subtasks" };
   if (item.type === "task" || item.type === "checklist") return { kind: "holds-subtasks" };
   return { kind: "no-subtasks" };
 }
+
+/** Which way a change to one occurrence goes: to that occurrence alone, or to the whole series. */
+export type Scope = "one" | "all";
+
+/**
+ * How the item takes part in repetition, as the sheet shows it. Only a top-level
+ * task, event or checklist with no subtasks may start repeating.
+ */
+export type RepeatView =
+  | { kind: "hidden" }
+  | { kind: "unavailable"; reason: string }
+  | { kind: "off" }
+  | { kind: "series"; preset: RepeatPreset | null; end: RuleEnd; summary: string }
+  | { kind: "occurrence"; preset: RepeatPreset | null; end: RuleEnd; summary: string; on: string };
 
 export type DetailSubtask = { id: ItemId; title: string; done: boolean };
 
@@ -29,22 +47,28 @@ export type Nesting =
 
 /** Everything the detail sheet draws, already formatted for the user's zone and safe to send to the client. */
 export type DetailView = {
-  item: { id: ItemId; type: ItemType; title: string; done: boolean; areaId: AreaId | null };
+  /** `id` is the key the sheet was opened with, so an occurrence that is not stored yet can still be acted on. */
+  item: { id: ItemKey; type: ItemType; title: string; done: boolean; areaId: AreaId | null };
   /** Null for notes, which never sit in time. */
   when: string | null;
   due: string | null;
   areas: { id: AreaId; name: string }[];
   nesting: Nesting;
+  repeat: RepeatView;
+  /** The stored item linked notes attach to. Notes on any occurrence attach to its series. */
+  notesFor: ItemId;
 };
 
 /** The writes the sheet can ask for. Server actions in the app, in-memory fakes in the dev harness. */
 export type DetailActions = {
-  rename: (id: string, title: string) => Promise<ActionResult>;
+  rename: (id: string, title: string, scope?: Scope) => Promise<ActionResult>;
   setDone: (id: string, done: boolean) => Promise<ActionResult>;
-  setArea: (id: string, areaId: string | null) => Promise<ActionResult>;
+  setArea: (id: string, areaId: string | null, scope?: Scope) => Promise<ActionResult>;
   addSubtask: (parentId: string, title: string) => Promise<ActionResult>;
   promote: (id: string) => Promise<ActionResult>;
-  remove: (id: string) => Promise<ActionResult>;
+  remove: (id: string, scope?: Scope) => Promise<ActionResult>;
+  setRepeat: (id: string, choice: RepeatChoice) => Promise<ActionResult>;
+  stopRepeating: (id: string) => Promise<ActionResult>;
   /** Makes a note linked to the item and answers with its id, so the sheet can open it. */
   newLinkedNote: (itemId: string) => Promise<Created>;
 };
@@ -63,14 +87,46 @@ export function describeDue(dueOn: LocalDate | null): string | null {
   return dueOn === null ? null : `Due ${formatDayHeading(dueOn)}`;
 }
 
+function firstDay(schedule: Schedule, timeZone: string): LocalDate | null {
+  if (schedule.kind === "day") return schedule.on;
+  if (schedule.kind === "timed") return toLocalDate(schedule.start, timeZone);
+  return null;
+}
+
+function repeatView(item: ShownItem, series: Item | null, subtasks: Item[], timeZone: string): RepeatView {
+  if (item.type === "note") return { kind: "hidden" };
+  const r = item.recurrence;
+  if (r.kind === "none") {
+    if (item.parentId !== null) return { kind: "unavailable", reason: "A subtask does not repeat on its own." };
+    if (subtasks.length > 0) return { kind: "unavailable", reason: "Something with subtasks cannot repeat." };
+    return { kind: "off" };
+  }
+  if (r.kind === "series") {
+    const summary = describeRule(r.rule, firstDay(item.schedule, timeZone));
+    return { kind: "series", preset: presetOf(r.rule), end: r.rule.end, summary };
+  }
+  // An override whose series was deleted is an ordinary item now.
+  if (series?.recurrence.kind !== "series") return { kind: "hidden" };
+  const { rule } = series.recurrence;
+  return {
+    kind: "occurrence",
+    preset: presetOf(rule),
+    end: rule.end,
+    summary: describeRule(rule, firstDay(series.schedule, timeZone)),
+    on: formatDayHeading(r.originalOn),
+  };
+}
+
 export function buildDetail(input: {
-  item: Item;
+  item: ShownItem;
+  /** The series an occurrence or override belongs to, when it is still there. */
+  series?: Item | null;
   areas: Area[];
   subtasks: Item[];
   parent: Item | null;
   timeZone: string;
 }): DetailView {
-  const { item, areas, subtasks, parent, timeZone } = input;
+  const { item, series = null, areas, subtasks, parent, timeZone } = input;
   const policy = subtaskPolicy(item);
   const nesting: Nesting =
     policy.kind === "holds-subtasks"
@@ -87,6 +143,8 @@ export function buildDetail(input: {
     due: describeDue(item.dueOn),
     areas: areas.map((a) => ({ id: a.id, name: a.name })),
     nesting,
+    repeat: repeatView(item, series, subtasks, timeZone),
+    notesFor: series?.id ?? (isStored(item) ? item.id : item.recurrence.seriesId),
   };
 }
 

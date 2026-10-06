@@ -1,13 +1,23 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { Area, AreaId, Item, ItemId, LocalDate } from "@/domain/item";
+import { occurrenceKey, parseItemKey } from "@/domain/item-key";
 import { setDone } from "@/features/today/commands";
 import { fakeRepo, makeItem } from "@/features/today/test-support";
-import { addSubtask, deleteItem, parseItemId, promoteSubtask, renameItem, setItemArea } from "@/features/detail/commands";
+import {
+  addSubtask,
+  deleteItem,
+  loadDetail,
+  promoteSubtask,
+  renameItem,
+  setItemArea,
+  setRepeat,
+  stopRepeating,
+} from "@/features/detail/commands";
 import { DetailSheet, MissingItem } from "@/features/detail/detail-sheet";
-import { buildDetail, type DetailActions } from "@/features/detail/model";
+import type { DetailActions, DetailView } from "@/features/detail/model";
 import { createLinkedNote } from "@/features/notes/commands";
 import { connectedRow } from "@/features/notes/model";
 import { fakeNotesRepo, type NotesStore } from "@/lib/notes/fake";
@@ -15,6 +25,7 @@ import type { LinkId } from "@/lib/notes/repo";
 
 const id = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, "0")}` as ItemId;
 const areaId = (n: number) => `00000000-0000-4000-9000-${String(n).padStart(12, "0")}` as AreaId;
+const day = (s: string) => s as LocalDate;
 
 const AREAS: Area[] = [
   { id: areaId(1), name: "Work", position: 0 },
@@ -27,8 +38,8 @@ function fixtures(): Item[] {
     id: id(1),
     title: "Plan the Lisbon trip",
     areaId: areaId(2),
-    schedule: { kind: "day", on: "2026-10-09" as LocalDate },
-    dueOn: "2026-10-12" as LocalDate,
+    schedule: { kind: "day", on: day("2026-10-09") },
+    dueOn: day("2026-10-12"),
   });
   const packing = makeItem({ id: id(10), type: "checklist", title: "Packing" });
   return [
@@ -56,6 +67,29 @@ function fixtures(): Item[] {
       schedule: { kind: "timed", start: new Date("2026-10-06T14:00:00Z"), end: new Date("2026-10-06T17:30:00Z") },
     }),
     makeItem({ id: id(50), title: "An empty task with room for subtasks" }),
+    makeItem({
+      id: id(60),
+      title: "Morning run",
+      areaId: areaId(3),
+      schedule: { kind: "timed", start: new Date("2026-10-05T06:30:00Z"), end: new Date("2026-10-05T07:15:00Z") },
+      recurrence: { kind: "series", rule: { freq: "weekly", interval: 1, byDay: ["MO", "WE", "FR"], end: { kind: "never" } } },
+    }),
+    makeItem({
+      id: id(61),
+      title: "Morning run, slow",
+      areaId: areaId(3),
+      status: "done",
+      completedAt: new Date("2026-10-07T07:20:00Z"),
+      schedule: { kind: "timed", start: new Date("2026-10-07T06:30:00Z"), end: new Date("2026-10-07T07:15:00Z") },
+      recurrence: { kind: "override", seriesId: id(60), originalOn: day("2026-10-07") },
+    }),
+    makeItem({
+      id: id(70),
+      title: "Water the plants",
+      areaId: areaId(2),
+      schedule: { kind: "day", on: day("2026-10-04") },
+      recurrence: { kind: "series", rule: { freq: "weekly", interval: 1, byDay: [], end: { kind: "count", count: 10 } } },
+    }),
   ];
 }
 
@@ -67,16 +101,17 @@ const FIXTURES: { id: string; label: string }[] = [
   { id: id(20), label: "Note" },
   { id: id(30), label: "Event" },
   { id: id(40), label: "Long title, runs past midnight in Manila" },
+  { id: occurrenceKey(id(60), day("2026-10-09")), label: "Repeating: Friday's run, not touched yet" },
+  { id: id(61), label: "Repeating: Wednesday's run, renamed and done" },
+  { id: id(60), label: "Repeating: the run series itself" },
+  { id: occurrenceKey(id(70), day("2026-10-11")), label: "Repeating: plants, weekly for ten weeks" },
+  { id: occurrenceKey(id(60), day("2026-10-10")), label: "A Saturday the run does not happen" },
   { id: id(99), label: "An item that is gone" },
 ];
 
 function createStore() {
   const items = fixtures();
   const fake = fakeRepo(items, AREAS);
-  fake.repo.softDelete = async (gone) => {
-    const at = items.findIndex((i) => i.id === gone);
-    if (at >= 0) items.splice(at, 1);
-  };
   const notesStore: NotesStore = {
     items,
     bodyText: new Map(),
@@ -98,8 +133,9 @@ const pause = () => new Promise((resolve) => setTimeout(resolve, 450));
 
 export function DetailHarness({ itemId, timeZone }: { itemId: string | null; timeZone: string }) {
   const [store] = useState(createStore);
-  const [, setVersion] = useState(0);
+  const [version, setVersion] = useState(0);
   const [failing, setFailing] = useState(false);
+  const [loaded, setLoaded] = useState<{ key: string; version: number; view: DetailView | null } | null>(null);
 
   function fake<A extends unknown[]>(command: (repo: typeof store.repo, ...args: A) => ReturnType<DetailActions["promote"]>) {
     return async (...args: A) => {
@@ -112,12 +148,14 @@ export function DetailHarness({ itemId, timeZone }: { itemId: string | null; tim
   }
 
   const actions: DetailActions = {
-    rename: fake(renameItem),
-    setDone: fake(setDone),
-    setArea: fake(setItemArea),
+    rename: fake((repo, key: string, title: string, scope?: unknown) => renameItem(repo, key, title, timeZone, scope)),
+    setDone: fake((repo, key: string, done: boolean) => setDone(repo, key, done, timeZone)),
+    setArea: fake((repo, key: string, area: string | null, scope?: unknown) => setItemArea(repo, key, area, timeZone, scope)),
     addSubtask: fake(addSubtask),
     promote: fake(promoteSubtask),
-    remove: fake(deleteItem),
+    remove: fake((repo, key: string, scope?: unknown) => deleteItem(repo, key, timeZone, scope)),
+    setRepeat: fake((repo, key: string, choice: unknown) => setRepeat(repo, key, choice, new Date(), timeZone)),
+    stopRepeating: fake((repo, key: string) => stopRepeating(repo, key, timeZone)),
     newLinkedNote: async (itemId) => {
       await pause();
       if (failing) return { ok: false, error: "A new note could not be made. Try again." };
@@ -125,16 +163,19 @@ export function DetailHarness({ itemId, timeZone }: { itemId: string | null; tim
     },
   };
 
-  const item = store.items.find((i) => i.id === itemId) ?? null;
-  const view =
-    item &&
-    buildDetail({
-      item,
-      areas: AREAS,
-      subtasks: store.items.filter((i) => i.parentId === item.id),
-      parent: store.items.find((i) => i.id === item.parentId) ?? null,
-      timeZone,
+  useEffect(() => {
+    const key = parseItemKey(itemId);
+    if (!key || !itemId) return;
+    let live = true;
+    loadDetail(store.repo, key, timeZone).then((view) => {
+      if (live) setLoaded({ key: itemId, version, view });
     });
+    return () => {
+      live = false;
+    };
+  }, [itemId, version, store, timeZone]);
+
+  const current = loaded && loaded.key === itemId ? loaded : null;
 
   return (
     <div className="min-h-dvh rail:grid rail:grid-cols-[minmax(0,1fr)_minmax(340px,420px)]">
@@ -163,9 +204,18 @@ export function DetailHarness({ itemId, timeZone }: { itemId: string | null; tim
           Make every save fail
         </label>
       </main>
-      {parseItemId(itemId) && (
+      {current && (
         <div className="border-t border-rule px-4 pt-5 pb-10 rail:border-t-0 rail:border-l rail:px-6 rail:pt-8">
-          {view ? <DetailSheet key={view.item.id} view={view} actions={actions} linkedNotes={linkedNotesOf(store.notesStore, view.item.id)} /> : <MissingItem />}
+          {current.view ? (
+            <DetailSheet
+              key={`${current.view.item.id}:${current.version}`}
+              view={current.view}
+              actions={actions}
+              linkedNotes={linkedNotesOf(store.notesStore, current.view.notesFor)}
+            />
+          ) : (
+            <MissingItem />
+          )}
         </div>
       )}
     </div>

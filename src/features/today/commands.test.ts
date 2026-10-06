@@ -33,8 +33,8 @@ describe("setDone", () => {
   it("marks an item done and open again", async () => {
     const item = makeItem();
     const { repo, calls } = fakeRepo([item]);
-    expect(await setDone(repo, item.id, true)).toEqual({ ok: true });
-    expect(await setDone(repo, item.id, false)).toEqual({ ok: true });
+    expect(await setDone(repo, item.id, true, "UTC")).toEqual({ ok: true });
+    expect(await setDone(repo, item.id, false, "UTC")).toEqual({ ok: true });
     expect(calls.update).toEqual([
       [item.id, { status: "done" }],
       [item.id, { status: "open" }],
@@ -43,7 +43,7 @@ describe("setDone", () => {
 
   it("refuses an id that is not a uuid", async () => {
     const { repo, calls } = fakeRepo();
-    expect((await setDone(repo, "1; drop table items", true)).ok).toBe(false);
+    expect((await setDone(repo, "1; drop table items", true, "UTC")).ok).toBe(false);
     expect(calls.update).toEqual([]);
   });
 });
