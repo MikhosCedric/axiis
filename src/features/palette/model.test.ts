@@ -20,7 +20,15 @@ const row = (n: number, over: Partial<SearchRow> = {}): SearchRow => ({
 
 describe("paletteSections", () => {
   it("offers every page, then the shortcuts, when nothing is typed", () => {
-    expect(labels("   ")).toEqual({ go: ["Today", "Week", "Inbox", "Notes", "Search", "Settings", "Keyboard shortcuts"] });
+    expect(labels("   ")).toEqual({ go: ["Today", "Week", "Inbox", "Notes", "Tags", "Search", "Settings", "Keyboard shortcuts"] });
+  });
+
+  it("goes to a tag's page for #name, any spaces and case kept, and offers no capture", () => {
+    const sections = paletteSections("#Deep  work", today, idle);
+    expect(sections.map((s) => s.id)).toEqual(["go"]);
+    expect(sections[0].commands[0]).toEqual({ kind: "go", id: "go-tag-deep work", label: "Go to #Deep work", href: "/tags/Deep%20work" });
+    expect(labels("#").go).toBeUndefined();
+    expect(labels("tags").go).toEqual(["Tags"]);
   });
 
   it("ranks pages against the typing, keywords included", () => {

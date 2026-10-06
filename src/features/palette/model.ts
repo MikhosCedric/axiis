@@ -1,5 +1,7 @@
 import type { ItemType, LocalDate } from "@/domain/item";
+import { parseTagName, tagKey } from "@/domain/tag";
 import { dayHref } from "@/features/day/nav";
+import { tagHref, TAGS_PATH } from "@/features/tags/model";
 import type { SearchRow } from "@/features/notes/model";
 import { formatDayHeading } from "@/features/today/format";
 import { completeDatePhrase, parseDatePhrase } from "./date-phrase";
@@ -32,6 +34,7 @@ const PLACES: Place[] = [
   { label: "Week", href: "/week", also: ["planner"] },
   { label: "Inbox", href: "/inbox", also: ["unscheduled", "waiting"] },
   { label: "Notes", href: "/notes", also: [] },
+  { label: "Tags", href: TAGS_PATH, also: ["labels"] },
   { label: "Search", href: "/search", also: ["find"] },
   { label: "Settings", href: "/settings", also: ["account", "areas", "export"] },
   { label: "Keyboard shortcuts", href: null, also: ["help", "keys"] },
@@ -63,6 +66,9 @@ export function paletteSections(input: string, today: LocalDate, find: Find): Se
   );
   if (!text) return [{ id: "go", label: "Go to", commands: go }];
 
+  const tag = text.startsWith("#") ? parseTagName(text) : null;
+  if (tag) go.unshift({ kind: "go", id: `go-tag-${tagKey(tag)}`, label: `Go to #${tag}`, href: tagHref(tag) });
+
   const exact = parseDatePhrase(text, today);
   const completed = completeDatePhrase(text);
   const date = exact ?? (completed ? parseDatePhrase(completed, today) : null);
@@ -70,7 +76,7 @@ export function paletteSections(input: string, today: LocalDate, find: Find): Se
   const dates: Command[] =
     date && !coveredByToday ? [{ kind: "date", id: `date-${date}`, label: dateLabel(date, today), href: dayHref(date, today, "score") }] : [];
 
-  const capture: Command[] = exact ? [] : [{ kind: "capture", id: "capture", label: `Capture “${text}” as a task`, title: text }];
+  const capture: Command[] = exact || tag ? [] : [{ kind: "capture", id: "capture", label: `Capture “${text}” as a task`, title: text }];
 
   const q = findQuery(text);
   const found: Command[] =
