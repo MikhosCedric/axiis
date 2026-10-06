@@ -164,6 +164,7 @@ export function newItemToInsert(input: NewItem) {
 /** Builds the column update for a patch. Keys absent from the patch are left out so they stay untouched. */
 export function patchToUpdate(patch: ItemPatch, now: Date) {
   return {
+    ...(patch.type !== undefined && { type: patch.type }),
     ...(patch.title !== undefined && { title: patch.title }),
     ...(patch.body !== undefined && { body: patch.body }),
     ...(patch.areaId !== undefined && { area_id: patch.areaId }),

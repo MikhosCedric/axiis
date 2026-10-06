@@ -16,6 +16,7 @@ import {
   setItemArea,
   setRepeat,
   setTime,
+  setType,
   stopRepeating,
 } from "./commands";
 
@@ -42,6 +43,10 @@ export async function setTimeAction(id: string, time: unknown, scope?: unknown):
 
 export async function unplanAction(id: string): Promise<ActionResult> {
   return refreshed(await moveItem(await getItemsRepo(), id, "tray", await getTimeZone()));
+}
+
+export async function setTypeAction(id: string, type: unknown): Promise<ActionResult> {
+  return refreshed(await setType(await getItemsRepo(), id, type, await getTimeZone()));
 }
 
 export async function clearTimeAction(id: string, scope?: unknown): Promise<ActionResult> {
