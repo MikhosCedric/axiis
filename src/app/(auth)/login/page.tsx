@@ -20,7 +20,7 @@ export default async function LoginPage({ searchParams }: PageProps<"/login">) {
   const error = ERRORS[first(params.error) ?? ""];
 
   return (
-    <main className="flex min-h-full flex-1 items-center justify-center bg-paper px-6 py-16 font-sans">
+    <main id="main" className="flex min-h-full flex-1 items-center justify-center bg-paper px-6 py-16 font-sans">
       <div className="w-full max-w-sm space-y-8">
         <header className="space-y-2">
           <h1 className="font-serif text-3xl text-ink">Sign in to Axiis</h1>

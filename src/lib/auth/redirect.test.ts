@@ -1,27 +1,60 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { resolveAuthRedirect } from "./redirect";
 
+const signedOut = (pathname: string) => resolveAuthRedirect({ pathname, isAuthenticated: false });
+const signedIn = (pathname: string) => resolveAuthRedirect({ pathname, isAuthenticated: true });
+
 describe("resolveAuthRedirect", () => {
   it.each([
-    ["/", "/login"],
     ["/today", "/login?next=%2Ftoday"],
+    ["/day/2026-10-06", "/login?next=%2Fday%2F2026-10-06"],
+    ["/settings", "/login?next=%2Fsettings"],
     ["/items/abc", "/login?next=%2Fitems%2Fabc"],
-    ["/login-ish", "/login?next=%2Flogin-ish"],
-    ["/authx", "/login?next=%2Fauthx"],
   ])("sends a signed-out visitor on %s to %s", (pathname, expected) => {
-    expect(resolveAuthRedirect({ pathname, isAuthenticated: false })).toBe(expected);
+    expect(signedOut(pathname)).toBe(expected);
   });
 
-  it.each(["/login", "/auth/callback", "/auth/signout"])("lets a signed-out visitor reach %s", (pathname) => {
-    expect(resolveAuthRedirect({ pathname, isAuthenticated: false })).toBeNull();
+  it.each([
+    "/",
+    "/login",
+    "/privacy",
+    "/terms",
+    "/robots.txt",
+    "/sitemap.xml",
+    "/manifest.webmanifest",
+    "/icon.svg",
+    "/auth/callback",
+    "/auth/signout",
+  ])("lets a signed-out visitor reach %s", (pathname) => {
+    expect(signedOut(pathname)).toBeNull();
   });
 
-  it.each(["/", "/today", "/auth/callback", "/auth/signout"])("lets a signed-in user reach %s", (pathname) => {
-    expect(resolveAuthRedirect({ pathname, isAuthenticated: true })).toBeNull();
+  it.each([
+    "/login-ish",
+    "/authx",
+    "/privacy/x",
+    "/privacy-policy",
+    "/terms/",
+    "/today/../privacy",
+    "/robots.txt/x",
+    "/icon.svgx",
+    "/sitemap.xml.bak",
+    "/manifest.json",
+    "/settings/privacy",
+    "/day/privacy",
+  ])("does not open the look-alike %s", (pathname) => {
+    expect(signedOut(pathname)).toBe(`/login?next=${encodeURIComponent(pathname)}`);
   });
 
-  it("sends a signed-in user away from the login page", () => {
-    expect(resolveAuthRedirect({ pathname: "/login", isAuthenticated: true })).toBe("/");
+  it.each(["/", "/today", "/day/2026-10-06", "/settings", "/privacy", "/terms", "/auth/callback", "/auth/signout"])(
+    "lets a signed-in user reach %s",
+    (pathname) => {
+      expect(signedIn(pathname)).toBeNull();
+    },
+  );
+
+  it("sends a signed-in user away from the login page to the landing page, which forwards to today", () => {
+    expect(signedIn("/login")).toBe("/");
   });
 
   describe("dev harness pages", () => {
@@ -31,7 +64,7 @@ describe("resolveAuthRedirect", () => {
 
     it.each(["/dev", "/dev/score"])("lets a signed-out visitor reach %s outside production", (pathname) => {
       vi.stubEnv("NODE_ENV", "development");
-      expect(resolveAuthRedirect({ pathname, isAuthenticated: false })).toBeNull();
+      expect(signedOut(pathname)).toBeNull();
     });
 
     it.each([
@@ -39,12 +72,18 @@ describe("resolveAuthRedirect", () => {
       ["/dev/score", "/login?next=%2Fdev%2Fscore"],
     ])("sends a signed-out visitor on %s to sign in, in production", (pathname, expected) => {
       vi.stubEnv("NODE_ENV", "production");
-      expect(resolveAuthRedirect({ pathname, isAuthenticated: false })).toBe(expected);
+      expect(signedOut(pathname)).toBe(expected);
+    });
+
+    it("keeps the public pages public in production", () => {
+      vi.stubEnv("NODE_ENV", "production");
+      expect(signedOut("/")).toBeNull();
+      expect(signedOut("/privacy")).toBeNull();
     });
 
     it("does not open look-alike paths", () => {
       vi.stubEnv("NODE_ENV", "development");
-      expect(resolveAuthRedirect({ pathname: "/devices", isAuthenticated: false })).toBe("/login?next=%2Fdevices");
+      expect(signedOut("/devices")).toBe("/login?next=%2Fdevices");
     });
   });
 });
