@@ -14,6 +14,7 @@ colors:
   verdigris: "#0a675a"
   verdigris-wash: "rgba(10, 103, 90, 0.14)"
   on-verdigris: "#f3eee1"
+  scrim: "rgb(8 7 10 / 0.48)"
   night-paper: "#16151b"
   night-rail: "#1c1b22"
   night-sheet: "#201f27"
@@ -39,11 +40,56 @@ typography:
     fontWeight: 500
     lineHeight: 1.1
     letterSpacing: "-0.015em"
+  headline-public:
+    fontFamily: "Besley, Georgia, serif"
+    fontSize: "clamp(1.6rem, 1.2rem + 1.4vw, 2.25rem)"
+    fontWeight: 500
+    lineHeight: 1.1
+    letterSpacing: "-0.015em"
+  headline-legal:
+    fontFamily: "Besley, Georgia, serif"
+    fontSize: "clamp(2.2rem, 1.6rem + 2.4vw, 3.25rem)"
+    fontWeight: 500
+    lineHeight: 1.08
+  title-large:
+    fontFamily: "Besley, Georgia, serif"
+    fontSize: "22px"
+    fontWeight: 500
+    lineHeight: 1.2
   title:
     fontFamily: "Besley, Georgia, serif"
     fontSize: "18px"
     fontWeight: 500
     lineHeight: 1.25
+  staff-name:
+    fontFamily: "Besley, Georgia, serif"
+    fontSize: "16px"
+    fontWeight: 500
+    lineHeight: 1.2
+  staff-name-wide:
+    fontFamily: "Besley, Georgia, serif"
+    fontSize: "19px"
+    fontWeight: 500
+    lineHeight: 1.2
+  lead:
+    fontFamily: "Hanken Grotesk, system-ui, -apple-system, Segoe UI, sans-serif"
+    fontSize: "17px"
+    fontWeight: 400
+    lineHeight: 1.6
+  reading:
+    fontFamily: "Hanken Grotesk, system-ui, -apple-system, Segoe UI, sans-serif"
+    fontSize: "16px"
+    fontWeight: 400
+    lineHeight: 1.65
+  body-large:
+    fontFamily: "Hanken Grotesk, system-ui, -apple-system, Segoe UI, sans-serif"
+    fontSize: "15px"
+    fontWeight: 400
+    lineHeight: 1.6
+  mono:
+    fontFamily: "ui-monospace, SFMono-Regular, Menlo, Consolas, monospace"
+    fontSize: "0.88em"
+    fontWeight: 400
   body:
     fontFamily: "Hanken Grotesk, system-ui, -apple-system, Segoe UI, sans-serif"
     fontSize: "14px"
@@ -67,6 +113,7 @@ typography:
     letterSpacing: "0.06em"
 rounded:
   hairline: "2px"
+  focus: "3px"
   sm: "4px"
   md: "6px"
   lg: "8px"
@@ -194,7 +241,8 @@ A two-ink, one-pigment palette: warm paper, near-black ink in three strengths, a
 - **Display** (500, `clamp(2.6rem, 1.4rem + 5.2vw, 5.25rem)`, line-height 1, -0.025em, balanced, max 13ch): the landing page headline only.
 - **Headline** (500, `clamp(28px, 3vw, 40px)`, 1.1, -0.015em): every app page title (Today's date, Week, Inbox, Lists, Notes, Tags, Search, Settings). Landing section heads use a larger clamp (`1.6rem` to `2.25rem`).
 - **Title** (Besley 500, 18px to 22px): section heads inside a page (Waiting for a time, Subtasks, Linked notes), staff names (16px, 19px at rail width) and the wordmark (600, 20px to 22px, -0.01em).
-- **Body** (Hanken 400, 14px, 1.45): the default for the app. Public pages step up to 15px at 1.6 and 17px to 18px for the lead paragraph, held to 34ch to 36rem.
+- **Body** (Hanken 400, 14px, 1.45): the default for the app. Page subtitles under an app headline and public body copy step up to 15px at 1.6 (Body Large), the landing lead paragraph to 17px to 18px, held to 34ch to 36rem. Note bodies are set for reading at 16px, 1.65, 68ch.
+- **Mono** (system monospace, 0.88em on Rail Paper with a soft hairline): inline code in notes only.
 - **Label** (Hanken 500, 13px, 20px line): beam labels, secondary actions and helper copy; the most used size in the codebase. Live beam labels go to 700, done labels to 400 in Ink Quiet.
 - **Caption** (Hanken 500 to 600, 12px, tabular): hour numerals, the now flag, open counts, `kbd` keys.
 - **Overline** (Hanken 600, 12px, 0.06em, uppercase): the rail's Areas heading; used once.
