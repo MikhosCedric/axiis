@@ -57,5 +57,7 @@ export async function DetailPanel({ itemId }: { itemId: string | null }) {
   const view = await loadDetail(repo, key, getNow(), timeZone);
   if (!view) return <MissingItem />;
   const linked = await linkedNotes(notes, view.notesFor);
-  return <DetailSheet key={view.item.id} view={view} actions={actions} linkedNotes={linked} />;
+  // Keyed by the key it was opened with: the first "This one" change to an
+  // occurrence stores it under a new id, and the sheet must not remount then.
+  return <DetailSheet key={itemId} view={view} actions={actions} linkedNotes={linked} />;
 }
