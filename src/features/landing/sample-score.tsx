@@ -54,7 +54,7 @@ export function SampleScore() {
         </div>
 
         <div className={styles.tray}>
-          <div className={`${styles.labelCell} ${styles.trayLabel}`}>Waiting for a time</div>
+          <div className={`${styles.labelCell} ${styles.trayLabel}`}>Waiting</div>
           <ul className={styles.chips}>
             {SAMPLE_TRAY.map((title) => (
               <li key={title} className={styles.chip}>
@@ -79,7 +79,7 @@ export function SampleScore() {
             ))}
           </ul>
         ))}
-        <ul aria-label="Waiting for a time">
+        <ul aria-label="Waiting">
           {SAMPLE_TRAY.map((title) => (
             <li key={title}>{title}</li>
           ))}

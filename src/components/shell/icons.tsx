@@ -21,7 +21,9 @@ function Icon({ children, size = 18 }: { children: ReactNode; size?: number }) {
 
 export const TodayIcon = () => (
   <Icon>
-    <path d="M2 11.5h14M7 2v14" />
+    <rect x="2.5" y="3.5" width="13" height="11" rx="1.5" />
+    <path d="M7.5 9h5" />
+    <circle cx="6" cy="9" r="1.5" fill="currentColor" />
   </Icon>
 );
 

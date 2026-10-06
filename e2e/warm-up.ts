@@ -19,6 +19,7 @@ const ROUTES = [
   "/dev/notes/00000000-0000-4000-8000-000000000020",
   "/dev/notes/search",
   "/dev/settings",
+  "/dev/palette",
   "/robots.txt",
   "/sitemap.xml",
   "/manifest.webmanifest",

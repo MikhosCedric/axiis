@@ -8,7 +8,8 @@ import { DetailAside } from "@/features/detail/detail-aside";
 import { captureAction, setDoneAction } from "@/features/today/actions";
 import { CaptureField } from "@/features/today/capture-field";
 import type { ActionResult } from "@/features/today/commands";
-import { Glyph } from "@/features/today/glyph";
+import { DoneToggle } from "@/features/today/done-toggle";
+import { WAITING } from "@/features/today/model";
 import { RowTags } from "@/features/tags/row-tags";
 import { planAction } from "./actions";
 import { dayWords, inboxRows, inboxSummary, planDate, type InboxData, type PlanFor } from "./model";
@@ -139,7 +140,7 @@ export function InboxView({
 
         <section aria-labelledby="inbox-list-h">
           <h2 id="inbox-list-h" className="font-serif text-lg font-medium">
-            Waiting for a day
+            {WAITING}
           </h2>
           <p className="mt-1 border-b border-rule pb-2.5 text-[13px] text-ink-2">
             Everything you captured without a day. Plan each one when you are ready.
@@ -229,10 +230,7 @@ function InboxRow({
         selected ? "bg-accent-wash" : ""
       }`}
     >
-      <label className="relative grid h-8 w-12 cursor-pointer place-items-center rounded-md hover:bg-accent-wash has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-accent">
-        <input type="checkbox" className="sr-only" checked={done} onChange={onToggleDone} aria-label={`Done: ${item.title}`} />
-        <Glyph type={item.type} state={done ? "done" : "planned"} justDone={justDone} />
-      </label>
+      <DoneToggle type={item.type} title={item.title} done={done} justDone={justDone} onToggle={onToggleDone} />
       <button
         type="button"
         data-open={item.id}
