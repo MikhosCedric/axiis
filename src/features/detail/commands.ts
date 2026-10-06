@@ -47,21 +47,24 @@ async function seriesOf(repo: ItemsRepo, item: Item): Promise<Item | null> {
 }
 
 /**
- * The stored item a change in `scope` lands on. "one" is the item, or the
- * occurrence it names (stored on first touch). "all" is the whole series, and
- * falls back to the item itself when it does not repeat.
+ * The stored items a change in `scope` lands on, series first. "one" is the
+ * item, or the occurrence it names (stored on first touch). "all" is the whole
+ * series plus the override the change was made from, so the one in view changes
+ * too. Something that does not repeat is its own target either way.
  */
-async function target(repo: ItemsRepo, key: ParsedItemKey, scope: Scope, timeZone: string): Promise<Item | null> {
-  if (scope === "all") {
-    const found = await resolveKey(repo, key, timeZone);
-    if (!found) return null;
-    if (found.kind === "virtual") return found.series;
-    return (await seriesOf(repo, found.item)) ?? found.item;
+async function targets(repo: ItemsRepo, key: ParsedItemKey, scope: Scope, timeZone: string): Promise<Item[]> {
+  if (scope === "one") {
+    const item = key.kind === "item" ? await repo.get(key.id) : await materialize(repo, key, timeZone);
+    return item ? [item] : [];
   }
-  return key.kind === "item" ? repo.get(key.id) : materialize(repo, key, timeZone);
+  const found = await resolveKey(repo, key, timeZone);
+  if (!found) return [];
+  if (found.kind === "virtual") return [found.series];
+  const series = await seriesOf(repo, found.item);
+  return series && series.id !== found.item.id ? [series, found.item] : [found.item];
 }
 
-/** Parses the key and scope, finds the target and applies `patch` to it. */
+/** Parses the key and scope, finds the targets and applies `patch` to each. */
 function saveTo(
   repo: ItemsRepo,
   rawKey: unknown,
@@ -73,9 +76,9 @@ function saveTo(
   const scope = scopeSchema.safeParse(rawScope);
   if (!key || !scope.success) return Promise.resolve({ ok: false, error: MISSING });
   return attempt(async () => {
-    const item = await target(repo, key, scope.data, timeZone);
-    if (!item) return { ok: false, error: MISSING };
-    await repo.update(item.id, patch);
+    const items = await targets(repo, key, scope.data, timeZone);
+    if (items.length === 0) return { ok: false, error: MISSING };
+    for (const item of items) await repo.update(item.id, patch);
   });
 }
 
@@ -153,9 +156,9 @@ export async function promoteSubtask(repo: ItemsRepo, rawId: unknown): Promise<A
 
 /**
  * Removes an item. One occurrence of a series is skipped rather than deleted,
- * so it stays gone instead of coming back from the series. A series, or any
- * occurrence with scope "all", soft-deletes the series and leaves its
- * overrides as they are. Anything else goes with its subtasks: children first,
+ * so it stays gone instead of coming back from the series. With scope "all" the
+ * series goes, with the occurrence it was deleted from; its other overrides
+ * stay as ordinary items. Anything else goes with its subtasks: children first,
  * so a failure part way leaves the parent in place and running it again
  * finishes the job.
  */
@@ -164,14 +167,17 @@ export async function deleteItem(repo: ItemsRepo, rawKey: unknown, timeZone: str
   const scope = scopeSchema.safeParse(rawScope);
   if (!key || !scope.success) return { ok: false, error: MISSING };
   return attempt(async () => {
-    const item = await target(repo, key, scope.data, timeZone);
-    if (!item) return { ok: false, error: MISSING };
-    if (item.recurrence.kind === "override" && (await seriesOf(repo, item))) {
-      await repo.update(item.id, { status: "dropped" });
+    const items = await targets(repo, key, scope.data, timeZone);
+    if (items.length === 0) return { ok: false, error: MISSING };
+    const [first] = items;
+    if (scope.data === "one" && first.recurrence.kind === "override" && (await seriesOf(repo, first))) {
+      await repo.update(first.id, { status: "dropped" });
       return;
     }
-    for (const child of await repo.listChildren(item.id)) await repo.softDelete(child.id);
-    await repo.softDelete(item.id);
+    for (const item of items) {
+      for (const child of await repo.listChildren(item.id)) await repo.softDelete(child.id);
+      await repo.softDelete(item.id);
+    }
   });
 }
 
@@ -196,7 +202,7 @@ export async function setRepeat(
   if (!choice.success) return { ok: false, error: "That repeat setting is not one Axiis knows." };
   const { preset, end } = choice.data;
   return attempt(async () => {
-    const item = await target(repo, key, "all", timeZone);
+    const [item] = await targets(repo, key, "all", timeZone);
     if (!item) return { ok: false, error: MISSING };
 
     if (preset === "none") {

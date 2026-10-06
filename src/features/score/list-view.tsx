@@ -1,7 +1,8 @@
 "use client";
 
 import { ViewTransition } from "react";
-import type { Area, ShownItem } from "@/domain/item";
+import { repeats, type Area, type ShownItem } from "@/domain/item";
+import { RepeatMark } from "@/features/today/repeat-mark";
 import { formatClock } from "@/features/today/format";
 import { Glyph } from "@/features/today/glyph";
 import type { BeamState, TodayEntry, TodayView } from "@/features/today/model";
@@ -76,6 +77,12 @@ export function ListView({
           className={`min-w-0 cursor-pointer rounded text-left break-words hover:underline ${TITLE_WEIGHT[state]}`}
         >
           {item.title}
+          {repeats(item) && (
+            <>
+              <RepeatMark className="ml-1.5 text-ink-3" />
+              <span className="sr-only">, repeats</span>
+            </>
+          )}
           {count && (
             <span className="ml-1.5 font-normal text-ink-2 tabular">
               <span aria-hidden="true">

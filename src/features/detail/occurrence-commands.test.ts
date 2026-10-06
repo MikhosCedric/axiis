@@ -89,7 +89,8 @@ describe("per-occurrence writes", () => {
     expect(await renameItem(w.repo, w.key("2026-10-08"), "Daily standup", TZ, "all")).toEqual({ ok: true });
     expect(await setItemArea(w.repo, w.overrides()[0].id, home.id, TZ, "all")).toEqual({ ok: true });
     expect(w.series).toMatchObject({ title: "Daily standup", areaId: home.id });
-    expect(w.overrides()).toHaveLength(1);
+    // "All of them" from an override includes the one in view, and no other override.
+    expect(w.overrides()).toEqual([expect.objectContaining({ title: "Standup, short", areaId: home.id })]);
   });
 
   it("rejects an unknown scope", async () => {
@@ -115,6 +116,16 @@ describe("delete and skip", () => {
     await setDone(w.repo, w.key("2026-10-06"), true, TZ);
     expect(await deleteItem(w.repo, w.key("2026-10-07"), TZ, "all")).toEqual({ ok: true });
     expect(w.items.find((i) => i.id === w.series.id)).toBeUndefined();
+    expect(w.overrides().map((o) => o.status)).toEqual(["done"]);
+  });
+
+  it("deleting all of them from an override takes that override too", async () => {
+    const w = world();
+    await setDone(w.repo, w.key("2026-10-06"), true, TZ);
+    await renameItem(w.repo, w.key("2026-10-07"), "In view", TZ);
+    const inView = w.overrides()[1];
+    expect(await deleteItem(w.repo, inView.id, TZ, "all")).toEqual({ ok: true });
+    expect(w.items.some((i) => i.id === w.series.id || i.id === inView.id)).toBe(false);
     expect(w.overrides().map((o) => o.status)).toEqual(["done"]);
   });
 });
