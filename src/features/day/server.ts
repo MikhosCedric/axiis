@@ -6,10 +6,10 @@ import { getItemsRepo } from "@/lib/items";
 import { resolveTimeZone, toLocalDate } from "@/lib/dates";
 import { loadDay } from "./load";
 
-const getTimeZone = cache(async () => resolveTimeZone((await cookies()).get(TZ_COOKIE)?.value));
+export const getTimeZone = cache(async () => resolveTimeZone((await cookies()).get(TZ_COOKIE)?.value));
 
 // One instant per request, so the shell and the page agree on which day is today.
-const getNow = cache(() => new Date());
+export const getNow = cache(() => new Date());
 
 /** The user's current local date. */
 export const getTodayDate = cache(async () => toLocalDate(getNow(), await getTimeZone()));
