@@ -10,6 +10,7 @@ import {
   deleteItem,
   promoteSubtask,
   renameItem,
+  restoreOccurrence,
   setFirstDay,
   setItemArea,
   setRepeat,
@@ -64,4 +65,8 @@ export async function setRepeatAction(id: string, choice: unknown): Promise<Acti
 
 export async function stopRepeatingAction(id: string): Promise<ActionResult> {
   return refreshed(await stopRepeating(await getItemsRepo(), id, await getTimeZone()));
+}
+
+export async function restoreOccurrenceAction(key: string): Promise<ActionResult> {
+  return refreshed(await restoreOccurrence(await getItemsRepo(), key, await getTimeZone()));
 }

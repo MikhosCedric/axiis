@@ -54,6 +54,14 @@ export const SkipIcon = () => (
   </Icon>
 );
 
+/** Turning back to put a skipped occurrence in place again: the skip arrow, mirrored. */
+export const RestoreIcon = () => (
+  <Icon>
+    <path d="M15 12.5c-1.5-4.5-6.5-6-10-3" />
+    <path d="M4.5 6.5v3.2h3.2" />
+  </Icon>
+);
+
 /** A line that ends at a bar, for ending a series. */
 export const StopIcon = () => (
   <Icon>
