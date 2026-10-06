@@ -62,7 +62,7 @@ export function TaggedHarness({ name, itemId }: { name: string; itemId: string |
     const key = parseItemKey(itemId);
     if (!key || !itemId) return;
     let live = true;
-    void loadDetail(store.repo, key, TZ).then((view) => {
+    void loadDetail(store.repo, key, new Date(), TZ).then((view) => {
       if (live) setLoaded({ key: itemId, view });
     });
     return () => {

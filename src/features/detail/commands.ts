@@ -85,7 +85,7 @@ function saveTo(
   });
 }
 
-export async function loadDetail(repo: ItemsRepo, key: ParsedItemKey, timeZone: string): Promise<DetailView | null> {
+export async function loadDetail(repo: ItemsRepo, key: ParsedItemKey, now: Date, timeZone: string): Promise<DetailView | null> {
   const found = await resolveKey(repo, key, timeZone);
   if (!found) return null;
   const item = found.item;
@@ -99,7 +99,8 @@ export async function loadDetail(repo: ItemsRepo, key: ParsedItemKey, timeZone: 
   ]);
   const owner = series?.id ?? found.item.id;
   const on = byName((await repo.tagsForItems([owner as ItemId]))[owner] ?? []).map((t) => t.name);
-  return buildDetail({ item, series, areas, subtasks, parent, timeZone, tags: { on, known: byUse(known) } });
+  const today = toLocalDate(now, timeZone);
+  return buildDetail({ item, series, areas, subtasks, parent, timeZone, today, tags: { on, known: byUse(known) } });
 }
 
 export async function renameItem(

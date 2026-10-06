@@ -4,7 +4,7 @@ import { dayHref } from "@/features/day/nav";
 import { LISTS_PATH } from "@/features/lists/model";
 import { tagHref, TAGS_PATH } from "@/features/tags/model";
 import type { SearchRow } from "@/features/notes/model";
-import { formatDayHeading } from "@/features/today/format";
+import { formatDayIn } from "@/features/today/format";
 import { completeDatePhrase, parseDatePhrase } from "./date-phrase";
 import { rank } from "./rank";
 
@@ -49,8 +49,7 @@ export function findQuery(input: string): string | null {
 }
 
 function dateLabel(date: LocalDate, today: LocalDate): string {
-  const year = date.slice(0, 4) === today.slice(0, 4) ? "" : ` ${date.slice(0, 4)}`;
-  return `Go to ${formatDayHeading(date)}${year}`;
+  return `Go to ${formatDayIn(date, today)}`;
 }
 
 /**

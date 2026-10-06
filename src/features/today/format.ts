@@ -7,6 +7,12 @@ export function formatDayHeading(date: LocalDate): string {
   return heading.format(new Date(`${date}T12:00:00Z`));
 }
 
+/** `formatDayHeading`, with the year when it is not the year of `today`: "Thursday 7 January 2027". */
+export function formatDayIn(date: LocalDate, today: LocalDate): string {
+  const year = date.slice(0, 4) === today.slice(0, 4) ? "" : ` ${date.slice(0, 4)}`;
+  return `${formatDayHeading(date)}${year}`;
+}
+
 const clocks = new Map<string, Intl.DateTimeFormat>();
 
 /** 24-hour "09:30" in the user's zone. */

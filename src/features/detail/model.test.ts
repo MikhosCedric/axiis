@@ -71,7 +71,7 @@ describe("subtaskPolicy", () => {
 });
 
 describe("buildDetail", () => {
-  const base = { areas: [], subtasks: [], parent: null, timeZone: "UTC" };
+  const base = { areas: [], subtasks: [], parent: null, timeZone: "UTC", today: "2026-10-06" as LocalDate };
 
   it("lists subtasks only for an item that may hold them", () => {
     const child = makeItem({ title: "Pack charger", status: "done" });

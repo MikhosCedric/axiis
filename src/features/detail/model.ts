@@ -82,8 +82,14 @@ export type RuleView = {
   defaultUntil: LocalDate;
 };
 
-function ruleView(rule: Rule, firstOn: LocalDate, shownOn: LocalDate): RuleView {
-  return { preset: presetOf(rule), end: rule.end, summary: describeRule(rule, firstOn), firstOn, defaultUntil: addDays(shownOn, 28) };
+function ruleView(rule: Rule, firstOn: LocalDate, shownOn: LocalDate, today: LocalDate): RuleView {
+  return {
+    preset: presetOf(rule),
+    end: rule.end,
+    summary: describeRule(rule, firstOn, today),
+    firstOn,
+    defaultUntil: addDays(shownOn, 28),
+  };
 }
 
 export type DetailSubtask = { id: ItemId; title: string; done: boolean };
@@ -161,7 +167,7 @@ function timeOf(schedule: Schedule, timeZone: string): TimeOfDay | null {
   return { start, length: localMinutes(schedule.end, on, timeZone) - start };
 }
 
-function repeatView(item: ShownItem, series: Item | null, subtasks: Item[], timeZone: string): RepeatView {
+function repeatView(item: ShownItem, series: Item | null, subtasks: Item[], timeZone: string, today: LocalDate): RepeatView {
   if (item.type === "note") return { kind: "hidden" };
   const r = item.recurrence;
   if (r.kind === "none") {
@@ -171,14 +177,14 @@ function repeatView(item: ShownItem, series: Item | null, subtasks: Item[], time
   }
   if (r.kind === "series") {
     const firstOn = firstDay(item.schedule, timeZone)!;
-    return { kind: "series", ...ruleView(r.rule, firstOn, firstOn) };
+    return { kind: "series", ...ruleView(r.rule, firstOn, firstOn, today) };
   }
   // An override whose series was deleted is an ordinary item now.
   if (series?.recurrence.kind !== "series") return { kind: "hidden" };
   return {
     kind: "occurrence",
     on: formatDayHeading(r.originalOn),
-    ...ruleView(series.recurrence.rule, firstDay(series.schedule, timeZone)!, r.originalOn),
+    ...ruleView(series.recurrence.rule, firstDay(series.schedule, timeZone)!, r.originalOn, today),
   };
 }
 
@@ -190,9 +196,11 @@ export function buildDetail(input: {
   subtasks: Item[];
   parent: Item | null;
   timeZone: string;
+  /** The user's local date, so a date in another year can say which. */
+  today: LocalDate;
   tags?: DetailView["tags"];
 }): DetailView {
-  const { item, series = null, areas, subtasks, parent, timeZone, tags = { on: [], known: [] } } = input;
+  const { item, series = null, areas, subtasks, parent, timeZone, today, tags = { on: [], known: [] } } = input;
   const policy = subtaskPolicy(item);
   const nesting: Nesting =
     policy.kind === "holds-subtasks"
@@ -210,7 +218,7 @@ export function buildDetail(input: {
     due: describeDue(item.dueOn),
     areas: areas.map((a) => ({ id: a.id, name: a.name })),
     nesting,
-    repeat: repeatView(item, series, subtasks, timeZone),
+    repeat: repeatView(item, series, subtasks, timeZone, today),
     notesFor: series?.id ?? (isStored(item) ? item.id : item.recurrence.seriesId),
     tags,
   };
