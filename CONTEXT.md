@@ -34,7 +34,7 @@ A solo productivity web app. One connected set of items, shown through many view
 
 **Tray**: the "Waiting" list of open items with no day, under the Score and the Week. The same items make up the Inbox. Dragging an item from the tray onto a staff schedules it.
 
-**Capture**: adding an item with nothing but a title. It lands unscheduled in the tray. Must take under two seconds.
+**Capture**: adding an item from one line of text. A plain line lands unscheduled in the tray. On Today, Week, the Inbox and the palette, a day, a time, a length and tags at the line's start or end plan and tag the new task ("dentist tomorrow 9:00 #health"); a checklist captured on Lists keeps its name as typed. Must take under two seconds.
 
 **Soft delete**: setting `deleted_at` instead of removing the row. The app never hard-deletes items; deleting a whole account cascades.
 
