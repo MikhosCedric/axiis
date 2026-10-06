@@ -17,6 +17,7 @@ import { tagLine } from "@/features/tags/model";
 import { RowTags } from "@/features/tags/row-tags";
 import { formatClock } from "@/features/today/format";
 import { Glyph } from "@/features/today/glyph";
+import { LineLegend } from "@/features/today/line-legend";
 import { SameInInbox } from "@/features/inbox/same-in-inbox";
 import { EMPTY_TRAY, WAITING, type BeamState, type TodayEntry, type TodayView } from "@/features/today/model";
 import { instantAt, localMinutes } from "@/lib/dates";
@@ -282,12 +283,15 @@ export function ScoreView({
       <p aria-hidden="true" className="mt-3 hidden text-[13px] leading-relaxed text-ink-3 pointer-coarse:block">
         Press and hold a beam, then drag it to move it, or hold and drag its right end to change its length.
       </p>
-      <HelpHint id={KEYS_ID} label="Keyboard help">
-        Drag a beam to move it, or its right end to change its length. With a beam focused, <Kbd>←</Kbd> <Kbd>→</Kbd>{" "}
-        move it a quarter hour, <Kbd>Shift</Kbd> with <Kbd>←</Kbd> <Kbd>→</Kbd> changes its length, <Kbd>↑</Kbd>{" "}
-        <Kbd>↓</Kbd> change its area, <Kbd>Space</Kbd> marks it done, <Kbd>Enter</Kbd> opens it and <Kbd>Backspace</Kbd>{" "}
-        sends it back to waiting. On a waiting item, <Kbd>↑</Kbd> or <Kbd>↓</Kbd> gives it a time.
-      </HelpHint>
+      <div className="flex flex-wrap items-center gap-x-6">
+        <HelpHint id={KEYS_ID} label="Keyboard help">
+          Drag a beam to move it, or its right end to change its length. With a beam focused, <Kbd>←</Kbd> <Kbd>→</Kbd>{" "}
+          move it a quarter hour, <Kbd>Shift</Kbd> with <Kbd>←</Kbd> <Kbd>→</Kbd> changes its length, <Kbd>↑</Kbd>{" "}
+          <Kbd>↓</Kbd> change its area, <Kbd>Space</Kbd> marks it done, <Kbd>Enter</Kbd> opens it and{" "}
+          <Kbd>Backspace</Kbd> sends it back to waiting. On a waiting item, <Kbd>↑</Kbd> or <Kbd>↓</Kbd> gives it a time.
+        </HelpHint>
+        <LineLegend now />
+      </div>
 
       <section
         ref={tray}

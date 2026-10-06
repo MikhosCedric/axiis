@@ -27,6 +27,7 @@ import { CaptureField } from "@/features/today/capture-field";
 import type { ActionResult } from "@/features/today/commands";
 import { formatClock, formatDayHeading } from "@/features/today/format";
 import { Glyph } from "@/features/today/glyph";
+import { LineLegend } from "@/features/today/line-legend";
 import { SameInInbox } from "@/features/inbox/same-in-inbox";
 import { buildToday, EMPTY_TRAY, stateOf, WAITING, type TodayEntry } from "@/features/today/model";
 import { dayRangeFor } from "@/lib/dates";
@@ -232,12 +233,15 @@ export function WeekView({
           </div>
         </section>
 
-        <HelpHint id={KEYS_ID} label="Keyboard help">
-          Drag an item to another day, or down to the tray to clear its day. With an item focused, <Kbd>←</Kbd>{" "}
-          <Kbd>→</Kbd> move it a day, <Kbd>Backspace</Kbd> sends it to the tray, <Kbd>Space</Kbd> marks it done and{" "}
-          <Kbd>Enter</Kbd> opens it. On a waiting item, <Kbd>↑</Kbd> gives it a day. <Kbd>[</Kbd> <Kbd>]</Kbd> change
-          the week and <Kbd>T</Kbd> comes back to this one.
-        </HelpHint>
+        <div className="flex flex-wrap items-center gap-x-6">
+          <HelpHint id={KEYS_ID} label="Keyboard help">
+            Drag an item to another day, or down to the tray to clear its day. With an item focused, <Kbd>←</Kbd>{" "}
+            <Kbd>→</Kbd> move it a day, <Kbd>Backspace</Kbd> sends it to the tray, <Kbd>Space</Kbd> marks it done and{" "}
+            <Kbd>Enter</Kbd> opens it. On a waiting item, <Kbd>↑</Kbd> gives it a day. <Kbd>[</Kbd> <Kbd>]</Kbd> change
+            the week and <Kbd>T</Kbd> comes back to this one.
+          </HelpHint>
+          <LineLegend now={false} />
+        </div>
 
         <section
           data-drop="tray"

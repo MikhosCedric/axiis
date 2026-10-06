@@ -8,7 +8,12 @@ import type { DetailActions, DetailView } from "@/features/detail/model";
 import { loadLists } from "@/features/lists/commands";
 import { ListsView } from "@/features/lists/lists-view";
 import type { ListsData } from "@/features/lists/model";
-import { captureChecklist, type ActionResult, type CaptureResult } from "@/features/today/commands";
+import {
+  captureChecklist,
+  setDone as setDoneCommand,
+  type ActionResult,
+  type CaptureResult,
+} from "@/features/today/commands";
 import { harnessDetailActions } from "../detail-actions";
 import { settings, stores } from "./store";
 
@@ -62,6 +67,15 @@ export function ListsHarness({ empty, itemId }: { empty: boolean; itemId: string
     return saved(await captureChecklist(settings.failing ? { ...store.repo, create: fail } : store.repo, title));
   }
 
+  // The list is reloaded before the save resolves, so the tick never reads as undone in between.
+  async function setDone(id: string, done: boolean): Promise<ActionResult> {
+    await pause();
+    if (settings.failing) return { ok: false, error: FAILED };
+    const result = await setDoneCommand(store.repo, id, done, TZ);
+    if (result.ok) setData(await loadLists(store.repo, TZ));
+    return saved(result);
+  }
+
   const current = loaded && loaded.key === itemId ? loaded : null;
   const detail = current ? (
     current.view ? (
@@ -87,7 +101,7 @@ export function ListsHarness({ empty, itemId }: { empty: boolean; itemId: string
           Make every save fail
         </label>
       </div>
-      {data && <ListsView data={data} detail={detail} capture={capture} />}
+      {data && <ListsView data={data} detail={detail} capture={capture} setDone={setDone} />}
     </>
   );
 }

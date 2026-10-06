@@ -8,7 +8,7 @@ import { DetailAside } from "@/features/detail/detail-aside";
 import { captureAction, setDoneAction } from "@/features/today/actions";
 import { CaptureField } from "@/features/today/capture-field";
 import type { ActionResult } from "@/features/today/commands";
-import { Glyph } from "@/features/today/glyph";
+import { DoneToggle } from "@/features/today/done-toggle";
 import { WAITING } from "@/features/today/model";
 import { RowTags } from "@/features/tags/row-tags";
 import { planAction } from "./actions";
@@ -230,10 +230,7 @@ function InboxRow({
         selected ? "bg-accent-wash" : ""
       }`}
     >
-      <label className="relative grid h-8 w-12 cursor-pointer place-items-center rounded-md hover:bg-accent-wash has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-accent">
-        <input type="checkbox" className="sr-only" checked={done} onChange={onToggleDone} aria-label={`Done: ${item.title}`} />
-        <Glyph type={item.type} state={done ? "done" : "planned"} justDone={justDone} />
-      </label>
+      <DoneToggle type={item.type} title={item.title} done={done} justDone={justDone} onToggle={onToggleDone} />
       <button
         type="button"
         data-open={item.id}
