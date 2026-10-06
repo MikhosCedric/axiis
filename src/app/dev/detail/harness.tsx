@@ -8,6 +8,10 @@ import { fakeRepo, makeItem } from "@/features/today/test-support";
 import { addSubtask, deleteItem, parseItemId, promoteSubtask, renameItem, setItemArea } from "@/features/detail/commands";
 import { DetailSheet, MissingItem } from "@/features/detail/detail-sheet";
 import { buildDetail, type DetailActions } from "@/features/detail/model";
+import { createLinkedNote } from "@/features/notes/commands";
+import { connectedRow } from "@/features/notes/model";
+import { fakeNotesRepo, type NotesStore } from "@/lib/notes/fake";
+import type { LinkId } from "@/lib/notes/repo";
 
 const id = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, "0")}` as ItemId;
 const areaId = (n: number) => `00000000-0000-4000-9000-${String(n).padStart(12, "0")}` as AreaId;
@@ -73,7 +77,21 @@ function createStore() {
     const at = items.findIndex((i) => i.id === gone);
     if (at >= 0) items.splice(at, 1);
   };
-  return { items, repo: fake.repo };
+  const notesStore: NotesStore = {
+    items,
+    bodyText: new Map(),
+    links: [{ id: "10000000-0000-4000-8000-000000000001" as LinkId, fromId: id(20), toId: id(1) }],
+  };
+  return { items, repo: fake.repo, notesStore, notes: fakeNotesRepo(notesStore) };
+}
+
+function linkedNotesOf(store: NotesStore, itemId: ItemId) {
+  return store.links.flatMap((l) => {
+    if (l.fromId !== itemId && l.toId !== itemId) return [];
+    const outgoing = l.fromId === itemId;
+    const other = store.items.find((i) => i.id === (outgoing ? l.toId : l.fromId));
+    return other?.type === "note" ? [connectedRow({ linkId: l.id, direction: outgoing ? "outgoing" : "incoming", item: other })] : [];
+  });
 }
 
 const pause = () => new Promise((resolve) => setTimeout(resolve, 450));
@@ -100,6 +118,11 @@ export function DetailHarness({ itemId, timeZone }: { itemId: string | null; tim
     addSubtask: fake(addSubtask),
     promote: fake(promoteSubtask),
     remove: fake(deleteItem),
+    newLinkedNote: async (itemId) => {
+      await pause();
+      if (failing) return { ok: false, error: "A new note could not be made. Try again." };
+      return createLinkedNote(store.notes, store.repo, itemId);
+    },
   };
 
   const item = store.items.find((i) => i.id === itemId) ?? null;
@@ -142,7 +165,7 @@ export function DetailHarness({ itemId, timeZone }: { itemId: string | null; tim
       </main>
       {parseItemId(itemId) && (
         <div className="border-t border-rule px-4 pt-5 pb-10 rail:border-t-0 rail:border-l rail:px-6 rail:pt-8">
-          {view ? <DetailSheet key={view.item.id} view={view} actions={actions} /> : <MissingItem />}
+          {view ? <DetailSheet key={view.item.id} view={view} actions={actions} linkedNotes={linkedNotesOf(store.notesStore, view.item.id)} /> : <MissingItem />}
         </div>
       )}
     </div>
