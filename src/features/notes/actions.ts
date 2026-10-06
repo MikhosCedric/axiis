@@ -1,6 +1,7 @@
 "use server";
 
 import { refresh } from "next/cache";
+import { getTimeZone } from "@/features/day/server";
 import { getItemsRepo } from "@/lib/items";
 import { getNotesRepo } from "@/lib/notes";
 import { deleteItem, setItemArea } from "@/features/detail/commands";
@@ -26,11 +27,11 @@ export async function saveNoteAction(id: string, content: { title: string; body:
 }
 
 export async function setNoteAreaAction(id: string, areaId: string | null): Promise<ActionResult> {
-  return refreshed(await setItemArea(await getItemsRepo(), id, areaId));
+  return refreshed(await setItemArea(await getItemsRepo(), id, areaId, await getTimeZone()));
 }
 
 export async function deleteNoteAction(id: string): Promise<ActionResult> {
-  return deleteItem(await getItemsRepo(), id);
+  return deleteItem(await getItemsRepo(), id, await getTimeZone());
 }
 
 export async function searchItemsAction(query: string): Promise<SearchRow[]> {

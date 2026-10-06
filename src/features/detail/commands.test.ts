@@ -87,7 +87,7 @@ describe("deleteItem", () => {
     const b = makeItem({ parentId: parent.id });
     const { repo, calls, deleted } = recordingRepo([parent, a, b]);
 
-    expect(await deleteItem(repo, parent.id)).toEqual({ ok: true });
+    expect(await deleteItem(repo, parent.id, "UTC")).toEqual({ ok: true });
     expect(deleted).toEqual([a.id, b.id, parent.id]);
     expect(calls.update).toEqual([]);
     expect(calls.create).toEqual([]);
@@ -98,7 +98,7 @@ describe("deleteItem", () => {
     const child = makeItem({ parentId: parent.id });
     const { repo, deleted } = recordingRepo([parent, child]);
 
-    expect(await deleteItem(repo, child.id)).toEqual({ ok: true });
+    expect(await deleteItem(repo, child.id, "UTC")).toEqual({ ok: true });
     expect(deleted).toEqual([child.id]);
   });
 
@@ -111,7 +111,7 @@ describe("deleteItem", () => {
       deleted.push(id);
     };
 
-    expect((await deleteItem(repo, parent.id)).ok).toBe(false);
+    expect((await deleteItem(repo, parent.id, "UTC")).ok).toBe(false);
     expect(deleted).toEqual([]);
   });
 });
@@ -120,7 +120,7 @@ describe("renameItem and setItemArea", () => {
   it("saves a trimmed title", async () => {
     const item = makeItem();
     const { repo, calls } = fakeRepo([item]);
-    expect(await renameItem(repo, item.id, " Call the bank ")).toEqual({ ok: true });
+    expect(await renameItem(repo, item.id, " Call the bank ", "UTC")).toEqual({ ok: true });
     expect(calls.update).toEqual([[item.id, { title: "Call the bank" }]]);
   });
 
@@ -128,8 +128,8 @@ describe("renameItem and setItemArea", () => {
     const work = area("Work");
     const item = makeItem();
     const { repo, calls } = fakeRepo([item], [work]);
-    expect(await setItemArea(repo, item.id, work.id)).toEqual({ ok: true });
-    expect(await setItemArea(repo, item.id, null)).toEqual({ ok: true });
+    expect(await setItemArea(repo, item.id, work.id, "UTC")).toEqual({ ok: true });
+    expect(await setItemArea(repo, item.id, null, "UTC")).toEqual({ ok: true });
     expect(calls.update).toEqual([
       [item.id, { areaId: work.id }],
       [item.id, { areaId: null }],
@@ -150,15 +150,15 @@ describe("invalid input", () => {
     });
 
     for (const bad of BAD_IDS) {
-      expect((await renameItem(guarded, bad, "Fine")).ok).toBe(false);
-      expect((await setItemArea(guarded, bad, null)).ok).toBe(false);
-      expect((await setItemArea(guarded, item.id, bad === null ? "nope" : bad)).ok).toBe(false);
+      expect((await renameItem(guarded, bad, "Fine", "UTC")).ok).toBe(false);
+      expect((await setItemArea(guarded, bad, null, "UTC")).ok).toBe(false);
+      expect((await setItemArea(guarded, item.id, bad === null ? "nope" : bad, "UTC")).ok).toBe(false);
       expect((await addSubtask(guarded, bad, "Fine")).ok).toBe(false);
       expect((await promoteSubtask(guarded, bad)).ok).toBe(false);
-      expect((await deleteItem(guarded, bad)).ok).toBe(false);
+      expect((await deleteItem(guarded, bad, "UTC")).ok).toBe(false);
     }
     for (const bad of BAD_TITLES) {
-      expect(await renameItem(guarded, item.id, bad)).toEqual({ ok: false, error: "A title needs a few words, up to 500 characters." });
+      expect(await renameItem(guarded, item.id, bad, "UTC")).toEqual({ ok: false, error: "A title needs a few words, up to 500 characters." });
       expect((await addSubtask(guarded, item.id, bad)).ok).toBe(false);
     }
 
@@ -178,16 +178,16 @@ describe("loadDetail", () => {
     const child = makeItem({ title: "Pack", parentId: parent.id, status: "done" });
     const { repo } = fakeRepo([parent, child], [work]);
 
-    const parentView = await loadDetail(repo, parent.id, "Asia/Kolkata");
+    const parentView = await loadDetail(repo, { kind: "item", id: parent.id }, "Asia/Kolkata");
     expect(parentView?.when).toBe("Tuesday 6 October, 09:00 to 09:30");
     expect(parentView?.nesting).toEqual({ kind: "holds-subtasks", subtasks: [{ id: child.id, title: "Pack", done: true }] });
 
-    const childView = await loadDetail(repo, child.id, "UTC");
+    const childView = await loadDetail(repo, { kind: "item", id: child.id }, "UTC");
     expect(childView?.nesting).toEqual({ kind: "is-subtask", parent: { id: parent.id, title: "Trip" } });
   });
 
   it("returns null for an item that is not there", async () => {
     const { repo } = fakeRepo();
-    expect(await loadDetail(repo, makeItem().id, "UTC")).toBeNull();
+    expect(await loadDetail(repo, { kind: "item", id: makeItem().id }, "UTC")).toBeNull();
   });
 });

@@ -1,6 +1,7 @@
 "use server";
 
 import { refresh } from "next/cache";
+import { getTimeZone } from "@/features/day/server";
 import { getItemsRepo } from "@/lib/items";
 import { captureTask, setDone, type ActionResult } from "./commands";
 
@@ -14,7 +15,7 @@ export async function captureAction(title: string): Promise<ActionResult> {
 }
 
 export async function setDoneAction(id: string, done: boolean): Promise<ActionResult> {
-  const result = await setDone(await getItemsRepo(), id, done);
+  const result = await setDone(await getItemsRepo(), id, done, await getTimeZone());
   if (result.ok) refresh();
   return result;
 }
