@@ -19,6 +19,18 @@ npm test
 npm run build
 ```
 
+## Browser tests
+
+`e2e/` holds Playwright tests that need no sign-in. They cover the signed-out pages and redirects, the dev harness pages under `/dev`, and axe accessibility checks in light, dark and at phone width, failing on serious or critical issues.
+
+```bash
+npm run e2e                      # uses your installed Google Chrome
+E2E_CHANNEL=msedge npm run e2e   # or Microsoft Edge, e.g. on Windows
+npx playwright test e2e/a11y.spec.ts -g dark   # one file, or tests whose title matches
+```
+
+Playwright starts `next dev --webpack` on port 3600 with placeholder Supabase values, or reuses a server already on that port outside CI. It does not download its own browsers. CI runs the suite after the checks job and uploads the report when it fails.
+
 ## Supabase project
 
 1. Create a project at supabase.com. In Project Settings, API, copy the project URL and the `anon` public key into `.env.local`.
