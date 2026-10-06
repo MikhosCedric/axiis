@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useState, type FocusEvent } from "react";
+import { useId, useState, type FocusEvent, type RefObject } from "react";
 import type { LocalDate } from "@/domain/item";
 import { parseLocalDate } from "@/lib/dates";
 import { clockOf, timeFrom, type TimeOfDay } from "./model";
@@ -9,7 +9,7 @@ const field =
   "rounded-md border border-transparent bg-transparent py-1 pr-1 pl-1.5 text-ink tabular hover:border-rule-soft focus:border-field focus:bg-sheet";
 
 /**
- * The Time row for an occurrence: a start and an end, saved when focus leaves
+ * The Time row: a start and an end, saved when focus leaves
  * the pair or on Enter, and a way back to any time. Where the change goes
  * (this one or all of them) is the sheet's scope.
  */
@@ -17,10 +17,13 @@ export function TimeRow({
   time,
   save,
   clear,
+  startRef,
 }: {
   time: TimeOfDay | null;
   save: (time: TimeOfDay) => void;
   clear: () => void;
+  /** The sheet's handle on the start field, so it can send focus here when the item needs a time. */
+  startRef?: RefObject<HTMLInputElement | null>;
 }) {
   const labelId = useId();
   const hintId = useId();
@@ -39,9 +42,10 @@ export function TimeRow({
     if (time?.start !== next.start || time.length !== next.length) save(next);
   }
 
-  function clockField(label: string, value: string, set: (value: string) => void) {
+  function clockField(label: string, value: string, set: (value: string) => void, ref?: RefObject<HTMLInputElement | null>) {
     return (
       <input
+        ref={ref}
         type="text"
         inputMode="numeric"
         autoComplete="off"
@@ -83,7 +87,7 @@ export function TimeRow({
             if (e.key === "Enter") commit();
           }}
         >
-          {clockField("Starts at", start, setStart)}
+          {clockField("Starts at", start, setStart, startRef)}
           <span className="text-ink-2">to</span>
           {clockField("Ends at", end, setEnd)}
         </span>

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { ITEM_TYPES, type ItemId, type LocalDate } from "@/domain/item";
 import { area, makeItem } from "@/features/today/test-support";
-import { buildDetail, clockOf, describeDue, describeWhen, minutesOf, progressLine, subtaskPolicy, timeFrom } from "./model";
+import { buildDetail, clockOf, describeDue, describeWhen, minutesOf, planOptions, progressLine, subtaskPolicy, timeFrom } from "./model";
 
 describe("timeFrom", () => {
   it("reads a start and an end as minutes and a length", () => {
@@ -142,5 +142,46 @@ describe("progressLine", () => {
   it("counts done subtasks, and says nothing when there are none", () => {
     expect(progressLine([])).toBeNull();
     expect(progressLine([{ done: true }, { done: false }, { done: true }])).toBe("2 of 3 done");
+  });
+});
+
+describe("planOptions", () => {
+  const base = { areas: [], subtasks: [], parent: null, timeZone: "UTC", today: "2026-10-06" as LocalDate };
+  const daily = { freq: "daily", interval: 1, end: { kind: "never" } } as const;
+
+  it("lets a one-off item go to any day, and off it or timed only once it has one", () => {
+    const waiting = buildDetail({ ...base, item: makeItem() });
+    expect(waiting.day).toBeNull();
+    expect(waiting.today).toBe("2026-10-06");
+    expect(planOptions(waiting, "one")).toEqual({ days: true, unplan: false, time: false, firstDay: false });
+
+    const planned = buildDetail({ ...base, item: makeItem({ type: "event", schedule: { kind: "day", on: "2026-10-08" as LocalDate } }) });
+    expect(planned.day).toBe("2026-10-08");
+    expect(planOptions(planned, "one")).toEqual({ days: true, unplan: true, time: true, firstDay: false });
+  });
+
+  it("offers a note nothing", () => {
+    expect(planOptions(buildDetail({ ...base, item: makeItem({ type: "note" }) }), "one")).toEqual({
+      days: false,
+      unplan: false,
+      time: false,
+      firstDay: false,
+    });
+  });
+
+  it("keeps a series on its First day, and moves one occurrence only with This one, never off its day", () => {
+    const series = makeItem({ schedule: { kind: "day", on: "2026-10-05" as LocalDate }, recurrence: { kind: "series", rule: daily } });
+    expect(planOptions(buildDetail({ ...base, item: series }), "one")).toEqual({ days: false, unplan: false, time: true, firstDay: true });
+
+    const override = makeItem({
+      schedule: { kind: "day", on: "2026-10-07" as LocalDate },
+      recurrence: { kind: "override", seriesId: series.id, originalOn: "2026-10-07" as LocalDate },
+    });
+    const view = buildDetail({ ...base, item: override, series });
+    expect(planOptions(view, "one")).toEqual({ days: true, unplan: false, time: true, firstDay: false });
+    expect(planOptions(view, "all")).toEqual({ days: false, unplan: false, time: true, firstDay: true });
+
+    // Once its series is gone it is an ordinary item.
+    expect(planOptions(buildDetail({ ...base, item: override, series: null }), "one").unplan).toBe(true);
   });
 });
