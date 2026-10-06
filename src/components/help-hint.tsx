@@ -7,11 +7,21 @@ import { useState, type ReactNode } from "react";
  * is always in the page, only hidden while closed, so `aria-describedby` can
  * still point at `id` and read it out.
  */
-export function HelpHint({ id, label, children }: { id: string; label: string; children: ReactNode }) {
+export function HelpHint({
+  id,
+  label,
+  className = "mt-3",
+  children,
+}: {
+  id: string;
+  label: string;
+  className?: string;
+  children: ReactNode;
+}) {
   const [open, setOpen] = useState(false);
   return (
     <div
-      className="group relative mt-3 inline-block"
+      className={`group relative inline-block ${className}`}
       onBlur={(e) => {
         if (!e.currentTarget.contains(e.relatedTarget)) setOpen(false);
       }}

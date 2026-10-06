@@ -14,22 +14,49 @@ import {
 } from "react";
 import type { LocalDate } from "@/domain/item";
 import { isTypingTarget } from "@/features/day/nav";
+import { SELECTED_ITEM_PARAM } from "@/features/day/types";
+import { planAction } from "@/features/inbox/actions";
 import { searchItemsAction } from "@/features/notes/actions";
 import { TYPE_WORD, type SearchRow } from "@/features/notes/model";
-import { captureAction } from "@/features/today/actions";
-import type { ActionResult } from "@/features/today/commands";
+import { addTagAction } from "@/features/tags/actions";
+import { captureAction, setDoneAction } from "@/features/today/actions";
+import { capturedLine } from "@/features/today/capture-syntax";
+import type { ActionResult, CaptureResult } from "@/features/today/commands";
 import { TITLE_MAX } from "@/features/today/model";
-import { findQuery, findStatus, paletteSections, type Command, type Find } from "./model";
+import { describeItemAction } from "./actions";
+import {
+  actedLine,
+  actSections,
+  findQuery,
+  findStatus,
+  paletteSections,
+  type Act,
+  type Command,
+  type Find,
+  type Target,
+} from "./model";
 import styles from "./palette.module.css";
 import { chordCaps, chordSpoken, globalShortcut, SHORTCUTS, type Chord } from "./shortcuts";
 
 /** The writes and reads the palette makes. Server actions in the app, in-memory fakes in the dev harness. */
 export type PaletteActions = {
-  capture: (title: string) => Promise<ActionResult>;
+  capture: (title: string) => Promise<CaptureResult>;
   search: (query: string) => Promise<SearchRow[]>;
+  /** The item a screen has selected, by its key, or null when it names nothing. */
+  describe: (key: string) => Promise<Target | null>;
+  setDone: (key: string, done: boolean) => Promise<ActionResult>;
+  plan: (key: string, when: "today" | "tomorrow") => Promise<ActionResult>;
+  tag: (key: string, name: string) => Promise<ActionResult>;
 };
 
-const serverActions: PaletteActions = { capture: captureAction, search: searchItemsAction };
+const serverActions: PaletteActions = {
+  capture: captureAction,
+  search: searchItemsAction,
+  describe: describeItemAction,
+  setDone: setDoneAction,
+  plan: planAction,
+  tag: addTagAction,
+};
 const SEARCH_DELAY_MS = 180;
 
 type Open = "palette" | "help" | null;
@@ -198,11 +225,28 @@ function PaletteBody({
   const [find, setFind] = useState<Find>({ status: "idle" });
   const [active, setActive] = useState(0);
   const [note, setNote] = useState<string | null>(null);
+  const [selected, setSelected] = useState<Target | null>(null);
+  // The item whose actions are listed; null while searching.
+  const [target, setTarget] = useState<Target | null>(null);
+  const searched = useRef("");
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   useEffect(() => () => clearTimeout(timer.current), []);
 
-  const sections = paletteSections(input, today, find);
+  useEffect(() => {
+    const key = new URLSearchParams(window.location.search).get(SELECTED_ITEM_PARAM);
+    if (!key) return;
+    let live = true;
+    actions.describe(key).then(
+      (found) => live && setSelected(found),
+      () => {},
+    );
+    return () => {
+      live = false;
+    };
+  }, [actions]);
+
+  const sections = target ? actSections(input, target) : paletteSections(input, today, find, selected);
   const commands = sections.flatMap((s) => s.commands);
   const current = commands.length ? Math.min(active, commands.length - 1) : -1;
   const optionId = (c: Command) => `${id}-${c.id}`;
@@ -217,6 +261,10 @@ function PaletteBody({
     setInput(value);
     setActive(0);
     setNote(null);
+    if (!target) search(value);
+  }
+
+  function search(value: string) {
     clearTimeout(timer.current);
     const q = findQuery(value);
     if (!q) return;
@@ -237,10 +285,65 @@ function PaletteBody({
       case "capture":
         capture(command.title);
         return;
+      case "open":
+        enter(command.target);
+        return;
+      case "act":
+        act(command.act);
+        return;
       default:
         router.push(command.href);
         onClose();
     }
+  }
+
+  /** Lists what can be done to an item. Escape, or Backspace in an empty field, goes back to the search. */
+  function enter(next: Target) {
+    searched.current = input;
+    setTarget(next);
+    setInput("");
+    setActive(0);
+    setNote(null);
+  }
+
+  function leave() {
+    setTarget(null);
+    setInput(searched.current);
+    setActive(0);
+    setNote(null);
+    // Ask again, so a result shows what was just done to it.
+    setFind({ status: "idle" });
+    search(searched.current);
+  }
+
+  function act(a: Act) {
+    if (a.do === "open") {
+      router.push(a.href);
+      onClose();
+      return;
+    }
+    if (a.do === "ask-tag") {
+      setInput("#");
+      setActive(0);
+      return;
+    }
+    const item = target;
+    if (!item) return;
+    setInput("");
+    setActive(0);
+    setNote("Saving");
+    const saving =
+      a.do === "done" ? actions.setDone(item.key, a.done) : a.do === "plan" ? actions.plan(item.key, a.when) : actions.tag(item.key, a.name);
+    saving.then(
+      (result) => {
+        setNote(result.ok ? actedLine(a, item.title) : result.error);
+        if (!result.ok || a.do !== "done") return;
+        const marked = (t: Target | null) => (t?.key === item.key ? { ...t, done: a.done } : t);
+        setTarget(marked);
+        setSelected(marked);
+      },
+      () => setNote("That change did not save. Try again."),
+    );
   }
 
   function capture(title: string) {
@@ -250,7 +353,7 @@ function PaletteBody({
     actions.capture(title).then(
       (result) => {
         if (result.ok) {
-          setNote(`Captured “${title}”. It is waiting for a time on Today.`);
+          setNote(capturedLine(result, "palette"));
           return;
         }
         setInput((value) => value || title);
@@ -264,7 +367,14 @@ function PaletteBody({
   }
 
   function keyDown(e: ReactKeyboardEvent<HTMLInputElement>) {
-    if (e.nativeEvent.isComposing || commands.length === 0) return;
+    if (e.nativeEvent.isComposing) return;
+    if (target && (e.key === "Escape" || (e.key === "Backspace" && input === ""))) {
+      // Stops the dialog closing, so Escape steps back out of the item first.
+      e.preventDefault();
+      leave();
+      return;
+    }
+    if (commands.length === 0) return;
     const last = commands.length - 1;
     const moves: Record<string, number> = {
       ArrowDown: current >= last ? 0 : current + 1,
@@ -291,7 +401,9 @@ function PaletteBody({
         <input
           autoFocus
           role="combobox"
-          aria-label="Search, go to a page or date, or capture"
+          aria-label={
+            target ? `Actions for ${target.title}. Type # and a name to tag it.` : "Search, go to a page or date, or capture"
+          }
           aria-expanded={commands.length > 0}
           aria-controls={`${id}-list`}
           aria-autocomplete="list"
@@ -303,7 +415,7 @@ function PaletteBody({
           onKeyDown={keyDown}
           autoComplete="off"
           spellCheck={false}
-          placeholder="Search, go to a date, or capture"
+          placeholder={target ? "Choose an action, or type # and a tag" : "Search, go to a date, or capture"}
           className="min-w-0 flex-1 bg-transparent py-3.5 text-[15px] text-ink outline-none"
         />
       </div>
@@ -322,7 +434,11 @@ function PaletteBody({
                   id={optionId(command)}
                   role="option"
                   aria-selected={i === current}
-                  aria-label={command.kind === "open" ? `${command.label}, ${TYPE_WORD[command.type]}${command.done ? ", done" : ""}` : undefined}
+                  aria-label={
+                    command.kind === "open"
+                      ? `${command.label}, ${TYPE_WORD[command.target.type]}${command.target.done ? ", done" : ""}`
+                      : undefined
+                  }
                   onMouseDown={(e) => e.preventDefault()}
                   onMouseMove={() => i !== current && setActive(i)}
                   onClick={() => run(command)}
@@ -341,7 +457,7 @@ function PaletteBody({
           {status}
         </p>
         <p aria-hidden="true" className="flex-none text-ink-3 max-rail:hidden">
-          <Kbd>↑</Kbd> <Kbd>↓</Kbd> to choose, <Kbd>Enter</Kbd> to run, <Kbd>Esc</Kbd> to close
+          <Kbd>↑</Kbd> <Kbd>↓</Kbd> to choose, <Kbd>Enter</Kbd> to run, <Kbd>Esc</Kbd> {target ? "to go back" : "to close"}
         </p>
       </div>
     </>
@@ -350,15 +466,16 @@ function PaletteBody({
 
 function CommandLine({ command }: { command: Command }) {
   if (command.kind !== "open") return <span className="min-w-0 truncate text-ink">{command.label}</span>;
+  const { type, done } = command.target;
   return (
     <>
       <span className="grid min-w-0 flex-1">
-        <span className={`truncate text-ink ${command.done ? "line-through decoration-ink-3" : ""}`}>{command.label}</span>
+        <span className={`truncate text-ink ${done ? "line-through decoration-ink-3" : ""}`}>{command.label}</span>
         {command.detail && <span className="truncate text-[13px] text-ink-2">{command.detail}</span>}
       </span>
       <span className="flex-none text-[13px] text-ink-3">
-        {TYPE_WORD[command.type]}
-        {command.done && ", done"}
+        {TYPE_WORD[type]}
+        {done && ", done"}
       </span>
     </>
   );

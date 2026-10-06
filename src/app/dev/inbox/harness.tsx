@@ -37,7 +37,7 @@ export function InboxHarness({ items, areas, initial }: { items: Item[]; areas: 
   const actions: InboxActions = {
     setDone: (id, done) => run((repo) => setDone(repo, id, done, data.timeZone)),
     plan: (id, when) => run((repo) => planItem(repo, id, when, new Date(), data.timeZone)),
-    capture: (title) => run((repo) => captureTask(repo, title)),
+    capture: (title) => run((repo) => captureTask(repo, title, new Date(), data.timeZone)),
   };
 
   const item = fake.items.find((i) => i.id === selected);
