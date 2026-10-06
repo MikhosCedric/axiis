@@ -17,6 +17,7 @@ import {
   setFirstDayAction,
   setRepeatAction,
   setTimeAction,
+  setTypeAction,
   stopRepeatingAction,
   unplanAction,
 } from "./actions";
@@ -32,6 +33,7 @@ const actions: DetailActions = {
   plan: planAction,
   unplan: unplanAction,
   setTime: setTimeAction,
+  setType: setTypeAction,
   clearTime: clearTimeAction,
   setFirstDay: setFirstDayAction,
   addSubtask: addSubtaskAction,

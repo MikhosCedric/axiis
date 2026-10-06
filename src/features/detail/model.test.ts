@@ -145,6 +145,18 @@ describe("progressLine", () => {
   });
 });
 
+describe("retype", () => {
+  const base = { areas: [], subtasks: [], parent: null, timeZone: "UTC", today: "2026-10-06" as LocalDate };
+
+  it("offers a type choice to a top-level task, event or checklist, never to a note or a subtask", () => {
+    for (const type of ["task", "event", "checklist"] as const) {
+      expect(buildDetail({ ...base, item: makeItem({ type }) }).retype).toBe(true);
+    }
+    expect(buildDetail({ ...base, item: makeItem({ type: "note" }) }).retype).toBe(false);
+    expect(buildDetail({ ...base, item: makeItem({ parentId }) }).retype).toBe(false);
+  });
+});
+
 describe("planOptions", () => {
   const base = { areas: [], subtasks: [], parent: null, timeZone: "UTC", today: "2026-10-06" as LocalDate };
   const daily = { freq: "daily", interval: 1, end: { kind: "never" } } as const;

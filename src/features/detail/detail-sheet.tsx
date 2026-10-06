@@ -13,7 +13,7 @@ import { RepeatMark } from "@/features/today/repeat-mark";
 import { InlineTitle } from "./inline-title";
 import { LinkedNotes } from "./linked-notes";
 import { useItemHref } from "./item-href";
-import { clockOf, planOptions, type DetailActions, type DetailView, type Scope, type SkippedDate } from "./model";
+import { clockOf, planOptions, TYPE_CHOICES, type TypeChoice, type DetailActions, type DetailView, type Scope, type SkippedDate } from "./model";
 import { PlanRow } from "./plan-row";
 import { dayWords, planDate } from "@/features/inbox/model";
 import { RepeatRows } from "./repeat-control";
@@ -25,6 +25,8 @@ import { TagField } from "@/features/tags/tag-field";
 
 const TYPE_WORD: Record<ItemType, string> = { task: "Task", event: "Event", note: "Note", checklist: "Checklist" };
 
+const field =
+  "-ml-2 max-w-full rounded-md border border-transparent bg-transparent py-1 pr-1 pl-1.5 text-ink hover:border-rule-soft focus:border-field focus:bg-sheet";
 const iconButton = "grid size-8 pointer-coarse:size-11 place-items-center rounded-md text-ink-2 hover:bg-accent-wash hover:text-ink";
 const textButton = "-ml-2 inline-flex items-center gap-2 rounded-md px-2 py-1 font-medium text-ink-2 hover:bg-accent-wash hover:text-ink";
 
@@ -57,6 +59,7 @@ export function DetailSheet({
   const router = useRouter();
   const [done, setDone] = useOptimistic(item.done);
   const [areaId, setAreaId] = useOptimistic(item.areaId);
+  const [type, setType] = useOptimistic(item.type);
   const [justDone, setJustDone] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
   const [promoted, setPromoted] = useState(false);
@@ -66,6 +69,7 @@ export function DetailSheet({
   const timeStart = useRef<HTMLInputElement>(null);
   const headingId = useId();
   const areaFieldId = useId();
+  const typeFieldId = useId();
 
   function write(save: () => Promise<ActionResult>, after?: () => void) {
     setStatus(null);
@@ -90,6 +94,26 @@ export function DetailSheet({
       setAreaId(next);
       return actions.setArea(item.id, next, scope);
     });
+  }
+
+  function changeType(next: TypeChoice) {
+    write(
+      () => {
+        setType(next);
+        return actions.setType(item.id, next);
+      },
+      () => {
+        if (next !== "event" || view.time !== null) return setStatus(null);
+        // An event is drawn by its time, so point at where one goes.
+        if (plan.time) {
+          setStatus("An event needs a time. Add one under Time.");
+          timeStart.current?.focus();
+        } else {
+          setStatus("An event needs a day and a time. Plan it under When.");
+          planTrigger.current?.focus();
+        }
+      },
+    );
   }
 
   function restore(date: SkippedDate) {
@@ -137,7 +161,7 @@ export function DetailSheet({
         {item.type !== "note" && !isSeries && (
           <span className="pt-1.5">
             <GlyphCheckbox
-              type={item.type}
+              type={type}
               done={done}
               justDone={justDone}
               label={`Done: ${item.title}`}
@@ -188,8 +212,35 @@ export function DetailSheet({
 
       <div>
         <dl className="grid grid-cols-[5.5rem_minmax(0,1fr)] items-baseline gap-x-3 gap-y-3">
-          <dt className="text-[13px] text-ink-3">Type</dt>
-          <dd>{TYPE_WORD[item.type]}</dd>
+          {view.retype ? (
+            <>
+              <dt className="text-[13px] text-ink-3">
+                <label htmlFor={typeFieldId}>Type</label>
+              </dt>
+              <dd>
+                <select
+                  id={typeFieldId}
+                  value={type}
+                  onChange={(e) => changeType(e.target.value as TypeChoice)}
+                  className={field}
+                >
+                  {TYPE_CHOICES.map((t) => (
+                    <option key={t} value={t}>
+                      {TYPE_WORD[t]}
+                    </option>
+                  ))}
+                </select>
+                {(isSeries || isOccurrence) && (
+                  <span className="block text-[13px] text-ink-2">The type belongs to every time it repeats.</span>
+                )}
+              </dd>
+            </>
+          ) : (
+            <>
+              <dt className="text-[13px] text-ink-3">Type</dt>
+              <dd>{TYPE_WORD[item.type]}</dd>
+            </>
+          )}
 
           {view.when !== null && (
             <PlanRow
@@ -258,12 +309,7 @@ export function DetailSheet({
             <label htmlFor={areaFieldId}>Area</label>
           </dt>
           <dd>
-            <select
-              id={areaFieldId}
-              value={areaId ?? ""}
-              onChange={(e) => changeArea(e.target.value)}
-              className="-ml-2 max-w-full rounded-md border border-transparent bg-transparent py-1 pr-1 pl-1.5 text-ink hover:border-rule-soft focus:border-field focus:bg-sheet"
-            >
+            <select id={areaFieldId} value={areaId ?? ""} onChange={(e) => changeArea(e.target.value)} className={field}>
               <option value="">None</option>
               {view.areas.map((a) => (
                 <option key={a.id} value={a.id}>

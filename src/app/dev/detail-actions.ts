@@ -9,6 +9,7 @@ import {
   setItemArea,
   setRepeat,
   setTime,
+  setType,
   stopRepeating,
 } from "@/features/detail/commands";
 import type { DetailActions } from "@/features/detail/model";
@@ -36,6 +37,7 @@ export function harnessDetailActions(
     plan: (key, when) => run(() => planItem(repo, key, when, new Date(), timeZone)),
     unplan: (key) => run(() => moveItem(repo, key, "tray", timeZone)),
     setTime: (key, time, scope) => run(() => setTime(repo, key, time, timeZone, scope)),
+    setType: (key, type) => run(() => setType(repo, key, type, timeZone)),
     clearTime: (key, scope) => run(() => clearTime(repo, key, timeZone, scope)),
     setFirstDay: (key, on) => run(() => setFirstDay(repo, key, on, timeZone)),
     addSubtask: (parent, title) => run(() => addSubtask(repo, parent, title)),

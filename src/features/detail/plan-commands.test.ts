@@ -4,7 +4,69 @@ import { occurrenceKey } from "@/domain/item-key";
 import { planItem } from "@/features/inbox/commands";
 import { fakeRepo, makeItem } from "@/features/today/test-support";
 import { moveItem } from "@/features/week/commands";
-import { clearTime, setTime } from "./commands";
+import { clearTime, setTime, setType } from "./commands";
+
+describe("setType", () => {
+  const daily = { freq: "daily", interval: 1, end: { kind: "never" } } as const;
+
+  it("makes a task an event and back, and a checklist, writing nothing when it already is one", async () => {
+    const task = makeItem();
+    const { repo, calls } = fakeRepo([task]);
+    expect(await setType(repo, task.id, "event", "UTC")).toEqual({ ok: true });
+    expect(task.type).toBe("event");
+    expect(await setType(repo, task.id, "checklist", "UTC")).toEqual({ ok: true });
+    expect(task.type).toBe("checklist");
+    expect(await setType(repo, task.id, "checklist", "UTC")).toEqual({ ok: true });
+    expect(calls.update).toEqual([
+      [task.id, { type: "event" }],
+      [task.id, { type: "checklist" }],
+    ]);
+  });
+
+  it("changes the series and every override from an occurrence, untouched or stored", async () => {
+    const series = makeItem({ schedule: { kind: "day", on: d("2026-10-05") }, recurrence: { kind: "series", rule: daily } });
+    const override = makeItem({
+      schedule: { kind: "day", on: d("2026-10-07") },
+      status: "done",
+      recurrence: { kind: "override", seriesId: series.id, originalOn: d("2026-10-07") },
+    });
+    const { repo, items } = fakeRepo([series, override]);
+
+    expect(await setType(repo, occurrenceKey(series.id, d("2026-10-09")), "event", "UTC")).toEqual({ ok: true });
+    expect([series.type, override.type]).toEqual(["event", "event"]);
+    // Nothing is stored for the occurrence it was changed from.
+    expect(items).toHaveLength(2);
+
+    expect(await setType(repo, override.id, "checklist", "UTC")).toEqual({ ok: true });
+    expect([series.type, override.type]).toEqual(["checklist", "checklist"]);
+  });
+
+  it("refuses a note, a subtask, an event that holds subtasks, and a type it does not know", async () => {
+    const note = makeItem({ type: "note" });
+    const parent = makeItem();
+    const child = makeItem({ parentId: parent.id });
+    const { repo, calls } = fakeRepo([note, parent, child]);
+
+    expect(await setType(repo, note.id, "task", "UTC")).toEqual({ ok: false, error: "A note stays a note." });
+    expect(await setType(repo, child.id, "checklist", "UTC")).toEqual({ ok: false, error: "A subtask stays a task." });
+    expect(await setType(repo, parent.id, "event", "UTC")).toEqual({ ok: false, error: "Something with subtasks cannot be an event." });
+    expect(await setType(repo, parent.id, "note", "UTC")).toEqual({ ok: false, error: "That type is not one Axiis knows." });
+    expect(await setType(repo, "nope", "task", "UTC")).toEqual({ ok: false, error: "That item is not here any more." });
+    expect(calls.update).toEqual([]);
+
+    // A parent may still be a checklist.
+    expect(await setType(repo, parent.id, "checklist", "UTC")).toEqual({ ok: true });
+  });
+
+  it("reports a failed save instead of throwing", async () => {
+    const task = makeItem();
+    const { repo } = fakeRepo([task]);
+    repo.update = async () => {
+      throw new Error("network");
+    };
+    expect(await setType(repo, task.id, "event", "UTC")).toEqual({ ok: false, error: "That change did not save. Try again." });
+  });
+});
 
 const d = (s: string) => s as LocalDate;
 const NY = "America/New_York";

@@ -27,6 +27,15 @@ export function subtaskPolicy(item: Pick<ShownItem, "type" | "parentId" | "recur
   return { kind: "no-subtasks" };
 }
 
+/** The types an item may switch between in the panel, in menu order. Nothing becomes a note or stops being one. */
+export const TYPE_CHOICES = ["task", "event", "checklist"] as const;
+export type TypeChoice = (typeof TYPE_CHOICES)[number];
+
+/** A note stays a note, and a subtask stays what it is. */
+export function retypable(item: Pick<ShownItem, "type" | "parentId">): boolean {
+  return item.type !== "note" && item.parentId === null;
+}
+
 /** Which way a change to one occurrence goes: to that occurrence alone, or to the whole series. */
 export type Scope = "one" | "all";
 
@@ -112,6 +121,8 @@ export type Nesting =
 export type DetailView = {
   /** `id` is the key the sheet was opened with, so an occurrence that is not stored yet can still be acted on. */
   item: { id: ItemKey; type: ItemType; title: string; done: boolean; areaId: AreaId | null };
+  /** Whether the panel offers Task, Event and Checklist. A note stays a note and a subtask stays a task. */
+  retype: boolean;
   /** Null for notes, which never sit in time. */
   when: string | null;
   /** The local date it sits on, null while it waits for a day. */
@@ -140,6 +151,8 @@ export type DetailActions = {
   /** Takes it off its day, back to waiting. */
   unplan: (id: string) => Promise<ActionResult>;
   setTime: (id: string, time: TimeOfDay, scope?: Scope) => Promise<ActionResult>;
+  /** Changes the type; on anything that repeats, of the series and every occurrence. */
+  setType: (id: string, type: TypeChoice) => Promise<ActionResult>;
   /** Leaves it on its day at any time. */
   clearTime: (id: string, scope?: Scope) => Promise<ActionResult>;
   /** Moves the first date of the series the item belongs to. */
@@ -261,6 +274,7 @@ export function buildDetail(input: {
         : { kind: "no-subtasks" };
   return {
     item: { id: item.id, type: item.type, title: item.title, done: item.status === "done", areaId: item.areaId },
+    retype: retypable(item),
     when: item.type === "note" ? null : describeWhen(item.schedule, timeZone),
     day: firstDay(item.schedule, timeZone),
     today,
