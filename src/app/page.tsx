@@ -20,10 +20,13 @@ const NOW = [
   "The same moves from the keyboard",
   "Subtasks, counted on the beam they belong to",
   "A list view of the same day",
+  "A week view, with items dragged from one day to another",
+  "Notes that link to tasks, and search across both",
+  "Export all your data, or delete your account, from settings",
   "Light and dark",
 ];
 
-const COMING = ["Notes that link to tasks", "A week view", "Repeating tasks", "Export and account deletion in settings"];
+const COMING = ["Repeating tasks", "Tags", "A command palette"];
 
 export default async function Home() {
   const supabase = await createClient();
