@@ -89,7 +89,7 @@ function LinkPicker({
         placeholder="Search by title or words inside"
         className="w-full rounded-md border border-field bg-sheet px-2.5 py-1.5 text-ink"
       />
-      <ul id={`${id}-list`} role="listbox" aria-label="Matching items" className={open ? "grid border-t border-rule-soft" : "hidden"}>
+      <ul id={`${id}-list`} role="listbox" aria-label="Matching items" className={open ? "grid grid-cols-[minmax(0,1fr)] border-t border-rule-soft" : "hidden"}>
         {results.map((r, i) => (
           <li
             key={r.id}
@@ -145,7 +145,7 @@ export function Connected({ noteId, rows, actions }: { noteId: string; rows: Con
       {shown.length === 0 ? (
         <p className="text-ink-2">Nothing linked yet. Link the tasks and notes this one is about.</p>
       ) : (
-        <ul className="grid border-t border-rule-soft">
+        <ul className="grid grid-cols-[minmax(0,1fr)] border-t border-rule-soft">
           {shown.map((r) => (
             <li key={r.linkId} className="flex items-center gap-2 border-b border-rule-soft py-1.5">
               <Link href={r.href} className="min-w-0 flex-1 rounded-md px-1 py-0.5 hover:bg-accent-wash">

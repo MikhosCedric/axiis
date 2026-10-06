@@ -96,7 +96,7 @@ export function NotesList({
             : "No notes yet. Start one when something is worth keeping, and link it to the tasks it belongs to."}
         </p>
       ) : (
-        <ul className="mt-2 grid border-t border-rule">
+        <ul className="mt-2 grid grid-cols-[minmax(0,1fr)] border-t border-rule">
           {rows.map((r) => (
             <li key={r.id} className="border-b border-rule-soft">
               <Link href={`${basePath}/${r.id}`} className="block rounded-md px-2 py-3 hover:bg-accent-wash">

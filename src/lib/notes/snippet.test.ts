@@ -10,8 +10,8 @@ describe("queryTerms", () => {
 });
 
 describe("snippetFor", () => {
-  it("returns short text whole, with whitespace collapsed", () => {
-    expect(snippetFor("Plant\n\ntulips   soon", "tulips")).toBe("Plant tulips soon");
+  it("returns short text whole, with lines joined and spaces collapsed", () => {
+    expect(snippetFor("Plant\n\ntulips   soon", "tulips")).toBe("Plant · tulips soon");
   });
 
   it("centres on the first matching word deep in a long text", () => {

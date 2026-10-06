@@ -10,9 +10,6 @@ export type FakeLink = { id: LinkId; fromId: ItemId; toId: ItemId };
  */
 export type NotesStore = { items: Item[]; bodyText: Map<string, string>; links: FakeLink[] };
 
-let seq = 0;
-const uuid = (prefix: string) => `${prefix}-0000-4000-8000-${String(++seq).padStart(12, "0")}`;
-
 /** In-memory NotesRepo for tests and dev harnesses. Search matches every query word against title and body text. */
 export function fakeNotesRepo(store: NotesStore, now: () => Date = () => new Date()): NotesRepo {
   const live = (id: ItemId) => store.items.find((i) => i.id === id) ?? null;
@@ -48,7 +45,7 @@ export function fakeNotesRepo(store: NotesStore, now: () => Date = () => new Dat
     async createNote({ title, areaId }) {
       const at = now();
       const item: Item = {
-        id: uuid("00000000") as ItemId,
+        id: crypto.randomUUID() as ItemId,
         type: "note",
         title,
         body: null,
@@ -98,7 +95,7 @@ export function fakeNotesRepo(store: NotesStore, now: () => Date = () => new Dat
       if (fromId === toId) throw new Error("an item cannot link to itself");
       if (!live(fromId) || !live(toId)) throw new Error("no such item");
       if (store.links.some((l) => l.fromId === fromId && l.toId === toId)) return;
-      store.links.push({ id: uuid("10000000") as LinkId, fromId, toId });
+      store.links.push({ id: crypto.randomUUID() as LinkId, fromId, toId });
     },
     async unlink(linkId) {
       store.links = store.links.filter((l) => l.id !== linkId);

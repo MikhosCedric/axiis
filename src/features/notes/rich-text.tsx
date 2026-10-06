@@ -69,22 +69,17 @@ function LinkField({ editor, initial, onClose }: { editor: Editor; initial: stri
   const id = useId();
 
   function apply() {
-    const chain = editor.chain().focus().extendMarkRange("link");
-    if (!value.trim()) {
-      chain.unsetLink().run();
-      onClose();
-      return;
-    }
-    const href = safeHref(value);
-    if (!href) {
+    const href = value.trim() ? safeHref(value) : null;
+    if (value.trim() && !href) {
       setError("Links can start with http, https or mailto.");
       return;
     }
-    if (editor.state.selection.empty && !editor.isActive("link")) {
+    // Building a chain focuses the editor at once, so it waits until the link is known to be good.
+    const chain = editor.chain().focus().extendMarkRange("link");
+    if (!href) chain.unsetLink().run();
+    else if (editor.state.selection.empty && !editor.isActive("link")) {
       chain.insertContent({ type: "text", text: value.trim(), marks: [{ type: "link", attrs: { href } }] }).run();
-    } else {
-      chain.setLink({ href }).run();
-    }
+    } else chain.setLink({ href }).run();
     onClose();
   }
 
