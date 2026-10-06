@@ -1,6 +1,6 @@
 import { createLinkedNoteAction } from "@/features/notes/actions";
 import { linkedNotes } from "@/features/notes/commands";
-import { getTimeZone } from "@/features/day/server";
+import { getNow, getTimeZone } from "@/features/day/server";
 import { setDoneAction } from "@/features/today/actions";
 import { addTagAction, removeTagAction } from "@/features/tags/actions";
 import { parseItemKey } from "@/domain/item-key";
@@ -12,6 +12,7 @@ import {
   deleteItemAction,
   promoteSubtaskAction,
   renameItemAction,
+  restoreOccurrenceAction,
   setAreaAction,
   setFirstDayAction,
   setRepeatAction,
@@ -34,6 +35,7 @@ const actions: DetailActions = {
   remove: deleteItemAction,
   setRepeat: setRepeatAction,
   stopRepeating: stopRepeatingAction,
+  restore: restoreOccurrenceAction,
   addTag: addTagAction,
   removeTag: removeTagAction,
   newLinkedNote: createLinkedNoteAction,
@@ -44,7 +46,7 @@ export async function DetailPanel({ itemId }: { itemId: string | null }) {
   const key = parseItemKey(itemId);
   if (!key) return null;
   const [repo, notes, timeZone] = await Promise.all([getItemsRepo(), getNotesRepo(), getTimeZone()]);
-  const view = await loadDetail(repo, key, timeZone);
+  const view = await loadDetail(repo, key, getNow(), timeZone);
   if (!view) return <MissingItem />;
   const linked = await linkedNotes(notes, view.notesFor);
   return <DetailSheet key={view.item.id} view={view} actions={actions} linkedNotes={linked} />;

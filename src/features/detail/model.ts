@@ -1,11 +1,11 @@
 import { isStored, repeats, type Area, type AreaId, type Item, type ItemId, type ItemType, type LocalDate, type Schedule, type ShownItem } from "@/domain/item";
-import type { ItemKey } from "@/domain/item-key";
+import { occurrenceKey, type ItemKey } from "@/domain/item-key";
 import type { Rule, RuleEnd } from "@/domain/recurrence";
 import type { TagName } from "@/domain/tag";
 import { addDays, localMinutes, toLocalDate } from "@/lib/dates";
 import { describeRule, presetOf, type RepeatChoice, type RepeatPreset } from "./repeat";
 import type { ActionResult } from "@/features/today/commands";
-import { formatClock, formatDayHeading } from "@/features/today/format";
+import { formatClock, formatDayHeading, formatDayIn } from "@/features/today/format";
 import type { Created } from "@/features/notes/model";
 import { DEFAULT_MINUTES } from "@/features/score/drop";
 import { DAY_MINUTES } from "@/features/score/layout";
@@ -68,8 +68,15 @@ export type RepeatView =
   | { kind: "hidden" }
   | { kind: "unavailable"; reason: string }
   | { kind: "off" }
-  | ({ kind: "series" } & RuleView)
-  | ({ kind: "occurrence"; on: string } & RuleView);
+  | ({ kind: "series"; skipped: SkippedDate[] } & RuleView)
+  | ({ kind: "occurrence"; on: string; skipped: SkippedDate | null } & RuleView);
+
+/** A skipped occurrence of a series: the key that restores it and its date for reading. */
+export type SkippedDate = { key: ItemKey; on: string };
+
+function skippedDate(seriesId: ItemId, on: LocalDate, today: LocalDate): SkippedDate {
+  return { key: occurrenceKey(seriesId, on), on: formatDayIn(on, today) };
+}
 
 /** A series' rule as the sheet edits it. `preset` is null for a rule the menu cannot make. */
 export type RuleView = {
@@ -82,8 +89,14 @@ export type RuleView = {
   defaultUntil: LocalDate;
 };
 
-function ruleView(rule: Rule, firstOn: LocalDate, shownOn: LocalDate): RuleView {
-  return { preset: presetOf(rule), end: rule.end, summary: describeRule(rule, firstOn), firstOn, defaultUntil: addDays(shownOn, 28) };
+function ruleView(rule: Rule, firstOn: LocalDate, shownOn: LocalDate, today: LocalDate): RuleView {
+  return {
+    preset: presetOf(rule),
+    end: rule.end,
+    summary: describeRule(rule, firstOn, today),
+    firstOn,
+    defaultUntil: addDays(shownOn, 28),
+  };
 }
 
 export type DetailSubtask = { id: ItemId; title: string; done: boolean };
@@ -127,6 +140,8 @@ export type DetailActions = {
   remove: (id: string, scope?: Scope) => Promise<ActionResult>;
   setRepeat: (id: string, choice: RepeatChoice) => Promise<ActionResult>;
   stopRepeating: (id: string) => Promise<ActionResult>;
+  /** Brings back a skipped occurrence, named by its occurrence key. */
+  restore: (key: string) => Promise<ActionResult>;
   /** Puts a tag on the item, or on its series for an occurrence. */
   addTag: (id: string, name: string) => Promise<ActionResult>;
   removeTag: (id: string, name: string) => Promise<ActionResult>;
@@ -161,7 +176,14 @@ function timeOf(schedule: Schedule, timeZone: string): TimeOfDay | null {
   return { start, length: localMinutes(schedule.end, on, timeZone) - start };
 }
 
-function repeatView(item: ShownItem, series: Item | null, subtasks: Item[], timeZone: string): RepeatView {
+function repeatView(
+  item: ShownItem,
+  series: Item | null,
+  subtasks: Item[],
+  skipped: LocalDate[],
+  timeZone: string,
+  today: LocalDate,
+): RepeatView {
   if (item.type === "note") return { kind: "hidden" };
   const r = item.recurrence;
   if (r.kind === "none") {
@@ -171,14 +193,19 @@ function repeatView(item: ShownItem, series: Item | null, subtasks: Item[], time
   }
   if (r.kind === "series") {
     const firstOn = firstDay(item.schedule, timeZone)!;
-    return { kind: "series", ...ruleView(r.rule, firstOn, firstOn) };
+    return {
+      kind: "series",
+      skipped: skipped.toSorted().map((on) => skippedDate(item.id as ItemId, on, today)),
+      ...ruleView(r.rule, firstOn, firstOn, today),
+    };
   }
   // An override whose series was deleted is an ordinary item now.
   if (series?.recurrence.kind !== "series") return { kind: "hidden" };
   return {
     kind: "occurrence",
-    on: formatDayHeading(r.originalOn),
-    ...ruleView(series.recurrence.rule, firstDay(series.schedule, timeZone)!, r.originalOn),
+    on: formatDayIn(r.originalOn, today),
+    skipped: item.status === "dropped" ? skippedDate(r.seriesId, r.originalOn, today) : null,
+    ...ruleView(series.recurrence.rule, firstDay(series.schedule, timeZone)!, r.originalOn, today),
   };
 }
 
@@ -190,9 +217,13 @@ export function buildDetail(input: {
   subtasks: Item[];
   parent: Item | null;
   timeZone: string;
+  /** The user's local date, so a date in another year can say which. */
+  today: LocalDate;
+  /** The dates a series was skipped on. */
+  skipped?: LocalDate[];
   tags?: DetailView["tags"];
 }): DetailView {
-  const { item, series = null, areas, subtasks, parent, timeZone, tags = { on: [], known: [] } } = input;
+  const { item, series = null, areas, subtasks, parent, timeZone, today, skipped = [], tags = { on: [], known: [] } } = input;
   const policy = subtaskPolicy(item);
   const nesting: Nesting =
     policy.kind === "holds-subtasks"
@@ -210,7 +241,7 @@ export function buildDetail(input: {
     due: describeDue(item.dueOn),
     areas: areas.map((a) => ({ id: a.id, name: a.name })),
     nesting,
-    repeat: repeatView(item, series, subtasks, timeZone),
+    repeat: repeatView(item, series, subtasks, skipped, timeZone, today),
     notesFor: series?.id ?? (isStored(item) ? item.id : item.recurrence.seriesId),
     tags,
   };

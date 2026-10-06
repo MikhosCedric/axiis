@@ -74,6 +74,16 @@ function fixtures(): Item[] {
       schedule: { kind: "timed", start: new Date("2026-10-07T06:30:00Z"), end: new Date("2026-10-07T07:15:00Z") },
       recurrence: { kind: "override", seriesId: id(60), originalOn: day("2026-10-07") },
     }),
+    ...["2026-10-16", "2027-01-04"].map((on, n) =>
+      makeItem({
+        id: id(62 + n),
+        title: "Morning run",
+        areaId: areaId(3),
+        status: "dropped",
+        schedule: { kind: "timed", start: new Date(`${on}T06:30:00Z`), end: new Date(`${on}T07:15:00Z`) },
+        recurrence: { kind: "override", seriesId: id(60), originalOn: day(on) },
+      }),
+    ),
     makeItem({
       id: id(70),
       title: "Water the plants",
@@ -94,7 +104,8 @@ const FIXTURES: { id: string; label: string }[] = [
   { id: id(40), label: "Long title, runs past midnight in Manila" },
   { id: occurrenceKey(id(60), day("2026-10-09")), label: "Repeating: Friday's run, not touched yet" },
   { id: id(61), label: "Repeating: Wednesday's run, renamed and done" },
-  { id: id(60), label: "Repeating: the run series itself" },
+  { id: id(60), label: "Repeating: the run series itself, two days skipped" },
+  { id: occurrenceKey(id(60), day("2027-01-04")), label: "Repeating: a skipped run in January" },
   { id: occurrenceKey(id(70), day("2026-10-11")), label: "Repeating: plants, weekly for ten weeks" },
   { id: occurrenceKey(id(60), day("2026-10-10")), label: "A Saturday the run does not happen" },
   { id: id(99), label: "An item that is gone" },
@@ -151,7 +162,7 @@ export function DetailHarness({ itemId, timeZone }: { itemId: string | null; tim
     const key = parseItemKey(itemId);
     if (!key || !itemId) return;
     let live = true;
-    loadDetail(store.repo, key, timeZone).then((view) => {
+    loadDetail(store.repo, key, new Date(), timeZone).then((view) => {
       if (live) setLoaded({ key: itemId, view });
     });
     return () => {

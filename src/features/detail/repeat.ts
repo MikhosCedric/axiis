@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { localDateSchema, type LocalDate } from "@/domain/item";
 import { MAX_COUNT, WEEKDAYS, type Rule, type RuleEnd, type Weekday } from "@/domain/recurrence";
-import { formatDayHeading } from "@/features/today/format";
+import { formatDayIn } from "@/features/today/format";
 
 /** The repeat choices the detail panel offers, in menu order. */
 export const REPEAT_PRESETS = ["none", "daily", "weekdays", "weekly", "biweekly", "monthly", "yearly"] as const;
@@ -95,10 +95,13 @@ export function cadence(rule: Rule, firstOn: LocalDate | null): string {
   return days.length > 0 ? `${every} on ${listDays(days)}` : every;
 }
 
-/** A plain sentence for a rule, such as "Every 2 weeks on Monday, until Thu 31 Dec". */
-export function describeRule(rule: Rule, firstOn: LocalDate | null): string {
+/**
+ * A plain sentence for a rule, such as "Every 2 weeks on Monday, until
+ * Thursday 31 December". An end in another year than `today` names its year.
+ */
+export function describeRule(rule: Rule, firstOn: LocalDate | null, today: LocalDate): string {
   const every = `E${cadence(rule, firstOn).slice(1)}`;
-  if (rule.end.kind === "until") return `${every}, until ${formatDayHeading(rule.end.on)}`;
+  if (rule.end.kind === "until") return `${every}, until ${formatDayIn(rule.end.on, today)}`;
   if (rule.end.kind === "count") return `${every}, ${rule.end.count === 1 ? "once" : `${rule.end.count} times`}`;
   return every;
 }
