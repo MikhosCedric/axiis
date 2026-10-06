@@ -17,7 +17,7 @@ export function makeItem(over: Partial<Item> = {}): Item {
     position: 0,
     schedule: { kind: "unscheduled" },
     dueOn: null,
-    rrule: null,
+    recurrence: { kind: "none" },
     completedAt: null,
     createdAt: t,
     updatedAt: t,

@@ -11,11 +11,13 @@ import {
   type ItemPatch,
   type LocalDate,
   type NewItem,
+  type Recurrence,
   type Schedule,
 } from "@/domain/item";
+import { parseRule, serializeRule } from "@/domain/recurrence";
 
 export const ITEM_COLUMNS =
-  "id,type,title,body,status,area_id,parent_id,position,start_at,end_at,scheduled_on,due_on,rrule,completed_at,created_at,updated_at";
+  "id,type,title,body,status,area_id,parent_id,position,start_at,end_at,scheduled_on,due_on,rrule,series_id,original_on,completed_at,created_at,updated_at";
 export const AREA_COLUMNS = "id,name,position";
 
 const timestampSchema = z.iso.datetime({ offset: true }).transform((s) => new Date(s));
@@ -36,6 +38,8 @@ const itemRowSchema = z.object({
   scheduled_on: localDateSchema.nullable(),
   due_on: localDateSchema.nullable(),
   rrule: z.string().nullable(),
+  series_id: itemIdSchema.nullable(),
+  original_on: localDateSchema.nullable(),
   completed_at: timestampSchema.nullable(),
   created_at: timestampSchema,
   updated_at: timestampSchema,
@@ -89,6 +93,36 @@ export function scheduleToColumns(schedule: Schedule): ScheduleColumns {
   }
 }
 
+export class InvalidRecurrenceError extends Error {
+  override name = "InvalidRecurrenceError";
+}
+
+export function recurrenceFromColumns(cols: RecurrenceColumns): Recurrence {
+  const { rrule, series_id: seriesId, original_on: originalOn } = cols;
+  if (rrule !== null) {
+    if (seriesId !== null || originalOn !== null) throw new InvalidRecurrenceError("Item both repeats and replaces an occurrence");
+    const rule = parseRule(rrule);
+    if (!rule) throw new InvalidRecurrenceError(`Item has a rule outside the allowlist: ${rrule.slice(0, 80)}`);
+    return { kind: "series", rule };
+  }
+  if (seriesId !== null && originalOn !== null) return { kind: "override", seriesId, originalOn };
+  if (seriesId !== null || originalOn !== null) throw new InvalidRecurrenceError("Item has only one of series_id and original_on");
+  return { kind: "none" };
+}
+
+type RecurrenceColumns = { rrule: string | null; series_id: ItemId | null; original_on: LocalDate | null };
+
+export function recurrenceToColumns(recurrence: Recurrence): RecurrenceColumns {
+  switch (recurrence.kind) {
+    case "none":
+      return { rrule: null, series_id: null, original_on: null };
+    case "series":
+      return { rrule: serializeRule(recurrence.rule), series_id: null, original_on: null };
+    case "override":
+      return { rrule: null, series_id: recurrence.seriesId, original_on: recurrence.originalOn };
+  }
+}
+
 /** Parses an `items` row from the database. Throws on a malformed row or one that breaks the schedule rules. */
 export function itemFromRow(raw: unknown): Item {
   const row = itemRowSchema.parse(raw);
@@ -103,7 +137,7 @@ export function itemFromRow(raw: unknown): Item {
     position: row.position,
     schedule: scheduleFromColumns(row),
     dueOn: row.due_on,
-    rrule: row.rrule,
+    recurrence: recurrenceFromColumns(row),
     completedAt: row.completed_at,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
@@ -123,7 +157,7 @@ export function newItemToInsert(input: NewItem) {
     parent_id: input.parentId ?? null,
     ...scheduleToColumns(input.schedule ?? { kind: "unscheduled" }),
     due_on: input.dueOn ?? null,
-    rrule: input.rrule ?? null,
+    ...recurrenceToColumns(input.recurrence ?? { kind: "none" }),
   };
 }
 
@@ -136,7 +170,7 @@ export function patchToUpdate(patch: ItemPatch, now: Date) {
     ...(patch.parentId !== undefined && { parent_id: patch.parentId }),
     ...(patch.schedule !== undefined && scheduleToColumns(patch.schedule)),
     ...(patch.dueOn !== undefined && { due_on: patch.dueOn }),
-    ...(patch.rrule !== undefined && { rrule: patch.rrule }),
+    ...(patch.recurrence !== undefined && recurrenceToColumns(patch.recurrence)),
     ...(patch.position !== undefined && { position: patch.position }),
     ...(patch.status !== undefined && {
       status: patch.status,
