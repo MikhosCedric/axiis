@@ -265,7 +265,7 @@ export function WeekView({
         >
           {preview && (
             <>
-              <Glyph type={preview.item.type} state="planned" className="!w-7" />
+              <Glyph type={preview.item.type} state="planned" className="!w-9" />
               <span className="truncate font-medium">{preview.item.title}</span>
             </>
           )}
@@ -372,7 +372,7 @@ function ItemRow({
   const shape =
     variant === "chip"
       ? "inline-flex max-w-[34ch] items-center gap-2 rounded-md border border-rule bg-sheet px-2.5 py-1.5"
-      : "grid grid-cols-[28px_minmax(0,1fr)] gap-x-2 rounded-md px-1.5 py-1.5";
+      : "grid grid-cols-[36px_minmax(0,1fr)] gap-x-2 rounded-md px-1.5 py-1.5";
   return (
     <div
       data-item={item.id}
@@ -387,7 +387,7 @@ function ItemRow({
         selected ? "bg-accent-wash ring-1 ring-accent" : ""
       } ${lifted ? "opacity-35" : ""}`}
     >
-      <Glyph type={item.type} state={state} justDone={justDone} className={variant === "row" ? "!w-7 mt-0.5" : "!w-7"} />
+      <Glyph type={item.type} state={state} justDone={justDone} className={variant === "row" ? "!w-9 mt-0.5" : "!w-9"} />
       <span className={`min-w-0 ${variant === "chip" ? "truncate" : ""}`}>
         <span className={`block leading-snug break-words ${variant === "chip" ? "truncate" : ""} ${TITLE_WEIGHT[state]}`}>
           {item.title}
