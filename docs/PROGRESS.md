@@ -60,26 +60,26 @@ Updated: see the log at the bottom. Phases:
 | 4 Notes, links, full-text search | done, merged (PR #8), migration 0003 applied |
 | 5 Account (settings, areas, export, deletion) | done, merged (PR #7), migration 0002 applied |
 | 6 Public site (landing, legal drafts, metadata, PWA, error states) | done, merged (PR #6) |
-| 7 Recurrence, tags, command palette, polish, e2e | next (see Next up) |
+| 7 Command palette, shortcuts help, browser tests (e2e + axe) | done, merged (#10, #12) |
+| 8 Recurring tasks | built, PR #13 open, waiting on migration 0004 |
+| 9 Tags, Inbox, Lists, DESIGN.md, audits | next (see Next up) |
 
 ## Accepted advisories (Supabase security advisor)
 - `delete_my_account` is executable by `authenticated` through RPC. Intended: it only deletes the caller's own account (`auth.uid()`), and `anon`/`public` are revoked.
 - Leaked-password protection is off. Axiis has no passwords (magic link and Google only), so it does not apply.
 
 ## Migrations applied to the hosted project
-`0001_core`, `0002_account` (applied as `account_deletion`), `0003_search` (applied as `search_and_excerpt`). Any new file in `supabase/migrations/` must be applied with the Supabase MCP `apply_migration`, after a rolled-back `DO` block check, then `get_advisors`.
+`0001_core`, `0002_account` (applied as `account_deletion`), `0003_search` (applied as `search_and_excerpt`). `0004_recurrence` is NOT applied yet. Any new file in `supabase/migrations/` must be applied with the Supabase MCP `apply_migration`, after a rolled-back `DO` block check, then `get_advisors`.
 
-## In flight when the last session stopped
-- `feat-palette` merged (PR #10): command palette (Ctrl/Cmd+K) and `?` shortcuts help.
-- `fix-mobile-nav`: phone top bar now scrolls inside itself instead of widening the page (body width measured 375; verify on a real phone).
-- Branch `worktree-agent-a7a28353d12dae488` / local worktree holds the finished, UNMERGED Playwright e2e + axe suite (`feat-e2e`, 3 commits, 68 tests, adds `@playwright/test` and `@axe-core/playwright`, adds an `e2e` CI job). To land it: push the branch, merge `origin/main` into it (the palette added nav changes), open a PR, and let the new e2e CI job run. Expect to fix any new axe findings from the palette.
-- Recurrence (`feat-recurrence`, design in the session scratchpad, to be committed as `docs/recurrence.md`) was still being built by a background agent. Check `git branch -a` and `git worktree list` for its worktree and finish or restart it; migration 0004 is not applied.
+## In flight
+- **Recurrence (PR #13, `feat-recurrence`) is finished and CI-tested but NOT merged.** It needs `supabase/migrations/0004_recurrence.sql` applied to the hosted project first, because the app now selects `series_id` and `original_on`. The Supabase MCP refused writes at the end of the last session (`FGA Authentication Error. Unauthorized`; reads still worked), so it was not applied. To finish: re-authorize the Supabase connector, or paste the file into the Supabase SQL editor; hosted `items` has 0 rows with an `rrule` and none of the new columns, so it cannot fail on current data. Then verify with a rolled-back non-DDL `DO` block, run `get_advisors`, and merge PR #13.
+- Merged this stretch: command palette (#10), phone nav fix (#11), Playwright and axe browser tests with an `e2e` CI job (#12).
 
 ## Next up (suggested order)
-1. Recurring tasks: `rrule` expansion in day and week queries, a repeat control, per-occurrence skip and completion (needs exception rows; design in `docs/data-model.md` first).
+1. Land recurrence (see In flight), then follow-ups: un-skip, a schedule editor for "All of them", years in `describeRule`.
 2. Tags: UI, filters, `tags`/`item_tags` already exist.
-3. Command palette (Ctrl/Cmd+K) over search and navigation.
-4. Playwright smoke tests (needs a way to sign in a test user without the magic link).
+3. Inbox page (unscheduled items) and a Lists page (checklists with progress).
+4. Extend e2e once a test user can sign in without the magic link.
 5. `DESIGN.md` via `impeccable document`, an a11y and `impeccable audit` pass, and a partial unique index on `areas (user_id, lower(name)) where deleted_at is null`.
 6. Order search by rank (RPC), flush pending note saves before nav-rail navigation, subtask counts on week rows, shared date picker for the day and week navs.
 
