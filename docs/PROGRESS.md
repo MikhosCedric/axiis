@@ -61,7 +61,7 @@ Updated: see the log at the bottom. Phases:
 | 5 Account (settings, areas, export, deletion) | done, merged (PR #7), migration 0002 applied |
 | 6 Public site (landing, legal drafts, metadata, PWA, error states) | done, merged (PR #6) |
 | 7 Command palette, shortcuts help, browser tests (e2e + axe) | done, merged (#10, #12) |
-| 8 Recurring tasks | built, PR #13 open, waiting on migration 0004 |
+| 8 Recurring tasks | done, merged (#13), migration 0004 applied |
 | 9 Tags, Inbox, Lists, DESIGN.md, audits | next (see Next up) |
 
 ## Accepted advisories (Supabase security advisor)
@@ -69,14 +69,14 @@ Updated: see the log at the bottom. Phases:
 - Leaked-password protection is off. Axiis has no passwords (magic link and Google only), so it does not apply.
 
 ## Migrations applied to the hosted project
-`0001_core`, `0002_account` (applied as `account_deletion`), `0003_search` (applied as `search_and_excerpt`). `0004_recurrence` is NOT applied yet. Any new file in `supabase/migrations/` must be applied with the Supabase MCP `apply_migration`, after a rolled-back `DO` block check, then `get_advisors`.
+`0001_core`, `0002_account` (applied as `account_deletion`), `0003_search` (applied as `search_and_excerpt`). `0004_recurrence` (applied as `recurrence`). Any new file in `supabase/migrations/` must be applied with the Supabase MCP `apply_migration`, after a rolled-back `DO` block check, then `get_advisors`.
 
 ## In flight
-- **Recurrence (PR #13, `feat-recurrence`) is finished and CI-tested but NOT merged.** It needs `supabase/migrations/0004_recurrence.sql` applied to the hosted project first, because the app now selects `series_id` and `original_on`. The Supabase MCP refused writes at the end of the last session (`FGA Authentication Error. Unauthorized`; reads still worked), so it was not applied. To finish: re-authorize the Supabase connector, or paste the file into the Supabase SQL editor; hosted `items` has 0 rows with an `rrule` and none of the new columns, so it cannot fail on current data. Then verify with a rolled-back non-DDL `DO` block, run `get_advisors`, and merge PR #13.
+- Recurrence merged (#13). Migration 0004 applied to the hosted project; `get_advisors` then failed with an FGA auth error, so re-run the security advisor and do a non-DDL check of the new columns.
 - Merged this stretch: command palette (#10), phone nav fix (#11), Playwright and axe browser tests with an `e2e` CI job (#12).
 
 ## Next up (suggested order)
-1. Land recurrence (see In flight), then follow-ups: un-skip, a schedule editor for "All of them", years in `describeRule`.
+1. Recurrence follow-ups: un-skip, a schedule editor for "All of them", years in `describeRule`.
 2. Tags: UI, filters, `tags`/`item_tags` already exist.
 3. Inbox page (unscheduled items) and a Lists page (checklists with progress).
 4. Extend e2e once a test user can sign in without the magic link.
