@@ -84,9 +84,10 @@ export function NavRail({ today, areas }: { today: LocalDate; areas: NavArea[] }
           <h2 id="areas-h" className="mx-2 mb-2.5 text-xs font-semibold tracking-[0.06em] text-ink-3 uppercase">
             Areas
           </h2>
-          <ul className="grid gap-0.5">
+          {/* A quiet readout, not links: smaller, lighter and tighter than the nav above. */}
+          <ul className="grid">
             {areas.map((a) => (
-              <li key={a.id} className="flex items-center gap-2.5 p-2 font-medium text-ink-2">
+              <li key={a.id} className="flex items-center gap-2.5 px-2 py-1 text-[13px] text-ink-3">
                 <span className="min-w-0 truncate">{a.name}</span>
                 <span className="sr-only">, {a.open} open today</span>
                 {a.open > 0 && (
