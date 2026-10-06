@@ -39,7 +39,7 @@ export function WeekHarness({ items, areas, initial }: { items: Item[]; areas: A
   const actions: WeekActions = {
     move: (id, to) => run((repo) => moveItem(repo, id, to, data.timeZone)),
     setDone: (id, done) => run((repo) => setDone(repo, id, done, data.timeZone)),
-    capture: (title) => run((repo) => captureTask(repo, title)),
+    capture: (title) => run((repo) => captureTask(repo, title, new Date(data.nowIso), data.timeZone)),
   };
 
   const shown = [...data.scheduled, ...data.unscheduled];

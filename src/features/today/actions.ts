@@ -1,7 +1,7 @@
 "use server";
 
 import { refresh } from "next/cache";
-import { getTimeZone } from "@/features/day/server";
+import { getNow, getTimeZone } from "@/features/day/server";
 import { getItemsRepo } from "@/lib/items";
 import { captureTask, setDone, type ActionResult, type CaptureResult } from "./commands";
 
@@ -9,7 +9,7 @@ import { captureTask, setDone, type ActionResult, type CaptureResult } from "./c
 // write, so a direct POST without a session cannot touch anyone's rows.
 
 export async function captureAction(title: string): Promise<CaptureResult> {
-  const result = await captureTask(await getItemsRepo(), title);
+  const result = await captureTask(await getItemsRepo(), title, getNow(), await getTimeZone());
   if (result.ok) refresh();
   return result;
 }
