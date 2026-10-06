@@ -261,9 +261,13 @@ function PaletteBody({
     setInput(value);
     setActive(0);
     setNote(null);
+    if (!target) search(value);
+  }
+
+  function search(value: string) {
     clearTimeout(timer.current);
     const q = findQuery(value);
-    if (!q || target) return;
+    if (!q) return;
     setFind((f) => (f.status === "done" && f.query === q ? f : { status: "searching", query: q }));
     timer.current = setTimeout(() => {
       actions.search(q).then(
@@ -307,6 +311,9 @@ function PaletteBody({
     setInput(searched.current);
     setActive(0);
     setNote(null);
+    // Ask again, so a result shows what was just done to it.
+    setFind({ status: "idle" });
+    search(searched.current);
   }
 
   function act(a: Act) {
@@ -330,7 +337,10 @@ function PaletteBody({
     saving.then(
       (result) => {
         setNote(result.ok ? actedLine(a, item.title) : result.error);
-        if (result.ok && a.do === "done") setTarget((t) => (t?.key === item.key ? { ...t, done: a.done } : t));
+        if (!result.ok || a.do !== "done") return;
+        const marked = (t: Target | null) => (t?.key === item.key ? { ...t, done: a.done } : t);
+        setTarget(marked);
+        setSelected(marked);
       },
       () => setNote("That change did not save. Try again."),
     );
