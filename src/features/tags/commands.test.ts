@@ -51,6 +51,15 @@ describe("addTag", () => {
     expect(w.items.filter((i) => i.recurrence.kind === "override")).toHaveLength(1);
   });
 
+  it("puts a tag on an override itself once its series is gone", async () => {
+    const w = world();
+    await setDone(w.repo, w.key("2026-10-08"), true, TZ);
+    const override = w.items.find((i) => i.recurrence.kind === "override")!;
+    await w.repo.softDelete(w.series.id);
+    expect(await addTag(w.repo, override.id, "kept", TZ)).toEqual({ ok: true });
+    expect(w.namesOn(override)).toEqual(["kept"]);
+  });
+
   it("refuses a name with nothing in it or too long, and an item that is gone, writing nothing", async () => {
     const w = world();
     expect(await addTag(w.repo, w.task.id, " # ", TZ)).toEqual({ ok: false, error: "A tag needs 1 to 32 characters." });
