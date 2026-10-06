@@ -1,7 +1,7 @@
 import { isStored, repeats, type Area, type AreaId, type Item, type ItemId, type ItemType, type LocalDate, type Schedule, type ShownItem } from "@/domain/item";
 import type { ItemKey } from "@/domain/item-key";
-import type { RuleEnd } from "@/domain/recurrence";
-import { toLocalDate } from "@/lib/dates";
+import type { Rule, RuleEnd } from "@/domain/recurrence";
+import { addDays, toLocalDate } from "@/lib/dates";
 import { describeRule, presetOf, type RepeatChoice, type RepeatPreset } from "./repeat";
 import type { ActionResult } from "@/features/today/commands";
 import { formatClock, formatDayHeading } from "@/features/today/format";
@@ -34,8 +34,21 @@ export type RepeatView =
   | { kind: "hidden" }
   | { kind: "unavailable"; reason: string }
   | { kind: "off" }
-  | { kind: "series"; preset: RepeatPreset | null; end: RuleEnd; summary: string }
-  | { kind: "occurrence"; preset: RepeatPreset | null; end: RuleEnd; summary: string; on: string };
+  | ({ kind: "series" } & RuleView)
+  | ({ kind: "occurrence"; on: string } & RuleView);
+
+/** A series' rule as the sheet edits it. `preset` is null for a rule the menu cannot make. */
+export type RuleView = {
+  preset: RepeatPreset | null;
+  end: RuleEnd;
+  summary: string;
+  /** Where the end date starts when someone first picks "On a date". */
+  defaultUntil: LocalDate;
+};
+
+function ruleView(rule: Rule, firstOn: LocalDate, shownOn: LocalDate): RuleView {
+  return { preset: presetOf(rule), end: rule.end, summary: describeRule(rule, firstOn), defaultUntil: addDays(shownOn, 28) };
+}
 
 export type DetailSubtask = { id: ItemId; title: string; done: boolean };
 
@@ -102,18 +115,15 @@ function repeatView(item: ShownItem, series: Item | null, subtasks: Item[], time
     return { kind: "off" };
   }
   if (r.kind === "series") {
-    const summary = describeRule(r.rule, firstDay(item.schedule, timeZone));
-    return { kind: "series", preset: presetOf(r.rule), end: r.rule.end, summary };
+    const firstOn = firstDay(item.schedule, timeZone)!;
+    return { kind: "series", ...ruleView(r.rule, firstOn, firstOn) };
   }
   // An override whose series was deleted is an ordinary item now.
   if (series?.recurrence.kind !== "series") return { kind: "hidden" };
-  const { rule } = series.recurrence;
   return {
     kind: "occurrence",
-    preset: presetOf(rule),
-    end: rule.end,
-    summary: describeRule(rule, firstDay(series.schedule, timeZone)),
     on: formatDayHeading(r.originalOn),
+    ...ruleView(series.recurrence.rule, firstDay(series.schedule, timeZone)!, r.originalOn),
   };
 }
 
