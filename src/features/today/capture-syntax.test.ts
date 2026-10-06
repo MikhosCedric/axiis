@@ -71,6 +71,35 @@ describe("parseCapture", () => {
     expect(parseCapture("#health #Health walk")).toEqual({ ...plain("#Health walk"), tags: ["health" as TagName] });
   });
 
+  it("reads on, next, by, in and at as part of the phrase they open", () => {
+    const friday: DayWord = { kind: "weekday", weekday: 5, next: false };
+    expect(parseCapture("dentist on friday at 9:00")).toEqual({ ...plain("dentist"), day: friday, time: { start: 540, length: null } });
+    expect(parseCapture("report by tomorrow")).toEqual({ ...plain("report"), day: tomorrow });
+    expect(parseCapture("report by friday")).toEqual({ ...plain("report"), day: friday });
+    expect(parseCapture("rent by 2026-11-01")).toEqual({ ...plain("rent"), day: { kind: "on", date: d("2026-11-01") } });
+    expect(parseCapture("by tomorrow call the bank")).toEqual({ ...plain("call the bank"), day: tomorrow });
+  });
+
+  it.each([
+    "Groceries for Sunday",
+    "Party until friday",
+    "Leave before tomorrow",
+    "Ask about today",
+    "Shop for #groceries",
+    "Book a table for 9:00",
+    "Meet at friday",
+    "Plans after next friday",
+    "Nap until 9am",
+  ])("never leaves a preposition dangling: keeps %j as typed", (text) => {
+    expect(parseCapture(text)).toEqual(plain(text));
+  });
+
+  it("reads what follows a dangling-preposition phrase, and no bare hour after it", () => {
+    expect(parseCapture("Groceries for Sunday #home")).toEqual({ ...plain("Groceries for Sunday"), tags: ["home" as TagName] });
+    expect(parseCapture("Groceries for Sunday 9")).toEqual(plain("Groceries for Sunday 9"));
+    expect(parseCapture("Groceries for Sunday tomorrow")).toEqual({ ...plain("Groceries for Sunday"), day: tomorrow });
+  });
+
   it("reads a bare hour only right after a day", () => {
     expect(parseCapture("call 9 tomorrow")).toEqual({ ...plain("call 9"), day: tomorrow });
     expect(parseCapture("call in 3 days 9")).toEqual({ ...plain("call"), day: { kind: "in", days: 3 }, time: { start: 540, length: null } });

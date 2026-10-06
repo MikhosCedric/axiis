@@ -23,7 +23,26 @@ export type CaptureText = {
 };
 
 const WEEKDAYS = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
-const CONNECTORS = new Set(["on", "next", "in", "at", "for"]);
+const CONNECTORS = new Set(["on", "next", "in", "at", "for", "by"]);
+/**
+ * Words that tie what follows them into the title. A phrase is never read
+ * right after one, so "Groceries for Sunday" keeps its Sunday. Phrases that
+ * start with one of them ("on friday", "by tomorrow", "at 9", "in 3 days",
+ * "next friday", "for 45m") are read whole, preposition included.
+ */
+const PREPOSITIONS = new Set([
+  ...CONNECTORS,
+  "until",
+  "till",
+  "before",
+  "after",
+  "from",
+  "to",
+  "about",
+  "since",
+  "of",
+  "with",
+]);
 const DAY_MINUTES = 24 * 60;
 /** The most words one phrase spans: "in 3 days", "at 9 pm", "for 1h 30m". */
 const MAX_WORDS = 3;
@@ -37,11 +56,11 @@ type Hit =
 type Token = { text: string; low: string; from: number; to: number };
 
 function dayHit(p: string): DayWord | null {
-  if (p === "today") return { kind: "in", days: 0 };
-  if (p === "tomorrow") return { kind: "in", days: 1 };
-  let m = /^(?:on )?(next )?([a-z]+)$/.exec(p);
+  if (/^(?:by )?today$/.test(p)) return { kind: "in", days: 0 };
+  if (/^(?:by )?tomorrow$/.test(p)) return { kind: "in", days: 1 };
+  let m = /^(?:on |by )?(next )?([a-z]+)$/.exec(p);
   if (m && WEEKDAYS.includes(m[2])) return { kind: "weekday", weekday: WEEKDAYS.indexOf(m[2]), next: m[1] !== undefined };
-  m = /^(?:on )?(\d{4}-\d{2}-\d{2})$/.exec(p);
+  m = /^(?:on |by )?(\d{4}-\d{2}-\d{2})$/.exec(p);
   if (m) {
     const date = parseLocalDate(m[1]);
     return date ? { kind: "on", date } : null;
@@ -101,10 +120,13 @@ function hitAt(tokens: readonly Token[], from: number, to: number): Hit | null {
   return length === null ? null : { slot: "length", minutes: length };
 }
 
-/** True when a day phrase ends just before `end`, so a bare hour after it reads as a time. */
+/** True when the word before `at` is a preposition, so a phrase starting at `at` belongs to the title. */
+const dangles = (tokens: readonly Token[], at: number) => at > 0 && PREPOSITIONS.has(tokens[at - 1].low);
+
+/** True when a day phrase that would be read ends just before `end`, so a bare hour after it reads as a time. */
 function dayEndsAt(tokens: readonly Token[], lo: number, end: number): boolean {
   for (let n = 1; n <= MAX_WORDS && end - n >= lo; n++) {
-    if (hitAt(tokens, end - n, end)?.slot === "day") return true;
+    if (hitAt(tokens, end - n, end)?.slot === "day" && !dangles(tokens, end - n)) return true;
   }
   return false;
 }
@@ -135,7 +157,7 @@ function scan(tokens: readonly Token[], withLength: boolean): Scan {
   fromEnd: while (hi > lo) {
     for (let n = Math.min(MAX_WORDS, hi - lo); n >= 1; n--) {
       const hit = hitAt(tokens, hi - n, hi);
-      if (hit && fits(hit, dayEndsAt(tokens, lo, hi - n))) {
+      if (hit && !dangles(tokens, hi - n) && fits(hit, dayEndsAt(tokens, lo, hi - n))) {
         take(hit, hi - n);
         hi -= n;
         continue fromEnd;
