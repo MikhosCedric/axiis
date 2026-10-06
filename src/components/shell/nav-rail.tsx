@@ -59,6 +59,7 @@ export function NavRail({ today, areas }: { today: LocalDate; areas: NavArea[] }
   const pathname = usePathname();
   const onToday = pathname === "/today" || pathname === `/day/${today}`;
   const onWeek = pathname === "/week" || pathname.startsWith("/week/");
+  const onInbox = pathname === "/inbox";
   const onSettings = pathname === "/settings" || pathname.startsWith("/settings/");
   const onNotes = pathname === "/notes" || pathname.startsWith("/notes/");
   const onSearch = pathname === "/search";
@@ -77,7 +78,7 @@ export function NavRail({ today, areas }: { today: LocalDate; areas: NavArea[] }
       <ul className="flex gap-0.5 rail:grid">
         <NavLink href="/today" current={onToday} icon={<TodayIcon />} label="Today" />
         <NavLink href="/week" current={onWeek} icon={<WeekIcon />} label="Week" />
-        <Soon icon={<InboxIcon />} label="Inbox" />
+        <NavLink href="/inbox" current={onInbox} icon={<InboxIcon />} label="Inbox" />
         <NavLink href="/notes" current={onNotes} icon={<NotesIcon />} label="Notes" />
         <NavLink href="/search" current={onSearch} icon={<SearchIcon />} label="Search" />
         <Soon icon={<ListsIcon />} label="Lists" />
