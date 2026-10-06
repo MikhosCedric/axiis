@@ -4,6 +4,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useId, useMemo, useOptimistic, useRef, useState, useTransition, type FormEvent, type ReactNode, type RefObject } from "react";
 import type { Item, LocalDate } from "@/domain/item";
 import { SELECTED_ITEM_PARAM } from "@/features/day/types";
+import { DetailAside } from "@/features/detail/detail-aside";
 import { captureAction, setDoneAction } from "@/features/today/actions";
 import { CaptureField } from "@/features/today/capture-field";
 import type { ActionResult } from "@/features/today/commands";
@@ -172,13 +173,7 @@ export function InboxView({
         </section>
       </div>
 
-      {selectedParam && (
-        <aside aria-label="Details" className="border-t border-rule bg-sheet min-[1180px]:border-t-0 min-[1180px]:border-l">
-          <div className="px-4 py-6 rail:px-9 min-[1180px]:sticky min-[1180px]:top-0 min-[1180px]:max-h-dvh min-[1180px]:overflow-y-auto min-[1180px]:px-6 min-[1180px]:py-8">
-            {detail}
-          </div>
-        </aside>
-      )}
+      {selectedParam && <DetailAside pending={selectedId !== selectedParam}>{detail}</DetailAside>}
     </div>
   );
 }

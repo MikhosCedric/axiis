@@ -5,6 +5,7 @@ import { useEffect, useMemo, useOptimistic, useState, useTransition, type ReactN
 import type { ShownItem } from "@/domain/item";
 import { selectedIn, type ItemKey } from "@/domain/item-key";
 import { setTimeAction } from "@/features/detail/actions";
+import { DetailAside } from "@/features/detail/detail-aside";
 import type { TimeOfDay } from "@/features/detail/model";
 import { placeAction } from "@/features/score/actions";
 import type { Placement } from "@/features/score/drop";
@@ -230,16 +231,7 @@ export function DayView({
         )}
       </div>
 
-      {selectedParam && (
-        <aside
-          aria-label="Details"
-          className="border-t border-rule bg-sheet min-[1180px]:border-t-0 min-[1180px]:border-l"
-        >
-          <div className="px-4 py-6 rail:px-9 min-[1180px]:sticky min-[1180px]:top-0 min-[1180px]:max-h-dvh min-[1180px]:overflow-y-auto min-[1180px]:px-6 min-[1180px]:py-8">
-            {detail}
-          </div>
-        </aside>
-      )}
+      {selectedParam && <DetailAside pending={selectedId !== selectedParam}>{detail}</DetailAside>}
     </div>
   );
 }
