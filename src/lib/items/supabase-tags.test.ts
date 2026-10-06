@@ -120,6 +120,14 @@ describe("SupabaseItemsRepo tags", () => {
     expect(raced.requests.find((r) => r.table === "item_tags")!.body).toEqual({ item_id: ITEM, tag_id: HOME });
   });
 
+  it("renames one tag by id and reads back what was stored", async () => {
+    const { repo, requests } = stubbed(() => ({ body: { id: DEEP, name: "Focus" } }));
+    expect(await repo.renameTag(DEEP, name("Focus"))).toEqual({ id: DEEP, name: "Focus" });
+    expect(requests).toHaveLength(1);
+    expect(requests[0]).toMatchObject({ method: "PATCH", table: "tags", body: { name: "Focus" } });
+    expect(requests[0].params.get("id")).toBe(`eq.${DEEP}`);
+  });
+
   it("takes a tag off one item, and deletes a tag by id alone", async () => {
     const { repo, requests } = stubbed(() => ({ body: null }));
     await repo.removeTag(ITEM, DEEP);
