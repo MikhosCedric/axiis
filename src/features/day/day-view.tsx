@@ -169,6 +169,7 @@ export function DayView({
     areas,
     timeZone,
     childCounts,
+    tags: data.tags,
     selectedId: selectedIn(items, selectedId),
     justDone,
     onSelect: select,

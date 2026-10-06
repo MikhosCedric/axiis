@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { DAY_VIEW_PARAM } from "@/features/day/types";
-import { fakeRepo } from "@/features/today/test-support";
+import { fakeRepo, tagByTitle } from "@/features/today/test-support";
 import { resolveTimeZone } from "@/lib/dates";
-import { loadDayData, seedFixture } from "./fixture";
+import { loadDayData, SCORE_TAGS, seedFixture } from "./fixture";
 import { ScoreHarness } from "./harness";
 
 export const metadata: Metadata = { title: "Score harness" };
@@ -18,7 +18,7 @@ export default async function ScoreHarnessPage({ searchParams }: PageProps<"/dev
   const seeded = seedFixture(now, timeZone);
   const { areas } = seeded;
   const items = params.tray === "empty" ? seeded.items.filter((i) => i.schedule.kind !== "unscheduled") : seeded.items;
-  const initial = await loadDayData(fakeRepo(structuredClone(items), areas).repo, now, timeZone);
+  const initial = await loadDayData(tagByTitle(fakeRepo(structuredClone(items), areas), SCORE_TAGS).repo, now, timeZone);
   return (
     <ScoreHarness
       items={items}

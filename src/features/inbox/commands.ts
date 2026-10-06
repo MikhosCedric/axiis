@@ -2,16 +2,20 @@ import { toLocalDate } from "@/lib/dates";
 import { INBOX_LIMIT, type ItemsRepo } from "@/lib/items/repo";
 import type { ActionResult } from "@/features/today/commands";
 import { moveItem, MOVE_FAILED } from "@/features/week/commands";
+import { tagsOfShown } from "@/features/tags/commands";
 import { parsePlanFor, planDate, type InboxData } from "./model";
 
 export async function loadInbox(repo: ItemsRepo, now: Date, timeZone: string): Promise<InboxData> {
   const [areas, items] = await Promise.all([repo.listAreas(), repo.listInbox()]);
+  // Inbox items are never overrides, so none wears a series' tags.
+  const [childCounts, tags] = await Promise.all([repo.childCounts(items.map((i) => i.id)), tagsOfShown(repo, items, [])]);
   return {
     timeZone,
     today: toLocalDate(now, timeZone),
     areas,
     items,
-    childCounts: await repo.childCounts(items.map((i) => i.id)),
+    childCounts,
+    tags,
     full: items.length >= INBOX_LIMIT,
   };
 }

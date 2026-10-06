@@ -9,6 +9,7 @@ import { captureAction, setDoneAction } from "@/features/today/actions";
 import { CaptureField } from "@/features/today/capture-field";
 import type { ActionResult } from "@/features/today/commands";
 import { Glyph } from "@/features/today/glyph";
+import { RowTags } from "@/features/tags/row-tags";
 import { planAction } from "./actions";
 import { dayWords, inboxRows, inboxSummary, planDate, type InboxData, type PlanFor } from "./model";
 
@@ -152,6 +153,7 @@ export function InboxView({
                   today={today}
                   area={item.areaId ? (areaName.get(item.areaId) ?? null) : null}
                   count={childCounts[item.id]}
+                  tags={data.tags[item.id]}
                   selected={selectedId === item.id}
                   justDone={justDone === item.id}
                   planning={planning === item.id}
@@ -183,6 +185,7 @@ function InboxRow({
   today,
   area,
   count,
+  tags,
   selected,
   justDone,
   planning,
@@ -195,6 +198,7 @@ function InboxRow({
   today: LocalDate;
   area: string | null;
   count: { total: number; done: number } | undefined;
+  tags: readonly string[] | undefined;
   selected: boolean;
   justDone: boolean;
   planning: boolean;
@@ -247,6 +251,7 @@ function InboxRow({
             </span>
           </span>
         )}
+        <RowTags tags={tags} />
       </button>
       <span className="text-[13px] text-ink-3 max-rail:hidden">{area ?? ""}</span>
       {done ? (

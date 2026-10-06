@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { loadInbox } from "@/features/inbox/commands";
-import { fakeRepo } from "@/features/today/test-support";
+import { fakeRepo, tagByTitle } from "@/features/today/test-support";
 import { resolveTimeZone } from "@/lib/dates";
-import { seedInbox } from "./fixture";
+import { INBOX_TAGS, seedInbox } from "./fixture";
 import { InboxHarness } from "./harness";
 
 export const metadata: Metadata = { title: "Inbox harness" };
@@ -16,6 +16,6 @@ export default async function InboxHarnessPage({ searchParams }: PageProps<"/dev
   const timeZone = resolveTimeZone(one(params.tz));
   const now = new Date();
   const { items, areas } = params.empty === undefined ? seedInbox(now, timeZone) : { items: [], areas: [] };
-  const initial = await loadInbox(fakeRepo(structuredClone(items), areas).repo, now, timeZone);
+  const initial = await loadInbox(tagByTitle(fakeRepo(structuredClone(items), areas), INBOX_TAGS).repo, now, timeZone);
   return <InboxHarness items={items} areas={areas} initial={initial} />;
 }
