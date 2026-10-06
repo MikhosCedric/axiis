@@ -17,7 +17,9 @@ import { tagLine } from "@/features/tags/model";
 import { RowTags } from "@/features/tags/row-tags";
 import { formatClock } from "@/features/today/format";
 import { Glyph } from "@/features/today/glyph";
-import { EMPTY_TRAY, type BeamState, type TodayEntry, type TodayView } from "@/features/today/model";
+import { LineLegend } from "@/features/today/line-legend";
+import { SameInInbox } from "@/features/inbox/same-in-inbox";
+import { EMPTY_TRAY, WAITING, type BeamState, type TodayEntry, type TodayView } from "@/features/today/model";
 import { instantAt, localMinutes } from "@/lib/dates";
 import type { ChildCount } from "@/lib/items/repo";
 import { keyPlacement, type DropContext, type Placement } from "./drop";
@@ -281,12 +283,15 @@ export function ScoreView({
       <p aria-hidden="true" className="mt-3 hidden text-[13px] leading-relaxed text-ink-3 pointer-coarse:block">
         Press and hold a beam, then drag it to move it, or hold and drag its right end to change its length.
       </p>
-      <HelpHint id={KEYS_ID} label="Keyboard help">
-        Drag a beam to move it, or its right end to change its length. With a beam focused, <Kbd>←</Kbd> <Kbd>→</Kbd>{" "}
-        move it a quarter hour, <Kbd>Shift</Kbd> with <Kbd>←</Kbd> <Kbd>→</Kbd> changes its length, <Kbd>↑</Kbd>{" "}
-        <Kbd>↓</Kbd> change its area, <Kbd>Space</Kbd> marks it done, <Kbd>Enter</Kbd> opens it and <Kbd>Backspace</Kbd>{" "}
-        sends it back to waiting. On a waiting item, <Kbd>↑</Kbd> or <Kbd>↓</Kbd> gives it a time.
-      </HelpHint>
+      <div className="flex flex-wrap items-center gap-x-6">
+        <HelpHint id={KEYS_ID} label="Keyboard help">
+          Drag a beam to move it, or its right end to change its length. With a beam focused, <Kbd>←</Kbd> <Kbd>→</Kbd>{" "}
+          move it a quarter hour, <Kbd>Shift</Kbd> with <Kbd>←</Kbd> <Kbd>→</Kbd> changes its length, <Kbd>↑</Kbd>{" "}
+          <Kbd>↓</Kbd> change its area, <Kbd>Space</Kbd> marks it done, <Kbd>Enter</Kbd> opens it and{" "}
+          <Kbd>Backspace</Kbd> sends it back to waiting. On a waiting item, <Kbd>↑</Kbd> or <Kbd>↓</Kbd> gives it a time.
+        </HelpHint>
+        <LineLegend now />
+      </div>
 
       <section
         ref={tray}
@@ -294,12 +299,15 @@ export function ScoreView({
         className={`mt-7 pt-2 ${target?.kind === "tray" ? styles.dropZone : ""}`}
       >
         <h3 id="tray-h" className="font-serif text-lg leading-tight font-medium">
-          Waiting for a time
+          {WAITING}
         </h3>
         <p className="mt-1 mb-3.5 text-[13px] text-ink-3">
-          <span className="pointer-coarse:hidden">Drag one onto an area to give it a time.</span>
-          <span className="hidden pointer-coarse:inline">Press and hold one, then drag it onto an area to give it a time.</span>{" "}
-          Drag a beam back here to clear its time.
+          No day yet.{" "}
+          <span className="pointer-coarse:hidden">Drag one onto an area to plan it for a time today.</span>
+          <span className="hidden pointer-coarse:inline">
+            Press and hold one, then drag it onto an area to plan it for a time today.
+          </span>{" "}
+          Drag a beam back here to clear its day. <SameInInbox />
         </p>
         {score.waiting.length ? (
           <ul className="flex flex-wrap gap-2.5">

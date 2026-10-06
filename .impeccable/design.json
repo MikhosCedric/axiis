@@ -95,7 +95,7 @@
       "name": "Item Chip",
       "kind": "chip",
       "refersTo": "chip-item",
-      "description": "An untimed item in Any time or Waiting for a time; draggable onto a staff.",
+      "description": "An untimed item in Any time or Waiting; draggable onto a staff.",
       "html": "<div class=\"ds-chip\" tabindex=\"0\"><span class=\"ds-chip-glyph\"></span>Renew passport</div>",
       "css": ".ds-chip { display: inline-flex; align-items: center; gap: 10px; padding: 8px 12px; border: 1px solid var(--rule, rgba(28,27,34,0.28)); border-radius: 8px; background: var(--sheet, #f3eee1); color: var(--ink, #1c1b22); font: 500 14px var(--font-sans, sans-serif); cursor: grab; } .ds-chip:hover { border-color: var(--field, rgba(28,27,34,0.55)); } .ds-chip:focus-visible { outline: 2px solid var(--accent, #0a675a); outline-offset: 3px; border-color: var(--accent, #0a675a); box-shadow: inset 0 0 0 1px var(--accent, #0a675a); } .ds-chip-glyph { width: 28px; height: 6px; background: repeating-linear-gradient(to right, currentColor 0 7px, transparent 7px 11px); border-radius: 0; }"
     },
@@ -141,7 +141,7 @@
       "Do draw structure with Hairline (28% ink) and Hairline Soft (12% ink), and close the end of a sequence with a 3px double rule.",
       "Do set every time, count and date numeral in tabular figures.",
       "Do use the house curve cubic-bezier(0.16, 1, 0.3, 1) for movement, and drop the movement under prefers-reduced-motion.",
-      "Do keep copy quiet and plain: sentence case, no exclamation marks, no guilt about overdue items (\"Waiting for a time\", \"For things that belong to the day but not to an hour.\")."
+      "Do keep copy quiet and plain: sentence case, no exclamation marks, no guilt about overdue items (\"Waiting\", \"For things that belong to the day but not to an hour.\")."
     ],
     "donts": [
       "Don't colour-code item types or areas; type is the glyph's head shape.",

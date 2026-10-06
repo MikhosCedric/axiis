@@ -94,6 +94,17 @@ axe reported **no violations on any of the 24 loads**, nor with the detail panel
     - **Fix.** Draw resting chips with Field Stroke (3.68:1 on Sheet) or move them to Rail Paper. Keep Hairline for rules that separate content. Suggested command `/impeccable polish`.
     - **Status. Deferred.** Field Stroke or Rail Paper are two different looks for every chip and outline button, which is a design call.
 
+## Shell critique follow-ups, 7 October 2026
+
+A later `impeccable critique` of the signed-in shell (`.impeccable/critique/2026-10-06T19-17-33Z__localhost.md`, 26/40) was answered on `fix-critique-shell` (PR #28).
+
+- **Phone width (P1). Fixed.** The nav no longer widens the page at 375px, and Settings and Sign out stay on screen. `e2e/shell.spec.ts` checks `scrollWidth` in light and dark.
+- **One pile, four names (P2). Fixed.** The pile of items with no day is "Waiting" everywhere, and the Score and Week trays link to the Inbox, which holds the same items.
+- **Vocabulary never taught (P2). Fixed.** The Score and Week print a one-line key beside the "?" hint: planned dashed, happening solid, done hollow, and on the Score the now line. Tag pages and Lists now tick an item done from its glyph, through the same `DoneToggle` as the Inbox, named "Done: <title>". A series and a note have no tick. `e2e/vocabulary.spec.ts` covers both.
+- **Small consistency items. Fixed.** The Tags index starts at the same left edge as Lists. The rail's Areas read as a quiet readout (13px, Ink Quiet, tighter rows) rather than as links. Today has its own icon (one framed day with a beam) instead of a cross that read as "+". Inbox, Lists, Tags, Notes, Search and Settings load with a neutral heading-and-rows skeleton instead of the Score's staves.
+- **Week date focus ring. Not reproduced in Chromium.** In Edge the old field already drew the 2px ring on click and on Tab. The field now also draws it through `focus-within`, for engines that focus the inner date segments rather than the field. That case was not checked in Safari or Firefox.
+- **Touch targets. Fixed.** Under a coarse pointer, the Score/List and Day/Week switches are 44px tall. The landing header's Sign in and theme toggle and the footer links are 44px tall at every size.
+
 ## Harness-only notes
 
 These are not shipping defects. The harness pages have no `<main id="main">`, so the root layout's "Skip to content" link has no target there, while the real `(app)` layout provides one. Each harness has a 13px "Make saves fail" checkbox. The Next dev indicator overlaps the bottom-left of every page in dev.
