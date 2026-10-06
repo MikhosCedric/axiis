@@ -18,6 +18,7 @@ import { RepeatRows } from "./repeat-control";
 import { Subtasks } from "./subtasks";
 import { FirstDayRow, TimeRow } from "./time-row";
 import { formatDayHeading } from "@/features/today/format";
+import { TagField } from "@/features/tags/tag-field";
 
 const TYPE_WORD: Record<ItemType, string> = { task: "Task", event: "Event", note: "Note", checklist: "Checklist" };
 
@@ -288,6 +289,15 @@ export function DetailSheet({
           </button>
         </section>
       )}
+
+      <TagField
+        itemId={item.id}
+        tags={view.tags.on}
+        known={view.tags.known}
+        series={isSeries || isOccurrence}
+        add={actions.addTag}
+        remove={actions.removeTag}
+      />
 
       {item.type === "note" ? (
         <Link

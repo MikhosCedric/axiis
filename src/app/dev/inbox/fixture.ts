@@ -34,3 +34,10 @@ export function seedInbox(now: Date, timeZone: string): { items: Item[]; areas: 
     ],
   };
 }
+
+/** Tags on fixture items, by title. */
+export const INBOX_TAGS: Record<string, string[]> = {
+  "Book the dentist": ["health", "errands"],
+  "Return the library books": ["errands"],
+  "Draft the quarterly review notes for the whole team, with every open question from the last retro": ["writing"],
+};

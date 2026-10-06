@@ -103,3 +103,12 @@ export function seedFixture(now: Date, timeZone: string): { items: Item[]; areas
 export function loadDayData(repo: ItemsRepo, now: Date, timeZone: string): Promise<DayData> {
   return loadDay(repo, toLocalDate(now, timeZone), now, timeZone);
 }
+
+/** Tags on fixture items, by title. The stand-up's go on its series, so every occurrence wears them. */
+export const SCORE_TAGS: Record<string, string[]> = {
+  "Write the launch brief": ["launch", "writing"],
+  "Stand-up": ["team"],
+  "Renew passport": ["errands", "travel"],
+  "Pay the electricity bill": ["bills"],
+  "Reply to Marcus about the invoice": ["bills", "work admin", "follow-up"],
+};

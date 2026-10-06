@@ -1,6 +1,7 @@
 import { isStored, repeats, type Area, type AreaId, type Item, type ItemId, type ItemType, type LocalDate, type Schedule, type ShownItem } from "@/domain/item";
 import type { ItemKey } from "@/domain/item-key";
 import type { Rule, RuleEnd } from "@/domain/recurrence";
+import type { TagName } from "@/domain/tag";
 import { addDays, localMinutes, toLocalDate } from "@/lib/dates";
 import { describeRule, presetOf, type RepeatChoice, type RepeatPreset } from "./repeat";
 import type { ActionResult } from "@/features/today/commands";
@@ -105,8 +106,10 @@ export type DetailView = {
   areas: { id: AreaId; name: string }[];
   nesting: Nesting;
   repeat: RepeatView;
-  /** The stored item linked notes attach to. Notes on any occurrence attach to its series. */
+  /** The stored item linked notes and tags attach to. Notes and tags on any occurrence attach to its series. */
   notesFor: ItemId;
+  /** The tags it wears, by name, and every tag the user has, most used first, for suggestions. */
+  tags: { on: TagName[]; known: TagName[] };
 };
 
 /** The writes the sheet can ask for. Server actions in the app, in-memory fakes in the dev harness. */
@@ -124,6 +127,9 @@ export type DetailActions = {
   remove: (id: string, scope?: Scope) => Promise<ActionResult>;
   setRepeat: (id: string, choice: RepeatChoice) => Promise<ActionResult>;
   stopRepeating: (id: string) => Promise<ActionResult>;
+  /** Puts a tag on the item, or on its series for an occurrence. */
+  addTag: (id: string, name: string) => Promise<ActionResult>;
+  removeTag: (id: string, name: string) => Promise<ActionResult>;
   /** Makes a note linked to the item and answers with its id, so the sheet can open it. */
   newLinkedNote: (itemId: string) => Promise<Created>;
 };
@@ -184,8 +190,9 @@ export function buildDetail(input: {
   subtasks: Item[];
   parent: Item | null;
   timeZone: string;
+  tags?: DetailView["tags"];
 }): DetailView {
-  const { item, series = null, areas, subtasks, parent, timeZone } = input;
+  const { item, series = null, areas, subtasks, parent, timeZone, tags = { on: [], known: [] } } = input;
   const policy = subtaskPolicy(item);
   const nesting: Nesting =
     policy.kind === "holds-subtasks"
@@ -205,6 +212,7 @@ export function buildDetail(input: {
     nesting,
     repeat: repeatView(item, series, subtasks, timeZone),
     notesFor: series?.id ?? (isStored(item) ? item.id : item.recurrence.seriesId),
+    tags,
   };
 }
 

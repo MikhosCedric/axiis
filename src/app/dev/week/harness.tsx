@@ -6,7 +6,8 @@ import type { Area, Item } from "@/domain/item";
 import { selectedIn } from "@/domain/item-key";
 import { SELECTED_ITEM_PARAM } from "@/features/day/types";
 import { captureTask, setDone, type ActionResult } from "@/features/today/commands";
-import { fakeRepo } from "@/features/today/test-support";
+import { fakeRepo, tagByTitle } from "@/features/today/test-support";
+import { WEEK_TAGS } from "./fixture";
 import { moveItem } from "@/features/week/commands";
 import { loadWeek, type WeekData } from "@/features/week/load";
 import { WeekNav } from "@/features/week/week-nav";
@@ -17,7 +18,7 @@ const LATENCY_MS = 350;
 const wait = () => new Promise((resolve) => setTimeout(resolve, LATENCY_MS));
 
 export function WeekHarness({ items, areas, initial }: { items: Item[]; areas: Area[]; initial: WeekData }) {
-  const [fake] = useState(() => fakeRepo(structuredClone(items), areas));
+  const [fake] = useState(() => tagByTitle(fakeRepo(structuredClone(items), areas), WEEK_TAGS));
   const [data, setData] = useState(initial);
   const [failing, setFailing] = useState(false);
   const selected = useSearchParams().get(SELECTED_ITEM_PARAM);

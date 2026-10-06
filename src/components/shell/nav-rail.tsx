@@ -14,6 +14,7 @@ import {
   SearchIcon,
   SettingsIcon,
   SignOutIcon,
+  TagsIcon,
   TodayIcon,
   WeekIcon,
 } from "./icons";
@@ -63,6 +64,7 @@ export function NavRail({ today, areas }: { today: LocalDate; areas: NavArea[] }
   const onSettings = pathname === "/settings" || pathname.startsWith("/settings/");
   const onNotes = pathname === "/notes" || pathname.startsWith("/notes/");
   const onSearch = pathname === "/search";
+  const onTags = pathname === "/tags" || pathname.startsWith("/tags/");
   const openPalette = useOpenPalette();
   const mac = useIsMac();
   return (
@@ -80,6 +82,7 @@ export function NavRail({ today, areas }: { today: LocalDate; areas: NavArea[] }
         <NavLink href="/week" current={onWeek} icon={<WeekIcon />} label="Week" />
         <NavLink href="/inbox" current={onInbox} icon={<InboxIcon />} label="Inbox" />
         <NavLink href="/notes" current={onNotes} icon={<NotesIcon />} label="Notes" />
+        <NavLink href="/tags" current={onTags} icon={<TagsIcon />} label="Tags" />
         <NavLink href="/search" current={onSearch} icon={<SearchIcon />} label="Search" />
         <Soon icon={<ListsIcon />} label="Lists" />
       </ul>

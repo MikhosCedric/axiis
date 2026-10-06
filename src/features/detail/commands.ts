@@ -9,6 +9,8 @@ import { TITLE_MAX } from "@/features/today/model";
 import { DAY_MINUTES } from "@/features/score/layout";
 import { buildDetail, firstDay, subtaskPolicy, type DetailView, type Scope, type TimeOfDay } from "./model";
 import { repeatSchema, ruleFor } from "./repeat";
+import { byName } from "@/domain/tag";
+import { byUse } from "@/features/tags/model";
 
 const titleSchema = z.string().trim().min(1).max(TITLE_MAX);
 const areaSchema = idSchema.nullable();
@@ -88,13 +90,16 @@ export async function loadDetail(repo: ItemsRepo, key: ParsedItemKey, timeZone: 
   if (!found) return null;
   const item = found.item;
   const policy = subtaskPolicy(item);
-  const [areas, subtasks, parent, series] = await Promise.all([
+  const [areas, subtasks, parent, series, known] = await Promise.all([
     repo.listAreas(),
     policy.kind === "holds-subtasks" && found.kind === "stored" ? repo.listChildren(found.item.id) : [],
     policy.kind === "is-subtask" ? repo.get(policy.parentId) : null,
     found.kind === "virtual" ? found.series : found.item.recurrence.kind === "override" ? seriesOf(repo, found.item) : null,
+    repo.listTags(),
   ]);
-  return buildDetail({ item, series, areas, subtasks, parent, timeZone });
+  const owner = series?.id ?? found.item.id;
+  const on = byName((await repo.tagsForItems([owner as ItemId]))[owner] ?? []).map((t) => t.name);
+  return buildDetail({ item, series, areas, subtasks, parent, timeZone, tags: { on, known: byUse(known) } });
 }
 
 export async function renameItem(

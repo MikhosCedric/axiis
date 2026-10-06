@@ -20,6 +20,8 @@ A solo productivity web app. One connected set of items, shown through many view
 
 **Override**: a stored item that stands in for one occurrence, with its own title, schedule, area and status. Made the first time that occurrence is changed. A skipped occurrence is an override that is dropped. Never "exception" in the UI.
 
+**Tag**: a short label the user puts on any item, shown as `#name`. One item can carry several and one tag spans every area. Matched without case. On a series, the tag belongs to every occurrence. Never "label" or "category" in the UI.
+
 **Link**: a typed edge between two items, such as a note referencing a task. Backlinks are links read in reverse.
 
 **View**: a query over items, never its own data. Score, List, Week and Today are views.

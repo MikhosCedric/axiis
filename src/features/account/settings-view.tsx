@@ -1,4 +1,6 @@
 import type { Area } from "@/domain/item";
+import type { TagSummary } from "@/domain/tag";
+import { TagsSection, type TagActions } from "@/features/tags/tags-section";
 import { AreasSection, type AreaActions } from "./areas-section";
 import { DeleteAccountSection, type DeleteAccountAction } from "./delete-account-section";
 
@@ -8,11 +10,17 @@ export function SettingsView({
   email,
   areas,
   areaActions,
+  tags,
+  tagActions,
+  tagHref,
   deleteAccount,
 }: {
   email: string | null;
   areas: Area[];
   areaActions: AreaActions;
+  tags: TagSummary[];
+  tagActions: TagActions;
+  tagHref?: (name: string) => string;
   deleteAccount: DeleteAccountAction;
 }) {
   return (
@@ -30,6 +38,8 @@ export function SettingsView({
 
       <div className="mt-10 space-y-12">
         <AreasSection areas={areas} actions={areaActions} />
+
+        <TagsSection tags={tags} actions={tagActions} hrefFor={tagHref} />
 
         <section aria-labelledby="export-heading">
           <h2 id="export-heading" className="font-serif text-xl font-medium">

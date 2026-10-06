@@ -8,14 +8,15 @@ import { loadInbox, planItem } from "@/features/inbox/commands";
 import { InboxView, type InboxActions } from "@/features/inbox/inbox-view";
 import type { InboxData } from "@/features/inbox/model";
 import { captureTask, setDone, type ActionResult } from "@/features/today/commands";
-import { fakeRepo } from "@/features/today/test-support";
+import { fakeRepo, tagByTitle } from "@/features/today/test-support";
+import { INBOX_TAGS } from "./fixture";
 import type { ItemsRepo } from "@/lib/items/repo";
 
 const LATENCY_MS = 350;
 const wait = () => new Promise((resolve) => setTimeout(resolve, LATENCY_MS));
 
 export function InboxHarness({ items, areas, initial }: { items: Item[]; areas: Area[]; initial: InboxData }) {
-  const [fake] = useState(() => fakeRepo(structuredClone(items), areas));
+  const [fake] = useState(() => tagByTitle(fakeRepo(structuredClone(items), areas), INBOX_TAGS));
   const [data, setData] = useState(initial);
   const [failing, setFailing] = useState(false);
   const selected = useSearchParams().get(SELECTED_ITEM_PARAM);
