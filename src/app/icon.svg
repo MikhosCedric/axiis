@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <style>
+    .tile { fill: #ebe4d4; }
+    .ink { stroke: #1c1b22; }
+    .now { fill: #0a675a; }
+    @media (prefers-color-scheme: dark) {
+      .tile { fill: #16151b; }
+      .ink { stroke: #ece5d3; }
+      .now { fill: #45c7b0; }
+    }
+  </style>
+  <rect class="tile" width="32" height="32" rx="7"/>
+  <g class="ink" fill="none" stroke-linecap="round">
+    <path d="M5 20.5h22M12 5v22" stroke-width="2.75"/>
+    <path d="M19.5 16v9M24.5 16v9" stroke-width="2.25"/>
+  </g>
+  <circle class="now" cx="12" cy="20.5" r="3.75"/>
+</svg>
