@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import type { TagName } from "@/domain/tag";
-import { openCount, splitTagTerms, suggestTags, SUGGESTIONS_MAX, tagHref } from "./model";
+import type { TagId, TagName } from "@/domain/tag";
+import { byUse, openCount, splitTagTerms, suggestTags, SUGGESTIONS_MAX, tagHref, tagLine } from "./model";
 
 const names = (...n: string[]) => n as TagName[];
 
@@ -19,6 +19,13 @@ describe("suggestTags", () => {
   });
 });
 
+describe("byUse", () => {
+  it("puts the tags with most open items first, ties by name", () => {
+    const t = (name: string, open: number) => ({ id: name as TagId, name: name as TagName, open });
+    expect(byUse([t("home", 1), t("deep", 4), t("Admin", 1), t("zen", 0)])).toEqual(["deep", "Admin", "home", "zen"]);
+  });
+});
+
 describe("splitTagTerms", () => {
   it("takes #words out as tags, once each in any case, and keeps the rest as text", () => {
     expect(splitTagTerms("  invoice #Work  march #work #home ")).toEqual({ text: "invoice march", tags: ["Work", "home"] });
@@ -28,6 +35,18 @@ describe("splitTagTerms", () => {
   it("leaves a bare # and a # inside a word as text", () => {
     expect(splitTagTerms("c# #")).toEqual({ text: "c# #", tags: [] });
     expect(splitTagTerms("")).toEqual({ text: "", tags: [] });
+  });
+});
+
+describe("tagLine", () => {
+  it("shows the first few with a count of the rest, and says all of them", () => {
+    expect(tagLine(["home", "errands", "Deep work", "admin"], 2)).toEqual({
+      shown: "#home #errands +2",
+      spoken: "tagged home, errands, Deep work and admin",
+    });
+    expect(tagLine(["home"])).toEqual({ shown: "#home", spoken: "tagged home" });
+    expect(tagLine(["a", "b", "c"])).toEqual({ shown: "#a #b #c", spoken: "tagged a, b and c" });
+    expect(tagLine([])).toEqual({ shown: "", spoken: "" });
   });
 });
 
