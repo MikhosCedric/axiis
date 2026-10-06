@@ -92,6 +92,8 @@ export function DetailSheet({
   const word = TYPE_WORD[item.type].toLowerCase();
   const isSeries = repeat.kind === "series";
   const isOccurrence = repeat.kind === "occurrence";
+  // The series itself has no "This one": every change to it is to all of them.
+  const seriesScope: Scope = isSeries ? "all" : scope;
 
   return (
     <aside aria-labelledby={headingId} className="grid gap-5">
@@ -185,25 +187,25 @@ export function DetailSheet({
             </>
           )}
 
-          {isOccurrence && (
+          {(isOccurrence || isSeries) && (
             <TimeRow
               time={view.time}
               save={(time) =>
                 write(
-                  () => actions.setTime(item.id, time, scope),
-                  scope === "all" ? () => setStatus(`All of them are at ${clockOf(time.start)} now.`) : undefined,
+                  () => actions.setTime(item.id, time, seriesScope),
+                  seriesScope === "all" ? () => setStatus(`All of them are at ${clockOf(time.start)} now.`) : undefined,
                 )
               }
               clear={() =>
                 write(
-                  () => actions.clearTime(item.id, scope),
-                  scope === "all" ? () => setStatus("All of them are at any time of day now.") : undefined,
+                  () => actions.clearTime(item.id, seriesScope),
+                  seriesScope === "all" ? () => setStatus("All of them are at any time of day now.") : undefined,
                 )
               }
             />
           )}
 
-          {isOccurrence && scope === "all" && (
+          {(isOccurrence || isSeries) && seriesScope === "all" && (
             <FirstDayRow
               firstOn={repeat.firstOn}
               save={(on) =>
