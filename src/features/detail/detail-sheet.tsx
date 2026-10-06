@@ -8,7 +8,9 @@ import type { ActionResult } from "@/features/today/commands";
 import { ConfirmDelete } from "./confirm-delete";
 import { GlyphCheckbox } from "./glyph-checkbox";
 import { BackIcon, CloseIcon, LiftIcon } from "./icons";
+import type { ConnectedRow } from "@/features/notes/model";
 import { InlineTitle } from "./inline-title";
+import { LinkedNotes } from "./linked-notes";
 import { useItemHref } from "./item-href";
 import type { DetailActions, DetailView } from "./model";
 import { Subtasks } from "./subtasks";
@@ -32,7 +34,16 @@ export function MissingItem() {
 }
 
 /** The panel body: everything is drawn from `view`, and every write goes through `actions`. */
-export function DetailSheet({ view, actions }: { view: DetailView; actions: DetailActions }) {
+export function DetailSheet({
+  view,
+  actions,
+  linkedNotes = [],
+}: {
+  view: DetailView;
+  actions: DetailActions;
+  /** Notes linked to this item either way. Not shown for a note, which opens in its own editor. */
+  linkedNotes?: ConnectedRow[];
+}) {
   const { item, nesting } = view;
   const itemHref = useItemHref();
   const router = useRouter();
@@ -189,6 +200,17 @@ export function DetailSheet({ view, actions }: { view: DetailView; actions: Deta
             Make it a task
           </button>
         </section>
+      )}
+
+      {item.type === "note" ? (
+        <Link
+          href={`/notes/${item.id}`}
+          className="-ml-2 inline-flex items-center gap-2 justify-self-start rounded-md px-2 py-1 font-medium text-ink-2 hover:bg-accent-wash hover:text-ink"
+        >
+          Open the note
+        </Link>
+      ) : (
+        <LinkedNotes itemId={item.id} notes={linkedNotes} actions={actions} />
       )}
 
       <div className="border-t border-rule pt-4">

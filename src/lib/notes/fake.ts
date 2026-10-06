@@ -32,10 +32,14 @@ export function fakeNotesRepo(store: NotesStore, now: () => Date = () => new Dat
       return store.items
         .filter((i) => i.type === "note")
         .sort(byEdit)
-        .map((i) => {
-          const { body: _body, bodyText, ...rest } = toNote(i);
-          return { ...rest, excerpt: bodyText.slice(0, 280) };
-        });
+        .map((i) => ({
+          id: i.id,
+          title: i.title,
+          areaId: i.areaId,
+          createdAt: i.createdAt,
+          updatedAt: i.updatedAt,
+          excerpt: (store.bodyText.get(i.id) ?? "").slice(0, 280),
+        }));
     },
     async getNote(id) {
       const i = live(id);
