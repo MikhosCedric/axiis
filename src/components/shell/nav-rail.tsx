@@ -4,6 +4,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 import type { LocalDate } from "@/domain/item";
+import { PaletteIcon } from "@/features/palette/icons";
+import { useIsMac, useOpenPalette } from "@/features/palette/palette";
 import {
   BrandMark,
   InboxIcon,
@@ -60,10 +62,12 @@ export function NavRail({ today, areas }: { today: LocalDate; areas: NavArea[] }
   const onSettings = pathname === "/settings" || pathname.startsWith("/settings/");
   const onNotes = pathname === "/notes" || pathname.startsWith("/notes/");
   const onSearch = pathname === "/search";
+  const openPalette = useOpenPalette();
+  const mac = useIsMac();
   return (
     <nav
       aria-label="Primary"
-      className="flex items-center gap-3.5 border-b border-rule bg-paper-2 px-4 py-3 rail:sticky rail:top-0 rail:h-dvh rail:flex-col rail:items-stretch rail:gap-7 rail:border-r rail:border-b-0 rail:px-4 rail:py-6"
+      className="flex items-center gap-3.5 border-b border-rule bg-paper-2 px-4 py-3 max-rail:[&>*]:shrink-0 max-rail:overflow-x-auto max-rail:[scrollbar-width:none] rail:sticky rail:top-0 rail:h-dvh rail:flex-col rail:items-stretch rail:gap-7 rail:border-r rail:border-b-0 rail:px-4 rail:py-6"
     >
       <div className="flex items-center gap-2.5 rail:px-2">
         <BrandMark />
@@ -104,6 +108,16 @@ export function NavRail({ today, areas }: { today: LocalDate; areas: NavArea[] }
       )}
 
       <div className="ml-auto flex items-center gap-1 rail:mt-auto rail:ml-0 rail:grid rail:gap-0.5">
+        <button
+          type="button"
+          onClick={openPalette}
+          aria-keyshortcuts={mac ? "Meta+K" : "Control+K"}
+          title={`Search and commands (${mac ? "⌘" : "Ctrl"} K)`}
+          className={`${quiet} w-full whitespace-nowrap rail:gap-2 rail:pr-1`}
+        >
+          <PaletteIcon />
+          <span className="max-rail:sr-only">Search and commands</span>
+        </button>
         <ThemeToggle className={`${quiet} w-full`} />
         <Link
           href="/settings"
