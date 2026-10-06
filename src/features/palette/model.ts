@@ -1,21 +1,34 @@
 import type { ItemType, LocalDate } from "@/domain/item";
-import { parseTagName, tagKey } from "@/domain/tag";
+import { parseTagName, tagKey, type TagName } from "@/domain/tag";
 import { dayHref } from "@/features/day/nav";
 import { LISTS_PATH } from "@/features/lists/model";
 import { tagHref, TAGS_PATH } from "@/features/tags/model";
 import type { SearchRow } from "@/features/notes/model";
+import { parseCapture, previewWords } from "@/features/today/capture-syntax";
 import { formatDayIn } from "@/features/today/format";
 import { completeDatePhrase, parseDatePhrase } from "./date-phrase";
 import { rank } from "./rank";
+
+/** An item the palette can act on: a search result, or the item the screen has selected (already open, so no link). */
+export type Target = { key: string; title: string; type: ItemType; done: boolean; href: string | null };
+
+/** What an action does to its item. Each runs an existing server command; "ask-tag" only starts a tag name. */
+export type Act =
+  | { do: "open"; href: string }
+  | { do: "done"; done: boolean }
+  | { do: "plan"; when: "today" | "tomorrow" }
+  | { do: "tag"; name: TagName }
+  | { do: "ask-tag" };
 
 export type Command =
   | { kind: "go"; id: string; label: string; href: string }
   | { kind: "help"; id: string; label: string }
   | { kind: "date"; id: string; label: string; href: string }
   | { kind: "capture"; id: string; label: string; title: string }
-  | { kind: "open"; id: string; label: string; detail: string; type: ItemType; done: boolean; href: string };
+  | { kind: "open"; id: string; label: string; detail: string; target: Target }
+  | { kind: "act"; id: string; label: string; act: Act };
 
-export type SectionId = "go" | "dates" | "capture" | "find";
+export type SectionId = "selected" | "go" | "dates" | "capture" | "find" | "act";
 export type Section = { id: SectionId; label: string; commands: Command[] };
 
 /** Search runs on the server, so its rows arrive later than the typing that asked for them. */
@@ -54,10 +67,10 @@ function dateLabel(date: LocalDate, today: LocalDate): string {
 
 /**
  * What the palette offers for `input`, in order: pages, a date, capture, then
- * search results once they are back for this very input. Empty sections are
- * left out.
+ * search results once they are back for this very input. With nothing typed,
+ * the item the screen has selected comes first. Empty sections are left out.
  */
-export function paletteSections(input: string, today: LocalDate, find: Find): Section[] {
+export function paletteSections(input: string, today: LocalDate, find: Find, selected: Target | null = null): Section[] {
   const text = input.trim();
   const places = rank(PLACES, text, (p) => [p.label, ...p.also]);
   const go: Command[] = places.map((p) =>
@@ -65,7 +78,12 @@ export function paletteSections(input: string, today: LocalDate, find: Find): Se
       ? { kind: "help", id: "help", label: p.label }
       : { kind: "go", id: `go-${p.label.toLowerCase()}`, label: p.label, href: p.href },
   );
-  if (!text) return [{ id: "go", label: "Go to", commands: go }];
+  if (!text) {
+    const pick: Section[] = selected
+      ? [{ id: "selected", label: "Selected", commands: [{ kind: "open", id: "selected", label: selected.title, detail: "", target: selected }] }]
+      : [];
+    return [...pick, { id: "go", label: "Go to", commands: go }];
+  }
 
   const tag = text.startsWith("#") ? parseTagName(text) : null;
   if (tag) go.unshift({ kind: "go", id: `go-tag-${tagKey(tag)}`, label: `Go to #${tag}`, href: tagHref(tag) });
@@ -77,7 +95,10 @@ export function paletteSections(input: string, today: LocalDate, find: Find): Se
   const dates: Command[] =
     date && !coveredByToday ? [{ kind: "date", id: `date-${date}`, label: dateLabel(date, today), href: dayHref(date, today, "score") }] : [];
 
-  const capture: Command[] = exact || tag ? [] : [{ kind: "capture", id: "capture", label: `Capture “${text}” as a task`, title: text }];
+  const read = parseCapture(text);
+  const understood = previewWords(read);
+  const label = understood ? `Capture “${read.title}” as a task: ${understood}` : `Capture “${text}” as a task`;
+  const capture: Command[] = exact || tag ? [] : [{ kind: "capture", id: "capture", label, title: text }];
 
   const q = findQuery(text);
   const found: Command[] =
@@ -87,9 +108,7 @@ export function paletteSections(input: string, today: LocalDate, find: Find): Se
           id: `open-${r.id}`,
           label: r.title,
           detail: r.snippet,
-          type: r.type,
-          done: r.done,
-          href: r.href,
+          target: { key: r.id, title: r.title, type: r.type, done: r.done, href: r.href },
         }))
       : [];
 
@@ -100,6 +119,49 @@ export function paletteSections(input: string, today: LocalDate, find: Find): Se
     { id: "find", label: "Find", commands: found },
   ];
   return sections.filter((s) => s.commands.length > 0);
+}
+
+type Offer = { label: string; act: Act; also: string[] };
+
+/**
+ * What can be done to `target`, filtered by what is typed. Typing `#` and a
+ * name offers that tag. A note has no plan and is never done, so it offers
+ * only Open and a tag.
+ */
+export function actSections(input: string, target: Target): Section[] {
+  const text = input.trim();
+  const section = (commands: Command[]): Section[] =>
+    commands.length ? [{ id: "act", label: `Actions for “${target.title}”`, commands }] : [];
+  if (text.startsWith("#")) {
+    const name = parseTagName(text);
+    return section(name ? [{ kind: "act", id: "act-tag", label: `Tag #${name}`, act: { do: "tag", name } }] : []);
+  }
+  const offers: Offer[] = [
+    ...(target.href ? [{ label: "Open", act: { do: "open", href: target.href } as Act, also: ["show", "go"] }] : []),
+    ...(target.type === "note"
+      ? []
+      : [
+          target.done
+            ? { label: "Mark open again", act: { do: "done", done: false } as Act, also: ["undo", "reopen", "not done"] }
+            : { label: "Mark done", act: { do: "done", done: true } as Act, also: ["complete", "finish", "tick"] },
+          { label: "Plan for today", act: { do: "plan", when: "today" } as Act, also: ["schedule", "move"] },
+          { label: "Plan for tomorrow", act: { do: "plan", when: "tomorrow" } as Act, also: ["schedule", "move"] },
+        ]),
+    { label: "Add a tag", act: { do: "ask-tag" }, also: ["label", "#"] },
+  ];
+  return section(rank(offers, text, (o) => [o.label, ...o.also]).map((o) => ({ kind: "act", id: `act-${o.label}`, label: o.label, act: o.act })));
+}
+
+/** What the status line says once an action on `title` has saved. */
+export function actedLine(act: Exclude<Act, { do: "open" } | { do: "ask-tag" }>, title: string): string {
+  switch (act.do) {
+    case "done":
+      return act.done ? `“${title}” is done.` : `“${title}” is open again.`;
+    case "plan":
+      return `“${title}” is planned for ${act.when}.`;
+    case "tag":
+      return `“${title}” is tagged #${act.name}.`;
+  }
 }
 
 /** A line for the status area under the list, or null when there is nothing to say. */

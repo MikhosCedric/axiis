@@ -48,7 +48,7 @@ export function ScoreHarness({
   const actions: DayActions = {
     place: (id, placement) => run((repo) => placeItem(repo, id, placement, data.timeZone)),
     setDone: (id, done) => run((repo) => setDone(repo, id, done, data.timeZone)),
-    capture: (title) => run((repo) => captureTask(repo, title)),
+    capture: (title) => run((repo) => captureTask(repo, title, new Date(data.nowIso), data.timeZone)),
     timeSeries: (id, time) => run((repo) => setTime(repo, id, time, data.timeZone, "all")),
   };
 
