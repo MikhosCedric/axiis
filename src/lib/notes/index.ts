@@ -1,0 +1,12 @@
+import { NotAuthenticatedError } from "@/lib/items";
+import { createClient } from "@/lib/supabase/server";
+import type { NotesRepo } from "./repo";
+import { SupabaseNotesRepo } from "./supabase-repo";
+
+/** Server only. Returns the notes repository for the signed-in user, or throws if there is no session. */
+export async function getNotesRepo(): Promise<NotesRepo> {
+  const supabase = await createClient();
+  const { data } = await supabase.auth.getClaims();
+  if (!data?.claims) throw new NotAuthenticatedError("getNotesRepo needs a signed-in user");
+  return new SupabaseNotesRepo(supabase);
+}
