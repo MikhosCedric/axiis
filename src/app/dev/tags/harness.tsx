@@ -10,6 +10,7 @@ import { loadTagged, loadTagIndex, type TaggedData } from "@/features/tags/comma
 import { harnessDetailActions } from "../detail-actions";
 import { TagIndexView } from "@/features/tags/tag-index-view";
 import { TaggedView } from "@/features/tags/tagged-view";
+import { setDone as setDoneCommand, type ActionResult } from "@/features/today/commands";
 import { BASE, harnessTagHref, settings, store } from "./store";
 
 const TZ = "UTC";
@@ -81,10 +82,22 @@ export function TaggedHarness({ name, itemId }: { name: string; itemId: string |
     newLinkedNote: async () => ({ ok: false, error: "Notes are not part of this harness." }),
   };
 
+  // The page is reloaded before the save resolves, so the tick never reads as undone in between.
+  async function setDone(id: string, done: boolean): Promise<ActionResult> {
+    await pause();
+    if (settings.failing) return { ok: false, error: "That change did not save. Try again." };
+    const result = await setDoneCommand(store.repo, id, done, TZ);
+    if (result.ok) {
+      setData(await loadTagged(store.repo, name, TZ));
+      setVersion((v) => v + 1);
+    }
+    return result;
+  }
+
   const current = loaded && loaded.key === itemId ? loaded : null;
   const detail = current ? (
     current.view ? (
-      <DetailSheet key={current.view.item.id} view={current.view} actions={actions} />
+      <DetailSheet key={current.key} view={current.view} actions={actions} />
     ) : (
       <MissingItem />
     )
@@ -94,7 +107,7 @@ export function TaggedHarness({ name, itemId }: { name: string; itemId: string |
     <>
       <Bar />
       {data === null && <p className="px-4 pt-8 text-ink-2 rail:px-9">No tag is called {name}.</p>}
-      {data && <TaggedView data={data} indexHref={BASE} detail={detail} />}
+      {data && <TaggedView data={data} indexHref={BASE} detail={detail} setDone={setDone} />}
     </>
   );
 }

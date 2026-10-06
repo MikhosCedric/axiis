@@ -2,6 +2,7 @@ import { z } from "zod";
 import { localDateSchema, type LocalDate } from "@/domain/item";
 import { MAX_COUNT, WEEKDAYS, type Rule, type RuleEnd, type Weekday } from "@/domain/recurrence";
 import { formatDayIn } from "@/features/today/format";
+import { dayWords } from "@/features/inbox/model";
 
 /** The repeat choices the detail panel offers, in menu order. */
 export const REPEAT_PRESETS = ["none", "daily", "weekdays", "weekly", "biweekly", "monthly", "yearly"] as const;
@@ -93,6 +94,16 @@ export function cadence(rule: Rule, firstOn: LocalDate | null): string {
   if (rule.freq !== "weekly") return every;
   const days = rule.byDay.length > 0 ? rule.byDay : firstOn ? [weekdayOf(firstOn)] : [];
   return days.length > 0 ? `${every} on ${listDays(days)}` : every;
+}
+
+/**
+ * What the status line says when something starts repeating: "Repeats every day
+ * from today". A waiting item starts today, as `setRepeat` puts it there.
+ */
+export function startsRepeating(choice: RepeatChoice, day: LocalDate | null, today: LocalDate): string | null {
+  if (choice.preset === "none") return null;
+  const from = day ?? today;
+  return `Repeats ${cadence(ruleFor(choice.preset, choice.end), from)} from ${dayWords(from, today)}.`;
 }
 
 /**

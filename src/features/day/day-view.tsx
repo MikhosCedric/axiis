@@ -124,7 +124,7 @@ export function DayView({
 
   function describe(item: ShownItem, placement: Placement) {
     const s = placement.schedule;
-    if (s.kind === "unscheduled") return `${item.title} is waiting for a time.`;
+    if (s.kind === "unscheduled") return `${item.title} is waiting, with no day.`;
     if (s.kind === "day") return `${item.title} is on this day, at any time.`;
     const area = areaName(placement.areaId === undefined ? item.areaId : placement.areaId);
     return `${item.title}, ${formatClock(s.start, timeZone)} to ${formatClock(s.end, timeZone)}, ${area}.`;
@@ -200,7 +200,7 @@ export function DayView({
                 type="button"
                 aria-pressed={shownMode === m}
                 onClick={() => switchMode(m)}
-                className={`px-3.5 py-2 font-medium ${shownMode === m ? "bg-ink text-paper" : "text-ink-2 hover:bg-accent-wash"}`}
+                className={`px-3.5 py-2 font-medium pointer-coarse:py-3 ${shownMode === m ? "bg-ink text-paper" : "text-ink-2 hover:bg-accent-wash"}`}
               >
                 {label}
               </button>

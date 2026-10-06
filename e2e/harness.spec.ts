@@ -28,7 +28,7 @@ test.describe("score", () => {
 
   test("dragging a waiting item onto an area gives it a time there", async ({ page }) => {
     const score = page.getByRole("region", { name: "Score" });
-    const chip = page.getByRole("region", { name: "Waiting for a time" }).getByRole("button", { name: /^Book the dentist, waiting/ });
+    const chip = page.getByRole("region", { name: "Waiting" }).getByRole("button", { name: /^Book the dentist, waiting/ });
     const home = await center(score.getByText("Home", { exact: true }));
 
     await dragTo(page, chip, { x: home.box.x + home.box.width + 160, y: home.y });
@@ -96,7 +96,7 @@ for (const view of ["", "&view=list"]) {
   test(`score${view}: an empty tray does not claim everything has a time while some are at any time`, async ({ page }) => {
     await page.goto(`/dev/score?tray=empty${view}`);
     await expect(page.getByText(/Take vitamins/).first()).toBeVisible();
-    await expect(page.getByText("Nothing is waiting for a time. What you capture lands here first.")).toBeVisible();
+    await expect(page.getByText("Nothing is waiting. What you capture lands here first.")).toBeVisible();
     await expect(page.getByText(/Everything has a/)).toHaveCount(0);
   });
 }
@@ -192,7 +192,8 @@ test("detail: a skipped day is listed on the series and can be restored", async 
 });
 
 test("detail: times are typed and shown on the 24-hour clock, and an unreadable one is not saved", async ({ page }) => {
-  const when = (label: string) => page.getByRole("complementary").locator("dt", { hasText: label }).locator("+ dd");
+  // The When row also holds the Move to button, so read only the words it shows.
+  const when = (label: string) => page.getByRole("complementary").locator("dt", { hasText: label }).locator("+ dd > span").first();
   await page.goto("/dev/detail?item=00000000-0000-4000-8000-000000000070~2026-10-11");
   const time = page.getByRole("group", { name: "Time" });
   const start = time.getByLabel("Starts at");
@@ -357,7 +358,7 @@ test.describe("inbox", () => {
   });
 
   test("an item can be planned for a picked day, and leaves the inbox", async ({ page }) => {
-    const list = page.getByRole("region", { name: "Waiting for a day" });
+    const list = page.getByRole("region", { name: "Waiting" });
     const later = new Date(Date.now() + 10 * 86_400_000).toISOString().slice(0, 10);
 
     await list.getByRole("button", { name: "Plan for: Return the library books" }).click();
@@ -370,11 +371,11 @@ test.describe("inbox", () => {
       page.getByRole("status").filter({ hasText: /^Return the library books is planned for \w+day \d+ \w+\.$/ }),
     ).toBeVisible();
     await expect(list.getByRole("button", { name: "Return the library books" })).toHaveCount(0);
-    await expect(page.getByText("4 items waiting for a day.")).toBeVisible();
+    await expect(page.getByText("4 items waiting.")).toBeVisible();
   });
 
   test("Escape closes the day choices and returns to the button", async ({ page }) => {
-    const list = page.getByRole("region", { name: "Waiting for a day" });
+    const list = page.getByRole("region", { name: "Waiting" });
     const plan = list.getByRole("button", { name: "Plan for: Book the dentist" });
 
     await plan.click();
@@ -393,7 +394,7 @@ test.describe("inbox", () => {
     await page.keyboard.press("Space");
     await expect(page.getByRole("status").filter({ hasText: "Book the dentist is done." })).toBeVisible();
     await expect(done).toBeChecked();
-    await expect(page.getByText("4 items waiting for a day.")).toBeVisible();
+    await expect(page.getByText("4 items waiting.")).toBeVisible();
 
     await done.focus();
     await page.keyboard.press("Space");
@@ -426,7 +427,7 @@ test.describe("inbox", () => {
     await page.getByLabel("Capture anything").fill("Fix the gate");
     await page.getByLabel("Capture anything").press("Enter");
     await expect(page.getByRole("button", { name: "Plan for: Fix the gate" })).toBeVisible();
-    await expect(page.getByText("1 item waiting for a day.")).toBeVisible();
+    await expect(page.getByText("1 item waiting.")).toBeVisible();
   });
 });
 

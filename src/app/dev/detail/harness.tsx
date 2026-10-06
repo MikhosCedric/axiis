@@ -203,7 +203,7 @@ export function DetailHarness({ itemId, timeZone }: { itemId: string | null; tim
         <div className="border-t border-rule px-4 pt-5 pb-10 rail:border-t-0 rail:border-l rail:px-6 rail:pt-8">
           {current.view ? (
             <DetailSheet
-              key={current.view.item.id}
+              key={current.key}
               view={current.view}
               actions={actions}
               linkedNotes={linkedNotesOf(store.notesStore, current.view.notesFor)}

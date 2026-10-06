@@ -6,6 +6,8 @@ import { SELECTED_ITEM_PARAM } from "@/features/day/types";
 import { DetailAside } from "@/features/detail/detail-aside";
 import { CaptureField } from "@/features/today/capture-field";
 import type { CaptureResult } from "@/features/today/commands";
+import { setDoneAction } from "@/features/today/actions";
+import { DoneToggle, useDoneToggles, type SetDone } from "@/features/today/done-toggle";
 import { Glyph } from "@/features/today/glyph";
 import { RepeatMark } from "@/features/today/repeat-mark";
 import { captureChecklistAction } from "./actions";
@@ -16,11 +18,13 @@ export function ListsView({
   data,
   detail,
   capture = captureChecklistAction,
+  setDone = setDoneAction,
 }: {
   data: ListsData;
   detail?: ReactNode;
-  /** Defaults to the server action; the dev harness passes an in-memory one. */
+  /** Defaults to the server actions; the dev harness passes in-memory ones. */
   capture?: (title: string) => Promise<CaptureResult>;
+  setDone?: SetDone;
 }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -28,6 +32,7 @@ export function ListsView({
   const selectedParam = params.get(SELECTED_ITEM_PARAM);
   const [selectedId, setSelectedId] = useOptimistic(selectedParam);
   const [, startTransition] = useTransition();
+  const ticks = useDoneToggles(setDone);
 
   function select(id: string) {
     startTransition(() => {
@@ -55,11 +60,25 @@ export function ListsView({
           <CaptureField captureAction={captureAndOpen} label="New checklist" placeholder="Name a checklist, then add its lines" plans={false} />
         </div>
 
+        <p role="status" className={`min-h-5 text-[13px] ${ticks.status?.error ? "font-medium text-ink" : "text-ink-2"}`}>
+          {ticks.status?.text}
+        </p>
+
         {data.rows.length > 0 ? (
           <ul className="mt-2 max-w-[760px] border-t border-rule">
-            {data.rows.map((row) => (
-              <ListRowView key={row.id} row={row} selected={selectedId === row.id} onSelect={() => select(row.id)} />
-            ))}
+            {data.rows.map((row) => {
+              const done = ticks.isDone(row.id, row.done);
+              return (
+                <ListRowView
+                  key={row.id}
+                  row={{ ...row, done }}
+                  selected={selectedId === row.id}
+                  justDone={ticks.justDone === row.id}
+                  onSelect={() => select(row.id)}
+                  onToggleDone={() => ticks.toggle(row.id, row.title, !done)}
+                />
+              );
+            })}
           </ul>
         ) : (
           <p className="mt-2 max-w-[52ch] text-ink-2">
@@ -77,7 +96,19 @@ export function ListsView({
   );
 }
 
-function ListRowView({ row, selected, onSelect }: { row: ListRow; selected: boolean; onSelect: () => void }) {
+function ListRowView({
+  row,
+  selected,
+  justDone,
+  onSelect,
+  onToggleDone,
+}: {
+  row: ListRow;
+  selected: boolean;
+  justDone: boolean;
+  onSelect: () => void;
+  onToggleDone: () => void;
+}) {
   const metaId = useId();
   // The quietest ink is too faint to read on the accent wash of a selected row.
   const quiet = selected ? "text-ink-2" : "text-ink-3";
@@ -85,9 +116,16 @@ function ListRowView({ row, selected, onSelect }: { row: ListRow; selected: bool
     <li
       className={`grid grid-cols-[48px_minmax(0,1fr)] items-start gap-x-3 border-b border-rule-soft py-2.5 ${selected ? "bg-accent-wash" : ""}`}
     >
-      <span className="grid h-6 place-items-center">
-        <Glyph type="checklist" state={row.done ? "done" : "planned"} />
-      </span>
+      {/* A repeating checklist is ticked one day at a time, on that day. */}
+      {row.repeats ? (
+        <span className="grid h-6 place-items-center">
+          <Glyph type="checklist" state={row.done ? "done" : "planned"} />
+        </span>
+      ) : (
+        <span className="-my-1 grid place-items-center">
+          <DoneToggle type="checklist" title={row.title} done={row.done} justDone={justDone} onToggle={onToggleDone} />
+        </span>
+      )}
       <div className="min-w-0">
         <button
           type="button"

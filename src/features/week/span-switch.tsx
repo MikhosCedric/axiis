@@ -14,7 +14,7 @@ export function SpanSwitch({ current, dayHref, weekHref }: { current: "day" | "w
     </Link>
   );
   return (
-    <div role="group" aria-label="Day or week" className="inline-flex h-9 flex-none overflow-hidden rounded-md border border-rule">
+    <div role="group" aria-label="Day or week" className="inline-flex h-9 flex-none overflow-hidden rounded-md border border-rule pointer-coarse:h-11">
       {tab("day", dayHref, "Day")}
       {tab("week", weekHref, "Week")}
     </div>

@@ -6,7 +6,8 @@ import { RepeatMark } from "@/features/today/repeat-mark";
 import { RowTags } from "@/features/tags/row-tags";
 import { formatClock } from "@/features/today/format";
 import { Glyph } from "@/features/today/glyph";
-import { EMPTY_TRAY, type BeamState, type TodayEntry, type TodayView } from "@/features/today/model";
+import { SameInInbox } from "@/features/inbox/same-in-inbox";
+import { EMPTY_TRAY, WAITING, type BeamState, type TodayEntry, type TodayView } from "@/features/today/model";
 import type { ChildCount } from "@/lib/items/repo";
 
 const TITLE_WEIGHT: Record<BeamState, string> = {
@@ -61,7 +62,7 @@ export function ListView({
               </span>
             </>
           ) : (
-            <span className={quiet}>{s.kind === "day" ? "Any time" : "Waiting"}</span>
+            <span className={quiet}>{s.kind === "day" ? "Any time" : WAITING}</span>
           )}
         </span>
         <label className="relative grid h-8 w-12 cursor-pointer place-items-center rounded-md hover:bg-accent-wash has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-accent">
@@ -121,9 +122,9 @@ export function ListView({
       ) : (
         <p className="py-3 text-ink-2">Nothing has a time yet.</p>
       )}
-      <h3 className="mt-10 font-serif text-lg font-medium">Waiting for a time</h3>
+      <h3 className="mt-10 font-serif text-lg font-medium">{WAITING}</h3>
       <p className="mt-1 border-b border-rule pb-2.5 text-[13px] text-ink-2">
-        Captured and safe. Give these a time when you are ready.
+        Captured and safe, with no day yet. Plan these when you are ready. <SameInInbox />
       </p>
       {view.waiting.length ? (
         <ul>{view.waiting.map(row)}</ul>
