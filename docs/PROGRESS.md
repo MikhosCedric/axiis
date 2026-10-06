@@ -65,7 +65,7 @@ Updated: see the log at the bottom. Phases:
 | 6 Public site (landing, legal drafts, metadata, PWA, error states) | done, merged (PR #6) |
 | 7 Command palette, shortcuts help, browser tests (e2e + axe) | done, merged (#10, #12) |
 | 8 Recurring tasks | done, merged (#13), migration 0004 applied |
-| 9 Tags, Inbox, Lists, DESIGN.md, audits | in progress: Inbox (#15), series time (#16), series quality (#17) and tags (#18) merged; Lists in review (#19, `feat-lists`); DESIGN.md and audits next |
+| 9 Tags, Inbox, Lists, DESIGN.md, audits | in progress: Inbox (#15), series time (#16), series quality (#17), tags (#18) and Lists (#19) merged; recurrence follow-ups in review (`feat-recurrence-followups`); DESIGN.md and audits next |
 
 ## Accepted advisories (Supabase security advisor)
 - `delete_my_account` is executable by `authenticated` through RPC. Intended: it only deletes the caller's own account (`auth.uid()`), and `anon`/`public` are revoked.
@@ -79,9 +79,9 @@ Updated: see the log at the bottom. Phases:
 - Merged this stretch: command palette (#10), phone nav fix (#11), Playwright and axe browser tests with an `e2e` CI job (#12).
 
 ## Next up (suggested order)
-1. Recurrence follow-ups: un-skip, years in `describeRule`, a Time and First day row when the series itself is opened (today they show on an occurrence only). Series "Any time" and first day are in review on `feat-series-quality`.
+1. Recurrence follow-ups (un-skip, years in `describeRule`, Time and First day rows on the series itself) are in review on `feat-recurrence-followups`.
 2. Tags are merged (#18). Check them in a signed-in session: add, remove, rename, delete, `/tags/[name]`, `#tag` search.
-3. Lists are in review (#19). Once merged, check `/lists` in a signed-in session: capture a checklist, add and tick its lines, see a repeating checklist once. Check the Inbox there too.
+3. Lists are merged (#19). Check `/lists` in a signed-in session: capture a checklist, add and tick its lines, see a repeating checklist once. Check the Inbox there too.
 4. Extend e2e once a test user can sign in without the magic link.
 5. `DESIGN.md` via `impeccable document`, an a11y and `impeccable audit` pass, and a partial unique index on `areas (user_id, lower(name)) where deleted_at is null`.
 6. Order search by rank (RPC), flush pending note saves before nav-rail navigation, subtask counts on week rows, shared date picker for the day and week navs.
@@ -107,9 +107,9 @@ Updated: see the log at the bottom. Phases:
 ## Log
 - 2026-10-06 (lists): `/lists` with checklists open first, a line-form progress meter, and capture that opens the new checklist beside the list; Lists in the nav and the palette; `listChecklists` on the repo; selected Inbox rows readable on the accent wash (axe now checks the Inbox and Lists with an item open). PR #19 from `feat-lists`. No migration.
 - 2026-10-06 (tags): Tags section in the detail panel, `#tag` lines on rows, `/tags` and `/tags/[name]`, nav and palette (`#name`), rename and delete in Settings, `#tag` in search, tags on a series shared by its occurrences. PR #18 from `feat-tags`. No migration.
-- 2026-10-06 (series quality): `clearTime` and `setFirstDay` for a whole series from the detail panel; the old panel is inert while the next item loads (shared `DetailAside`); empty-tray copy no longer says everything has a time; Time row typed on the 24-hour clock. PR open from `feat-series-quality`. No migration.
-- 2026-10-06 (series time): owner found that dragging one day of a day-only series to 14:00 timed only that day. `setTime` command, "Same time every day" on the Score's status line, a Time row in the detail panel for occurrences. PR open from `feat-series-time`. No migration.
-- 2026-10-06 (Inbox): `/inbox` with plan-for-a-day, nav and palette links, `/dev/inbox` harness; PR open from `feat-inbox`. No migration.
+- 2026-10-06 (series quality): `clearTime` and `setFirstDay` for a whole series from the detail panel; the old panel is inert while the next item loads (shared `DetailAside`); empty-tray copy no longer says everything has a time; Time row typed on the 24-hour clock. PR #17 from `feat-series-quality`. No migration.
+- 2026-10-06 (series time): owner found that dragging one day of a day-only series to 14:00 timed only that day. `setTime` command, "Same time every day" on the Score's status line, a Time row in the detail panel for occurrences. PR #16 from `feat-series-time`. No migration.
+- 2026-10-06 (Inbox): `/inbox` with plan-for-a-day, nav and palette links, `/dev/inbox` harness; PR #15 from `feat-inbox`. No migration.
 - 2026-10-05: Phases 0 to 2 merged to `main` (PRs #1 to #3). Owner away; overnight run started.
 - 2026-10-06 (later): palette merged (#10); usage limit reached while e2e and recurrence were pending.
 - 2026-10-06: Prep (#4), week planner (#5), public site (#6), account (#7), notes and search (#8) merged. Migrations 0002 and 0003 applied to the hosted project and verified in rolled-back blocks. Nav links and copy refresh in progress.
