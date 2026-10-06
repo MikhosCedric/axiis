@@ -1,8 +1,8 @@
-import type { Area, AreaId, Item, ItemId, LocalDate } from "@/domain/item";
+import type { Area, AreaId, Item, ItemId } from "@/domain/item";
+import { loadDay } from "@/features/day/load";
 import type { DayData } from "@/features/day/types";
-import { buildToday } from "@/features/today/model";
 import { makeItem } from "@/features/today/test-support";
-import { dayRangeFor, instantAt, localMinutes, toLocalDate } from "@/lib/dates";
+import { addDays, instantAt, localMinutes, toLocalDate } from "@/lib/dates";
 import type { ItemsRepo } from "@/lib/items/repo";
 
 // Fixture ids live in their own range so items captured in the harness never collide with them.
@@ -65,23 +65,39 @@ export function seedFixture(now: Date, timeZone: string): { items: Item[]; areas
     ...["Oats", "Lemons", "Coffee beans", "Bin bags", "Dish soap"].map((t, i) => sub(shop, t, i < 2)),
     sub(passport, "Photos"),
   );
+
+  // Repeating items: a daily stand-up drawn from its series, a stretch whose
+  // occurrence today is already done (an override), and a weekly any-time chore.
+  const weekAgo = addDays(date, -7);
+  const daily = { freq: "daily", interval: 1, end: { kind: "never" } } as const;
+  const standup = item({
+    title: "Stand-up",
+    type: "event",
+    areaId: work.id,
+    schedule: { kind: "timed", start: instantAt(weekAgo, 9 * 60 + 30, timeZone), end: instantAt(weekAgo, 9 * 60 + 45, timeZone) },
+    recurrence: { kind: "series", rule: daily },
+  });
+  const stretch = item({
+    title: "Stretch break",
+    areaId: health.id,
+    schedule: { kind: "timed", start: instantAt(weekAgo, 11 * 60 + 45, timeZone), end: instantAt(weekAgo, 12 * 60, timeZone) },
+    recurrence: { kind: "series", rule: daily },
+  });
+  items.push(
+    standup,
+    stretch,
+    timed("Stretch break", health, at(11, 45), at(12), { ...done, recurrence: { kind: "override", seriesId: stretch.id, originalOn: date } }),
+    item({
+      title: "Water the ferns",
+      areaId: home.id,
+      schedule: { kind: "day", on: weekAgo },
+      recurrence: { kind: "series", rule: { freq: "weekly", interval: 1, byDay: [], end: { kind: "never" } } },
+    }),
+  );
   return { items, areas: [work, home, health] };
 }
 
-/** The day query for the harness, as the routing workstream's loader does it against Supabase. */
-export async function loadDayData(repo: ItemsRepo, now: Date, timeZone: string): Promise<DayData> {
-  const date: LocalDate = toLocalDate(now, timeZone);
-  const range = dayRangeFor(date, timeZone);
-  const [areas, items] = await Promise.all([repo.listAreas(), repo.listForDay(range)]);
-  const view = buildToday(items, range, now);
-  const ids = [...view.scheduled, ...view.waiting].map((e) => e.item.id);
-  return {
-    timeZone,
-    date,
-    isToday: true,
-    nowIso: now.toISOString(),
-    areas,
-    view,
-    childCounts: await repo.childCounts(ids),
-  };
+/** The day query for the harness: the app's own loader, over the in-memory repo. */
+export function loadDayData(repo: ItemsRepo, now: Date, timeZone: string): Promise<DayData> {
+  return loadDay(repo, toLocalDate(now, timeZone), now, timeZone);
 }

@@ -1,4 +1,6 @@
 import { z } from "zod";
+import type { OccurrenceKey } from "./item-key";
+import type { Rule } from "./recurrence";
 
 export const ITEM_TYPES = ["task", "event", "note", "checklist"] as const;
 export const ITEM_STATUSES = ["open", "done", "dropped"] as const;
@@ -23,6 +25,16 @@ export type Schedule =
   | { kind: "day"; on: LocalDate }
   | { kind: "timed"; start: Date; end: Date };
 
+/**
+ * How an item takes part in repetition. A series carries the rule, and its own
+ * schedule is the first occurrence. An override stands in for one occurrence of
+ * a series, named by the local date it replaces. Occurrences are never stored.
+ */
+export type Recurrence =
+  | { kind: "none" }
+  | { kind: "series"; rule: Rule }
+  | { kind: "override"; seriesId: ItemId; originalOn: LocalDate };
+
 export type Item = {
   id: ItemId;
   type: ItemType;
@@ -34,11 +46,33 @@ export type Item = {
   position: number;
   schedule: Schedule;
   dueOn: LocalDate | null;
-  rrule: string | null;
+  recurrence: Recurrence;
   completedAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
 };
+
+/**
+ * One occurrence of a series that has no override, drawn like a stored item.
+ * Its id is an occurrence key, so it can be selected and acted on, and the
+ * server materializes an override the first time it is changed.
+ */
+export type VirtualItem = Omit<Item, "id" | "recurrence"> & {
+  id: OccurrenceKey;
+  recurrence: { kind: "occurrence"; seriesId: ItemId; originalOn: LocalDate };
+};
+
+/** What a view draws: a stored item, or a virtual occurrence. */
+export type ShownItem = Item | VirtualItem;
+
+export function isStored(item: ShownItem): item is Item {
+  return item.recurrence.kind !== "occurrence";
+}
+
+/** True for anything that belongs to a series: the series itself, an override, or a virtual occurrence. */
+export function repeats(item: Pick<ShownItem, "recurrence">): boolean {
+  return item.recurrence.kind !== "none";
+}
 
 export type Area = {
   id: AreaId;
@@ -54,7 +88,7 @@ export type NewItem = {
   parentId?: ItemId | null;
   schedule?: Schedule;
   dueOn?: LocalDate | null;
-  rrule?: string | null;
+  recurrence?: Recurrence;
 };
 
 export type ItemPatch = Partial<Omit<NewItem, "type">> & { status?: ItemStatus; position?: number };

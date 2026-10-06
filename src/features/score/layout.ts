@@ -1,4 +1,5 @@
-import type { Area, AreaId, Item, ItemId, LocalDate } from "@/domain/item";
+import type { Area, AreaId, LocalDate, ShownItem } from "@/domain/item";
+import type { ItemKey } from "@/domain/item-key";
 import type { TodayEntry, TodayView } from "@/features/today/model";
 import { localMinutes } from "@/lib/dates";
 
@@ -19,7 +20,7 @@ export type Axis = Span;
 export const DEFAULT_AXIS: Axis = { start: 7 * 60, end: 20 * 60 };
 
 /** Where a timed item sits on the day, clipped to the day. Null for anything without a time. */
-export function spanOf(item: Item, date: LocalDate, timeZone: string): Span | null {
+export function spanOf(item: ShownItem, date: LocalDate, timeZone: string): Span | null {
   const s = item.schedule;
   if (s.kind !== "timed") return null;
   const start = Math.max(0, localMinutes(s.start, date, timeZone));
@@ -90,7 +91,7 @@ export type Staff = {
 };
 
 /** An item being dragged onto a staff, not yet saved. */
-export type Pending = { itemId: ItemId; areaId: AreaId | null; span: Span };
+export type Pending = { itemId: ItemKey; areaId: AreaId | null; span: Span };
 
 export type ScoreLayout = {
   axis: Axis;
@@ -107,7 +108,7 @@ export type ScoreLayout = {
 export const NO_AREA = "No area";
 
 /** First sub-row where `span` overlaps no drawn beam, ignoring the item being moved. */
-export function freeRow(beams: Beam[], span: Span, ignore: ItemId): number {
+export function freeRow(beams: Beam[], span: Span, ignore: ItemKey): number {
   const taken = new Set(
     beams
       .filter((b) => b.value.item.id !== ignore && b.span.start < span.end && span.start < b.span.end)

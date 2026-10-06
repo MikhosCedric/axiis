@@ -13,7 +13,9 @@ import {
   type PointerEvent as ReactPointerEvent,
   type ReactNode,
 } from "react";
-import type { Item, ItemId, LocalDate } from "@/domain/item";
+import { repeats, type LocalDate, type ShownItem } from "@/domain/item";
+import { RepeatMark } from "@/features/today/repeat-mark";
+import { selectedIn, type ItemKey } from "@/domain/item-key";
 import { dayHref } from "@/features/day/nav";
 import { SELECTED_ITEM_PARAM } from "@/features/day/types";
 import { STATE_WORD } from "@/features/score/score-view";
@@ -47,7 +49,7 @@ export type WeekActions = {
 
 const serverActions: WeekActions = { move: moveAction, setDone: setDoneAction, capture: captureAction };
 
-type Patch = { id: ItemId; changes: Partial<Pick<Item, "schedule" | "status" | "completedAt">> };
+type Patch = { id: ItemKey; changes: Partial<Pick<ShownItem, "schedule" | "status" | "completedAt">> };
 
 const KEYS_ID = "week-keys";
 
@@ -87,7 +89,7 @@ export function WeekView({
   const now = useNow(data.nowIso, days.includes(today));
 
   const saved = useMemo(() => [...data.scheduled, ...data.unscheduled], [data.scheduled, data.unscheduled]);
-  const [items, patch] = useOptimistic(saved, (current: Item[], p: Patch) =>
+  const [items, patch] = useOptimistic(saved, (current: ShownItem[], p: Patch) =>
     current.map((i) => (i.id === p.id ? { ...i, ...p.changes } : i)),
   );
   const week = useMemo(
@@ -103,7 +105,8 @@ export function WeekView({
       ).waiting,
     [items, today, timeZone, now],
   );
-  const areaName = (item: Item) => areas.find((a) => a.id === item.areaId)?.name ?? null;
+  const areaName = (item: ShownItem) => areas.find((a) => a.id === item.areaId)?.name ?? null;
+  const shownSelected = selectedIn(items, selectedId);
 
   function select(id: string | null) {
     startTransition(() => {
@@ -116,14 +119,14 @@ export function WeekView({
     });
   }
 
-  function describe(item: Item, to: Destination) {
+  function describe(item: ShownItem, to: Destination) {
     if (to === "tray") return `${item.title} is waiting for a time.`;
     const s = moveTo(item, to, timeZone).schedule;
     const at = s.kind === "timed" ? ` at ${formatClock(s.start, timeZone)}` : "";
     return `${item.title} is on ${formatDayHeading(to)}${at}.`;
   }
 
-  function move(item: Item, to: Destination) {
+  function move(item: ShownItem, to: Destination) {
     if (!moves(item, to, timeZone)) return;
     setStatus(null);
     startTransition(async () => {
@@ -133,7 +136,7 @@ export function WeekView({
     });
   }
 
-  function toggleDone(item: Item) {
+  function toggleDone(item: ShownItem) {
     const done = item.status !== "done";
     setStatus(null);
     setJustDone(done ? item.id : null);
@@ -155,7 +158,7 @@ export function WeekView({
     if (el) refocus.current = null;
   });
 
-  function keyDown(e: KeyboardEvent<HTMLElement>, item: Item) {
+  function keyDown(e: KeyboardEvent<HTMLElement>, item: ShownItem) {
     if (e.altKey || e.ctrlKey || e.metaKey) return;
     if (e.key === "Enter") {
       e.preventDefault();
@@ -180,7 +183,7 @@ export function WeekView({
       variant={variant}
       timeZone={timeZone}
       area={areaName(entry.item)}
-      selected={selectedId === entry.item.id}
+      selected={shownSelected === entry.item.id}
       justDone={justDone === entry.item.id}
       lifted={preview?.item.id === entry.item.id}
       onPointerDown={(e) => start(e, entry.item)}
@@ -368,7 +371,7 @@ function ItemRow({
   const time = s.kind === "timed" ? formatClock(s.start, timeZone) : s.kind === "day" ? "Any time" : null;
   const spokenTime =
     s.kind === "timed" ? `${formatClock(s.start, timeZone)} to ${formatClock(s.end, timeZone)}` : (time ?? "waiting");
-  const label = [item.title, spokenTime, area, STATE_WORD[state]].filter(Boolean).join(", ");
+  const label = [item.title, spokenTime, area, STATE_WORD[state], repeats(item) && "repeats"].filter(Boolean).join(", ");
   const shape =
     variant === "chip"
       ? "inline-flex max-w-[34ch] items-center gap-2 rounded-md border border-rule bg-sheet px-2.5 py-1.5"
@@ -391,6 +394,7 @@ function ItemRow({
       <span className={`min-w-0 ${variant === "chip" ? "truncate" : ""}`}>
         <span className={`block leading-snug break-words ${variant === "chip" ? "truncate" : ""} ${TITLE_WEIGHT[state]}`}>
           {item.title}
+          {repeats(item) && <RepeatMark className="ml-1 text-ink-3" />}
         </span>
         {variant === "row" && (
           <span className="mt-0.5 flex flex-wrap gap-x-2 text-xs text-ink-3">

@@ -14,6 +14,12 @@ A solo productivity web app. One connected set of items, shown through many view
 
 **Subtask**: an item whose parent is another item. At most two levels. A checklist is a parent whose children are small; a checklist line can be promoted to a task.
 
+**Series**: an item that repeats. It stores the rule, and its own schedule is the first occurrence. Only a top-level task, event or checklist with no subtasks can be one. Never "recurring task template" or "parent" (parent means subtasks).
+
+**Occurrence**: one time a series happens. Not stored: expanded at read time and named by the key `<seriesId>~<YYYY-MM-DD>`.
+
+**Override**: a stored item that stands in for one occurrence, with its own title, schedule, area and status. Made the first time that occurrence is changed. A skipped occurrence is an override that is dropped. Never "exception" in the UI.
+
 **Link**: a typed edge between two items, such as a note referencing a task. Backlinks are links read in reverse.
 
 **View**: a query over items, never its own data. Score, List, Week and Today are views.

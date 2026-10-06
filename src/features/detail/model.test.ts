@@ -4,6 +4,7 @@ import { area, makeItem } from "@/features/today/test-support";
 import { buildDetail, describeDue, describeWhen, progressLine, subtaskPolicy } from "./model";
 
 const parentId = "00000000-0000-4000-8000-0000000000aa" as ItemId;
+const NONE = { kind: "none" } as const;
 
 describe("subtaskPolicy", () => {
   it.each([
@@ -16,12 +17,12 @@ describe("subtaskPolicy", () => {
     ["note", parentId, { kind: "is-subtask", parentId }],
     ["event", parentId, { kind: "is-subtask", parentId }],
   ] as const)("%s with parent %s", (type, parent, expected) => {
-    expect(subtaskPolicy({ type, parentId: parent })).toEqual(expected);
+    expect(subtaskPolicy({ type, parentId: parent, recurrence: NONE })).toEqual(expected);
   });
 
   it("never lets a subtask hold subtasks of its own", () => {
     for (const type of ITEM_TYPES) {
-      expect(subtaskPolicy({ type, parentId }).kind).not.toBe("holds-subtasks");
+      expect(subtaskPolicy({ type, parentId, recurrence: NONE }).kind).not.toBe("holds-subtasks");
     }
   });
 });

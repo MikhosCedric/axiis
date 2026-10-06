@@ -2,7 +2,8 @@
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useOptimistic, useState, useTransition, type ReactNode } from "react";
-import type { Item, ItemId } from "@/domain/item";
+import type { ShownItem } from "@/domain/item";
+import { selectedIn, type ItemKey } from "@/domain/item-key";
 import { placeAction } from "@/features/score/actions";
 import type { Placement } from "@/features/score/drop";
 import { ListView } from "@/features/score/list-view";
@@ -24,7 +25,7 @@ export type DayActions = {
 
 const serverActions: DayActions = { place: placeAction, setDone: setDoneAction, capture: captureAction };
 
-type Patch = { id: ItemId; changes: Partial<Pick<Item, "schedule" | "areaId" | "status" | "completedAt">> };
+type Patch = { id: ItemKey; changes: Partial<Pick<ShownItem, "schedule" | "areaId" | "status" | "completedAt">> };
 
 const MODES: { mode: DayViewMode; label: string }[] = [
   { mode: "score", label: "Score" },
@@ -67,7 +68,7 @@ export function DayView({
   const now = useNow(data.nowIso, isToday);
 
   const saved = useMemo(() => [...data.view.scheduled, ...data.view.waiting].map((e) => e.item), [data.view]);
-  const [items, patch] = useOptimistic(saved, (current: Item[], p: Patch) =>
+  const [items, patch] = useOptimistic(saved, (current: ShownItem[], p: Patch) =>
     current.map((i) => (i.id === p.id ? { ...i, ...p.changes } : i)),
   );
   const range = useMemo(() => dayRangeFor(date, timeZone), [date, timeZone]);
@@ -108,7 +109,7 @@ export function DayView({
     });
   }
 
-  function describe(item: Item, placement: Placement) {
+  function describe(item: ShownItem, placement: Placement) {
     const s = placement.schedule;
     if (s.kind === "unscheduled") return `${item.title} is waiting for a time.`;
     if (s.kind === "day") return `${item.title} is on this day, at any time.`;
@@ -116,7 +117,7 @@ export function DayView({
     return `${item.title}, ${formatClock(s.start, timeZone)} to ${formatClock(s.end, timeZone)}, ${area}.`;
   }
 
-  function place(item: Item, placement: Placement) {
+  function place(item: ShownItem, placement: Placement) {
     setStatus(null);
     const { schedule, areaId } = placement;
     startTransition(async () => {
@@ -126,7 +127,7 @@ export function DayView({
     });
   }
 
-  function toggleDone(item: Item) {
+  function toggleDone(item: ShownItem) {
     const done = item.status !== "done";
     setStatus(null);
     setJustDone(done ? item.id : null);
@@ -138,7 +139,16 @@ export function DayView({
     });
   }
 
-  const shared = { view, areas, timeZone, childCounts, selectedId, justDone, onSelect: select, onToggleDone: toggleDone };
+  const shared = {
+    view,
+    areas,
+    timeZone,
+    childCounts,
+    selectedId: selectedIn(items, selectedId),
+    justDone,
+    onSelect: select,
+    onToggleDone: toggleDone,
+  };
 
   return (
     <div className={selectedParam ? "min-[1180px]:grid min-[1180px]:grid-cols-[minmax(0,1fr)_328px]" : ""}>

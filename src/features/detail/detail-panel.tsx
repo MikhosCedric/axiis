@@ -1,13 +1,20 @@
-import { cookies } from "next/headers";
-import { TZ_COOKIE } from "@/components/shell/cookies";
 import { createLinkedNoteAction } from "@/features/notes/actions";
 import { linkedNotes } from "@/features/notes/commands";
+import { getTimeZone } from "@/features/day/server";
 import { setDoneAction } from "@/features/today/actions";
+import { parseItemKey } from "@/domain/item-key";
 import { getItemsRepo } from "@/lib/items";
 import { getNotesRepo } from "@/lib/notes";
-import { resolveTimeZone } from "@/lib/dates";
-import { addSubtaskAction, deleteItemAction, promoteSubtaskAction, renameItemAction, setAreaAction } from "./actions";
-import { loadDetail, parseItemId } from "./commands";
+import {
+  addSubtaskAction,
+  deleteItemAction,
+  promoteSubtaskAction,
+  renameItemAction,
+  setAreaAction,
+  setRepeatAction,
+  stopRepeatingAction,
+} from "./actions";
+import { loadDetail } from "./commands";
 import { DetailSheet, MissingItem } from "./detail-sheet";
 import type { DetailActions } from "./model";
 
@@ -18,18 +25,18 @@ const actions: DetailActions = {
   addSubtask: addSubtaskAction,
   promote: promoteSubtaskAction,
   remove: deleteItemAction,
+  setRepeat: setRepeatAction,
+  stopRepeating: stopRepeatingAction,
   newLinkedNote: createLinkedNoteAction,
 };
 
-/** Renders the selected item and its subtasks, or nothing when no item is selected. */
+/** Renders the selected item, or one occurrence of a repeating item, or nothing when nothing is selected. */
 export async function DetailPanel({ itemId }: { itemId: string | null }) {
-  const id = parseItemId(itemId);
-  if (!id) return null;
-  const [repo, notes, jar] = await Promise.all([getItemsRepo(), getNotesRepo(), cookies()]);
-  const [view, linked] = await Promise.all([
-    loadDetail(repo, id, resolveTimeZone(jar.get(TZ_COOKIE)?.value)),
-    linkedNotes(notes, id),
-  ]);
+  const key = parseItemKey(itemId);
+  if (!key) return null;
+  const [repo, notes, timeZone] = await Promise.all([getItemsRepo(), getNotesRepo(), getTimeZone()]);
+  const view = await loadDetail(repo, key, timeZone);
   if (!view) return <MissingItem />;
+  const linked = await linkedNotes(notes, view.notesFor);
   return <DetailSheet key={view.item.id} view={view} actions={actions} linkedNotes={linked} />;
 }

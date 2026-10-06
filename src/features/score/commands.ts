@@ -1,5 +1,7 @@
 import { z } from "zod";
-import { idSchema, localDateSchema, type AreaId, type ItemId, type Schedule } from "@/domain/item";
+import { idSchema, localDateSchema, type AreaId, type Schedule } from "@/domain/item";
+import { parseItemKey } from "@/domain/item-key";
+import { materialize } from "@/lib/items/occurrences";
 import type { ItemsRepo } from "@/lib/items/repo";
 import type { ActionResult } from "@/features/today/commands";
 
@@ -18,16 +20,19 @@ const placementSchema = z.object({
 });
 
 export const PLACE_FAILED = "That change did not save, so it is back where it was. Try again.";
+const NOT_FOUND = "That item could not be found.";
 
 /** Save where an item sits: its schedule and, when given, its area. */
-export async function placeItem(repo: ItemsRepo, rawId: unknown, rawPlacement: unknown): Promise<ActionResult> {
-  const id = idSchema.safeParse(rawId);
-  if (!id.success) return { ok: false, error: "That item could not be found." };
+export async function placeItem(repo: ItemsRepo, rawKey: unknown, rawPlacement: unknown, timeZone: string): Promise<ActionResult> {
+  const key = parseItemKey(rawKey);
+  if (!key) return { ok: false, error: NOT_FOUND };
   const placement = placementSchema.safeParse(rawPlacement);
   if (!placement.success) return { ok: false, error: PLACE_FAILED };
   const { schedule, areaId } = placement.data;
   try {
-    await repo.update(id.data as ItemId, {
+    const id = key.kind === "item" ? key.id : (await materialize(repo, key, timeZone))?.id;
+    if (!id) return { ok: false, error: NOT_FOUND };
+    await repo.update(id, {
       schedule: schedule as Schedule,
       ...(areaId === undefined ? {} : { areaId: areaId as AreaId | null }),
     });

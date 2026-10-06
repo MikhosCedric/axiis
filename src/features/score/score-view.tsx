@@ -10,7 +10,8 @@ import {
   type KeyboardEvent,
   type PointerEvent as ReactPointerEvent,
 } from "react";
-import type { Area, Item, LocalDate } from "@/domain/item";
+import { repeats, type Area, type LocalDate, type ShownItem } from "@/domain/item";
+import { RepeatMark } from "@/features/today/repeat-mark";
 import { formatClock } from "@/features/today/format";
 import { Glyph } from "@/features/today/glyph";
 import type { BeamState, TodayEntry, TodayView } from "@/features/today/model";
@@ -34,8 +35,8 @@ import { useScoreDrag, type DragPreview } from "./use-score-drag";
 
 export type ScoreHandlers = {
   onSelect: (id: string | null) => void;
-  onPlace: (item: Item, placement: Placement) => void;
-  onToggleDone: (item: Item) => void;
+  onPlace: (item: ShownItem, placement: Placement) => void;
+  onToggleDone: (item: ShownItem) => void;
 };
 
 export const STATE_WORD: Record<BeamState, string> = { planned: "planned", live: "happening now", done: "done" };
@@ -105,7 +106,7 @@ export function ScoreView({
   );
   const width = axisWidth(axis);
   const totalHeight = staves.reduce((h, s) => h + s.height + 1, 0);
-  const areaName = (item: Item) => staves.find((s) => s.areaId === item.areaId)?.name ?? "No area";
+  const areaName = (item: ShownItem) => staves.find((s) => s.areaId === item.areaId)?.name ?? "No area";
 
   function syncAxis() {
     if (ticks.current && scroller.current) ticks.current.style.transform = `translateX(${-scroller.current.scrollLeft}px)`;
@@ -133,7 +134,7 @@ export function ScoreView({
     if (el) refocus.current = null;
   });
 
-  function keyDown(e: KeyboardEvent<HTMLElement>, item: Item) {
+  function keyDown(e: KeyboardEvent<HTMLElement>, item: ShownItem) {
     if (e.key === "Enter") {
       e.preventDefault();
       onSelect(item.id);
@@ -373,7 +374,7 @@ function BeamView({
       role="button"
       tabIndex={0}
       aria-pressed={selected}
-      aria-label={`${item.title}, ${startClock} to ${endClock}, ${staff.name}, ${STATE_WORD[state]}${p ? `, ${p.spoken}` : ""}`}
+      aria-label={`${item.title}, ${startClock} to ${endClock}, ${staff.name}, ${STATE_WORD[state]}${repeats(item) ? ", repeats" : ""}${p ? `, ${p.spoken}` : ""}`}
       aria-describedby={KEYS_ID}
       className={cls}
       style={{
@@ -386,6 +387,7 @@ function BeamView({
     >
       <span className={styles.label} style={{ maxWidth: labelWidth(beam.free) }} title={item.title}>
         {item.title}
+        {repeats(item) && <RepeatMark className={styles.repeat} />}
         {p && <span className={styles.count}>{p.text}</span>}
         <time className={styles.clock} dateTime={minutesToDate(ctx, span.start).toISOString()}>
           {resizing ? `${startClock} to ${endClock}` : startClock}
@@ -447,7 +449,7 @@ function Chip({
       role="button"
       tabIndex={0}
       aria-pressed={selected}
-      aria-label={`${item.title}, ${where}, ${STATE_WORD[state]}${p ? `, ${p.spoken}` : ""}`}
+      aria-label={`${item.title}, ${where}, ${STATE_WORD[state]}${repeats(item) ? ", repeats" : ""}${p ? `, ${p.spoken}` : ""}`}
       aria-describedby={KEYS_ID}
       className={`${styles.chip} ${selected ? styles.selected : ""} ${state === "done" ? styles.done : ""} ${lifted ? styles.lifted : ""}`}
       onPointerDown={onPointerDown}
@@ -457,6 +459,7 @@ function Chip({
         <Glyph type={item.type} state={state} justDone={justDone} className={styles.glyph} />
       </ViewTransition>
       <span className="min-w-0 truncate">{item.title}</span>
+      {repeats(item) && <RepeatMark className="text-ink-3" />}
       {p && <span className={styles.count}>{p.text}</span>}
     </div>
   );

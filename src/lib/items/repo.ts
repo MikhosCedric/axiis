@@ -1,4 +1,7 @@
-import type { Area, DayRange, Item, ItemId, ItemPatch, NewItem, SpanRange } from "@/domain/item";
+import type { Area, DayRange, Item, ItemId, ItemPatch, LocalDate, NewItem, SpanRange } from "@/domain/item";
+
+/** Most live series one user can have read at once. */
+export const MAX_SERIES = 200;
 
 export type ChildCount = { total: number; done: number };
 
@@ -16,6 +19,13 @@ export interface ItemsRepo {
   listForDay(range: DayRange): Promise<{ scheduled: Item[]; unscheduled: Item[] }>;
   /** Scheduled items across several days: timed in `[from, to)` or day-only in `[fromDate, toDate)`. Top-level and subtasks alike, soft-deleted excluded, ordered by time. */
   listRange(range: SpanRange): Promise<Item[]>;
+  /**
+   * Live series, at most `MAX_SERIES`, oldest first. `listForDay` and
+   * `listRange` leave series out: their occurrences are expanded instead.
+   */
+  listSeries(): Promise<Item[]>;
+  /** Live overrides whose `originalOn` is in `[fromDate, toDate)`, skipped ones included, of one series when given. */
+  listOverrides(fromDate: LocalDate, toDate: LocalDate, seriesId?: ItemId): Promise<Item[]>;
   /** Live children of one parent, ordered by position then creation. */
   listChildren(parentId: ItemId): Promise<Item[]>;
   /** Live child totals and done counts, keyed by parent id. Parents with no children are absent. */

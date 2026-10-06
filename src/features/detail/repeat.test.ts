@@ -1,0 +1,39 @@
+import { describe, expect, it } from "vitest";
+import type { LocalDate } from "@/domain/item";
+import type { Rule } from "@/domain/recurrence";
+import { REPEAT_PRESETS, describeRule, presetOf, ruleFor, weekdayOf } from "./repeat";
+
+const d = (s: string) => s as LocalDate;
+const never = { kind: "never" } as const;
+
+describe("presets", () => {
+  it("every preset reads back as itself", () => {
+    for (const preset of REPEAT_PRESETS) {
+      if (preset === "none") continue;
+      expect(presetOf(ruleFor(preset, never))).toBe(preset);
+    }
+  });
+
+  it("a rule the menu cannot make has no preset", () => {
+    expect(presetOf({ freq: "weekly", interval: 1, byDay: ["MO", "WE"], end: never })).toBeNull();
+    expect(presetOf({ freq: "daily", interval: 3, end: never })).toBeNull();
+  });
+});
+
+describe("describeRule", () => {
+  it.each<[Rule, string]>([
+    [ruleFor("daily", never), "Every day"],
+    [ruleFor("weekdays", never), "Every weekday"],
+    [ruleFor("weekly", never), "Every week on Tuesday"],
+    [ruleFor("biweekly", { kind: "count", count: 6 }), "Every 2 weeks on Tuesday, 6 times"],
+    [ruleFor("monthly", { kind: "until", on: d("2026-12-31") }), "Every month, until Thursday 31 December"],
+    [ruleFor("yearly", { kind: "count", count: 1 }), "Every year, once"],
+    [{ freq: "weekly", interval: 1, byDay: ["MO", "WE", "FR"], end: never }, "Every week on Monday, Wednesday and Friday"],
+  ])("%j reads as %s", (rule, text) => {
+    expect(describeRule(rule, d("2026-10-06"))).toBe(text);
+  });
+
+  it("names weekdays from a local date", () => {
+    expect(["2026-10-05", "2026-10-11"].map((s) => weekdayOf(d(s)))).toEqual(["MO", "SU"]);
+  });
+});

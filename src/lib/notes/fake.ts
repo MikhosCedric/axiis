@@ -55,7 +55,7 @@ export function fakeNotesRepo(store: NotesStore, now: () => Date = () => new Dat
         position: 0,
         schedule: { kind: "unscheduled" },
         dueOn: null,
-        rrule: null,
+        recurrence: { kind: "none" },
         completedAt: null,
         createdAt: at,
         updatedAt: at,

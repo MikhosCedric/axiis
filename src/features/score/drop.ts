@@ -1,4 +1,4 @@
-import type { AreaId, Item, LocalDate, Schedule } from "@/domain/item";
+import type { AreaId, ShownItem, LocalDate, Schedule } from "@/domain/item";
 import { instantAt } from "@/lib/dates";
 import { DAY_MINUTES, spanOf, type Axis } from "./layout";
 import { clamp, SNAP_MINUTES, snap } from "./snap";
@@ -24,7 +24,7 @@ function timed(ctx: DropContext, start: number, end: number): Schedule {
 }
 
 /** Wall-clock length an item keeps when it moves: its own for a timed item, the default otherwise. */
-function lengthOf(ctx: DropContext, item: Item): number {
+function lengthOf(ctx: DropContext, item: ShownItem): number {
   const span = spanOf(item, ctx.date, ctx.timeZone);
   return span ? Math.max(MIN_MINUTES, span.end - span.start) : DEFAULT_MINUTES;
 }
@@ -33,7 +33,7 @@ function lengthOf(ctx: DropContext, item: Item): number {
  * Put `item` on the staff for `areaId`, starting near `start` (local minutes,
  * unsnapped). It keeps its length, snaps to the grid and stays inside the axis.
  */
-export function placeAt(ctx: DropContext, item: Item, areaId: AreaId | null, start: number): Placement {
+export function placeAt(ctx: DropContext, item: ShownItem, areaId: AreaId | null, start: number): Placement {
   const { axis } = ctx;
   const length = Math.min(lengthOf(ctx, item), axis.end - axis.start);
   const from = clamp(snap(start), axis.start, axis.end - length);
@@ -41,7 +41,7 @@ export function placeAt(ctx: DropContext, item: Item, areaId: AreaId | null, sta
 }
 
 /** Move a timed item's end near `end`, keeping at least the minimum length and not passing the axis or midnight. */
-export function resizeTo(ctx: DropContext, item: Item, end: number): Placement | null {
+export function resizeTo(ctx: DropContext, item: ShownItem, end: number): Placement | null {
   const span = spanOf(item, ctx.date, ctx.timeZone);
   if (!span) return null;
   const to = clamp(snap(end), span.start + MIN_MINUTES, Math.min(ctx.axis.end, DAY_MINUTES));
@@ -53,7 +53,7 @@ export const unschedule = (): Placement => ({ schedule: { kind: "unscheduled" } 
 export const anyTime = (ctx: DropContext): Placement => ({ schedule: { kind: "day", on: ctx.date } });
 
 /** Whether applying `placement` would change anything about `item`. */
-export function changes(item: Item, placement: Placement): boolean {
+export function changes(item: ShownItem, placement: Placement): boolean {
   if (placement.areaId !== undefined && placement.areaId !== item.areaId) return true;
   const a = item.schedule;
   const b = placement.schedule;
@@ -73,7 +73,7 @@ export type KeyPress = { key: string; shiftKey: boolean };
  * change the length; up and down change area; Backspace or Delete clears the time.
  * On an item without a time: up or down gives it one on its own area's staff.
  */
-export function keyPlacement(ctx: DropContext, item: Item, areaOrder: (AreaId | null)[], press: KeyPress): Placement | null {
+export function keyPlacement(ctx: DropContext, item: ShownItem, areaOrder: (AreaId | null)[], press: KeyPress): Placement | null {
   const span = spanOf(item, ctx.date, ctx.timeZone);
   const area = areaOrder.includes(item.areaId) ? item.areaId : null;
   let next: Placement | null = null;

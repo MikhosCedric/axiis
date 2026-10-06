@@ -1,13 +1,13 @@
 "use client";
 
 import { useEffect, useLayoutEffect, useRef, type PointerEvent as ReactPointerEvent, type RefObject } from "react";
-import type { Item, LocalDate } from "@/domain/item";
+import type { ShownItem, LocalDate } from "@/domain/item";
 import { moves, readDropZone, type Destination } from "./model";
 
-export type WeekDragPreview = { item: Item; over: Destination | null };
+export type WeekDragPreview = { item: ShownItem; over: Destination | null };
 
 type Gesture = {
-  item: Item;
+  item: ShownItem;
   pointerId: number;
   x0: number;
   y0: number;
@@ -24,8 +24,8 @@ type Gesture = {
 type Live = {
   days: LocalDate[];
   timeZone: string;
-  onDrop: (item: Item, to: Destination) => void;
-  onTap: (item: Item) => void;
+  onDrop: (item: ShownItem, to: Destination) => void;
+  onTap: (item: ShownItem) => void;
 };
 
 const MOUSE_SLOP = 4;
@@ -149,7 +149,7 @@ export function useWeekDrag(fly: RefObject<HTMLDivElement | null>, live: Live, s
     };
   }, []);
 
-  return function start(e: ReactPointerEvent<HTMLElement>, item: Item) {
+  return function start(e: ReactPointerEvent<HTMLElement>, item: ShownItem) {
     if (e.button !== 0 || gesture.current) return;
     const touch = e.pointerType === "touch";
     const g: Gesture = {
