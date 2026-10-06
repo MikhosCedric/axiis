@@ -154,16 +154,20 @@
   border-top: 1px solid var(--rule);
 }
 
+@media (min-width: 820px) {
+  .ledger {
+    columns: 2;
+    column-gap: 64px;
+  }
+}
+
 .ledger li {
+  break-inside: avoid;
   border-bottom: 1px solid var(--rule-soft);
   padding: 11px 0;
   font-size: 15px;
   line-height: 1.5;
   color: var(--ink);
-}
-
-.ledgerQuiet li {
-  color: var(--ink-2);
 }
 
 .close {

@@ -12,7 +12,7 @@ import type { ChildCount } from "@/lib/items/repo";
 const TITLE_WEIGHT: Record<BeamState, string> = {
   planned: "font-medium text-ink",
   live: "font-bold text-ink",
-  done: "font-normal text-ink-3",
+  done: "font-normal",
 };
 
 export function ListView({
@@ -41,6 +41,8 @@ export function ListView({
     const count = childCounts[item.id];
     const s = item.schedule;
     const selected = selectedId === item.id;
+    // The quietest ink is too faint to read on the accent wash of a selected row.
+    const quiet = selected ? "text-ink-2" : "text-ink-3";
     return (
       <li
         key={item.id}
@@ -58,7 +60,7 @@ export function ListView({
               </span>
             </>
           ) : (
-            <span className="text-ink-3">{s.kind === "day" ? "Any time" : "Waiting"}</span>
+            <span className={quiet}>{s.kind === "day" ? "Any time" : "Waiting"}</span>
           )}
         </span>
         <label className="relative grid h-8 w-12 cursor-pointer place-items-center rounded-md hover:bg-accent-wash has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-accent">
@@ -77,12 +79,14 @@ export function ListView({
           type="button"
           aria-pressed={selected}
           onClick={() => onSelect(item.id)}
-          className={`min-w-0 cursor-pointer rounded text-left break-words hover:underline ${TITLE_WEIGHT[state]}`}
+          className={`min-w-0 cursor-pointer rounded text-left break-words hover:underline ${TITLE_WEIGHT[state]} ${
+            state === "done" ? quiet : ""
+          }`}
         >
           {item.title}
           {repeats(item) && (
             <>
-              <RepeatMark className="ml-1.5 text-ink-3" />
+              <RepeatMark className={`ml-1.5 ${quiet}`} />
               <span className="sr-only">, repeats</span>
             </>
           )}
@@ -96,9 +100,9 @@ export function ListView({
               </span>
             </span>
           )}
-          <RowTags tags={tags[item.id]} />
+          <RowTags tags={tags[item.id]} selected={selected} />
         </button>
-        <span className="pr-1 text-[13px] text-ink-3 max-rail:hidden">
+        <span className={`pr-1 text-[13px] max-rail:hidden ${quiet}`}>
           {item.areaId ? (areaName.get(item.areaId) ?? "") : ""}
         </span>
       </li>

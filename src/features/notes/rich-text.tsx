@@ -25,7 +25,7 @@ const PLACEHOLDER = "Write what is worth keeping. Headings, lists and links are 
 const isAllowed = (url: string) => safeHref(url) !== null;
 
 const tool =
-  "grid size-8 flex-none place-items-center rounded-md text-ink-2 hover:bg-accent-wash hover:text-ink aria-pressed:bg-ink aria-pressed:text-paper";
+  "grid size-8 pointer-coarse:size-11 flex-none place-items-center rounded-md text-ink-2 hover:bg-accent-wash hover:text-ink aria-pressed:bg-ink aria-pressed:text-paper";
 
 function Tool({ label, keys, pressed, onClick, children }: { label: string; keys?: string; pressed: boolean; onClick: () => void; children: ReactNode }) {
   return (

@@ -137,7 +137,7 @@ export function Subtasks({
                     aria-label={`Make ${row.title} a task`}
                     title="Make it a task"
                     onClick={() => lift(row.id)}
-                    className="grid size-8 place-items-center rounded-md text-ink-3 group-has-[[role=group]]/actions:hidden hover:bg-accent-wash hover:text-ink"
+                    className="grid size-8 pointer-coarse:size-11 place-items-center rounded-md text-ink-3 group-has-[[role=group]]/actions:hidden hover:bg-accent-wash hover:text-ink"
                   >
                     <LiftIcon />
                   </button>
