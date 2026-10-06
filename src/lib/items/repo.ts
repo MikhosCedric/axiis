@@ -3,6 +3,9 @@ import type { Area, DayRange, Item, ItemId, ItemPatch, LocalDate, NewItem, SpanR
 /** Most live series one user can have read at once. */
 export const MAX_SERIES = 200;
 
+/** Most inbox items one read returns. */
+export const INBOX_LIMIT = 200;
+
 export type ChildCount = { total: number; done: number };
 
 /**
@@ -24,6 +27,11 @@ export interface ItemsRepo {
    * `listRange` leave series out: their occurrences are expanded instead.
    */
   listSeries(): Promise<Item[]>;
+  /**
+   * The inbox: open top-level items with no schedule that are not notes and
+   * belong to no series. At most `INBOX_LIMIT`, newest first.
+   */
+  listInbox(): Promise<Item[]>;
   /** Live overrides whose `originalOn` is in `[fromDate, toDate)`, skipped ones included, of one series when given. */
   listOverrides(fromDate: LocalDate, toDate: LocalDate, seriesId?: ItemId): Promise<Item[]>;
   /** Live children of one parent, ordered by position then creation. */
