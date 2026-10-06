@@ -1,0 +1,107 @@
+import { readFileSync } from "node:fs";
+import { describe, expect, it } from "vitest";
+import type { AreaId, LocalDate } from "@/domain/item";
+import { shortcutAction, type KeyPress } from "@/features/day/nav";
+import { keyPlacement, type DropContext } from "@/features/score/drop";
+import { makeItem } from "@/features/today/test-support";
+import { keyDestination, weekOf } from "@/features/week/model";
+import { instantAt } from "@/lib/dates";
+import { chordCaps, chordSpoken, globalShortcut, SHORTCUTS, type Chord, type Handler } from "./shortcuts";
+
+const source = (path: string) => readFileSync(new URL(`../${path}`, import.meta.url), "utf8");
+
+/** Whether a component's own key handler names this key. */
+const names = (path: string, key: string) =>
+  [`e.key === "${key}"`, `e.key !== "${key}"`, `event.key.toLowerCase() === "${key}"`].some((s) => source(path).includes(s));
+
+const press = (chord: Chord, over: Partial<KeyPress> = {}): KeyPress => ({
+  key: chord.key,
+  altKey: false,
+  ctrlKey: !!chord.mod,
+  metaKey: false,
+  isComposing: false,
+  defaultPrevented: false,
+  typing: false,
+  ...over,
+});
+
+const date = "2026-10-06" as LocalDate;
+const ctx: DropContext = { date, timeZone: "UTC", axis: { start: 420, end: 1200 }, now: null };
+const work = "00000000-0000-4000-9000-000000000001" as AreaId;
+const beam = makeItem({ schedule: { kind: "timed", start: instantAt(date, 600, "UTC"), end: instantAt(date, 630, "UTC") } });
+const waiting = makeItem();
+const days = weekOf(date);
+const planned = makeItem({ schedule: { kind: "day", on: "2026-10-07" as LocalDate } });
+
+/** Asks the code behind each handler whether it answers the chord. Every handler must have one. */
+const answers: Record<Handler, (chord: Chord) => boolean> = {
+  global: (c) => globalShortcut(press(c)) !== null,
+  dialog: (c) => c.key === "Escape" && source("palette/palette.tsx").includes(".showModal()"),
+  "day-nav": (c) =>
+    shortcutAction(press(c)) !== null &&
+    shortcutAction(press({ key: c.key.toUpperCase() })) !== null &&
+    source("day/day-nav.tsx").includes("shortcutAction(") &&
+    source("week/week-nav.tsx").includes("shortcutAction("),
+  capture: (c) => names("today/capture-field.tsx", c.key),
+  "score-item": (c) =>
+    names("score/score-view.tsx", c.key) ||
+    [beam, waiting].some((item) => keyPlacement(ctx, item, [null, work], { key: c.key, shiftKey: !!c.shift }) !== null),
+  "week-item": (c) =>
+    names("week/week-view.tsx", c.key) || [planned, waiting].some((item) => keyDestination(item, days, date, "UTC", c.key) !== null),
+  "inline-edit": (c) => names("detail/inline-title.tsx", c.key) && names("account/areas-section.tsx", c.key),
+  "confirm-delete": (c) => names("detail/confirm-delete.tsx", c.key),
+  "note-editor": (c) =>
+    names("notes/rich-text.tsx", c.key) || (!!c.mod && source("notes/rich-text.tsx").includes(`keys="Control+${c.key.toUpperCase()}"`)),
+  "link-picker": (c) => names("notes/connected.tsx", c.key),
+};
+
+describe("the shortcuts table", () => {
+  const rows = SHORTCUTS.flatMap((g) => g.shortcuts.flatMap((s) => s.chords.map((chord) => ({ where: g.where, does: s.does, handler: s.handler, chord }))));
+
+  it.each(rows)("$where: $does ($chord.key) is answered by $handler", ({ handler, chord }) => {
+    expect(answers[handler](chord)).toBe(true);
+  });
+
+  it("does not list a key twice for the same thing in one place", () => {
+    const seen = rows.map((r) => `${r.where}|${r.handler}|${r.chord.key}|${!!r.chord.mod}|${!!r.chord.shift}`);
+    expect(new Set(seen).size).toBe(seen.length);
+  });
+});
+
+describe("globalShortcut", () => {
+  const key = (k: string, over: Partial<KeyPress> = {}) => globalShortcut(press({ key: k }, over));
+
+  it("opens search with Ctrl or Cmd and K, even while typing", () => {
+    expect(key("k", { ctrlKey: true })).toBe("palette");
+    expect(key("K", { metaKey: true, typing: true })).toBe("palette");
+    expect(key("k")).toBeNull();
+  });
+
+  it("leaves Ctrl K alone when something closer took it", () => {
+    expect(key("k", { ctrlKey: true, defaultPrevented: true })).toBeNull();
+    expect(key("k", { ctrlKey: true, altKey: true })).toBeNull();
+    expect(key("k", { ctrlKey: true, isComposing: true })).toBeNull();
+  });
+
+  it("shows the shortcuts on a question mark only when nothing is being typed", () => {
+    expect(key("?")).toBe("help");
+    expect(key("?", { typing: true })).toBeNull();
+    expect(key("?", { ctrlKey: true })).toBeNull();
+    expect(key("/")).toBeNull();
+  });
+});
+
+describe("chord labels", () => {
+  it("draws the modifier for the platform", () => {
+    expect(chordCaps({ key: "k", mod: true }, false)).toEqual(["Ctrl", "K"]);
+    expect(chordCaps({ key: "k", mod: true }, true)).toEqual(["⌘", "K"]);
+    expect(chordCaps({ key: "ArrowLeft", shift: true }, false)).toEqual(["Shift", "←"]);
+    expect(chordCaps({ key: " " }, false)).toEqual(["Space"]);
+  });
+
+  it("says arrows and symbols in words", () => {
+    expect(chordSpoken({ key: "ArrowLeft", shift: true }, false)).toBe("Shift Left arrow");
+    expect(chordSpoken({ key: "k", mod: true }, true)).toBe("Command K");
+    expect(chordSpoken({ key: "[" }, false)).toBe("Left bracket");
+  });
+});
