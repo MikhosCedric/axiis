@@ -6,6 +6,8 @@ import { describeRule, presetOf, type RepeatChoice, type RepeatPreset } from "./
 import type { ActionResult } from "@/features/today/commands";
 import { formatClock, formatDayHeading } from "@/features/today/format";
 import type { Created } from "@/features/notes/model";
+import { DEFAULT_MINUTES } from "@/features/score/drop";
+import { DAY_MINUTES } from "@/features/score/layout";
 
 /**
  * What an item may do with subtasks, mirroring the database trigger: only a
@@ -29,9 +31,6 @@ export type Scope = "one" | "all";
 /** A time of day as the client sends it: local wall-clock minutes past midnight and a length in minutes. */
 export type TimeOfDay = { start: number; length: number };
 
-const DAY_MINUTES = 24 * 60;
-/** Length given to a start with no end, as on the Score. */
-const DEFAULT_LENGTH = 30;
 
 /** `HH:MM` for minutes past midnight, wrapping past the end of the day. */
 export function clockOf(minutes: number): string {
@@ -52,7 +51,7 @@ export function timeFrom(start: string, end: string): TimeOfDay | null {
   const from = minutesOf(start);
   if (from === null) return null;
   const to = minutesOf(end);
-  return { start: from, length: to === null ? DEFAULT_LENGTH : (to - from + DAY_MINUTES) % DAY_MINUTES || DAY_MINUTES };
+  return { start: from, length: to === null ? DEFAULT_MINUTES : (to - from + DAY_MINUTES) % DAY_MINUTES || DAY_MINUTES };
 }
 
 /**
