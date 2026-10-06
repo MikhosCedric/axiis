@@ -4,6 +4,8 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useOptimistic, useState, useTransition, type ReactNode } from "react";
 import type { ShownItem } from "@/domain/item";
 import { selectedIn, type ItemKey } from "@/domain/item-key";
+import { setTimeAction } from "@/features/detail/actions";
+import type { TimeOfDay } from "@/features/detail/model";
 import { placeAction } from "@/features/score/actions";
 import type { Placement } from "@/features/score/drop";
 import { ListView } from "@/features/score/list-view";
@@ -13,7 +15,8 @@ import { CaptureField } from "@/features/today/capture-field";
 import type { ActionResult } from "@/features/today/commands";
 import { formatClock, formatDayHeading } from "@/features/today/format";
 import { buildToday, stateOf, summaryLine } from "@/features/today/model";
-import { dayRangeFor, localMinutes } from "@/lib/dates";
+import { dayRangeFor, instantAt, localMinutes } from "@/lib/dates";
+import { seriesTimeOffer, type SeriesTimeOffer } from "./series-time";
 import { DAY_VIEW_PARAM, SELECTED_ITEM_PARAM, type DayData, type DayViewMode } from "./types";
 
 /** The writes the day screen makes. Defaults to the server actions; the dev harness passes in-memory ones. */
@@ -21,9 +24,18 @@ export type DayActions = {
   place: (id: string, placement: Placement) => Promise<ActionResult>;
   setDone: (id: string, done: boolean) => Promise<ActionResult>;
   capture: (title: string) => Promise<ActionResult>;
+  /** Gives the whole series an occurrence belongs to this time of day. */
+  timeSeries: (id: string, time: TimeOfDay) => Promise<ActionResult>;
 };
 
-const serverActions: DayActions = { place: placeAction, setDone: setDoneAction, capture: captureAction };
+const serverActions: DayActions = {
+  place: placeAction,
+  setDone: setDoneAction,
+  capture: captureAction,
+  timeSeries: (id, time) => setTimeAction(id, time, "all"),
+};
+
+type Status = { text: string; error: boolean; offer?: SeriesTimeOffer };
 
 type Patch = { id: ItemKey; changes: Partial<Pick<ShownItem, "schedule" | "areaId" | "status" | "completedAt">> };
 
@@ -63,7 +75,7 @@ export function DayView({
   const [selectedId, setSelectedId] = useOptimistic(selectedParam);
   const shownMode = mode;
   const [, startTransition] = useTransition();
-  const [status, setStatus] = useState<{ text: string; error: boolean } | null>(null);
+  const [status, setStatus] = useState<Status | null>(null);
   const [justDone, setJustDone] = useState<string | null>(null);
   const now = useNow(data.nowIso, isToday);
 
@@ -123,7 +135,19 @@ export function DayView({
     startTransition(async () => {
       patch({ id: item.id, changes: areaId === undefined ? { schedule } : { schedule, areaId } });
       const result = await actions.place(item.id, placement);
-      setStatus(result.ok ? { text: describe(item, placement), error: false } : { text: result.error, error: true });
+      const offer = seriesTimeOffer(item, placement, date, timeZone, data.cadences) ?? undefined;
+      setStatus(result.ok ? { text: describe(item, placement), error: false, offer } : { text: result.error, error: true });
+    });
+  }
+
+  function timeSeries(offer: SeriesTimeOffer) {
+    setStatus(null);
+    const clock = formatClock(instantAt(date, offer.time.start, timeZone), timeZone);
+    startTransition(async () => {
+      const result = await actions.timeSeries(offer.id, offer.time);
+      setStatus(
+        result.ok ? { text: `${offer.title} is at ${clock} ${offer.cadence}.`, error: false } : { text: result.error, error: true },
+      );
     });
   }
 
@@ -187,6 +211,15 @@ export function DayView({
           className={`mb-2 min-h-5 text-[13px] ${status?.error ? "font-medium text-ink" : "text-ink-2"}`}
         >
           {status?.text}
+          {status?.offer && (
+            <button
+              type="button"
+              onClick={() => timeSeries(status.offer!)}
+              className="ml-2 rounded px-1 font-medium text-ink underline decoration-rule underline-offset-2 hover:bg-accent-wash hover:decoration-ink"
+            >
+              Same time {status.offer.cadence}
+            </button>
+          )}
         </p>
 
         {shownMode === "score" ? (

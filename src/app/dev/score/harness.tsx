@@ -6,6 +6,7 @@ import type { Area, Item } from "@/domain/item";
 import { selectedIn } from "@/domain/item-key";
 import { DayView, type DayActions } from "@/features/day/day-view";
 import { SELECTED_ITEM_PARAM, type DayData, type DayViewMode } from "@/features/day/types";
+import { setTime } from "@/features/detail/commands";
 import { placeItem } from "@/features/score/commands";
 import { captureTask, setDone, type ActionResult } from "@/features/today/commands";
 import { fakeRepo } from "@/features/today/test-support";
@@ -48,6 +49,7 @@ export function ScoreHarness({
     place: (id, placement) => run((repo) => placeItem(repo, id, placement, data.timeZone)),
     setDone: (id, done) => run((repo) => setDone(repo, id, done, data.timeZone)),
     capture: (title) => run((repo) => captureTask(repo, title)),
+    timeSeries: (id, time) => run((repo) => setTime(repo, id, time, data.timeZone, "all")),
   };
 
   const shown = [...data.view.scheduled, ...data.view.waiting].map((e) => e.item);
