@@ -87,7 +87,7 @@ export function CaptureField({
         return;
       }
       if ("id" in result) {
-        setStatus({ text: capturedLine(result), error: false });
+        setStatus({ text: capturedLine(result, "field"), error: false });
         unmark.current = markWhenShown(result.id);
       }
     });

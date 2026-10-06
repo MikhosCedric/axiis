@@ -17,7 +17,8 @@ import { isTypingTarget } from "@/features/day/nav";
 import { searchItemsAction } from "@/features/notes/actions";
 import { TYPE_WORD, type SearchRow } from "@/features/notes/model";
 import { captureAction } from "@/features/today/actions";
-import type { ActionResult } from "@/features/today/commands";
+import { capturedLine } from "@/features/today/capture-syntax";
+import type { CaptureResult } from "@/features/today/commands";
 import { TITLE_MAX } from "@/features/today/model";
 import { findQuery, findStatus, paletteSections, type Command, type Find } from "./model";
 import styles from "./palette.module.css";
@@ -25,7 +26,7 @@ import { chordCaps, chordSpoken, globalShortcut, SHORTCUTS, type Chord } from ".
 
 /** The writes and reads the palette makes. Server actions in the app, in-memory fakes in the dev harness. */
 export type PaletteActions = {
-  capture: (title: string) => Promise<ActionResult>;
+  capture: (title: string) => Promise<CaptureResult>;
   search: (query: string) => Promise<SearchRow[]>;
 };
 
@@ -250,7 +251,7 @@ function PaletteBody({
     actions.capture(title).then(
       (result) => {
         if (result.ok) {
-          setNote(`Captured “${title}”. It is waiting for a time on Today.`);
+          setNote(capturedLine(result, "palette"));
           return;
         }
         setInput((value) => value || title);

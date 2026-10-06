@@ -15,7 +15,7 @@ const actions: PaletteActions = {
   async capture(title) {
     await pause(450);
     if (settings.failing) return { ok: false, error: "That did not save. Your words are still here, so try again." };
-    return captureTask(store.items, title);
+    return captureTask(store.items, title, new Date(), Intl.DateTimeFormat().resolvedOptions().timeZone);
   },
   async search(query) {
     await pause(300);

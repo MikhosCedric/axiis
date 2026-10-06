@@ -71,6 +71,18 @@ describe("paletteSections", () => {
     expect(capture?.commands).toEqual([{ kind: "capture", id: "capture", label: "Capture “call the dentist” as a task", title: "call the dentist" }]);
   });
 
+  it("says what capture will understand, and sends the words as typed", () => {
+    const capture = paletteSections("dentist tomorrow 9:00 #health", today, idle).find((s) => s.id === "capture");
+    expect(capture?.commands).toEqual([
+      {
+        kind: "capture",
+        id: "capture",
+        label: "Capture “dentist” as a task: tomorrow, 09:00, #health",
+        title: "dentist tomorrow 9:00 #health",
+      },
+    ]);
+  });
+
   it("shows search results only for the input they were found for, at most six", () => {
     const rows = Array.from({ length: 9 }, (_, i) => row(i + 1));
     expect(labels("bulbs", { status: "done", query: "bulbs", rows }).find).toHaveLength(FIND_MAX);

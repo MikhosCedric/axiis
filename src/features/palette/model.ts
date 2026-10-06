@@ -4,6 +4,7 @@ import { dayHref } from "@/features/day/nav";
 import { LISTS_PATH } from "@/features/lists/model";
 import { tagHref, TAGS_PATH } from "@/features/tags/model";
 import type { SearchRow } from "@/features/notes/model";
+import { parseCapture, previewWords } from "@/features/today/capture-syntax";
 import { formatDayIn } from "@/features/today/format";
 import { completeDatePhrase, parseDatePhrase } from "./date-phrase";
 import { rank } from "./rank";
@@ -77,7 +78,10 @@ export function paletteSections(input: string, today: LocalDate, find: Find): Se
   const dates: Command[] =
     date && !coveredByToday ? [{ kind: "date", id: `date-${date}`, label: dateLabel(date, today), href: dayHref(date, today, "score") }] : [];
 
-  const capture: Command[] = exact || tag ? [] : [{ kind: "capture", id: "capture", label: `Capture “${text}” as a task`, title: text }];
+  const read = parseCapture(text);
+  const understood = previewWords(read);
+  const label = understood ? `Capture “${read.title}” as a task: ${understood}` : `Capture “${text}” as a task`;
+  const capture: Command[] = exact || tag ? [] : [{ kind: "capture", id: "capture", label, title: text }];
 
   const q = findQuery(text);
   const found: Command[] =
