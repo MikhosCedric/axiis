@@ -107,6 +107,7 @@ Updated: see the log at the bottom. Phases:
 - Put real name and contact email into the privacy policy and terms (placeholders are marked).
 
 ## Log
+- 2026-10-07 (audit fixes): the design audit's three P1s and its cheap P2s. The detail panel scrolls into view and takes focus below 1180px; selected Score List rows are AA; the landing lists what ships; 44px icon buttons and a press-and-hold hint on touch; a focus rule on the note body. Design calls are deferred in `docs/design-audit.md`. PR #22 from `fix-audit`. No migration.
 - 2026-10-06 (lists): `/lists` with checklists open first, a line-form progress meter, and capture that opens the new checklist beside the list; Lists in the nav and the palette; `listChecklists` on the repo; selected Inbox rows readable on the accent wash (axe now checks the Inbox and Lists with an item open). PR #19 from `feat-lists`. No migration.
 - 2026-10-06 (tags): Tags section in the detail panel, `#tag` lines on rows, `/tags` and `/tags/[name]`, nav and palette (`#name`), rename and delete in Settings, `#tag` in search, tags on a series shared by its occurrences. PR #18 from `feat-tags`. No migration.
 - 2026-10-06 (series quality): `clearTime` and `setFirstDay` for a whole series from the detail panel; the old panel is inert while the next item loads (shared `DetailAside`); empty-tray copy no longer says everything has a time; Time row typed on the 24-hour clock. PR open from `feat-series-quality`. No migration.
