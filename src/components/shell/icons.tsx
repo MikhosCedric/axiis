@@ -95,6 +95,12 @@ export const SettingsIcon = () => (
   </Icon>
 );
 
+export const TagsIcon = () => (
+  <Icon>
+    <path d="M7 2.5l-1.5 13M12.5 2.5l-1.5 13M3 6.5h12.5M2.5 11.5H15" />
+  </Icon>
+);
+
 export const SearchIcon = () => (
   <Icon>
     <circle cx="8" cy="8" r="4.6" />
