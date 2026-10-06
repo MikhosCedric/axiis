@@ -11,6 +11,7 @@ import {
   type PointerEvent as ReactPointerEvent,
 } from "react";
 import { repeats, type Area, type LocalDate, type ShownItem } from "@/domain/item";
+import { HelpHint } from "@/components/help-hint";
 import { RepeatMark } from "@/features/today/repeat-mark";
 import { tagLine } from "@/features/tags/model";
 import { RowTags } from "@/features/tags/row-tags";
@@ -280,13 +281,12 @@ export function ScoreView({
       <p aria-hidden="true" className="mt-3 hidden text-[13px] leading-relaxed text-ink-3 pointer-coarse:block">
         Press and hold a beam, then drag it to move it, or hold and drag its right end to change its length.
       </p>
-      {/* Touch screens see the line above instead; this stays as every beam's description for keyboard users. */}
-      <p id={KEYS_ID} className="mt-3 max-w-[72ch] text-[13px] leading-relaxed text-ink-3 pointer-coarse:sr-only">
+      <HelpHint id={KEYS_ID} label="Keyboard help">
         Drag a beam to move it, or its right end to change its length. With a beam focused, <Kbd>←</Kbd> <Kbd>→</Kbd>{" "}
         move it a quarter hour, <Kbd>Shift</Kbd> with <Kbd>←</Kbd> <Kbd>→</Kbd> changes its length, <Kbd>↑</Kbd>{" "}
         <Kbd>↓</Kbd> change its area, <Kbd>Space</Kbd> marks it done, <Kbd>Enter</Kbd> opens it and <Kbd>Backspace</Kbd>{" "}
         sends it back to waiting. On a waiting item, <Kbd>↑</Kbd> or <Kbd>↓</Kbd> gives it a time.
-      </p>
+      </HelpHint>
 
       <section
         ref={tray}
