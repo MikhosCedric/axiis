@@ -1,5 +1,6 @@
 import type { Area, AreaId, DayRange, Item, ItemId, ItemPatch, NewItem } from "@/domain/item";
-import { INBOX_LIMIT, MAX_SERIES, type ItemsRepo } from "@/lib/items/repo";
+import { sameTag, type Tag, type TagId, type TagName } from "@/domain/tag";
+import { INBOX_LIMIT, MAX_SERIES, TAGGED_LIMIT, type ItemsRepo } from "@/lib/items/repo";
 
 let seq = 0;
 const uuid = () => `00000000-0000-4000-8000-${String(++seq).padStart(12, "0")}`;
@@ -27,10 +28,11 @@ export function makeItem(over: Partial<Item> = {}): Item {
 
 /** In-memory ItemsRepo that records calls and applies the day query from docs/data-model.md. */
 export function fakeRepo(items: Item[] = [], areas: Area[] = []) {
-  const calls: { listForDay: DayRange[]; create: NewItem[]; update: [ItemId, ItemPatch][] } = {
+  const calls: { listForDay: DayRange[]; create: NewItem[]; update: [ItemId, ItemPatch][]; addTag: [ItemId, TagName][] } = {
     listForDay: [],
     create: [],
     update: [],
+    addTag: [],
   };
   const repo: ItemsRepo = {
     async listAreas() {
@@ -120,9 +122,80 @@ export function fakeRepo(items: Item[] = [], areas: Area[] = []) {
       const at = items.findIndex((i) => i.id === id);
       if (at !== -1) items.splice(at, 1);
     },
+    async listTags() {
+      return tags.map((t) => ({
+        ...t,
+        open: itemTags.filter((l) => l.tagId === t.id && items.some((i) => i.id === l.itemId && i.status === "open")).length,
+      }));
+    },
+    async tagsForItems(ids) {
+      const byItem: Record<string, Tag[]> = {};
+      for (const l of itemTags) {
+        const tag = tags.find((t) => t.id === l.tagId);
+        if (tag && ids.includes(l.itemId)) (byItem[l.itemId] ??= []).push({ ...tag });
+      }
+      return byItem;
+    },
+    async listTagged(tagId) {
+      const rank = { open: 0, done: 1, dropped: 2 };
+      return items
+        .filter((i) => i.status !== "dropped" && itemTags.some((l) => l.itemId === i.id && l.tagId === tagId))
+        .sort((a, b) => rank[a.status] - rank[b.status] || b.createdAt.getTime() - a.createdAt.getTime())
+        .slice(0, TAGGED_LIMIT);
+    },
+    async addTag(itemId, name) {
+      calls.addTag.push([itemId, name]);
+      return link(itemId, name);
+    },
+    async removeTag(itemId, id) {
+      drop(itemTags, (l) => l.itemId === itemId && l.tagId === id);
+    },
+    async renameTag(id, name) {
+      const tag = tags.find((t) => t.id === id);
+      if (!tag) throw new Error("not found");
+      if (tags.some((t) => t.id !== id && sameTag(t.name, name))) {
+        throw new Error('duplicate key value violates unique constraint "tags_user_name_ci"');
+      }
+      tag.name = name;
+      return { ...tag };
+    },
+    async deleteTag(id) {
+      drop(tags, (t) => t.id === id);
+      drop(itemTags, (l) => l.tagId === id);
+    },
   };
   const single = () => items.filter((i) => i.recurrence.kind !== "series");
-  return { repo, calls, items };
+  const tags: Tag[] = [];
+  const itemTags: { itemId: ItemId; tagId: TagId }[] = [];
+  function link(itemId: ItemId, name: TagName): Tag {
+    let tag = tags.find((t) => sameTag(t.name, name));
+    if (!tag) {
+      tag = { id: tagId(), name };
+      tags.push(tag);
+    }
+    const id = tag.id;
+    if (!itemTags.some((l) => l.itemId === itemId && l.tagId === id)) itemTags.push({ itemId, tagId: id });
+    return { ...tag };
+  }
+  return {
+    repo,
+    calls,
+    items,
+    tags,
+    itemTags,
+    /** Puts tags on an item directly, for arranging a test. */
+    tag(itemId: ItemId, ...names: string[]) {
+      for (const name of names) link(itemId, name as TagName);
+    },
+  };
 }
+
+/** Removes every match in place, so the arrays a test holds stay live. */
+function drop<T>(list: T[], match: (entry: T) => boolean) {
+  for (let i = list.length - 1; i >= 0; i--) if (match(list[i])) list.splice(i, 1);
+}
+
+let tagSeq = 0;
+const tagId = () => `00000000-0000-4000-b000-${String(++tagSeq).padStart(12, "0")}` as TagId;
 
 export const area = (name: string): Area => ({ id: uuid() as AreaId, name, position: 0 });

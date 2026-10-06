@@ -1,10 +1,14 @@
 import type { Area, DayRange, Item, ItemId, ItemPatch, LocalDate, NewItem, SpanRange } from "@/domain/item";
+import type { Tag, TagId, TagName, TagSummary } from "@/domain/tag";
 
 /** Most live series one user can have read at once. */
 export const MAX_SERIES = 200;
 
 /** Most inbox items one read returns. */
 export const INBOX_LIMIT = 200;
+
+/** Most items one tag's list returns. */
+export const TAGGED_LIMIT = 200;
 
 export type ChildCount = { total: number; done: number };
 
@@ -42,4 +46,18 @@ export interface ItemsRepo {
   create(input: NewItem): Promise<Item>;
   update(id: ItemId, patch: ItemPatch): Promise<Item>;
   softDelete(id: ItemId): Promise<void>;
+
+  /** Every tag, with how many open live items carry it. Unordered. Limits and name rules live in the tag commands. */
+  listTags(): Promise<TagSummary[]>;
+  /** The tags on each item, keyed by item id, in one read for any number of items. Items with none are absent. */
+  tagsForItems(ids: ItemId[]): Promise<Record<string, Tag[]>>;
+  /** Live items carrying a tag, open first, then done, newest first, at most `TAGGED_LIMIT`. Dropped ones are left out. */
+  listTagged(tagId: TagId): Promise<Item[]>;
+  /** Puts the tag on the item, making the tag first when none has this name in any case. Running it again changes nothing. */
+  addTag(itemId: ItemId, name: TagName): Promise<Tag>;
+  /** Takes a tag off an item. A tag that is not on it counts as taken off. */
+  removeTag(itemId: ItemId, tagId: TagId): Promise<void>;
+  renameTag(tagId: TagId, name: TagName): Promise<Tag>;
+  /** Deletes the tag and takes it off every item. The items stay as they are. A tag already gone counts as deleted. */
+  deleteTag(tagId: TagId): Promise<void>;
 }
