@@ -5,6 +5,8 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useOptimistic, useTransition, type ReactNode } from "react";
 import { SELECTED_ITEM_PARAM } from "@/features/day/types";
 import { DetailAside } from "@/features/detail/detail-aside";
+import { setDoneAction } from "@/features/today/actions";
+import { DoneToggle, useDoneToggles, type SetDone } from "@/features/today/done-toggle";
 import { Glyph } from "@/features/today/glyph";
 import { RepeatMark } from "@/features/today/repeat-mark";
 import type { TaggedData } from "./commands";
@@ -15,10 +17,13 @@ export function TaggedView({
   data,
   detail,
   indexHref = TAGS_PATH,
+  setDone = setDoneAction,
 }: {
   data: TaggedData;
   detail?: ReactNode;
   indexHref?: string;
+  /** Defaults to the server action; the dev harness passes an in-memory one. */
+  setDone?: SetDone;
 }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -26,6 +31,7 @@ export function TaggedView({
   const selectedParam = params.get(SELECTED_ITEM_PARAM);
   const [selectedId, setSelectedId] = useOptimistic(selectedParam);
   const [, startTransition] = useTransition();
+  const ticks = useDoneToggles(setDone);
 
   function select(id: string) {
     startTransition(() => {
@@ -49,11 +55,15 @@ export function TaggedView({
           {data.tag.name}
         </h1>
         <p className="mt-2.5 text-[15px] text-ink-2">{taggedSummary(data.rows)}</p>
+        <p role="status" className={`mt-4 min-h-5 text-[13px] ${ticks.status?.error ? "font-medium text-ink" : "text-ink-2"}`}>
+          {ticks.status?.text}
+        </p>
 
         {data.rows.length > 0 && (
-          <ul className="mt-6 max-w-[760px] border-t border-rule">
+          <ul className="mt-2 max-w-[760px] border-t border-rule">
             {data.rows.map((row) => {
               const selected = selectedId === row.id;
+              const done = ticks.isDone(row.id, row.done);
               const others = tagLine(row.tags);
               const meta = [row.when, row.area, others.shown].filter(Boolean);
               return (
@@ -63,16 +73,29 @@ export function TaggedView({
                     selected ? "bg-accent-wash" : ""
                   }`}
                 >
-                  <span className="grid h-6 place-items-center">
-                    <Glyph type={row.type} state={row.done ? "done" : "planned"} />
-                  </span>
+                  {/* A series is ticked one day at a time, on that day, and a note is never done. */}
+                  {row.repeats || row.type === "note" ? (
+                    <span className="grid h-6 place-items-center">
+                      <Glyph type={row.type} state={done ? "done" : "planned"} />
+                    </span>
+                  ) : (
+                    <span className="-my-1 grid place-items-center">
+                      <DoneToggle
+                        type={row.type}
+                        title={row.title}
+                        done={done}
+                        justDone={ticks.justDone === row.id}
+                        onToggle={() => ticks.toggle(row.id, row.title, !done)}
+                      />
+                    </span>
+                  )}
                   <div className="min-w-0">
                     <button
                       type="button"
                       aria-pressed={selected}
                       onClick={() => select(row.id)}
                       className={`cursor-pointer rounded text-left break-words hover:underline ${
-                        row.done ? "font-normal text-ink-3" : "font-medium text-ink"
+                        done ? "font-normal text-ink-3" : "font-medium text-ink"
                       }`}
                     >
                       {row.title}
@@ -82,7 +105,7 @@ export function TaggedView({
                           <span className="sr-only">, repeats</span>
                         </>
                       )}
-                      {row.done && <span className="sr-only">, done</span>}
+                      {done && <span className="sr-only">, done</span>}
                     </button>
                     {meta.length > 0 && (
                       <p className={`mt-0.5 flex flex-wrap gap-x-2 text-xs ${selected ? "text-ink-2" : "text-ink-3"}`}>
