@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { DeleteIcon } from "./icons";
 
 const quiet = "rounded-md px-2 py-1 font-medium hover:bg-accent-wash";
@@ -11,11 +11,13 @@ export function ConfirmDelete({
   prompt,
   onConfirm,
   compact = false,
+  icon = <DeleteIcon />,
 }: {
   label: string;
   prompt: string;
   onConfirm: () => void;
   compact?: boolean;
+  icon?: ReactNode;
 }) {
   const [asking, setAsking] = useState(false);
   const trigger = useRef<HTMLButtonElement>(null);
@@ -79,7 +81,7 @@ export function ConfirmDelete({
           : `${quiet} -ml-2 inline-flex items-center gap-2 text-ink-2 hover:text-ink`
       }
     >
-      <DeleteIcon />
+      {icon}
       {!compact && label}
     </button>
   );

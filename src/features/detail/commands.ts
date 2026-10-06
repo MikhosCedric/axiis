@@ -1,12 +1,17 @@
 import { z } from "zod";
-import { idSchema, type AreaId, type ItemId, type ItemPatch } from "@/domain/item";
+import { idSchema, repeats, type AreaId, type Item, type ItemId, type ItemPatch, type LocalDate } from "@/domain/item";
+import { parseItemKey, type ParsedItemKey } from "@/domain/item-key";
+import { addDays, toLocalDate } from "@/lib/dates";
+import { materialize, resolveKey } from "@/lib/items/occurrences";
 import type { ItemsRepo } from "@/lib/items/repo";
 import type { ActionResult } from "@/features/today/commands";
 import { TITLE_MAX } from "@/features/today/model";
-import { buildDetail, subtaskPolicy, type DetailView } from "./model";
+import { buildDetail, subtaskPolicy, type DetailView, type Scope } from "./model";
+import { repeatSchema, ruleFor } from "./repeat";
 
 const titleSchema = z.string().trim().min(1).max(TITLE_MAX);
 const areaSchema = idSchema.nullable();
+const scopeSchema = z.enum(["one", "all"]).default("one");
 
 const TITLE_ERROR = `A title needs a few words, up to ${TITLE_MAX} characters.`;
 const MISSING = "That item is not here any more.";
@@ -25,38 +30,94 @@ async function attempt(work: () => Promise<ActionResult | void>): Promise<Action
   }
 }
 
-function save(repo: ItemsRepo, id: ItemId, patch: ItemPatch): Promise<ActionResult> {
+function firstDayOf(item: Item, timeZone: string): LocalDate | null {
+  if (item.schedule.kind === "day") return item.schedule.on;
+  if (item.schedule.kind === "timed") return toLocalDate(item.schedule.start, timeZone);
+  return null;
+}
+
+/** The series a stored item belongs to: itself for a series, its series for an override, null otherwise. */
+async function seriesOf(repo: ItemsRepo, item: Item): Promise<Item | null> {
+  if (item.recurrence.kind === "series") return item;
+  if (item.recurrence.kind === "override") {
+    const series = await repo.get(item.recurrence.seriesId);
+    return series?.recurrence.kind === "series" ? series : null;
+  }
+  return null;
+}
+
+/**
+ * The stored items a change in `scope` lands on, series first. "one" is the
+ * item, or the occurrence it names (stored on first touch). "all" is the whole
+ * series plus the override the change was made from, so the one in view changes
+ * too. Something that does not repeat is its own target either way.
+ */
+async function targets(repo: ItemsRepo, key: ParsedItemKey, scope: Scope, timeZone: string): Promise<Item[]> {
+  if (scope === "one") {
+    const item = key.kind === "item" ? await repo.get(key.id) : await materialize(repo, key, timeZone);
+    return item ? [item] : [];
+  }
+  const found = await resolveKey(repo, key, timeZone);
+  if (!found) return [];
+  if (found.kind === "virtual") return [found.series];
+  const series = await seriesOf(repo, found.item);
+  return series && series.id !== found.item.id ? [series, found.item] : [found.item];
+}
+
+/** Parses the key and scope, finds the targets and applies `patch` to each. */
+function saveTo(
+  repo: ItemsRepo,
+  rawKey: unknown,
+  rawScope: unknown,
+  timeZone: string,
+  patch: ItemPatch,
+): Promise<ActionResult> {
+  const key = parseItemKey(rawKey);
+  const scope = scopeSchema.safeParse(rawScope);
+  if (!key || !scope.success) return Promise.resolve({ ok: false, error: MISSING });
   return attempt(async () => {
-    await repo.update(id, patch);
+    const items = await targets(repo, key, scope.data, timeZone);
+    if (items.length === 0) return { ok: false, error: MISSING };
+    for (const item of items) await repo.update(item.id, patch);
   });
 }
 
-export async function loadDetail(repo: ItemsRepo, id: ItemId, timeZone: string): Promise<DetailView | null> {
-  const item = await repo.get(id);
-  if (!item) return null;
+export async function loadDetail(repo: ItemsRepo, key: ParsedItemKey, timeZone: string): Promise<DetailView | null> {
+  const found = await resolveKey(repo, key, timeZone);
+  if (!found) return null;
+  const item = found.item;
   const policy = subtaskPolicy(item);
-  const [areas, subtasks, parent] = await Promise.all([
+  const [areas, subtasks, parent, series] = await Promise.all([
     repo.listAreas(),
-    policy.kind === "holds-subtasks" ? repo.listChildren(item.id) : [],
+    policy.kind === "holds-subtasks" && found.kind === "stored" ? repo.listChildren(found.item.id) : [],
     policy.kind === "is-subtask" ? repo.get(policy.parentId) : null,
+    found.kind === "virtual" ? found.series : found.item.recurrence.kind === "override" ? seriesOf(repo, found.item) : null,
   ]);
-  return buildDetail({ item, areas, subtasks, parent, timeZone });
+  return buildDetail({ item, series, areas, subtasks, parent, timeZone });
 }
 
-export async function renameItem(repo: ItemsRepo, rawId: unknown, rawTitle: unknown): Promise<ActionResult> {
-  const id = parseItemId(rawId);
-  if (!id) return { ok: false, error: MISSING };
+export async function renameItem(
+  repo: ItemsRepo,
+  rawKey: unknown,
+  rawTitle: unknown,
+  timeZone: string,
+  rawScope?: unknown,
+): Promise<ActionResult> {
   const title = titleSchema.safeParse(rawTitle);
   if (!title.success) return { ok: false, error: TITLE_ERROR };
-  return save(repo, id, { title: title.data });
+  return saveTo(repo, rawKey, rawScope, timeZone, { title: title.data });
 }
 
-export async function setItemArea(repo: ItemsRepo, rawId: unknown, rawAreaId: unknown): Promise<ActionResult> {
-  const id = parseItemId(rawId);
-  if (!id) return { ok: false, error: MISSING };
+export async function setItemArea(
+  repo: ItemsRepo,
+  rawKey: unknown,
+  rawAreaId: unknown,
+  timeZone: string,
+  rawScope?: unknown,
+): Promise<ActionResult> {
   const areaId = areaSchema.safeParse(rawAreaId);
   if (!areaId.success) return { ok: false, error: "That area could not be found." };
-  return save(repo, id, { areaId: areaId.data as AreaId | null });
+  return saveTo(repo, rawKey, rawScope, timeZone, { areaId: areaId.data as AreaId | null });
 }
 
 export async function addSubtask(repo: ItemsRepo, rawParentId: unknown, rawTitle: unknown): Promise<ActionResult> {
@@ -69,7 +130,10 @@ export async function addSubtask(repo: ItemsRepo, rawParentId: unknown, rawTitle
     if (!parent) return { ok: false, error: MISSING };
     // Turns the database trigger's refusal into a sentence instead of a failed save.
     if (subtaskPolicy(parent).kind !== "holds-subtasks") {
-      return { ok: false, error: "Subtasks go one level deep, under a task or a checklist." };
+      const error = repeats(parent)
+        ? "Something that repeats cannot hold subtasks."
+        : "Subtasks go one level deep, under a task or a checklist.";
+      return { ok: false, error };
     }
     await repo.create({
       type: "task",
@@ -85,18 +149,113 @@ export async function addSubtask(repo: ItemsRepo, rawParentId: unknown, rawTitle
 export async function promoteSubtask(repo: ItemsRepo, rawId: unknown): Promise<ActionResult> {
   const id = parseItemId(rawId);
   if (!id) return { ok: false, error: MISSING };
-  return save(repo, id, { parentId: null });
+  return attempt(async () => {
+    await repo.update(id, { parentId: null });
+  });
 }
 
 /**
- * Soft-deletes the item and its subtasks. Children go first so a failure part
- * way leaves the parent in place, and running it again finishes the job.
+ * Removes an item. One occurrence of a series is skipped rather than deleted,
+ * so it stays gone instead of coming back from the series. With scope "all" the
+ * series goes, with the occurrence it was deleted from; its other overrides
+ * stay as ordinary items. Anything else goes with its subtasks: children first,
+ * so a failure part way leaves the parent in place and running it again
+ * finishes the job.
  */
-export async function deleteItem(repo: ItemsRepo, rawId: unknown): Promise<ActionResult> {
-  const id = parseItemId(rawId);
-  if (!id) return { ok: false, error: MISSING };
+export async function deleteItem(repo: ItemsRepo, rawKey: unknown, timeZone: string, rawScope?: unknown): Promise<ActionResult> {
+  const key = parseItemKey(rawKey);
+  const scope = scopeSchema.safeParse(rawScope);
+  if (!key || !scope.success) return { ok: false, error: MISSING };
   return attempt(async () => {
-    for (const child of await repo.listChildren(id)) await repo.softDelete(child.id);
-    await repo.softDelete(id);
+    const items = await targets(repo, key, scope.data, timeZone);
+    if (items.length === 0) return { ok: false, error: MISSING };
+    const [first] = items;
+    if (scope.data === "one" && first.recurrence.kind === "override" && (await seriesOf(repo, first))) {
+      await repo.update(first.id, { status: "dropped" });
+      return;
+    }
+    for (const item of items) {
+      for (const child of await repo.listChildren(item.id)) await repo.softDelete(child.id);
+      await repo.softDelete(item.id);
+    }
+  });
+}
+
+const NOT_REPEATABLE = "Only a task, event or checklist with no subtasks can repeat.";
+
+/**
+ * Sets how an item repeats, or stops it. On an occurrence this changes the whole
+ * series. An item waiting for a time starts repeating from today. Turning
+ * repetition off keeps the overrides as ordinary items and leaves the series as
+ * a single item on its first date.
+ */
+export async function setRepeat(
+  repo: ItemsRepo,
+  rawKey: unknown,
+  rawChoice: unknown,
+  now: Date,
+  timeZone: string,
+): Promise<ActionResult> {
+  const key = parseItemKey(rawKey);
+  if (!key) return { ok: false, error: MISSING };
+  const choice = repeatSchema.safeParse(rawChoice);
+  if (!choice.success) return { ok: false, error: "That repeat setting is not one Axiis knows." };
+  const { preset, end } = choice.data;
+  return attempt(async () => {
+    const [item] = await targets(repo, key, "all", timeZone);
+    if (!item) return { ok: false, error: MISSING };
+
+    if (preset === "none") {
+      if (item.recurrence.kind !== "series") return;
+      for (const o of await repo.listOverrides("0001-01-01" as LocalDate, "9999-12-31" as LocalDate, item.id)) {
+        await repo.update(o.id, { recurrence: { kind: "none" } });
+      }
+      await repo.update(item.id, { recurrence: { kind: "none" } });
+      return;
+    }
+
+    if (item.recurrence.kind === "override") return { ok: false, error: MISSING };
+    if (item.type === "note" || item.parentId !== null || (await repo.listChildren(item.id)).length > 0) {
+      return { ok: false, error: NOT_REPEATABLE };
+    }
+    const today = toLocalDate(now, timeZone);
+    const firstOn = firstDayOf(item, timeZone) ?? today;
+    if (end.kind === "until" && end.on < firstOn) return { ok: false, error: "The end date is before it first happens." };
+    await repo.update(item.id, {
+      recurrence: { kind: "series", rule: ruleFor(preset, end) },
+      ...(item.schedule.kind === "unscheduled" && { schedule: { kind: "day", on: today } }),
+    });
+  });
+}
+
+/**
+ * Ends a series just before the given occurrence. Later overrides that are not
+ * done go with it; done ones stay as a record. From the very first occurrence
+ * nothing would be left, so the series is deleted instead.
+ */
+export async function stopRepeating(repo: ItemsRepo, rawKey: unknown, timeZone: string): Promise<ActionResult> {
+  const key = parseItemKey(rawKey);
+  if (!key) return { ok: false, error: MISSING };
+  return attempt(async () => {
+    const found = await resolveKey(repo, key, timeZone);
+    if (!found) return { ok: false, error: MISSING };
+    const series = found.kind === "virtual" ? found.series : await seriesOf(repo, found.item);
+    const r = found.item.recurrence;
+    if (!series || series.recurrence.kind !== "series" || (r.kind !== "override" && r.kind !== "occurrence")) {
+      return { ok: false, error: "That is not one occurrence of a repeating item." };
+    }
+    const from = r.originalOn;
+    const firstOn = firstDayOf(series, timeZone) ?? from;
+    for (const o of await repo.listOverrides(from, "9999-12-31" as LocalDate, series.id)) {
+      if (o.status !== "done") await repo.softDelete(o.id);
+    }
+    if (from <= firstOn) {
+      await repo.softDelete(series.id);
+      return;
+    }
+    const { rule } = series.recurrence;
+    const until = addDays(from, -1);
+    if (rule.end.kind === "until" && rule.end.on <= until) return;
+    await repo.update(series.id, { recurrence: { kind: "series", rule: { ...rule, end: { kind: "until", on: until } } } });
   });
 }

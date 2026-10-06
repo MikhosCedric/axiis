@@ -7,12 +7,14 @@ import type { AreaId, ItemType } from "@/domain/item";
 import type { ActionResult } from "@/features/today/commands";
 import { ConfirmDelete } from "./confirm-delete";
 import { GlyphCheckbox } from "./glyph-checkbox";
-import { BackIcon, CloseIcon, LiftIcon } from "./icons";
+import { BackIcon, CloseIcon, LiftIcon, SkipIcon, StopIcon } from "./icons";
 import type { ConnectedRow } from "@/features/notes/model";
+import { RepeatMark } from "@/features/today/repeat-mark";
 import { InlineTitle } from "./inline-title";
 import { LinkedNotes } from "./linked-notes";
 import { useItemHref } from "./item-href";
-import type { DetailActions, DetailView } from "./model";
+import type { DetailActions, DetailView, Scope } from "./model";
+import { RepeatRows } from "./repeat-control";
 import { Subtasks } from "./subtasks";
 
 const TYPE_WORD: Record<ItemType, string> = { task: "Task", event: "Event", note: "Note", checklist: "Checklist" };
@@ -44,7 +46,7 @@ export function DetailSheet({
   /** Notes linked to this item either way. Not shown for a note, which opens in its own editor. */
   linkedNotes?: ConnectedRow[];
 }) {
-  const { item, nesting } = view;
+  const { item, nesting, repeat } = view;
   const itemHref = useItemHref();
   const router = useRouter();
   const [done, setDone] = useOptimistic(item.done);
@@ -52,6 +54,8 @@ export function DetailSheet({
   const [justDone, setJustDone] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
   const [promoted, setPromoted] = useState(false);
+  // Only an occurrence offers a choice; anything else is always its own target.
+  const [scope, setScope] = useState<Scope>("one");
   const headingId = useId();
   const areaFieldId = useId();
 
@@ -76,12 +80,15 @@ export function DetailSheet({
     const next = value === "" ? null : (value as AreaId);
     write(() => {
       setAreaId(next);
-      return actions.setArea(item.id, next);
+      return actions.setArea(item.id, next, scope);
     });
   }
 
+  const close = () => router.replace(itemHref(null), { scroll: false });
   const subtaskCount = nesting.kind === "holds-subtasks" ? nesting.subtasks.length : 0;
   const word = TYPE_WORD[item.type].toLowerCase();
+  const isSeries = repeat.kind === "series";
+  const isOccurrence = repeat.kind === "occurrence";
 
   return (
     <aside aria-labelledby={headingId} className="grid gap-5">
@@ -108,7 +115,7 @@ export function DetailSheet({
       </div>
 
       <div className="flex items-start gap-1.5">
-        {item.type !== "note" && (
+        {item.type !== "note" && !isSeries && (
           <span className="pt-1.5">
             <GlyphCheckbox
               type={item.type}
@@ -122,13 +129,43 @@ export function DetailSheet({
         <InlineTitle
           value={item.title}
           label="Title"
-          onSave={(title) => actions.rename(item.id, title)}
+          onSave={(title) => actions.rename(item.id, title, scope)}
           onError={setStatus}
           className={`font-serif text-[clamp(22px,2.4vw,28px)] leading-[1.2] font-medium tracking-[-0.01em] ${
             done ? "text-ink-3" : "text-ink"
           }`}
         />
       </div>
+
+      {isOccurrence && (
+        <div className="grid gap-2.5">
+          <p className="flex items-center gap-2 text-[13px] text-ink-2">
+            <RepeatMark className="text-ink-3" />
+            Repeats. This is the one for {repeat.on}.
+          </p>
+          <fieldset className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
+            <legend className="float-left mr-1 text-[13px] text-ink-3">Changes apply to</legend>
+            <span className="inline-flex rounded-md border border-rule p-0.5">
+              {(["one", "all"] as const).map((s) => (
+                <label
+                  key={s}
+                  className="cursor-pointer rounded px-2.5 py-1 text-[13px] text-ink-2 has-checked:bg-accent-wash has-checked:font-medium has-checked:text-ink has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-accent"
+                >
+                  <input
+                    type="radio"
+                    name="scope"
+                    value={s}
+                    checked={scope === s}
+                    onChange={() => setScope(s)}
+                    className="sr-only"
+                  />
+                  {s === "one" ? "This one" : "All of them"}
+                </label>
+              ))}
+            </span>
+          </fieldset>
+        </div>
+      )}
 
       <div>
         <dl className="grid grid-cols-[5.5rem_minmax(0,1fr)] items-baseline gap-x-3 gap-y-3">
@@ -137,7 +174,7 @@ export function DetailSheet({
 
           {view.when !== null && (
             <>
-              <dt className="text-[13px] text-ink-3">When</dt>
+              <dt className="text-[13px] text-ink-3">{isSeries ? "Starts" : "When"}</dt>
               <dd>
                 <span className="tabular">{view.when}</span>
                 {view.due && <span className="block text-ink-2 tabular">{view.due}</span>}
@@ -163,6 +200,24 @@ export function DetailSheet({
               ))}
             </select>
           </dd>
+
+          {repeat.kind === "unavailable" && (
+            <>
+              <dt className="text-[13px] text-ink-3">Repeat</dt>
+              <dd className="text-ink-2">{repeat.reason}</dd>
+            </>
+          )}
+          {(repeat.kind === "off" || isSeries || isOccurrence) && (
+            <RepeatRows
+              repeat={repeat}
+              save={(choice, show) =>
+                write(() => {
+                  show();
+                  return actions.setRepeat(item.id, choice);
+                })
+              }
+            />
+          )}
         </dl>
         <p role="status" className="mt-2 min-h-5 text-[13px] text-ink-2">
           {status}
@@ -210,15 +265,48 @@ export function DetailSheet({
           Open the note
         </Link>
       ) : (
-        <LinkedNotes itemId={item.id} notes={linkedNotes} actions={actions} />
+        <LinkedNotes itemId={view.notesFor} notes={linkedNotes} actions={actions} />
       )}
 
-      <div className="border-t border-rule pt-4">
-        <ConfirmDelete
-          label={`Delete this ${word}`}
-          prompt={subtaskCount > 0 ? `Delete this and its ${subtaskCount === 1 ? "subtask" : `${subtaskCount} subtasks`}?` : "Delete?"}
-          onConfirm={() => write(() => actions.remove(item.id), () => router.replace(itemHref(null), { scroll: false }))}
-        />
+      <div className="grid justify-items-start gap-1 border-t border-rule pt-4">
+        {isOccurrence ? (
+          <>
+            {scope === "one" ? (
+              <ConfirmDelete
+                key="skip"
+                label="Skip this one"
+                prompt="Skip this one?"
+                icon={<SkipIcon />}
+                onConfirm={() => write(() => actions.remove(item.id, "one"), close)}
+              />
+            ) : (
+              <ConfirmDelete
+                key="all"
+                label="Delete all of them"
+                prompt="Delete every time it repeats?"
+                onConfirm={() => write(() => actions.remove(item.id, "all"), close)}
+              />
+            )}
+            <ConfirmDelete
+              label="Stop repeating from here"
+              prompt="Stop from this one on?"
+              icon={<StopIcon />}
+              onConfirm={() => write(() => actions.stopRepeating(item.id), close)}
+            />
+          </>
+        ) : (
+          <ConfirmDelete
+            label={`Delete this ${word}`}
+            prompt={
+              isSeries
+                ? "Delete it and every time it repeats?"
+                : subtaskCount > 0
+                  ? `Delete this and its ${subtaskCount === 1 ? "subtask" : `${subtaskCount} subtasks`}?`
+                  : "Delete?"
+            }
+            onConfirm={() => write(() => actions.remove(item.id), close)}
+          />
+        )}
       </div>
     </aside>
   );

@@ -2,7 +2,8 @@
 
 import { useSearchParams } from "next/navigation";
 import { startTransition, useState } from "react";
-import type { Area, Item, ItemId } from "@/domain/item";
+import type { Area, Item } from "@/domain/item";
+import { selectedIn } from "@/domain/item-key";
 import { DayView, type DayActions } from "@/features/day/day-view";
 import { SELECTED_ITEM_PARAM, type DayData, type DayViewMode } from "@/features/day/types";
 import { placeItem } from "@/features/score/commands";
@@ -44,12 +45,13 @@ export function ScoreHarness({
   }
 
   const actions: DayActions = {
-    place: (id, placement) => run((repo) => placeItem(repo, id, placement)),
-    setDone: (id, done) => run((repo) => setDone(repo, id, done)),
+    place: (id, placement) => run((repo) => placeItem(repo, id, placement, data.timeZone)),
+    setDone: (id, done) => run((repo) => setDone(repo, id, done, data.timeZone)),
     capture: (title) => run((repo) => captureTask(repo, title)),
   };
 
-  const item = selected ? fake.items.find((i) => i.id === (selected as ItemId)) : undefined;
+  const shown = [...data.view.scheduled, ...data.view.waiting].map((e) => e.item);
+  const item = shown.find((i) => i.id === selectedIn(shown, selected));
 
   return (
     <>
@@ -70,7 +72,9 @@ export function ScoreHarness({
             <div>
               <p className="text-[13px] text-ink-3">Detail slot</p>
               <h2 className="mt-2 font-serif text-2xl font-medium text-balance">{item.title}</h2>
-              <p className="mt-2 text-ink-2">{item.schedule.kind}</p>
+              <p className="mt-2 text-ink-2">
+                {item.schedule.kind}, {item.recurrence.kind}
+              </p>
             </div>
           ) : null
         }

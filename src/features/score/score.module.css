@@ -86,6 +86,11 @@
   text-underline-offset: 4px;
 }
 
+.repeat {
+  margin-left: 4px;
+  color: var(--ink-3);
+}
+
 .count {
   margin-left: 4px;
   font-weight: 400;

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { LocalDate } from "@/domain/item";
+import type { Rule } from "@/domain/recurrence";
 import { area, fakeRepo, makeItem } from "@/features/today/test-support";
 import { loadDay } from "./load";
 
@@ -59,5 +60,60 @@ describe("loadDay", () => {
       [planned.id]: { total: 2, done: 1 },
       [waiting.id]: { total: 1, done: 0 },
     });
+  });
+});
+
+describe("loadDay with repeating items", () => {
+  const daily: Rule = { freq: "daily", interval: 1, end: { kind: "never" } };
+  const nineToTen = { kind: "timed", start: new Date("2026-10-06T09:00:00Z"), end: new Date("2026-10-06T10:00:00Z") } as const;
+
+  it("shows the series as one occurrence on its first day, not as the stored series as well", async () => {
+    const series = makeItem({ title: "Standup", schedule: nineToTen, recurrence: { kind: "series", rule: daily } });
+    const { repo } = fakeRepo([series]);
+    const day = await loadDay(repo, d("2026-10-06"), new Date("2026-10-06T08:00:00Z"), "UTC");
+    expect(day.view.scheduled.map((e) => e.item.id)).toEqual([`${series.id}~2026-10-06`]);
+  });
+
+  it("shows an occurrence on a later day, and the override in place of its date", async () => {
+    const series = makeItem({ title: "Standup", schedule: nineToTen, recurrence: { kind: "series", rule: daily } });
+    const done = makeItem({
+      title: "Standup",
+      status: "done",
+      schedule: { kind: "timed", start: new Date("2026-10-08T11:00:00Z"), end: new Date("2026-10-08T12:00:00Z") },
+      recurrence: { kind: "override", seriesId: series.id, originalOn: d("2026-10-08") },
+    });
+    const { repo } = fakeRepo([series, done]);
+    const on = async (date: string) =>
+      (await loadDay(repo, d(date), new Date("2026-10-06T08:00:00Z"), "UTC")).view.scheduled.map((e) => [e.item.id, e.state]);
+    expect(await on("2026-10-07")).toEqual([[`${series.id}~2026-10-07`, "planned"]]);
+    expect(await on("2026-10-08")).toEqual([[done.id, "done"]]);
+  });
+
+  it("hides a skipped occurrence and shows a moved one on its new day only", async () => {
+    const series = makeItem({ schedule: { kind: "day", on: d("2026-10-06") }, recurrence: { kind: "series", rule: daily } });
+    const skipped = makeItem({
+      status: "dropped",
+      schedule: { kind: "day", on: d("2026-10-07") },
+      recurrence: { kind: "override", seriesId: series.id, originalOn: d("2026-10-07") },
+    });
+    const moved = makeItem({
+      title: "Moved",
+      schedule: { kind: "day", on: d("2026-10-07") },
+      recurrence: { kind: "override", seriesId: series.id, originalOn: d("2026-10-08") },
+    });
+    const { repo } = fakeRepo([series, skipped, moved]);
+    const now = new Date("2026-10-06T08:00:00Z");
+    expect((await loadDay(repo, d("2026-10-07"), now, "UTC")).view.scheduled.map((e) => e.item.id)).toEqual([moved.id]);
+    expect((await loadDay(repo, d("2026-10-08"), now, "UTC")).view.scheduled).toEqual([]);
+  });
+
+  it("asks for child counts of stored items only", async () => {
+    const series = makeItem({ schedule: { kind: "day", on: d("2026-10-06") }, recurrence: { kind: "series", rule: daily } });
+    const plain = makeItem({ schedule: { kind: "day", on: d("2026-10-06") } });
+    const { repo } = fakeRepo([series, plain]);
+    const asked: string[][] = [];
+    repo.childCounts = async (ids) => (asked.push(ids), {});
+    await loadDay(repo, d("2026-10-06"), new Date("2026-10-06T08:00:00Z"), "UTC");
+    expect(asked).toEqual([[plain.id]]);
   });
 });

@@ -101,8 +101,8 @@ function slow<A extends unknown[], R>(write: (...args: A) => Promise<R>) {
 export const actions: NotesActions = {
   create: slow(() => createNote(store.notes)),
   save: slow((noteId: string, c: { title: string; body: unknown }) => saveNote(store.notes, noteId, c.title, c.body)),
-  setArea: slow((noteId: string, a: string | null) => setItemArea(store.items, noteId, a)),
-  remove: slow((noteId: string) => deleteItem(store.items, noteId)),
+  setArea: slow((noteId: string, a: string | null) => setItemArea(store.items, noteId, a, "UTC")),
+  remove: slow((noteId: string) => deleteItem(store.items, noteId, "UTC")),
   search: async (q) => (await searchItems(store.notes, q)).map((r) => ({ ...r, href: harnessHref(r) })),
   link: slow((a: string, b: string) => linkItems(store.notes, a, b)),
   unlink: slow((l: string) => unlinkItems(store.notes, l)),

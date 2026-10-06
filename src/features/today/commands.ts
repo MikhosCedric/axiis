@@ -1,9 +1,12 @@
 import { z } from "zod";
-import { idSchema, type ItemId } from "@/domain/item";
+import { parseItemKey } from "@/domain/item-key";
+import { materialize } from "@/lib/items/occurrences";
 import type { ItemsRepo } from "@/lib/items/repo";
 import { TITLE_MAX } from "./model";
 
 export type ActionResult = { ok: true } | { ok: false; error: string };
+
+const NOT_FOUND = "That item could not be found.";
 
 const titleSchema = z.string().trim().min(1).max(TITLE_MAX);
 
@@ -20,11 +23,14 @@ export async function captureTask(repo: ItemsRepo, raw: unknown): Promise<Action
   }
 }
 
-export async function setDone(repo: ItemsRepo, rawId: unknown, done: boolean): Promise<ActionResult> {
-  const id = idSchema.safeParse(rawId);
-  if (!id.success) return { ok: false, error: "That item could not be found." };
+/** Marks an item, or one occurrence of a series, done or open again. */
+export async function setDone(repo: ItemsRepo, rawKey: unknown, done: boolean, timeZone: string): Promise<ActionResult> {
+  const key = parseItemKey(rawKey);
+  if (!key) return { ok: false, error: NOT_FOUND };
   try {
-    await repo.update(id.data as ItemId, { status: done ? "done" : "open" });
+    const id = key.kind === "item" ? key.id : (await materialize(repo, key, timeZone))?.id;
+    if (!id) return { ok: false, error: NOT_FOUND };
+    await repo.update(id, { status: done ? "done" : "open" });
     return { ok: true };
   } catch {
     return { ok: false, error: "That change did not save. Try again." };

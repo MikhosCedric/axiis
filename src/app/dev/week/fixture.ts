@@ -1,7 +1,7 @@
 import type { Area, AreaId, Item, ItemId, LocalDate } from "@/domain/item";
 import { makeItem } from "@/features/today/test-support";
 import { weekOf } from "@/features/week/model";
-import { instantAt, localMinutes, toLocalDate } from "@/lib/dates";
+import { addDays, instantAt, localMinutes, toLocalDate } from "@/lib/dates";
 
 // Fixture ids live in their own range so items captured in the harness never collide with them.
 let seq = 0;
@@ -30,7 +30,24 @@ export function seedWeek(shown: LocalDate, now: Date, timeZone: string): { items
     item({ title, areaId: area?.id ?? null, schedule: { kind: "day", on: days[day] }, ...over });
   const done = { status: "done" as const, completedAt: now };
 
+  // A weekday stand-up that started the week before: skipped on day 2, and day 3's moved to day 4 at 15:00.
+  const standup = item({
+    title: "Stand-up",
+    type: "event",
+    areaId: work.id,
+    schedule: {
+      kind: "timed",
+      start: instantAt(addDays(days[0], -7), 9 * 60 + 30, timeZone),
+      end: instantAt(addDays(days[0], -7), 9 * 60 + 45, timeZone),
+    },
+    recurrence: { kind: "series", rule: { freq: "weekly", interval: 1, byDay: ["MO", "TU", "WE", "TH", "FR"], end: { kind: "never" } } },
+  });
+  const overrideOf = (day: number) => ({ kind: "override" as const, seriesId: standup.id, originalOn: days[day] });
+
   const items: Item[] = [
+    standup,
+    anyTime(2, "Stand-up", work, { type: "event", status: "dropped", recurrence: overrideOf(2) }),
+    timed(4, "Stand-up, moved", work, 15, 0, 15, { type: "event", recurrence: overrideOf(3) }),
     timed(0, "Plan the week", work, 8, 30, 45, done),
     timed(0, "Design sync", work, 13, 0, 60, { type: "event" }),
     anyTime(0, "Pay the electricity bill", home),

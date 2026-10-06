@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useLayoutEffect, useRef, type PointerEvent as ReactPointerEvent, type RefObject } from "react";
-import type { Item } from "@/domain/item";
+import type { ShownItem } from "@/domain/item";
 import { anyTime, changes, placeAt, resizeTo, unschedule, type DropContext, type Placement } from "./drop";
 import { minutesAt, spanOf, staffAt, type Staff } from "./layout";
 
@@ -14,11 +14,11 @@ export type DropTarget =
   | { kind: "tray"; placement: Placement }
   | { kind: "anytime"; placement: Placement };
 
-export type DragPreview = { item: Item; kind: DragKind; target: DropTarget | null };
+export type DragPreview = { item: ShownItem; kind: DragKind; target: DropTarget | null };
 
 type Gesture = {
   kind: DragKind;
-  item: Item;
+  item: ShownItem;
   pointerId: number;
   x0: number;
   y0: number;
@@ -48,8 +48,8 @@ type Live = {
   ctx: DropContext;
   staves: Staff[];
   labelWidth: () => number;
-  onDrop: (item: Item, placement: Placement) => void;
-  onTap: (item: Item) => void;
+  onDrop: (item: ShownItem, placement: Placement) => void;
+  onTap: (item: ShownItem) => void;
 };
 
 const MOUSE_SLOP = 4;
@@ -206,7 +206,7 @@ export function useScoreDrag(surfaces: DragSurfaces, live: Live, setPreview: (pr
     };
   }, []);
 
-  function start(e: ReactPointerEvent<HTMLElement>, kind: DragKind, item: Item) {
+  function start(e: ReactPointerEvent<HTMLElement>, kind: DragKind, item: ShownItem) {
     if (e.button !== 0 || gesture.current) return;
     e.stopPropagation();
     const { ctx } = latest.current;

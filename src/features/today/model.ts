@@ -1,11 +1,11 @@
-import type { AreaId, DayRange, Item } from "@/domain/item";
+import type { AreaId, DayRange, ShownItem } from "@/domain/item";
 
 export const TITLE_MAX = 500;
 
 /** How an item reads on the day: dashed planned, solid live beam, hollow done. */
 export type BeamState = "planned" | "live" | "done";
 
-export type TodayEntry = { item: Item; state: BeamState };
+export type TodayEntry = { item: ShownItem; state: BeamState };
 
 export type TodayView = {
   /** Day-only items first, then timed items in start order. */
@@ -14,14 +14,14 @@ export type TodayView = {
   waiting: TodayEntry[];
 };
 
-export function stateOf(item: Item, now: Date): BeamState {
+export function stateOf(item: ShownItem, now: Date): BeamState {
   if (item.status === "done") return "done";
   const s = item.schedule;
   if (s.kind === "timed" && s.start <= now && now < s.end) return "live";
   return "planned";
 }
 
-const DAY_FIRST = (a: Item, b: Item) => {
+const DAY_FIRST = (a: ShownItem, b: ShownItem) => {
   const sa = a.schedule;
   const sb = b.schedule;
   if (sa.kind === "timed" && sb.kind === "timed") {
@@ -32,17 +32,17 @@ const DAY_FIRST = (a: Item, b: Item) => {
   return a.position - b.position || a.createdAt.getTime() - b.createdAt.getTime();
 };
 
-const NEWEST_FIRST = (a: Item, b: Item) => b.createdAt.getTime() - a.createdAt.getTime();
+const NEWEST_FIRST = (a: ShownItem, b: ShownItem) => b.createdAt.getTime() - a.createdAt.getTime();
 
-const shown = (i: Item) => i.type !== "note" && i.status !== "dropped";
+const shown = (i: ShownItem) => i.type !== "note" && i.status !== "dropped";
 
 export function buildToday(
-  items: { scheduled: Item[]; unscheduled: Item[] },
+  items: { scheduled: ShownItem[]; unscheduled: ShownItem[] },
   range: DayRange,
   now: Date,
 ): TodayView {
-  const finishedToday = (i: Item) => i.completedAt !== null && range.from <= i.completedAt && i.completedAt < range.to;
-  const entry = (item: Item): TodayEntry => ({ item, state: stateOf(item, now) });
+  const finishedToday = (i: ShownItem) => i.completedAt !== null && range.from <= i.completedAt && i.completedAt < range.to;
+  const entry = (item: ShownItem): TodayEntry => ({ item, state: stateOf(item, now) });
   return {
     scheduled: items.scheduled.filter(shown).sort(DAY_FIRST).map(entry),
     waiting: items.unscheduled

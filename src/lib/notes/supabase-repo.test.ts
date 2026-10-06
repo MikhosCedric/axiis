@@ -22,6 +22,8 @@ const itemRow = (id: string, over: Record<string, unknown> = {}) => ({
   scheduled_on: null,
   due_on: null,
   rrule: null,
+  series_id: null,
+  original_on: null,
   completed_at: null,
   created_at: T,
   updated_at: T,

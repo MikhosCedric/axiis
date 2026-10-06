@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import type { LocalDate, NewItem, Schedule } from "@/domain/item";
+import type { ItemId, LocalDate, NewItem, Schedule } from "@/domain/item";
+import type { Rule } from "@/domain/recurrence";
 import {
   InvalidScheduleError,
   areaFromRow,
@@ -12,6 +13,7 @@ import {
 const ID = "6f1c2a9e-4b7d-4c8e-9a1f-2d3e4f5a6b7c";
 const AREA_ID = "0b6e1c5d-2f3a-4e8b-8c7d-1a2b3c4d5e6f";
 const day = (s: string) => s as LocalDate;
+const weeklyOnMonday: Rule = { freq: "weekly", interval: 1, byDay: ["MO"], end: { kind: "never" } };
 
 /** Postgres renders timestamptz as `+00:00` with microseconds, not JavaScript's `Z`. */
 const pg = (iso: string | null) => (iso === null ? null : iso.replace(/\.(\d{3})Z$/, ".$1000+00:00"));
@@ -44,6 +46,8 @@ const validRow = {
   scheduled_on: null,
   due_on: null,
   rrule: null,
+  series_id: null,
+  original_on: null,
   completed_at: null,
   created_at: "2026-10-06T08:00:00+00:00",
   updated_at: "2026-10-06T08:00:00+00:00",
@@ -64,7 +68,7 @@ describe("schedule round trip", () => {
       areaId: AREA_ID as NewItem["areaId"],
       schedule,
       dueOn: day("2026-10-09"),
-      rrule: "FREQ=WEEKLY;BYDAY=MO",
+      recurrence: { kind: "series", rule: weeklyOnMonday },
     };
     const item = itemFromRow(storedRow(newItemToInsert(input)));
     expect(item.schedule).toEqual(schedule);
@@ -76,7 +80,7 @@ describe("schedule round trip", () => {
       areaId: AREA_ID,
       parentId: null,
       dueOn: "2026-10-09",
-      rrule: "FREQ=WEEKLY;BYDAY=MO",
+      recurrence: { kind: "series", rule: weeklyOnMonday },
       completedAt: null,
     });
     expect(item.createdAt).toEqual(new Date("2026-10-06T08:00:00.123Z"));
@@ -110,6 +114,8 @@ describe("schedule round trip", () => {
       scheduled_on: null,
       due_on: null,
       rrule: null,
+      series_id: null,
+      original_on: null,
     });
   });
 
@@ -150,6 +156,35 @@ describe("itemFromRow rejects illegal rows", () => {
 
   it("reads the valid baseline row", () => {
     expect(itemFromRow(validRow).schedule).toEqual({ kind: "unscheduled" });
+    expect(itemFromRow(validRow).recurrence).toEqual({ kind: "none" });
+  });
+});
+
+describe("recurrence columns", () => {
+  const SERIES = "0b6e1c5d-2f3a-4e8b-8c7d-000000000001" as ItemId;
+
+  it("round-trips an override", () => {
+    const recurrence = { kind: "override", seriesId: SERIES, originalOn: day("2026-10-08") } as const;
+    const insert = newItemToInsert({ type: "task", title: "Standup", schedule: { kind: "day", on: day("2026-10-09") }, recurrence });
+    expect(insert).toMatchObject({ rrule: null, series_id: SERIES, original_on: "2026-10-08" });
+    expect(itemFromRow(storedRow(insert)).recurrence).toEqual(recurrence);
+  });
+
+  it("writes a series rule in canonical form", () => {
+    expect(patchToUpdate({ recurrence: { kind: "series", rule: weeklyOnMonday } }, new Date())).toEqual({
+      rrule: "FREQ=WEEKLY;BYDAY=MO",
+      series_id: null,
+      original_on: null,
+    });
+  });
+
+  it.each([
+    ["a rule outside the allowlist", { rrule: "FREQ=DAILY;BYHOUR=9", scheduled_on: "2026-10-06" }, /outside the allowlist/],
+    ["a rule on an override", { rrule: "FREQ=DAILY", series_id: SERIES, original_on: "2026-10-06" }, /both repeats and replaces/],
+    ["series_id alone", { series_id: SERIES }, /only one of series_id and original_on/],
+    ["original_on alone", { original_on: "2026-10-06" }, /only one of series_id and original_on/],
+  ])("rejects %s", (_, override, message) => {
+    expect(() => itemFromRow({ ...validRow, ...override })).toThrow(message);
   });
 });
 
@@ -162,11 +197,13 @@ describe("patchToUpdate", () => {
   });
 
   it("passes explicit nulls through so fields can be cleared", () => {
-    expect(patchToUpdate({ areaId: null, parentId: null, dueOn: null, rrule: null, body: null }, now)).toEqual({
+    expect(patchToUpdate({ areaId: null, parentId: null, dueOn: null, recurrence: { kind: "none" }, body: null }, now)).toEqual({
       area_id: null,
       parent_id: null,
       due_on: null,
       rrule: null,
+      series_id: null,
+      original_on: null,
       body: null,
     });
   });
