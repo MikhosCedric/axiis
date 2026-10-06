@@ -14,6 +14,7 @@ import {
   renameItem,
   setItemArea,
   setRepeat,
+  setTime,
   stopRepeating,
 } from "@/features/detail/commands";
 import { DetailSheet, MissingItem } from "@/features/detail/detail-sheet";
@@ -151,6 +152,7 @@ export function DetailHarness({ itemId, timeZone }: { itemId: string | null; tim
     rename: fake((repo, key: string, title: string, scope?: unknown) => renameItem(repo, key, title, timeZone, scope)),
     setDone: fake((repo, key: string, done: boolean) => setDone(repo, key, done, timeZone)),
     setArea: fake((repo, key: string, area: string | null, scope?: unknown) => setItemArea(repo, key, area, timeZone, scope)),
+    setTime: fake((repo, key: string, time: unknown, scope?: unknown) => setTime(repo, key, time, timeZone, scope)),
     addSubtask: fake(addSubtask),
     promote: fake(promoteSubtask),
     remove: fake((repo, key: string, scope?: unknown) => deleteItem(repo, key, timeZone, scope)),

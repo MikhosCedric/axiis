@@ -7,7 +7,7 @@ import { setDone } from "@/features/today/commands";
 import { area, fakeRepo, makeItem } from "@/features/today/test-support";
 import { moveItem } from "@/features/week/commands";
 import { loadOccurrences } from "@/lib/items/occurrences";
-import { deleteItem, loadDetail, renameItem, setItemArea, setRepeat, stopRepeating } from "./commands";
+import { deleteItem, loadDetail, renameItem, setItemArea, setRepeat, setTime, stopRepeating } from "./commands";
 
 const d = (s: string) => s as LocalDate;
 const TZ = "UTC";
@@ -191,6 +191,91 @@ describe("setRepeat", () => {
   });
 });
 
+describe("setTime", () => {
+  const anyTime = () => world({ schedule: { kind: "day", on: d("2026-10-06") } });
+  const timed = (start: string, end: string) => ({ kind: "timed", start: new Date(start), end: new Date(end) });
+
+  it("gives a day-only series a time on its own first date, after one occurrence was dragged", async () => {
+    const w = anyTime();
+    const at14 = timed("2026-10-06T14:00:00Z", "2026-10-06T15:00:00Z");
+    await placeItem(w.repo, w.key("2026-10-06"), { schedule: at14 }, TZ);
+    expect(await setTime(w.repo, w.key("2026-10-06"), { start: 14 * 60, length: 60 }, TZ, "all")).toEqual({ ok: true });
+    expect(w.series.schedule).toEqual(at14);
+    const next = await loadOccurrences(w.repo, { from: new Date(0), to: new Date(0), fromDate: d("2026-10-07"), toDate: d("2026-10-09") }, TZ);
+    expect(next.map((o) => o.schedule)).toEqual([
+      timed("2026-10-07T14:00:00Z", "2026-10-07T15:00:00Z"),
+      timed("2026-10-08T14:00:00Z", "2026-10-08T15:00:00Z"),
+    ]);
+  });
+
+  it("from a later occurrence, keeps the series' first date", async () => {
+    const w = world();
+    expect(await setTime(w.repo, w.key("2026-10-09"), { start: 7 * 60 + 30, length: 45 }, TZ, "all")).toEqual({ ok: true });
+    expect(w.series.schedule).toEqual(timed("2026-10-05T07:30:00Z", "2026-10-05T08:15:00Z"));
+    expect(w.overrides()).toEqual([]);
+  });
+
+  it("leaves other overrides alone, and moves the one it was changed from", async () => {
+    const w = world();
+    await renameItem(w.repo, w.key("2026-10-07"), "Kept", TZ);
+    await renameItem(w.repo, w.key("2026-10-08"), "In view", TZ);
+    const [kept, inView] = w.overrides();
+    const before = structuredClone(kept);
+    expect(await setTime(w.repo, inView.id, { start: 16 * 60, length: 30 }, TZ, "all")).toEqual({ ok: true });
+    expect(kept).toEqual(before);
+    expect(inView.schedule).toEqual(timed("2026-10-08T16:00:00Z", "2026-10-08T16:30:00Z"));
+    expect(w.series.schedule).toEqual(timed("2026-10-05T16:00:00Z", "2026-10-05T16:30:00Z"));
+  });
+
+  it("with scope one, times that occurrence only", async () => {
+    const w = anyTime();
+    expect(await setTime(w.repo, w.key("2026-10-08"), { start: 9 * 60, length: 30 }, TZ, "one")).toEqual({ ok: true });
+    expect(w.overrides()[0].schedule).toEqual(timed("2026-10-08T09:00:00Z", "2026-10-08T09:30:00Z"));
+    expect(w.series.schedule).toEqual({ kind: "day", on: "2026-10-06" });
+  });
+
+  it("keeps the wall clock across daylight saving, on the series' own date", async () => {
+    const ny = "America/New_York";
+    // Starts on a Saturday in EST; set from Monday's occurrence, which is in EDT.
+    const w = world({ schedule: { kind: "day", on: d("2026-03-07") } });
+    expect(await setTime(w.repo, w.key("2026-03-09"), { start: 9 * 60, length: 30 }, ny, "all")).toEqual({ ok: true });
+    expect(w.series.schedule).toEqual(timed("2026-03-07T14:00:00Z", "2026-03-07T14:30:00Z"));
+    const span = { from: new Date(0), to: new Date(0), fromDate: d("2026-03-09"), toDate: d("2026-03-10") };
+    expect((await loadOccurrences(w.repo, span, ny))[0].schedule).toEqual(timed("2026-03-09T13:00:00Z", "2026-03-09T13:30:00Z"));
+  });
+
+  it("moves a time the clocks skip forward with them", async () => {
+    const w = world({ schedule: { kind: "day", on: d("2026-03-08") } });
+    expect(await setTime(w.repo, w.series.id, { start: 2 * 60 + 30, length: 60 }, "America/New_York", "all")).toEqual({ ok: true });
+    // 02:30 does not exist that night, so it starts at 03:30 EDT and still lasts an hour.
+    expect(w.series.schedule).toEqual(timed("2026-03-08T07:30:00Z", "2026-03-08T08:30:00Z"));
+  });
+
+  it("refuses all of them for something that does not repeat, and writes nothing", async () => {
+    const plain = makeItem({ schedule: { kind: "day", on: d("2026-10-06") } });
+    const orphan = makeItem({ recurrence: { kind: "override", seriesId: plain.id, originalOn: d("2026-10-06") } });
+    const { repo, calls } = fakeRepo([plain, orphan]);
+    expect(await setTime(repo, plain.id, { start: 600, length: 30 }, TZ, "all")).toEqual({ ok: false, error: "That does not repeat." });
+    expect((await setTime(repo, orphan.id, { start: 600, length: 30 }, TZ, "all")).ok).toBe(false);
+    expect(calls.update).toEqual([]);
+  });
+
+  it("refuses instants, out-of-range minutes and unknown scopes", async () => {
+    const w = anyTime();
+    const bad = [
+      { start: new Date("2026-10-06T14:00:00Z"), length: 60 },
+      { start: 1440, length: 30 },
+      { start: 600, length: 0 },
+      { start: 600.5, length: 30 },
+      null,
+    ];
+    for (const time of bad) expect((await setTime(w.repo, w.key("2026-10-06"), time, TZ, "all")).ok).toBe(false);
+    expect((await setTime(w.repo, w.key("2026-10-06"), { start: 600, length: 30 }, TZ, "every")).ok).toBe(false);
+    expect(w.calls.update).toEqual([]);
+    expect(w.calls.create).toEqual([]);
+  });
+});
+
 describe("stopRepeating", () => {
   it("ends the series the day before, and clears later overrides that are not done", async () => {
     const w = world();
@@ -232,6 +317,7 @@ describe("loadDetail for repeating items", () => {
     expect(view).toMatchObject({
       item: { id: w.key("2026-10-07"), title: "Standup", done: false },
       when: "Wednesday 7 October, 09:00 to 09:15",
+      time: { start: 9 * 60, length: 15 },
       repeat: { kind: "occurrence", preset: "daily", summary: "Every day", on: "Wednesday 7 October" },
       notesFor: w.series.id,
       nesting: { kind: "no-subtasks" },

@@ -1,17 +1,22 @@
 import { z } from "zod";
 import { idSchema, repeats, type AreaId, type Item, type ItemId, type ItemPatch, type LocalDate } from "@/domain/item";
 import { parseItemKey, type ParsedItemKey } from "@/domain/item-key";
-import { addDays, toLocalDate } from "@/lib/dates";
+import { addDays, instantAt, toLocalDate } from "@/lib/dates";
 import { materialize, resolveKey } from "@/lib/items/occurrences";
 import type { ItemsRepo } from "@/lib/items/repo";
 import type { ActionResult } from "@/features/today/commands";
 import { TITLE_MAX } from "@/features/today/model";
-import { buildDetail, subtaskPolicy, type DetailView, type Scope } from "./model";
+import { DAY_MINUTES } from "@/features/score/layout";
+import { buildDetail, subtaskPolicy, type DetailView, type Scope, type TimeOfDay } from "./model";
 import { repeatSchema, ruleFor } from "./repeat";
 
 const titleSchema = z.string().trim().min(1).max(TITLE_MAX);
 const areaSchema = idSchema.nullable();
 const scopeSchema = z.enum(["one", "all"]).default("one");
+const timeSchema = z.object({
+  start: z.number().int().min(0).max(DAY_MINUTES - 1),
+  length: z.number().int().min(1).max(DAY_MINUTES),
+});
 
 const TITLE_ERROR = `A title needs a few words, up to ${TITLE_MAX} characters.`;
 const MISSING = "That item is not here any more.";
@@ -118,6 +123,46 @@ export async function setItemArea(
   const areaId = areaSchema.safeParse(rawAreaId);
   if (!areaId.success) return { ok: false, error: "That area could not be found." };
   return saveTo(repo, rawKey, rawScope, timeZone, { areaId: areaId.data as AreaId | null });
+}
+
+/** The day a stored item sits on: its own, or for an override with no day, the date it stands for. */
+function dayOf(item: Item, timeZone: string): LocalDate | null {
+  return firstDayOf(item, timeZone) ?? (item.recurrence.kind === "override" ? item.recurrence.originalOn : null);
+}
+
+/**
+ * Gives an item a time of day on the day it already sits on. With scope "all"
+ * the series' own schedule moves to that time on its first date, so every
+ * occurrence without an override follows; the override it was changed from
+ * follows too, and other overrides keep their own times. Only local
+ * wall-clock minutes come from the client; the instants are worked out here.
+ */
+export async function setTime(
+  repo: ItemsRepo,
+  rawKey: unknown,
+  rawTime: unknown,
+  timeZone: string,
+  rawScope?: unknown,
+): Promise<ActionResult> {
+  const key = parseItemKey(rawKey);
+  const scope = scopeSchema.safeParse(rawScope);
+  if (!key || !scope.success) return { ok: false, error: MISSING };
+  const time = timeSchema.safeParse(rawTime);
+  if (!time.success) return { ok: false, error: "That time is not one Axiis can use." };
+  const { start, length }: TimeOfDay = time.data;
+  return attempt(async () => {
+    const items = await targets(repo, key, scope.data, timeZone);
+    if (items.length === 0) return { ok: false, error: MISSING };
+    if (scope.data === "all" && items[0].recurrence.kind !== "series") return { ok: false, error: "That does not repeat." };
+    if (items.some((i) => i.type === "note" || dayOf(i, timeZone) === null)) {
+      return { ok: false, error: "It needs a day before it can have a time." };
+    }
+    for (const item of items) {
+      const from = instantAt(dayOf(item, timeZone)!, start, timeZone);
+      // The length is real minutes, as expansion keeps it, so a start the clocks skip never leaves it empty.
+      await repo.update(item.id, { schedule: { kind: "timed", start: from, end: new Date(from.getTime() + length * 60_000) } });
+    }
+  });
 }
 
 export async function addSubtask(repo: ItemsRepo, rawParentId: unknown, rawTitle: unknown): Promise<ActionResult> {
