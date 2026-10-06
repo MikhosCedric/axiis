@@ -111,7 +111,7 @@ export function weekSummary(week: WeekDay[], waiting: TodayEntry[]): string {
   const open = week.reduce((n, d) => n + d.entries.filter((e) => e.state !== "done").length, 0);
   const waitingOpen = waiting.filter((e) => e.state !== "done").length;
   const plan = open === 0 ? "Nothing open across the week" : `${open} open across the week`;
-  return waitingOpen ? `${plan}. ${waitingOpen} waiting for a time.` : `${plan}.`;
+  return waitingOpen ? `${plan}. ${waitingOpen} waiting.` : `${plan}.`;
 }
 
 const dayMonth = new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "long", timeZone: "UTC" });

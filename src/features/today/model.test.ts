@@ -109,7 +109,7 @@ describe("summaryLine", () => {
       [timed("a", at(8), at(9), { status: "done" }), timed("b", at(12), at(13)), timed("c", at(14), at(15))],
       [makeItem(), makeItem({ status: "done", completedAt: at(9) })],
     );
-    expect(summaryLine(v)).toBe("2 open, 1 done today. 1 waiting for a time.");
+    expect(summaryLine(v)).toBe("2 open, 1 done today. 1 waiting.");
   });
 
   it("leaves out the done count when nothing is done", () => {
@@ -127,11 +127,11 @@ describe("summaryLine", () => {
     expect(summaryLine(view([timed("a", at(8), at(9), { status: "done" })]), false)).toBe(
       "Everything planned for this day is done.",
     );
-    expect(summaryLine(view([], [makeItem()]), false)).toBe("Nothing has a time on this day. 1 waiting for a time.");
+    expect(summaryLine(view([], [makeItem()]), false)).toBe("Nothing has a time on this day. 1 waiting.");
   });
 
   it("mentions waiting items when nothing has a time", () => {
-    expect(summaryLine(view([], [makeItem(), makeItem()]))).toBe("Nothing has a time today. 2 waiting for a time.");
+    expect(summaryLine(view([], [makeItem(), makeItem()]))).toBe("Nothing has a time today. 2 waiting.");
   });
 });
 

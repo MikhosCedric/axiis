@@ -32,7 +32,7 @@ A solo productivity web app. One connected set of items, shown through many view
 
 **Score**: the Today view drawn as parallel staves, one per area, sharing one hour axis. The signature view of Axiis.
 
-**Tray**: the "Waiting for a time" list of unscheduled items on the Score. Dragging an item from the tray onto a staff schedules it.
+**Tray**: the "Waiting" list of open items with no day, under the Score and the Week. The same items make up the Inbox. Dragging an item from the tray onto a staff schedules it.
 
 **Capture**: adding an item with nothing but a title. It lands unscheduled in the tray. Must take under two seconds.
 

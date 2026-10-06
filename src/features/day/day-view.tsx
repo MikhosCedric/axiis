@@ -124,7 +124,7 @@ export function DayView({
 
   function describe(item: ShownItem, placement: Placement) {
     const s = placement.schedule;
-    if (s.kind === "unscheduled") return `${item.title} is waiting for a time.`;
+    if (s.kind === "unscheduled") return `${item.title} is waiting, with no day.`;
     if (s.kind === "day") return `${item.title} is on this day, at any time.`;
     const area = areaName(placement.areaId === undefined ? item.areaId : placement.areaId);
     return `${item.title}, ${formatClock(s.start, timeZone)} to ${formatClock(s.end, timeZone)}, ${area}.`;
