@@ -4,6 +4,7 @@ import {
   deleteItem,
   promoteSubtask,
   renameItem,
+  restoreOccurrence,
   setFirstDay,
   setItemArea,
   setRepeat,
@@ -38,6 +39,7 @@ export function harnessDetailActions(
     remove: (key, scope) => run(() => deleteItem(repo, key, timeZone, scope)),
     setRepeat: (key, choice) => run(() => setRepeat(repo, key, choice, new Date(), timeZone)),
     stopRepeating: (key) => run(() => stopRepeating(repo, key, timeZone)),
+    restore: (key) => run(() => restoreOccurrence(repo, key, timeZone)),
     addTag: (key, name) => run(() => addTag(repo, key, name, timeZone)),
     removeTag: (key, name) => run(() => removeTag(repo, key, name, timeZone)),
   };

@@ -7,7 +7,7 @@ import { setDone } from "@/features/today/commands";
 import { area, fakeRepo, makeItem } from "@/features/today/test-support";
 import { moveItem } from "@/features/week/commands";
 import { loadOccurrences } from "@/lib/items/occurrences";
-import { clearTime, deleteItem, loadDetail, renameItem, setFirstDay, setItemArea, setRepeat, setTime, stopRepeating } from "./commands";
+import { clearTime, deleteItem, loadDetail, renameItem, restoreOccurrence, setFirstDay, setItemArea, setRepeat, setTime, stopRepeating } from "./commands";
 
 const d = (s: string) => s as LocalDate;
 const TZ = "UTC";
@@ -128,6 +128,61 @@ describe("delete and skip", () => {
     expect(await deleteItem(w.repo, inView.id, TZ, "all")).toEqual({ ok: true });
     expect(w.items.some((i) => i.id === w.series.id || i.id === inView.id)).toBe(false);
     expect(w.overrides().map((o) => o.status)).toEqual(["done"]);
+  });
+});
+
+describe("restoreOccurrence", () => {
+  it("brings a skipped occurrence back open, keeping what was changed on it", async () => {
+    const w = world();
+    await renameItem(w.repo, w.key("2026-10-07"), "Standup, short", TZ);
+    await deleteItem(w.repo, w.key("2026-10-07"), TZ);
+    expect(await restoreOccurrence(w.repo, w.key("2026-10-07"), TZ)).toEqual({ ok: true });
+    expect(w.overrides()).toEqual([expect.objectContaining({ status: "open", title: "Standup, short" })]);
+  });
+
+  it("a second restore changes nothing and still succeeds", async () => {
+    const w = world();
+    await deleteItem(w.repo, w.key("2026-10-07"), TZ);
+    await restoreOccurrence(w.repo, w.key("2026-10-07"), TZ);
+    const writes = w.calls.update.length;
+    expect(await restoreOccurrence(w.repo, w.key("2026-10-07"), TZ)).toEqual({ ok: true });
+    expect(w.calls.update).toHaveLength(writes);
+    expect(w.overrides()).toHaveLength(1);
+  });
+
+  it("refuses one never skipped, one done, a stored id, a gone series and nonsense, and writes nothing", async () => {
+    const w = world();
+    await setDone(w.repo, w.key("2026-10-08"), true, TZ);
+    await deleteItem(w.repo, w.key("2026-10-09"), TZ);
+    const [, skipped] = w.overrides();
+    const writes = w.calls.update.length;
+    const refused = ["That one was not skipped.", "That one was not skipped.", "That item is not here any more."];
+    for (const [i, key] of [w.key("2026-10-07"), w.key("2026-10-08"), skipped.id].entries()) {
+      expect(await restoreOccurrence(w.repo, key, TZ)).toEqual({ ok: false, error: refused[i] });
+    }
+    for (const bad of [null, "", `${w.series.id}~2026-02-30`]) expect((await restoreOccurrence(w.repo, bad, TZ)).ok).toBe(false);
+    await deleteItem(w.repo, w.series.id, TZ);
+    expect((await restoreOccurrence(w.repo, w.key("2026-10-09"), TZ)).ok).toBe(false);
+    expect(w.calls.update).toHaveLength(writes);
+    expect(skipped.status).toBe("dropped");
+  });
+
+  it("the series' panel lists its skipped dates in order, each with the key that restores it", async () => {
+    const w = world();
+    await deleteItem(w.repo, w.key("2027-01-04"), TZ);
+    await deleteItem(w.repo, w.key("2026-10-09"), TZ);
+    await setDone(w.repo, w.key("2026-10-08"), true, TZ);
+    const view = await loadDetail(w.repo, { kind: "item", id: w.series.id as ItemId }, NOW, TZ);
+    expect(view?.repeat).toMatchObject({
+      kind: "series",
+      skipped: [
+        { key: w.key("2026-10-09"), on: "Friday 9 October" },
+        { key: w.key("2027-01-04"), on: "Monday 4 January 2027" },
+      ],
+    });
+    await restoreOccurrence(w.repo, w.key("2026-10-09"), TZ);
+    const after = await loadDetail(w.repo, { kind: "item", id: w.series.id as ItemId }, NOW, TZ);
+    expect(after?.repeat).toMatchObject({ skipped: [{ key: w.key("2027-01-04") }] });
   });
 });
 
