@@ -9,9 +9,9 @@ import { SELECTED_ITEM_PARAM, type DayData, type DayViewMode } from "@/features/
 import { setTime } from "@/features/detail/commands";
 import { placeItem } from "@/features/score/commands";
 import { captureTask, setDone, type ActionResult } from "@/features/today/commands";
-import { fakeRepo } from "@/features/today/test-support";
+import { fakeRepo, tagByTitle } from "@/features/today/test-support";
 import type { ItemsRepo } from "@/lib/items/repo";
-import { loadDayData } from "./fixture";
+import { loadDayData, SCORE_TAGS } from "./fixture";
 
 const LATENCY_MS = 350;
 const wait = () => new Promise((resolve) => setTimeout(resolve, LATENCY_MS));
@@ -27,7 +27,7 @@ export function ScoreHarness({
   initial: DayData;
   mode: DayViewMode;
 }) {
-  const [fake] = useState(() => fakeRepo(structuredClone(items), areas));
+  const [fake] = useState(() => tagByTitle(fakeRepo(structuredClone(items), areas), SCORE_TAGS));
   const [data, setData] = useState(initial);
   const [failing, setFailing] = useState(false);
   const selected = useSearchParams().get(SELECTED_ITEM_PARAM);

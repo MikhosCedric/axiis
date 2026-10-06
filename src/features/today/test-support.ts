@@ -190,6 +190,12 @@ export function fakeRepo(items: Item[] = [], areas: Area[] = []) {
   };
 }
 
+/** Tags stored items by title, for harness fixtures whose ids are made fresh on each load. */
+export function tagByTitle<F extends ReturnType<typeof fakeRepo>>(fake: F, byTitle: Record<string, string[]>): F {
+  for (const item of fake.items) for (const name of byTitle[item.title] ?? []) fake.tag(item.id, name);
+  return fake;
+}
+
 /** Removes every match in place, so the arrays a test holds stay live. */
 function drop<T>(list: T[], match: (entry: T) => boolean) {
   for (let i = list.length - 1; i >= 0; i--) if (match(list[i])) list.splice(i, 1);

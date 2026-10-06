@@ -90,3 +90,11 @@ export function seedWeek(shown: LocalDate, now: Date, timeZone: string): { items
   }
   return { items, areas: [work, home, health] };
 }
+
+/** Tags on fixture items, by title. The stand-up's go on its series, so every occurrence wears them. */
+export const WEEK_TAGS: Record<string, string[]> = {
+  "Write the launch brief": ["launch", "writing"],
+  "Stand-up": ["team"],
+  "Pay the electricity bill": ["bills"],
+  "Renew passport": ["errands", "travel", "admin"],
+};

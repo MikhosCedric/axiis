@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { fakeRepo } from "@/features/today/test-support";
+import { fakeRepo, tagByTitle } from "@/features/today/test-support";
 import { loadWeek } from "@/features/week/load";
 import { parseLocalDate, resolveTimeZone, toLocalDate } from "@/lib/dates";
-import { seedWeek } from "./fixture";
+import { seedWeek, WEEK_TAGS } from "./fixture";
 import { WeekHarness } from "./harness";
 
 export const metadata: Metadata = { title: "Week harness" };
@@ -17,6 +17,6 @@ export default async function WeekHarnessPage({ searchParams }: PageProps<"/dev/
   const now = new Date();
   const date = parseLocalDate(one(params.date)) ?? toLocalDate(now, timeZone);
   const { items, areas } = seedWeek(date, now, timeZone);
-  const initial = await loadWeek(fakeRepo(structuredClone(items), areas).repo, date, now, timeZone);
+  const initial = await loadWeek(tagByTitle(fakeRepo(structuredClone(items), areas), WEEK_TAGS).repo, date, now, timeZone);
   return <WeekHarness items={items} areas={areas} initial={initial} />;
 }

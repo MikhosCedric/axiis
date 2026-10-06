@@ -3,6 +3,7 @@
 import { ViewTransition } from "react";
 import { repeats, type Area, type ShownItem } from "@/domain/item";
 import { RepeatMark } from "@/features/today/repeat-mark";
+import { RowTags } from "@/features/tags/row-tags";
 import { formatClock } from "@/features/today/format";
 import { Glyph } from "@/features/today/glyph";
 import { EMPTY_TRAY, type BeamState, type TodayEntry, type TodayView } from "@/features/today/model";
@@ -19,6 +20,7 @@ export function ListView({
   areas,
   timeZone,
   childCounts,
+  tags,
   selectedId,
   justDone,
   onSelect,
@@ -28,6 +30,7 @@ export function ListView({
   areas: Area[];
   timeZone: string;
   childCounts: Record<string, ChildCount>;
+  tags: Record<string, readonly string[]>;
   selectedId: string | null;
   justDone: string | null;
   onSelect: (id: string | null) => void;
@@ -93,6 +96,7 @@ export function ListView({
               </span>
             </span>
           )}
+          <RowTags tags={tags[item.id]} />
         </button>
         <span className="pr-1 text-[13px] text-ink-3 max-rail:hidden">
           {item.areaId ? (areaName.get(item.areaId) ?? "") : ""}
