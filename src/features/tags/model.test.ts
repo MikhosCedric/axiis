@@ -1,6 +1,16 @@
 import { describe, expect, it } from "vitest";
 import type { TagId, TagName } from "@/domain/tag";
-import { byUse, openCount, splitTagTerms, suggestTags, SUGGESTIONS_MAX, tagHref, tagLine } from "./model";
+import {
+  byUse,
+  openCount,
+  splitTagTerms,
+  suggestTags,
+  SUGGESTIONS_MAX,
+  taggedSummary,
+  tagFromSegment,
+  tagHref,
+  tagLine,
+} from "./model";
 
 const names = (...n: string[]) => n as TagName[];
 
@@ -58,5 +68,28 @@ describe("words", () => {
 
   it("says how many are open without making none sound like a problem", () => {
     expect([openCount(0), openCount(1), openCount(12)]).toEqual(["None open", "1 open", "12 open"]);
+  });
+
+  it("sums up a tag's page by open and done", () => {
+    const rows = (open: number, done: number) => [
+      ...Array.from({ length: open }, () => ({ done: false })),
+      ...Array.from({ length: done }, () => ({ done: true })),
+    ];
+    expect(taggedSummary([])).toBe("Nothing carries this tag right now.");
+    expect(taggedSummary(rows(3, 0))).toBe("3 open.");
+    expect(taggedSummary(rows(2, 1))).toBe("2 open, 1 done.");
+    expect(taggedSummary(rows(0, 4))).toBe("None open, 4 done.");
+  });
+});
+
+describe("tagFromSegment", () => {
+  it("reads back the name a tag link was made from", () => {
+    for (const name of ["Deep work", "a/b?c", "50%", "a%20b", "café"]) {
+      expect(tagFromSegment(tagHref(name).slice("/tags/".length))).toBe(name);
+    }
+  });
+
+  it("takes a segment that is not valid encoding as it is", () => {
+    expect(tagFromSegment("50%")).toBe("50%");
   });
 });
