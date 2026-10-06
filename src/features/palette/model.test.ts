@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import type { ItemId, LocalDate } from "@/domain/item";
+import type { TagName } from "@/domain/tag";
 import type { SearchRow } from "@/features/notes/model";
-import { FIND_MAX, findQuery, findStatus, paletteSections, type Find } from "./model";
+import { actedLine, actSections, FIND_MAX, findQuery, findStatus, paletteSections, type Find, type Target } from "./model";
 
 const today = "2026-10-06" as LocalDate;
 const idle: Find = { status: "idle" };
@@ -93,7 +94,11 @@ describe("paletteSections", () => {
   it("opens a note in its editor and a task in the Today panel, as search links them", () => {
     const task = row(1, { type: "task", title: "Buy bulbs", href: "/today?item=1", done: true });
     const find = paletteSections("bulbs", today, { status: "done", query: "bulbs", rows: [task] }).find((s) => s.id === "find");
-    expect(find?.commands[0]).toMatchObject({ kind: "open", label: "Buy bulbs", href: "/today?item=1", type: "task", done: true });
+    expect(find?.commands[0]).toMatchObject({
+      kind: "open",
+      label: "Buy bulbs",
+      target: { key: task.id, title: "Buy bulbs", href: "/today?item=1", type: "task", done: true },
+    });
   });
 
   it("puts pages, dates, capture and results in that order", () => {
@@ -104,6 +109,60 @@ describe("paletteSections", () => {
   it("gives every command a distinct id", () => {
     const ids = paletteSections("se", today, { status: "done", query: "se", rows: [row(1), row(2)] }).flatMap((s) => s.commands.map((c) => c.id));
     expect(new Set(ids).size).toBe(ids.length);
+  });
+});
+
+const task: Target = { key: "k1", title: "dentist", type: "task", done: false, href: "/today?item=k1" };
+
+describe("the selected item", () => {
+  it("comes first when nothing is typed, and goes once typing starts", () => {
+    const sections = paletteSections("", today, idle, { ...task, href: null });
+    expect(sections.map((s) => s.id)).toEqual(["selected", "go"]);
+    expect(sections[0].commands).toEqual([{ kind: "open", id: "selected", label: "dentist", detail: "", target: { ...task, href: null } }]);
+    expect(paletteSections("we", today, idle, task).map((s) => s.id)).not.toContain("selected");
+  });
+});
+
+describe("actSections", () => {
+  const acts = (input: string, target: Target = task) => actSections(input, target).flatMap((s) => s.commands.map((c) => c.label));
+
+  it("offers open, done, a day and a tag, under the item's name", () => {
+    const sections = actSections("", task);
+    expect(sections.map((s) => s.label)).toEqual(["Actions for “dentist”"]);
+    expect(sections[0].commands.map((c) => (c.kind === "act" ? c.act : null))).toEqual([
+      { do: "open", href: "/today?item=k1" },
+      { do: "done", done: true },
+      { do: "plan", when: "today" },
+      { do: "plan", when: "tomorrow" },
+      { do: "ask-tag" },
+    ]);
+    expect(acts("")).toEqual(["Open", "Mark done", "Plan for today", "Plan for tomorrow", "Add a tag"]);
+  });
+
+  it("offers to open a done item again, leaves Open out for the selected item, and gives a note only open and tag", () => {
+    expect(acts("", { ...task, done: true })).toContain("Mark open again");
+    expect(acts("", { ...task, href: null })).toEqual(["Mark done", "Plan for today", "Plan for tomorrow", "Add a tag"]);
+    expect(acts("", { ...task, type: "note" })).toEqual(["Open", "Add a tag"]);
+  });
+
+  it("filters by the typing and its other words", () => {
+    expect(acts("tom")).toEqual(["Plan for tomorrow"]);
+    expect(acts("complete")).toEqual(["Mark done"]);
+    expect(acts("zzz")).toEqual([]);
+  });
+
+  it("turns # and a name into that tag, cleaned the way tags are", () => {
+    expect(actSections("#  Deep  work", task)[0].commands).toEqual([
+      { kind: "act", id: "act-tag", label: "Tag #Deep work", act: { do: "tag", name: "Deep work" } },
+    ]);
+    expect(actSections("#", task)).toEqual([]);
+  });
+
+  it("says what each action did", () => {
+    expect(actedLine({ do: "done", done: true }, "dentist")).toBe("“dentist” is done.");
+    expect(actedLine({ do: "done", done: false }, "dentist")).toBe("“dentist” is open again.");
+    expect(actedLine({ do: "plan", when: "tomorrow" }, "dentist")).toBe("“dentist” is planned for tomorrow.");
+    expect(actedLine({ do: "tag", name: "health" as TagName }, "dentist")).toBe("“dentist” is tagged #health.");
   });
 });
 
