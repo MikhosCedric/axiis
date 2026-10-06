@@ -1,6 +1,6 @@
 # Design audit, 6 October 2026
 
-A read-only `impeccable audit` of the shipped UI against [`DESIGN.md`](../DESIGN.md). Nothing was fixed. Each finding names its severity, where it lives, the evidence, and a suggested fix.
+A read-only `impeccable audit` of the shipped UI against [`DESIGN.md`](../DESIGN.md). Each finding names its severity, where it lives, the evidence, and a suggested fix. The audit itself fixed nothing. The fixes came later on `fix-audit` (PR #22), and each finding's **Status** line says whether it was fixed or deferred, and why.
 
 ## How it was checked
 
@@ -51,6 +51,7 @@ axe reported **no violations on any of the 24 loads**, nor with the detail panel
    - **Where.** `src/features/score/score-view.tsx:398` (the label's `maxWidth: labelWidth(beam.free)`) and `:269-275` (the playhead, `z-[3]`).
    - **Evidence.** At 1280px in `/dev/score`, the 15:00 "Quick check-in" label renders as a single "Q", "Stand-up" as "Sta…" and "Plan the Lisbon trip" as "Plan the …". The 2px verdigris playhead is drawn over the label text of "Review pull requests", "Design sync 13:00" and "Inbox, now". The full title remains in `aria-label` and `title`, so this is a sighted-reader problem.
    - **Fix.** Below a minimum width (for example 4ch), show the start time alone or move the label up a row. Give labels a paper halo (`text-shadow` or a `--paper` background) so the playhead passes behind the words, not through them. Suggested command `/impeccable polish`.
+   - **Status. Deferred.** Choosing between a time-only label and a second label row changes how the Score reads, which is a design call.
 
 5. **[P2, Responsive] Touch targets are mostly 32px, and short beams are 19px wide.**
    - **Where.** Icon buttons (`size-8`, 32×32) in `detail-sheet.tsx:25`, `subtasks.tsx:140`, `connected.tsx:160` and `areas-section.tsx:40`. Quarter-hour beams in `score.module.css` (`.beam`, 25px tall). The resize grip (12px, or 24px under `pointer: coarse`).
@@ -62,6 +63,7 @@ axe reported **no violations on any of the 24 loads**, nor with the detail panel
    - **Where.** `hover:bg-accent-wash` appears 41 times in 25 files, among them `nav-rail.tsx`, `detail-sheet.tsx`, `subtasks.tsx`, `inbox-view.tsx`, `rich-text.tsx` and `palette.tsx`.
    - **Evidence.** The same 14% verdigris fill marks a selected row, a drop target under a drag, and every hovered link or icon button. A pointer resting anywhere puts verdigris on screen, which works against the Now Rule (verdigris means now, a drag target, or the focused or selected thing).
    - **Fix.** Add a neutral hover token, such as `--hover: rgba(28, 27, 34, 0.06)` and its dark twin, or reuse Rail Paper as the public header already does. Keep the wash for selection and drop targets. Suggested command `/impeccable quieter`.
+   - **Status. Deferred.** A new hover token, or reusing Rail Paper, adds a colour to `DESIGN.md`, which is a design call.
 
 7. **[P2, Responsive] Touch devices get keyboard instructions and no hint to press and hold.**
    - **Where.** The key help paragraph in `score-view.tsx:280-285`, the `C` key hint in `capture-field.tsx:70-75`, and the tray copy at `score-view.tsx:295-297`.
@@ -79,15 +81,18 @@ axe reported **no violations on any of the 24 loads**, nor with the detail panel
    - **Where.** `src/app/globals.css:20-52`.
    - **Evidence.** The 12 dark values appear once under `[data-theme="dark"]` and again under `prefers-color-scheme: dark`, held together by a "Keep in sync" comment. They match today.
    - **Fix.** Declare each token once with `light-dark()` and let `color-scheme` pick the theme. Set `color-scheme: light dark` on `:root`, then force `light` or `dark` from `data-theme`. Suggested command `/impeccable polish`.
+   - **Status. Deferred.** The values match today, and moving every token to `light-dark()` changes how themes are forced, so it wants its own change and a decision on browser support.
 
 10. **[P3, Implementation integrity] The page-title style is copied as a literal 10 times.**
     - **Where.** `font-serif text-[clamp(28px,3vw,40px)] leading-[1.1] font-medium tracking-[-0.015em]` in `day-view`, `week-view`, `inbox-view`, `lists-view`, `notes-list`, `search-view`, `settings-view`, `tag-index-view`, `tagged-view` and the detail harness. `note-editor.tsx:148` has already drifted to `3.2vw` and `1.15`.
     - **Fix.** Add one `@utility headline` (and `title`) in `globals.css` matching the Headline token in `DESIGN.md`, then use it everywhere. Suggested command `/impeccable typeset`.
+    - **Status. Deferred.** Whether the note title's drifted `3.2vw` and `1.15` are kept or folded in is a type decision, and the sweep touches ten screens, so it belongs in its own change.
 
 11. **[P3, Accessibility] Chip and outline-button edges are faint.**
     - **Where.** `.chip` in `score.module.css`, `quietAction` in `site-chrome.tsx`, and the outline buttons in Inbox and Settings, all bordered by Hairline.
     - **Evidence.** Hairline on Music Paper is 1.79:1 in light and 2.39:1 in dark, under the 3:1 that WCAG 1.4.11 sets for a component boundary. Each control is still identified by its text and glyph, so this is not a strict failure. But a draggable chip is something you aim at, and its edge is what you aim for.
     - **Fix.** Draw resting chips with Field Stroke (3.68:1 on Sheet) or move them to Rail Paper. Keep Hairline for rules that separate content. Suggested command `/impeccable polish`.
+    - **Status. Deferred.** Field Stroke or Rail Paper are two different looks for every chip and outline button, which is a design call.
 
 ## Harness-only notes
 
