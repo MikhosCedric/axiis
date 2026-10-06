@@ -1,14 +1,22 @@
 import { describe, expect, it } from "vitest";
 import type { LocalDate } from "@/domain/item";
-import { captureTask, setDone } from "./commands";
+import { captureChecklist, captureTask, setDone } from "./commands";
 import { formatClock, formatDayHeading } from "./format";
 import { fakeRepo, makeItem } from "./test-support";
 
 describe("captureTask", () => {
   it("creates a trimmed, unscheduled task", async () => {
-    const { repo, calls } = fakeRepo();
-    expect(await captureTask(repo, "  Renew passport ")).toEqual({ ok: true });
+    const { repo, calls, items } = fakeRepo();
+    expect(await captureTask(repo, "  Renew passport ")).toEqual({ ok: true, id: items[0].id });
     expect(calls.create).toEqual([{ type: "task", title: "Renew passport", schedule: { kind: "unscheduled" } }]);
+  });
+
+  it("captures a checklist the same way, naming the new one", async () => {
+    const { repo, calls, items } = fakeRepo();
+    expect(await captureChecklist(repo, " Pack for the coast ")).toEqual({ ok: true, id: items[0].id });
+    expect(calls.create).toEqual([{ type: "checklist", title: "Pack for the coast", schedule: { kind: "unscheduled" } }]);
+    expect(await captureChecklist(repo, "  ")).toMatchObject({ ok: false });
+    expect(calls.create).toHaveLength(1);
   });
 
   it("rejects blank, oversized and non-string titles without touching the repo", async () => {

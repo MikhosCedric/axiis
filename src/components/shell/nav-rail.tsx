@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 import type { LocalDate } from "@/domain/item";
+import { LISTS_PATH } from "@/features/lists/model";
 import { PaletteIcon } from "@/features/palette/icons";
 import { useIsMac, useOpenPalette } from "@/features/palette/palette";
 import {
@@ -24,18 +25,6 @@ export type NavArea = { id: string; name: string; open: number };
 
 const quiet =
   "flex items-center gap-2.5 rounded-md p-2 font-medium text-ink-2 hover:bg-accent-wash max-rail:p-1.5";
-
-function Soon({ icon, label }: { icon: ReactNode; label: string }) {
-  return (
-    <li className="max-rail:hidden">
-      <span className="flex items-center gap-2.5 p-2 text-ink-3">
-        {icon}
-        {label}
-        <span className="ml-auto text-xs">soon</span>
-      </span>
-    </li>
-  );
-}
 
 function NavLink({ href, current, icon, label }: { href: string; current: boolean; icon: ReactNode; label: string }) {
   return (
@@ -61,6 +50,7 @@ export function NavRail({ today, areas }: { today: LocalDate; areas: NavArea[] }
   const onToday = pathname === "/today" || pathname === `/day/${today}`;
   const onWeek = pathname === "/week" || pathname.startsWith("/week/");
   const onInbox = pathname === "/inbox";
+  const onLists = pathname === LISTS_PATH;
   const onSettings = pathname === "/settings" || pathname.startsWith("/settings/");
   const onNotes = pathname === "/notes" || pathname.startsWith("/notes/");
   const onSearch = pathname === "/search";
@@ -81,10 +71,10 @@ export function NavRail({ today, areas }: { today: LocalDate; areas: NavArea[] }
         <NavLink href="/today" current={onToday} icon={<TodayIcon />} label="Today" />
         <NavLink href="/week" current={onWeek} icon={<WeekIcon />} label="Week" />
         <NavLink href="/inbox" current={onInbox} icon={<InboxIcon />} label="Inbox" />
+        <NavLink href={LISTS_PATH} current={onLists} icon={<ListsIcon />} label="Lists" />
         <NavLink href="/notes" current={onNotes} icon={<NotesIcon />} label="Notes" />
         <NavLink href="/tags" current={onTags} icon={<TagsIcon />} label="Tags" />
         <NavLink href="/search" current={onSearch} icon={<SearchIcon />} label="Search" />
-        <Soon icon={<ListsIcon />} label="Lists" />
       </ul>
 
       {areas.length > 0 && (

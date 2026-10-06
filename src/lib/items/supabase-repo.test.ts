@@ -56,6 +56,23 @@ describe("SupabaseItemsRepo and series", () => {
     expect(q.get("limit")).toBe("200");
   });
 
+  it("reads live top-level checklists outside any override, dropped ones left out, open first then newest, at most 200", async () => {
+    const { repo, requests } = stubbed();
+    await repo.listChecklists();
+    const q = requests[0];
+    expect(Object.fromEntries(["type", "deleted_at", "parent_id", "series_id", "status"].map((k) => [k, q.get(k)]))).toEqual({
+      type: "eq.checklist",
+      deleted_at: "is.null",
+      parent_id: "is.null",
+      series_id: "is.null",
+      status: "neq.dropped",
+    });
+    // Series are kept (each shows once), and a schedule does not matter.
+    expect([q.get("rrule"), q.get("start_at"), q.get("scheduled_on")]).toEqual([null, null, null]);
+    expect(q.get("order")).toBe("status.asc,created_at.desc");
+    expect(q.get("limit")).toBe("200");
+  });
+
   it("reads live overrides by the date they replace, of one series when asked", async () => {
     const { repo, requests } = stubbed();
     await repo.listOverrides(d("2026-10-05"), d("2026-10-12"));

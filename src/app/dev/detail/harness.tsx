@@ -4,28 +4,15 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import type { Area, AreaId, Item, ItemId, LocalDate } from "@/domain/item";
 import { occurrenceKey, parseItemKey } from "@/domain/item-key";
-import { setDone } from "@/features/today/commands";
 import { fakeRepo, makeItem } from "@/features/today/test-support";
-import {
-  addSubtask,
-  clearTime,
-  deleteItem,
-  loadDetail,
-  promoteSubtask,
-  renameItem,
-  setFirstDay,
-  setItemArea,
-  setRepeat,
-  setTime,
-  stopRepeating,
-} from "@/features/detail/commands";
+import { loadDetail } from "@/features/detail/commands";
 import { DetailSheet, MissingItem } from "@/features/detail/detail-sheet";
 import type { DetailActions, DetailView } from "@/features/detail/model";
 import { createLinkedNote } from "@/features/notes/commands";
-import { addTag, removeTag } from "@/features/tags/commands";
 import { connectedRow } from "@/features/notes/model";
 import { fakeNotesRepo, type NotesStore } from "@/lib/notes/fake";
 import type { LinkId } from "@/lib/notes/repo";
+import { harnessDetailActions } from "../detail-actions";
 
 const id = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, "0")}` as ItemId;
 const areaId = (n: number) => `00000000-0000-4000-9000-${String(n).padStart(12, "0")}` as AreaId;
@@ -145,30 +132,14 @@ export function DetailHarness({ itemId, timeZone }: { itemId: string | null; tim
   const [failing, setFailing] = useState(false);
   const [loaded, setLoaded] = useState<{ key: string; view: DetailView | null } | null>(null);
 
-  function fake<A extends unknown[]>(command: (repo: typeof store.repo, ...args: A) => ReturnType<DetailActions["promote"]>) {
-    return async (...args: A) => {
+  const actions: DetailActions = {
+    ...harnessDetailActions(store.repo, timeZone, async (command) => {
       await pause();
-      if (failing) return { ok: false as const, error: "That change did not save. Try again." };
-      const result = await command(store.repo, ...args);
+      if (failing) return { ok: false, error: "That change did not save. Try again." };
+      const result = await command();
       if (result.ok) setVersion((v) => v + 1);
       return result;
-    };
-  }
-
-  const actions: DetailActions = {
-    rename: fake((repo, key: string, title: string, scope?: unknown) => renameItem(repo, key, title, timeZone, scope)),
-    setDone: fake((repo, key: string, done: boolean) => setDone(repo, key, done, timeZone)),
-    setArea: fake((repo, key: string, area: string | null, scope?: unknown) => setItemArea(repo, key, area, timeZone, scope)),
-    setTime: fake((repo, key: string, time: unknown, scope?: unknown) => setTime(repo, key, time, timeZone, scope)),
-    clearTime: fake((repo, key: string, scope?: unknown) => clearTime(repo, key, timeZone, scope)),
-    setFirstDay: fake((repo, key: string, on: string) => setFirstDay(repo, key, on, timeZone)),
-    addSubtask: fake(addSubtask),
-    promote: fake(promoteSubtask),
-    remove: fake((repo, key: string, scope?: unknown) => deleteItem(repo, key, timeZone, scope)),
-    setRepeat: fake((repo, key: string, choice: unknown) => setRepeat(repo, key, choice, new Date(), timeZone)),
-    stopRepeating: fake((repo, key: string) => stopRepeating(repo, key, timeZone)),
-    addTag: fake((repo, key: string, name: string) => addTag(repo, key, name, timeZone)),
-    removeTag: fake((repo, key: string, name: string) => removeTag(repo, key, name, timeZone)),
+    }),
     newLinkedNote: async (itemId) => {
       await pause();
       if (failing) return { ok: false, error: "A new note could not be made. Try again." };
