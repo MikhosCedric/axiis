@@ -109,6 +109,31 @@ test("detail: a time set for all of them moves the series and leaves other chang
   await expect(when("When")).toHaveText(wednesday!);
 });
 
+test("detail: all of them can go back to any time and start on another day", async ({ page }) => {
+  const when = (label: string) => page.getByRole("complementary").locator("dt", { hasText: label }).locator("+ dd");
+  await page.goto("/dev/detail?item=00000000-0000-4000-8000-000000000061");
+  const wednesday = await when("When").textContent();
+  await page.getByRole("link", { name: "Repeating: Friday's run, not touched yet" }).click();
+  await expect(page.getByText("Repeats. This is the one for Friday 9 October.")).toBeVisible();
+  await expect(page.getByLabel("First day")).toHaveCount(0);
+
+  await page.getByText("All of them").click();
+  await page.getByRole("button", { name: "Any time" }).click();
+  await expect(page.getByRole("status").filter({ hasText: "All of them are at any time of day now." })).toBeVisible();
+  await expect(when("When")).toHaveText("Friday 9 October");
+
+  const first = page.getByLabel("First day");
+  await expect(first).toHaveValue("2026-10-05");
+  await first.fill("2026-10-07");
+  await first.press("Enter");
+  await expect(page.getByRole("status").filter({ hasText: "It starts on Wednesday 7 October now." })).toBeVisible();
+
+  await page.getByRole("link", { name: "Repeating: the run series itself" }).click();
+  await expect(when("Starts")).toHaveText("Wednesday 7 October");
+  await page.getByRole("link", { name: "Repeating: Wednesday's run, renamed and done" }).click();
+  await expect(when("When")).toHaveText(wednesday!);
+});
+
 test("week: dragging an item to another day plans it there", async ({ page }) => {
   await page.goto("/dev/week");
   const days = page.getByRole("region", { name: "Days" }).getByRole("region");

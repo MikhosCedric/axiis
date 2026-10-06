@@ -16,7 +16,8 @@ import { useItemHref } from "./item-href";
 import { clockOf, type DetailActions, type DetailView, type Scope } from "./model";
 import { RepeatRows } from "./repeat-control";
 import { Subtasks } from "./subtasks";
-import { TimeRow } from "./time-row";
+import { FirstDayRow, TimeRow } from "./time-row";
+import { formatDayHeading } from "@/features/today/format";
 
 const TYPE_WORD: Record<ItemType, string> = { task: "Task", event: "Event", note: "Note", checklist: "Checklist" };
 
@@ -190,6 +191,24 @@ export function DetailSheet({
                 write(
                   () => actions.setTime(item.id, time, scope),
                   scope === "all" ? () => setStatus(`All of them are at ${clockOf(time.start)} now.`) : undefined,
+                )
+              }
+              clear={() =>
+                write(
+                  () => actions.clearTime(item.id, scope),
+                  scope === "all" ? () => setStatus("All of them are at any time of day now.") : undefined,
+                )
+              }
+            />
+          )}
+
+          {isOccurrence && scope === "all" && (
+            <FirstDayRow
+              firstOn={repeat.firstOn}
+              save={(on) =>
+                write(
+                  () => actions.setFirstDay(item.id, on),
+                  () => setStatus(`It starts on ${formatDayHeading(on)} now.`),
                 )
               }
             />
