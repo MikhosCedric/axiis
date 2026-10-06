@@ -95,9 +95,9 @@ export default function PrivacyPage() {
         until your account is deleted.
       </p>
       <p>
-        Exporting all your data and deleting your account are coming to the settings page. Until they arrive, write to{" "}
-        <Blank>Contact email</Blank> and we will send you an export, or delete your account and everything in it,
-        within <Blank>Response time, such as 30 days</Blank>.
+        You can export all your data as a file, and delete your account, at any time from the Settings page. Deleting
+        your account removes it and everything in it at once, and that cannot be undone. If you cannot sign in, write
+        to <Blank>Contact email</Blank> and we will help within <Blank>Response time, such as 30 days</Blank>.
       </p>
 
       <h2>Your rights</h2>
