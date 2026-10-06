@@ -1,14 +1,39 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Besley, Hanken_Grotesk } from "next/font/google";
 import { THEME_COOKIE } from "@/components/shell/cookies";
+import { SITE_DESCRIPTION, SITE_NAME, siteUrl } from "@/lib/site";
+import { PAPER_DARK, PAPER_LIGHT } from "@/lib/theme-colors";
 import "./globals.css";
 
 const besley = Besley({ variable: "--font-besley", subsets: ["latin"] });
 const hanken = Hanken_Grotesk({ variable: "--font-hanken", subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: { default: "Axiis", template: "%s · Axiis" },
-  description: "The one place where your tasks, time and notes meet.",
+  metadataBase: siteUrl,
+  title: { default: SITE_NAME, template: `%s · ${SITE_NAME}` },
+  description: SITE_DESCRIPTION,
+  applicationName: SITE_NAME,
+  openGraph: {
+    type: "website",
+    siteName: SITE_NAME,
+    title: `${SITE_NAME} · Tasks and time, on one page`,
+    description: SITE_DESCRIPTION,
+    url: "/",
+    locale: "en",
+  },
+  twitter: {
+    card: "summary",
+    title: `${SITE_NAME} · Tasks and time, on one page`,
+    description: SITE_DESCRIPTION,
+  },
+  robots: { index: true, follow: true },
+};
+
+export const viewport: Viewport = {
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: PAPER_LIGHT },
+    { media: "(prefers-color-scheme: dark)", color: PAPER_DARK },
+  ],
 };
 
 // Runs before first paint so a saved theme never flashes the other one.
@@ -21,7 +46,15 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
-      <body className="min-h-dvh">{children}</body>
+      <body className="min-h-dvh">
+        <a
+          href="#main"
+          className="fixed top-3 left-3 z-50 -translate-y-24 rounded-md bg-ink px-4 py-2.5 font-medium text-paper focus:translate-y-0"
+        >
+          Skip to content
+        </a>
+        {children}
+      </body>
     </html>
   );
 }
