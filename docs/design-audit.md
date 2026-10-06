@@ -33,11 +33,13 @@ axe reported **no violations on any of the 24 loads**, nor with the detail panel
    - **Where.** `src/features/detail/detail-aside.tsx`, placed by `src/features/day/day-view.tsx:180-235`. The same stacking shows in `/dev/detail`.
    - **Evidence.** At 375×812, clicking "Task with subtasks, some done" renders the `<aside aria-label="Details">` at y=771, 1024px tall. Only its Close button peeks above the fold, and focus stays on the list link. In the day view the aside stacks after the whole Score, the key help and the tray, so on a phone or a tablet up to 1179px wide, tapping a beam appears to do nothing.
    - **Fix.** Below 1180px, present details as a sheet over the day (a `<dialog>` or bottom sheet, as the palette already is). At the least, scroll the aside into view and move focus to its title on open, then return focus to the beam on close. Suggested command `/impeccable adapt`.
+   - **Status. Fixed (the lesser fix).** Opening an item scrolls the panel into view and focuses it, and closing returns focus to the opener. `e2e/harness.spec.ts` checks this at 375px from a list row and from a beam. A sheet over the day remains a design option.
 
 2. **[P1, Accessibility] Quiet text in a selected Score List row fails AA contrast.**
    - **Where.** `src/features/score/list-view.tsx:61` (Any time or Waiting), `:101` (the area name) and `:15` (done rows), all on the selected row's `bg-accent-wash`.
    - **Evidence.** In `/dev/score` List view with "Design sync" selected, the area label "Work" is `rgb(98, 94, 85)` at 13px on `rgba(10, 103, 90, 0.14)` over Music Paper. That is 4.19:1 against the 4.5:1 that WCAG 1.4.3 requires. Dark mode is 4.67:1 and passes. Inbox and Lists already swap Ink Quiet for Ink Secondary on selection (`inbox-view.tsx:212`, `lists-view.tsx:83`); the Score's List view does not.
    - **Fix.** Apply the same `selected ? "text-ink-2" : "text-ink-3"` swap in `list-view.tsx`. Suggested command `/impeccable polish`.
+   - **Status. Fixed.** The selected row uses Ink Secondary for Any time, Waiting, done titles, the area name, the repeat mark and the tags. Re-measured with the same probe: every text on the selected row is now at least 6.0:1 in light and 6.78:1 in dark, where Work, Waiting, Any time, the tags and a done title were 4.19:1. `e2e/a11y.spec.ts` now runs axe on the List view with a row selected, and fails on the old colours.
 
 3. **[P1, Implementation integrity] The landing page lists shipped features as coming.**
    - **Where.** `src/app/page.tsx`: the `COMING` array and the third "How it works" measure.
