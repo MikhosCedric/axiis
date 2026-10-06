@@ -7,7 +7,7 @@ test("the landing page shows the pitch, the sample day and a way in", async ({ p
   await expect(page.getByRole("link", { name: "Sign in" }).first()).toHaveAttribute("href", "/login");
 });
 
-for (const path of ["/today", "/day/2026-10-08", "/week", "/settings", "/notes"]) {
+for (const path of ["/today", "/day/2026-10-08", "/week", "/inbox", "/settings", "/notes"]) {
   test(`${path} sends a stranger to sign in`, async ({ page }) => {
     await page.goto(path);
     await expect(page).toHaveURL(`/login?next=${encodeURIComponent(path)}`);
@@ -91,7 +91,7 @@ test("pages carry the security headers", async ({ request }) => {
   expect(headers["x-powered-by"]).toBeUndefined();
 });
 
-for (const path of ["/dev/score", "/dev/week", "/dev/detail", "/dev/notes", "/dev/settings"]) {
+for (const path of ["/dev/score", "/dev/week", "/dev/inbox", "/dev/detail", "/dev/notes", "/dev/settings"]) {
   test(`${path} is reachable in development`, async ({ page }) => {
     const response = await page.goto(path);
     expect(response?.status()).toBe(200);
