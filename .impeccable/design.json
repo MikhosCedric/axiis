@@ -1,0 +1,155 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-06T00:00:00Z",
+  "title": "Design System: Axiis",
+  "extensions": {
+    "colorMeta": {
+      "verdigris": { "role": "primary", "displayName": "Verdigris", "canonical": "#0a675a", "tonalRamp": ["oklch(22% 0.05 180)", "oklch(32% 0.07 180)", "oklch(44% 0.08 180)", "oklch(54% 0.10 180)", "oklch(64% 0.11 178)", "oklch(74% 0.11 178)", "oklch(84% 0.08 178)", "oklch(94% 0.03 178)"] },
+      "night-verdigris": { "role": "primary", "displayName": "Night Verdigris", "canonical": "#45c7b0" },
+      "verdigris-wash": { "role": "primary", "displayName": "Verdigris Wash", "canonical": "rgba(10, 103, 90, 0.14)" },
+      "music-paper": { "role": "neutral", "displayName": "Music Paper", "canonical": "#ebe4d4", "tonalRamp": ["oklch(20% 0.012 85)", "oklch(32% 0.014 85)", "oklch(45% 0.016 85)", "oklch(58% 0.018 85)", "oklch(70% 0.02 85)", "oklch(82% 0.022 85)", "oklch(91.5% 0.024 85)", "oklch(95.5% 0.016 85)"] },
+      "rail-paper": { "role": "neutral", "displayName": "Rail Paper", "canonical": "#e2dac6" },
+      "sheet": { "role": "neutral", "displayName": "Sheet", "canonical": "#f3eee1" },
+      "engraving-ink": { "role": "neutral", "displayName": "Engraving Ink", "canonical": "#1c1b22", "tonalRamp": ["#1c1b22", "#2e2c33", "#4a4741", "#625e55", "#7e796e", "#9d978a", "#bdb7a8", "#ece5d3"] },
+      "ink-secondary": { "role": "neutral", "displayName": "Ink Secondary", "canonical": "#4a4741" },
+      "ink-quiet": { "role": "neutral", "displayName": "Ink Quiet", "canonical": "#625e55" },
+      "hairline": { "role": "neutral", "displayName": "Hairline", "canonical": "rgba(28, 27, 34, 0.28)" },
+      "hairline-soft": { "role": "neutral", "displayName": "Hairline Soft", "canonical": "rgba(28, 27, 34, 0.12)" },
+      "field-stroke": { "role": "neutral", "displayName": "Field Stroke", "canonical": "rgba(28, 27, 34, 0.55)" },
+      "night-paper": { "role": "neutral", "displayName": "Night Paper", "canonical": "#16151b" },
+      "night-ink": { "role": "neutral", "displayName": "Night Ink", "canonical": "#ece5d3" }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Display", "purpose": "The landing headline only." },
+      "headline": { "displayName": "Headline", "purpose": "Every app page title." },
+      "title": { "displayName": "Title", "purpose": "Section heads, staff names, the wordmark." },
+      "body": { "displayName": "Body", "purpose": "Default app text at 14px." },
+      "label": { "displayName": "Label", "purpose": "Beam labels, secondary actions, helper copy at 13px." },
+      "caption": { "displayName": "Caption", "purpose": "Hour numerals, the now flag, counts, kbd keys; tabular." },
+      "overline": { "displayName": "Overline", "purpose": "The rail's Areas heading." }
+    },
+    "shadows": [
+      { "name": "dialog-lift", "value": "0 24px 56px -16px rgb(14 12 10 / 0.38), 0 2px 6px rgb(14 12 10 / 0.12)", "purpose": "The command palette dialog." },
+      { "name": "drag-lift", "value": "0 6px 18px rgba(28, 27, 34, 0.22)", "purpose": "The floating copy of a dragged chip." },
+      { "name": "selected-ring", "value": "inset 0 0 0 1px var(--accent)", "purpose": "Doubles a selected chip's verdigris border." }
+    ],
+    "motion": [
+      { "name": "ease-axiis", "value": "cubic-bezier(0.16, 1, 0.3, 1)", "purpose": "The house curve for every movement." },
+      { "name": "beam-glide", "value": "left/top/width 0.28s ease-axiis", "purpose": "A beam settling into a new time or area." },
+      { "name": "morph", "value": "view-transition-group 0.46s ease-axiis", "purpose": "Items morphing between Score and List." },
+      { "name": "done-sweep", "value": "0.56s ease-axiis", "purpose": "Ink sweeping through a beam on mark-done." },
+      { "name": "playhead-play", "value": "1.9s ease-axiis, 0.3s delay", "purpose": "The landing playhead sweeping from morning to now once." },
+      { "name": "dialog-rise", "value": "200ms ease-axiis", "purpose": "The palette rising in." },
+      { "name": "state-fade", "value": "0.16s", "purpose": "Opacity and drop-target wash changes." }
+    ],
+    "breakpoints": [
+      { "name": "sm", "value": "640px" },
+      { "name": "rail", "value": "760px" },
+      { "name": "landing-measures", "value": "820px" },
+      { "name": "landing-score-wide", "value": "1000px" },
+      { "name": "lg", "value": "1024px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Glyph",
+      "kind": "custom",
+      "refersTo": "glyph",
+      "description": "An item's head and beam; line form shows state: dashed planned, solid live, hollow done.",
+      "html": "<div class=\"ds-glyph-row\"><span class=\"ds-glyph ds-planned\"><span class=\"ds-beam\"></span><span class=\"ds-head\"></span></span><span class=\"ds-glyph ds-live\"><span class=\"ds-beam\"></span><span class=\"ds-head\"></span></span><span class=\"ds-glyph ds-done\"><span class=\"ds-beam\"></span><span class=\"ds-head\"></span></span></div>",
+      "css": ".ds-glyph-row { display: flex; gap: 16px; } .ds-glyph { position: relative; display: block; width: 44px; height: 16px; color: var(--ink, #1c1b22); } .ds-beam { position: absolute; left: 6px; right: 0; top: 5px; height: 7px; border: 1.5px solid currentColor; border-radius: 4px; } .ds-head { position: absolute; left: 0; top: 2px; width: 12px; height: 12px; border-radius: 50%; background: currentColor; } .ds-planned .ds-beam { border: 0; height: 6px; top: 5.5px; border-radius: 0; background: repeating-linear-gradient(to right, currentColor 0 7px, transparent 7px 11px); } .ds-live { color: var(--accent, #0a675a); } .ds-live .ds-beam { background: currentColor; height: 9px; top: 4px; } .ds-done { color: var(--ink-3, #625e55); } .ds-done .ds-head { background: var(--paper, #ebe4d4); border: 1.5px solid currentColor; box-sizing: border-box; }"
+    },
+    {
+      "name": "Public Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary-public",
+      "description": "Verdigris Sign in; the only accent-filled button.",
+      "html": "<button class=\"ds-btn-primary\">Sign in</button>",
+      "css": ".ds-btn-primary { display: inline-flex; align-items: center; padding: 12px 20px; border: 0; border-radius: 6px; background: var(--accent, #0a675a); color: var(--on-accent, #f3eee1); font: 600 15px var(--font-sans, 'Hanken Grotesk', sans-serif); transition: background-color 150ms; cursor: pointer; } .ds-btn-primary:hover { background: color-mix(in oklab, var(--accent, #0a675a) 86%, var(--ink, #1c1b22)); } .ds-btn-primary:focus-visible { outline: 2px solid var(--accent, #0a675a); outline-offset: 3px; }"
+    },
+    {
+      "name": "Ink Button",
+      "kind": "button",
+      "refersTo": "button-ink",
+      "description": "The in-app primary action.",
+      "html": "<button class=\"ds-btn-ink\">New note</button>",
+      "css": ".ds-btn-ink { display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px; border: 0; border-radius: 6px; background: var(--ink, #1c1b22); color: var(--paper, #ebe4d4); font: 500 14px var(--font-sans, 'Hanken Grotesk', sans-serif); cursor: pointer; } .ds-btn-ink:hover { opacity: 0.9; } .ds-btn-ink:focus-visible { outline: 2px solid var(--accent, #0a675a); outline-offset: 3px; }"
+    },
+    {
+      "name": "Outline Button",
+      "kind": "button",
+      "refersTo": "button-outline",
+      "description": "Secondary in-app action.",
+      "html": "<button class=\"ds-btn-outline\">Plan for today</button>",
+      "css": ".ds-btn-outline { padding: 6px 12px; border: 1px solid var(--rule, rgba(28,27,34,0.28)); border-radius: 6px; background: transparent; color: var(--ink, #1c1b22); font: 500 14px var(--font-sans, 'Hanken Grotesk', sans-serif); cursor: pointer; } .ds-btn-outline:hover { background: var(--accent-wash, rgba(10,103,90,0.14)); } .ds-btn-outline:focus-visible { outline: 2px solid var(--accent, #0a675a); outline-offset: 3px; }"
+    },
+    {
+      "name": "Capture Field",
+      "kind": "input",
+      "refersTo": "input-capture",
+      "description": "The two-second capture input with its C key hint.",
+      "html": "<div class=\"ds-capture\"><input class=\"ds-capture-input\" placeholder=\"Capture anything, then place it later\"><kbd class=\"ds-kbd\">C</kbd></div>",
+      "css": ".ds-capture { position: relative; max-width: 440px; } .ds-capture-input { width: 100%; box-sizing: border-box; padding: 10px 40px 10px 14px; border: 1px solid var(--field, rgba(28,27,34,0.55)); border-radius: 8px; background: var(--sheet, #f3eee1); color: var(--ink, #1c1b22); font: 14px var(--font-sans, 'Hanken Grotesk', sans-serif); caret-color: var(--accent, #0a675a); } .ds-capture-input::placeholder { color: var(--ink-3, #625e55); } .ds-capture-input:focus-visible { outline: 2px solid var(--accent, #0a675a); outline-offset: 3px; } .ds-kbd { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); padding: 0 6px; border: 1px solid var(--rule, rgba(28,27,34,0.28)); border-radius: 4px; font: 600 12px var(--font-sans, sans-serif); color: var(--ink-3, #625e55); }"
+    },
+    {
+      "name": "Item Chip",
+      "kind": "chip",
+      "refersTo": "chip-item",
+      "description": "An untimed item in Any time or Waiting for a time; draggable onto a staff.",
+      "html": "<div class=\"ds-chip\" tabindex=\"0\"><span class=\"ds-chip-glyph\"></span>Renew passport</div>",
+      "css": ".ds-chip { display: inline-flex; align-items: center; gap: 10px; padding: 8px 12px; border: 1px solid var(--rule, rgba(28,27,34,0.28)); border-radius: 8px; background: var(--sheet, #f3eee1); color: var(--ink, #1c1b22); font: 500 14px var(--font-sans, sans-serif); cursor: grab; } .ds-chip:hover { border-color: var(--field, rgba(28,27,34,0.55)); } .ds-chip:focus-visible { outline: 2px solid var(--accent, #0a675a); outline-offset: 3px; border-color: var(--accent, #0a675a); box-shadow: inset 0 0 0 1px var(--accent, #0a675a); } .ds-chip-glyph { width: 28px; height: 6px; background: repeating-linear-gradient(to right, currentColor 0 7px, transparent 7px 11px); border-radius: 0; }"
+    },
+    {
+      "name": "Nav Rail Link",
+      "kind": "nav",
+      "refersTo": "nav-link-current",
+      "description": "Current page in ink, others quiet with a wash on hover.",
+      "html": "<ul class=\"ds-nav\"><li><a class=\"ds-nav-link ds-current\" href=\"#\">Today</a></li><li><a class=\"ds-nav-link\" href=\"#\">Week</a></li><li><a class=\"ds-nav-link\" href=\"#\">Inbox</a></li></ul>",
+      "css": ".ds-nav { list-style: none; margin: 0; padding: 16px; display: grid; gap: 2px; background: var(--paper-2, #e2dac6); width: 180px; } .ds-nav-link { display: flex; padding: 8px; border-radius: 6px; color: var(--ink-2, #4a4741); font: 500 14px var(--font-sans, sans-serif); text-decoration: none; } .ds-nav-link:hover { background: var(--accent-wash, rgba(10,103,90,0.14)); } .ds-nav-link.ds-current { background: var(--ink, #1c1b22); color: var(--paper, #ebe4d4); } .ds-nav-link:focus-visible { outline: 2px solid var(--accent, #0a675a); outline-offset: 3px; }"
+    },
+    {
+      "name": "Now Flag and Playhead",
+      "kind": "custom",
+      "refersTo": "now-flag",
+      "description": "The clock flag on the hour axis and the verdigris rule through the staves.",
+      "html": "<div class=\"ds-axis\"><span class=\"ds-tick\" style=\"left:0\">13</span><span class=\"ds-tick\" style=\"left:76px\">14</span><span class=\"ds-flag\" style=\"left:52px\">13:41</span><div class=\"ds-playhead\" style=\"left:52px\"></div></div>",
+      "css": ".ds-axis { position: relative; height: 90px; width: 200px; border-top: 1px solid var(--rule, rgba(28,27,34,0.28)); } .ds-tick { position: absolute; top: 0; height: 34px; padding: 9px 0 0 6px; border-left: 1px solid var(--rule, rgba(28,27,34,0.28)); font: 500 12px/1 var(--font-sans, sans-serif); color: var(--ink-3, #625e55); font-variant-numeric: tabular-nums; } .ds-flag { position: absolute; top: 5px; transform: translateX(-50%); padding: 4px 6px; border-radius: 4px; background: var(--accent, #0a675a); color: var(--on-accent, #f3eee1); font: 600 12px/1 var(--font-sans, sans-serif); font-variant-numeric: tabular-nums; z-index: 1; } .ds-playhead { position: absolute; top: 34px; bottom: 0; width: 2px; margin-left: -1px; background: var(--accent, #0a675a); }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Day as a Printed Score",
+    "overview": "Axiis draws a day the way an engraver sets a page of chamber music. Each area of life (Work, Home, Health) is a staff of five faint ruled lines. One hour axis runs across every staff, with a barline on each hour and a double barline where the day ends. Items are beams laid on those lines, and their line form, not a colour, says where they stand: dashed while planned, solid while happening, hollow once done. A single verdigris playhead marks now.\n\nThe surface is warm music paper in light and a deep ink-blue night in dark, both on one set of shared tokens. Depth comes from hairlines and tonal paper steps, almost never from shadow. Type pairs Besley, a bookish serif with high contrast, for headings, staff names and the wordmark, with Hanken Grotesk for everything a hand operates. The interface is quiet by default and spacious, and its one loud moment is the colour of now.",
+    "keyCharacteristics": [
+      "One hour axis shared by every area, read left to right.",
+      "State is drawn as line form; colour is reserved.",
+      "Verdigris appears only for now, a drag target, the focused or selected thing, and the one public Sign in action.",
+      "Engraved hairlines and paper tones carry structure; shadows are rare and functional.",
+      "Serif for what you read, sans for what you operate, tabular figures for every time and count."
+    ],
+    "rules": [
+      { "name": "The Now Rule", "body": "Verdigris means now, a drag target, or the focused or selected thing. It never marks an item type, an area, a category or a success message. A screen with no now and nothing focused carries almost no verdigris.", "section": "colors" },
+      { "name": "The Ink-for-Selection Rule", "body": "The current navigation item and the active segment of a toggle are filled with ink, not verdigris. Place in the app is shown in ink; verdigris is kept for time and focus.", "section": "colors" },
+      { "name": "The No-Type-Hue Rule", "body": "PRODUCT.md allowed a small set of item-type hues. The shipped system uses none. Type is shown by glyph shape (see Components), so do not introduce type colours without revisiting that decision.", "section": "colors" },
+      { "name": "The Tabular Time Rule", "body": "Every <time>, clock, count and date numeral uses tabular figures (font-variant-numeric: tabular-nums, set globally on time and .tabular). Times never jitter as they change.", "section": "typography" },
+      { "name": "The Serif Reads, Sans Operates Rule", "body": "Besley is for names and headings a person reads. Buttons, inputs, labels and metadata are always Hanken Grotesk.", "section": "typography" },
+      { "name": "The Engraved Line Rule", "body": "If a boundary is needed, draw a hairline. A double barline (3px double Hairline) closes the end of the day and the landing's three-measure strip. Never use a shadow to separate two things that sit on the same page.", "section": "elevation" }
+    ],
+    "dos": [
+      "Do show an item's state with its line form: dashed planned, solid live, hollow done.",
+      "Do reserve Verdigris (#0a675a, dark #45c7b0) for now, a drag target, focus or selection, and the public Sign in.",
+      "Do fill the current navigation item with Engraving Ink, not verdigris.",
+      "Do draw structure with Hairline (28% ink) and Hairline Soft (12% ink), and close the end of a sequence with a 3px double rule.",
+      "Do set every time, count and date numeral in tabular figures.",
+      "Do use the house curve cubic-bezier(0.16, 1, 0.3, 1) for movement, and drop the movement under prefers-reduced-motion.",
+      "Do keep copy quiet and plain: sentence case, no exclamation marks, no guilt about overdue items (\"Waiting for a time\", \"For things that belong to the day but not to an hour.\")."
+    ],
+    "donts": [
+      "Don't colour-code item types or areas; type is the glyph's head shape.",
+      "Don't use verdigris for success, decoration, icons or headings.",
+      "Don't add shadows to cards or rows; only floating layers (the palette, a dragged chip) are lifted.",
+      "Don't set controls, labels or metadata in Besley.",
+      "Don't add gradients beyond the ruled-line patterns that draw staves and dashes.",
+      "Don't use exclamation marks, streaks, overdue reds or productivity-guru copy."
+    ]
+  }
+}
