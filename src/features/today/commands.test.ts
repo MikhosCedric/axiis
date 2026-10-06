@@ -76,23 +76,24 @@ describe("captureTask", () => {
     expect(calls.create).toHaveLength(1);
   });
 
-  it("captures a checklist the same way, naming the new one", async () => {
-    const { repo, calls, items } = fakeRepo();
-    expect(await captureChecklist(repo, " Pack for the coast ", NOW, LONDON)).toMatchObject({ ok: true, id: items[0].id, type: "checklist" });
-    expect(await captureChecklist(repo, "Pack for the city friday #trip", NOW, LONDON)).toEqual({
+  it("captures a checklist under its name as typed, unplanned, naming the new one", async () => {
+    const { repo, calls, items, tags } = fakeRepo();
+    expect(await captureChecklist(repo, " Pack for the coast ")).toMatchObject({ ok: true, id: items[0].id, type: "checklist" });
+    expect(await captureChecklist(repo, "Groceries for Sunday 9:00 #home")).toEqual({
       ok: true,
       id: items[1].id,
       type: "checklist",
-      title: "Pack for the city",
-      plan: "Friday 9 October",
-      tags: ["trip"],
+      title: "Groceries for Sunday 9:00 #home",
+      plan: null,
+      tags: [],
       missed: [],
     });
     expect(calls.create).toEqual([
       { type: "checklist", title: "Pack for the coast", schedule: { kind: "unscheduled" } },
-      { type: "checklist", title: "Pack for the city", schedule: { kind: "day", on: "2026-10-09" } },
+      { type: "checklist", title: "Groceries for Sunday 9:00 #home", schedule: { kind: "unscheduled" } },
     ]);
-    expect(await captureChecklist(repo, "  ", NOW, LONDON)).toMatchObject({ ok: false });
+    expect(tags).toEqual([]);
+    expect(await captureChecklist(repo, "  ")).toMatchObject({ ok: false });
     expect(calls.create).toHaveLength(2);
   });
 

@@ -31,21 +31,28 @@ export type CaptureResult =
 
 const TOO_LONG = `Titles can be up to ${TITLE_MAX} characters. Put the rest in a note later.`;
 
-export function captureTask(repo: ItemsRepo, raw: unknown, now: Date, timeZone: string): Promise<CaptureResult> {
-  return capture(repo, raw, "task", now, timeZone);
-}
-
-/** Captures a top-level checklist. Its lines are added in the detail panel. */
-export function captureChecklist(repo: ItemsRepo, raw: unknown, now: Date, timeZone: string): Promise<CaptureResult> {
-  return capture(repo, raw, "checklist", now, timeZone);
+/**
+ * Captures an unscheduled, top-level checklist. Its lines are added in the
+ * detail panel. Its name is taken as typed: a checklist is not planned at
+ * capture, so "Groceries for Sunday" stays a name.
+ */
+export async function captureChecklist(repo: ItemsRepo, raw: unknown): Promise<CaptureResult> {
+  const title = titleSchema.safeParse(raw);
+  if (!title.success) return { ok: false, error: TOO_LONG };
+  try {
+    const item = await repo.create({ type: "checklist", title: title.data, schedule: { kind: "unscheduled" } });
+    return { ok: true, id: item.id, type: "checklist", title: title.data, plan: null, tags: [], missed: [] };
+  } catch {
+    return { ok: false, error: NOT_SAVED };
+  }
 }
 
 /**
- * Captures an item from a line of text. A day, a time, a length and tags at
+ * Captures a task from a line of text. A day, a time, a length and tags at
  * the line's start or end are read here, on the server, against its own clock
  * and the user's time zone; the client sends only the words.
  */
-async function capture(repo: ItemsRepo, raw: unknown, type: "task" | "checklist", now: Date, timeZone: string): Promise<CaptureResult> {
+export async function captureTask(repo: ItemsRepo, raw: unknown, now: Date, timeZone: string): Promise<CaptureResult> {
   const text = titleSchema.safeParse(raw);
   if (!text.success) return { ok: false, error: TOO_LONG };
   const said = parseCapture(text.data);
@@ -67,7 +74,7 @@ async function capture(repo: ItemsRepo, raw: unknown, type: "task" | "checklist"
 
   let id: ItemId;
   try {
-    id = (await repo.create({ type, title: said.title, schedule })).id;
+    id = (await repo.create({ type: "task", title: said.title, schedule })).id;
   } catch {
     return { ok: false, error: NOT_SAVED };
   }
@@ -76,7 +83,7 @@ async function capture(repo: ItemsRepo, raw: unknown, type: "task" | "checklist"
   for (const name of said.tags) {
     ((await addTag(repo, id, name, timeZone)).ok ? tags : missed).push(name);
   }
-  return { ok: true, id, type, title: said.title, plan, tags, missed };
+  return { ok: true, id, type: "task", title: said.title, plan, tags, missed };
 }
 
 /** Marks an item, or one occurrence of a series, done or open again. */

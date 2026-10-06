@@ -129,8 +129,5 @@ describe("capturedLine", () => {
     );
     expect(capturedLine({ ...base, missed: tags("a") }, "field")).toMatch(/The tag #a did not save\.$/);
     expect(capturedLine({ ...base, type: "checklist" }, "field")).toBe("Captured. It is open, ready for its lines.");
-    expect(capturedLine({ ...base, type: "checklist", plan: "Friday 9 October", tags: tags("trip") }, "field")).toBe(
-      "Planned for Friday 9 October, with #trip. It is open, ready for its lines.",
-    );
   });
 });
