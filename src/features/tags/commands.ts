@@ -141,7 +141,8 @@ export type TaggedData = {
   full: boolean;
 };
 
-function whenOf(item: Item, timeZone: string): string | null {
+/** When an item happens, in words: its plan, or how a series repeats. Null for a note. */
+export function whenOf(item: Item, timeZone: string): string | null {
   if (item.type === "note") return null;
   const r = item.recurrence;
   if (r.kind === "series") {
