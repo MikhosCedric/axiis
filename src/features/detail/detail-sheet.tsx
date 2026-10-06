@@ -7,7 +7,7 @@ import type { AreaId, ItemType } from "@/domain/item";
 import type { ActionResult } from "@/features/today/commands";
 import { ConfirmDelete } from "./confirm-delete";
 import { GlyphCheckbox } from "./glyph-checkbox";
-import { BackIcon, CloseIcon, LiftIcon, SkipIcon, StopIcon } from "./icons";
+import { BackIcon, CloseIcon, LiftIcon, RestoreIcon, SkipIcon, StopIcon } from "./icons";
 import type { ConnectedRow } from "@/features/notes/model";
 import { RepeatMark } from "@/features/today/repeat-mark";
 import { InlineTitle } from "./inline-title";
@@ -330,6 +330,7 @@ export function DetailSheet({
           <>
             {scope === "one" && skipped ? (
               <button type="button" className={textButton} onClick={() => restore(skipped)}>
+                <RestoreIcon />
                 Restore this one
               </button>
             ) : scope === "one" ? (
