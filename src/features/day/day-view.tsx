@@ -211,11 +211,12 @@ export function DayView({
           className={`mb-2 min-h-5 text-[13px] ${status?.error ? "font-medium text-ink" : "text-ink-2"}`}
         >
           {status?.text}
+          {status?.offer && " "}
           {status?.offer && (
             <button
               type="button"
               onClick={() => timeSeries(status.offer!)}
-              className="ml-2 rounded px-1 font-medium text-ink underline decoration-rule underline-offset-2 hover:bg-accent-wash hover:decoration-ink"
+              className="-mx-1 rounded px-1 font-medium text-ink underline decoration-rule underline-offset-2 hover:bg-accent-wash hover:decoration-ink"
             >
               Same time {status.offer.cadence}
             </button>
