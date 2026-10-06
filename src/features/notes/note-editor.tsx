@@ -107,6 +107,14 @@ export function NoteEditor({ view, actions, basePath = "/notes" }: { view: NoteV
         <div className="flex min-h-8 items-center justify-between gap-3">
           <Link
             href={basePath}
+            onClick={(e) => {
+              if (!hasUnsaved(autosave.state()) || e.metaKey || e.ctrlKey || e.shiftKey) return;
+              // The list is rendered from saved notes, so the last words go out before it loads.
+              e.preventDefault();
+              void autosave.flush().then(() => {
+                if (autosave.state().kind !== "failed") router.push(basePath);
+              });
+            }}
             className="-ml-1.5 inline-flex items-center gap-1 rounded-md py-1 pr-2 pl-1 text-[13px] text-ink-2 hover:bg-accent-wash hover:text-ink"
           >
             <BackIcon />

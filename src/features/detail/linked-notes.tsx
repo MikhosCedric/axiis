@@ -25,11 +25,11 @@ export function LinkedNotes({ itemId, notes, actions }: { itemId: string; notes:
 
   return (
     <section aria-labelledby={headingId} className="grid gap-2 border-t border-rule pt-4">
-      <h3 id={headingId} className="text-[13px] font-semibold text-ink-2">
+      <h3 id={headingId} className="font-serif text-lg font-medium">
         Notes
       </h3>
       {notes.length > 0 && (
-        <ul className="grid">
+        <ul className="grid grid-cols-[minmax(0,1fr)]">
           {notes.map((n) => (
             <li key={n.linkId}>
               <Link href={n.href} className="-ml-2 block truncate rounded-md px-2 py-1 hover:bg-accent-wash">

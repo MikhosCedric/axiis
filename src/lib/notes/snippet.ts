@@ -13,7 +13,11 @@ export function queryTerms(query: string): string[] {
  * match was in the title.
  */
 export function snippetFor(text: string, query: string, width = 160): string {
-  const flat = text.replace(/\s+/g, " ").trim();
+  const flat = text
+    .split(/\n+/)
+    .map((line) => line.replace(/\s+/g, " ").trim())
+    .filter(Boolean)
+    .join(" · ");
   if (flat.length <= width) return flat;
   const lower = flat.toLowerCase();
   const hits = queryTerms(query)
