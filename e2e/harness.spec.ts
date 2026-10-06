@@ -89,6 +89,15 @@ test.describe("score", () => {
   });
 });
 
+for (const view of ["", "&view=list"]) {
+  test(`score${view}: an empty tray does not claim everything has a time while some are at any time`, async ({ page }) => {
+    await page.goto(`/dev/score?tray=empty${view}`);
+    await expect(page.getByText(/Take vitamins/).first()).toBeVisible();
+    await expect(page.getByText("Nothing is waiting for a time. What you capture lands here first.")).toBeVisible();
+    await expect(page.getByText(/Everything has a/)).toHaveCount(0);
+  });
+}
+
 test("detail: a time set for all of them moves the series and leaves other changed days alone", async ({ page }) => {
   const when = (label: string) => page.getByRole("complementary").locator("dt", { hasText: label }).locator("+ dd");
   await page.goto("/dev/detail?item=00000000-0000-4000-8000-000000000061");

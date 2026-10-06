@@ -5,7 +5,7 @@ import { repeats, type Area, type ShownItem } from "@/domain/item";
 import { RepeatMark } from "@/features/today/repeat-mark";
 import { formatClock } from "@/features/today/format";
 import { Glyph } from "@/features/today/glyph";
-import type { BeamState, TodayEntry, TodayView } from "@/features/today/model";
+import { EMPTY_TRAY, type BeamState, type TodayEntry, type TodayView } from "@/features/today/model";
 import type { ChildCount } from "@/lib/items/repo";
 
 const TITLE_WEIGHT: Record<BeamState, string> = {
@@ -119,7 +119,7 @@ export function ListView({
       {view.waiting.length ? (
         <ul>{view.waiting.map(row)}</ul>
       ) : (
-        <p className="py-3 text-ink-2">Everything has a time. Capture something new above.</p>
+        <p className="py-3 text-ink-2">{EMPTY_TRAY}</p>
       )}
     </section>
   );
