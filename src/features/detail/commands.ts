@@ -85,21 +85,26 @@ function saveTo(
   });
 }
 
-export async function loadDetail(repo: ItemsRepo, key: ParsedItemKey, timeZone: string): Promise<DetailView | null> {
+export async function loadDetail(repo: ItemsRepo, key: ParsedItemKey, now: Date, timeZone: string): Promise<DetailView | null> {
   const found = await resolveKey(repo, key, timeZone);
   if (!found) return null;
   const item = found.item;
   const policy = subtaskPolicy(item);
-  const [areas, subtasks, parent, series, known] = await Promise.all([
+  const [areas, subtasks, parent, series, known, overrides] = await Promise.all([
     repo.listAreas(),
     policy.kind === "holds-subtasks" && found.kind === "stored" ? repo.listChildren(found.item.id) : [],
     policy.kind === "is-subtask" ? repo.get(policy.parentId) : null,
     found.kind === "virtual" ? found.series : found.item.recurrence.kind === "override" ? seriesOf(repo, found.item) : null,
     repo.listTags(),
+    found.kind === "stored" && found.item.recurrence.kind === "series"
+      ? repo.listOverrides("0001-01-01" as LocalDate, "9999-12-31" as LocalDate, found.item.id)
+      : [],
   ]);
   const owner = series?.id ?? found.item.id;
   const on = byName((await repo.tagsForItems([owner as ItemId]))[owner] ?? []).map((t) => t.name);
-  return buildDetail({ item, series, areas, subtasks, parent, timeZone, tags: { on, known: byUse(known) } });
+  const today = toLocalDate(now, timeZone);
+  const skipped = overrides.flatMap((o) => (o.status === "dropped" && o.recurrence.kind === "override" ? [o.recurrence.originalOn] : []));
+  return buildDetail({ item, series, areas, subtasks, parent, timeZone, today, skipped, tags: { on, known: byUse(known) } });
 }
 
 export async function renameItem(
@@ -278,7 +283,25 @@ export async function deleteItem(repo: ItemsRepo, rawKey: unknown, timeZone: str
   });
 }
 
-const NOT_REPEATABLE = "Only a task, event or checklist with no subtasks can repeat.";
+/**
+ * Brings back a skipped occurrence, named by its occurrence key. The override
+ * keeps anything changed on it before the skip and is simply open again. An
+ * occurrence that is already back is left as it is, so a retry succeeds; one
+ * that was never skipped, or is done, is refused.
+ */
+export async function restoreOccurrence(repo: ItemsRepo, rawKey: unknown, timeZone: string): Promise<ActionResult> {
+  const key = parseItemKey(rawKey);
+  if (key?.kind !== "occurrence") return { ok: false, error: MISSING };
+  return attempt(async () => {
+    const found = await resolveKey(repo, key, timeZone);
+    if (!found) return { ok: false, error: MISSING };
+    if (found.kind === "virtual" || found.item.status === "done") return { ok: false, error: "That one was not skipped." };
+    if (!(await seriesOf(repo, found.item))) return { ok: false, error: MISSING };
+    if (found.item.status === "dropped") await repo.update(found.item.id, { status: "open" });
+  });
+}
+
+const NOT_REPEATABLE ="Only a task, event or checklist with no subtasks can repeat.";
 
 /**
  * Sets how an item repeats, or stops it. On an occurrence this changes the whole
