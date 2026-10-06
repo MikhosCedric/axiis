@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { startTransition, useId, useOptimistic, useRef, useState } from "react";
+import { startTransition, useEffect, useId, useOptimistic, useRef, useState } from "react";
 import type { AreaId, ItemType } from "@/domain/item";
 import type { ActionResult } from "@/features/today/commands";
 import { ConfirmDelete } from "./confirm-delete";
@@ -25,6 +25,8 @@ import { formatDayHeading } from "@/features/today/format";
 import { TagField } from "@/features/tags/tag-field";
 
 const TYPE_WORD: Record<ItemType, string> = { task: "Task", event: "Event", note: "Note", checklist: "Checklist" };
+const EVENT_NEEDS_TIME = "An event needs a time. Add one under Time.";
+const EVENT_NEEDS_DAY = "An event needs a day and a time. Plan it under When.";
 
 const field =
   "-ml-2 max-w-full rounded-md border border-transparent bg-transparent py-1 pr-1 pl-1.5 text-ink hover:border-rule-soft focus:border-field focus:bg-sheet";
@@ -63,6 +65,10 @@ export function DetailSheet({
   const [type, setType] = useOptimistic(item.type);
   const [justDone, setJustDone] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
+  // Set once a change to Event lands, and cleared by the next write. What it
+  // asks for is read from the view as it is now, since a plan saved alongside
+  // may have given it a day since, and it outranks that plan's own message.
+  const [needsTime, setNeedsTime] = useState(false);
   const [promoted, setPromoted] = useState(false);
   // Only an occurrence offers a choice; anything else is always its own target.
   const [scope, setScope] = useState<Scope>("one");
@@ -74,6 +80,7 @@ export function DetailSheet({
 
   function write(save: () => Promise<ActionResult>, after?: () => void) {
     setStatus(null);
+    setNeedsTime(false);
     startTransition(async () => {
       const result = await save();
       if (result.ok) after?.();
@@ -103,17 +110,7 @@ export function DetailSheet({
         setType(next);
         return actions.setType(item.id, next);
       },
-      () => {
-        if (next !== "event" || view.time !== null) return setStatus(null);
-        // An event is drawn by its time, so point at where one goes.
-        if (plan.time) {
-          setStatus("An event needs a time. Add one under Time.");
-          timeStart.current?.focus();
-        } else {
-          setStatus("An event needs a day and a time. Plan it under When.");
-          planTrigger.current?.focus();
-        }
-      },
+      () => setNeedsTime(next === "event"),
     );
   }
 
@@ -133,6 +130,13 @@ export function DetailSheet({
   // The series itself has no "This one": every change to it is to all of them.
   const seriesScope: Scope = isSeries ? "all" : scope;
   const plan = planOptions(view, scope);
+  // An event is drawn by its time, so point at where one goes.
+  const eventHint = !needsTime || view.time !== null ? null : plan.time ? EVENT_NEEDS_TIME : EVENT_NEEDS_DAY;
+
+  useEffect(() => {
+    if (eventHint === null) return;
+    (eventHint === EVENT_NEEDS_TIME ? timeStart : planTrigger).current?.focus();
+  }, [eventHint]);
 
   return (
     <aside aria-labelledby={headingId} className="grid gap-5">
@@ -362,7 +366,7 @@ export function DetailSheet({
           )}
         </dl>
         <p role="status" className="mt-2 min-h-5 text-[13px] text-ink-2">
-          {status}
+          {eventHint ?? status}
         </p>
       </div>
 
