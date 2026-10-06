@@ -13,8 +13,9 @@ import {
   type PointerEvent as ReactPointerEvent,
   type ReactNode,
 } from "react";
-import type { LocalDate, ShownItem } from "@/domain/item";
-import type { ItemKey } from "@/domain/item-key";
+import { repeats, type LocalDate, type ShownItem } from "@/domain/item";
+import { RepeatMark } from "@/features/today/repeat-mark";
+import { selectedIn, type ItemKey } from "@/domain/item-key";
 import { dayHref } from "@/features/day/nav";
 import { SELECTED_ITEM_PARAM } from "@/features/day/types";
 import { STATE_WORD } from "@/features/score/score-view";
@@ -105,6 +106,7 @@ export function WeekView({
     [items, today, timeZone, now],
   );
   const areaName = (item: ShownItem) => areas.find((a) => a.id === item.areaId)?.name ?? null;
+  const shownSelected = selectedIn(items, selectedId);
 
   function select(id: string | null) {
     startTransition(() => {
@@ -181,7 +183,7 @@ export function WeekView({
       variant={variant}
       timeZone={timeZone}
       area={areaName(entry.item)}
-      selected={selectedId === entry.item.id}
+      selected={shownSelected === entry.item.id}
       justDone={justDone === entry.item.id}
       lifted={preview?.item.id === entry.item.id}
       onPointerDown={(e) => start(e, entry.item)}
@@ -369,7 +371,7 @@ function ItemRow({
   const time = s.kind === "timed" ? formatClock(s.start, timeZone) : s.kind === "day" ? "Any time" : null;
   const spokenTime =
     s.kind === "timed" ? `${formatClock(s.start, timeZone)} to ${formatClock(s.end, timeZone)}` : (time ?? "waiting");
-  const label = [item.title, spokenTime, area, STATE_WORD[state]].filter(Boolean).join(", ");
+  const label = [item.title, spokenTime, area, STATE_WORD[state], repeats(item) && "repeats"].filter(Boolean).join(", ");
   const shape =
     variant === "chip"
       ? "inline-flex max-w-[34ch] items-center gap-2 rounded-md border border-rule bg-sheet px-2.5 py-1.5"
@@ -392,6 +394,7 @@ function ItemRow({
       <span className={`min-w-0 ${variant === "chip" ? "truncate" : ""}`}>
         <span className={`block leading-snug break-words ${variant === "chip" ? "truncate" : ""} ${TITLE_WEIGHT[state]}`}>
           {item.title}
+          {repeats(item) && <RepeatMark className="ml-1 text-ink-3" />}
         </span>
         {variant === "row" && (
           <span className="mt-0.5 flex flex-wrap gap-x-2 text-xs text-ink-3">

@@ -3,7 +3,7 @@
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useOptimistic, useState, useTransition, type ReactNode } from "react";
 import type { ShownItem } from "@/domain/item";
-import type { ItemKey } from "@/domain/item-key";
+import { selectedIn, type ItemKey } from "@/domain/item-key";
 import { placeAction } from "@/features/score/actions";
 import type { Placement } from "@/features/score/drop";
 import { ListView } from "@/features/score/list-view";
@@ -139,7 +139,16 @@ export function DayView({
     });
   }
 
-  const shared = { view, areas, timeZone, childCounts, selectedId, justDone, onSelect: select, onToggleDone: toggleDone };
+  const shared = {
+    view,
+    areas,
+    timeZone,
+    childCounts,
+    selectedId: selectedIn(items, selectedId),
+    justDone,
+    onSelect: select,
+    onToggleDone: toggleDone,
+  };
 
   return (
     <div className={selectedParam ? "min-[1180px]:grid min-[1180px]:grid-cols-[minmax(0,1fr)_328px]" : ""}>

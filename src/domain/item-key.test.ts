@@ -1,8 +1,25 @@
 import { describe, expect, it } from "vitest";
 import type { ItemId, LocalDate } from "./item";
-import { occurrenceKey, parseItemKey } from "./item-key";
+import { makeItem } from "@/features/today/test-support";
+import { occurrenceKey, parseItemKey, selectedIn } from "./item-key";
 
 const ID = "6f9619ff-8b86-4011-b42d-00c04fc964ff" as ItemId;
+
+describe("selectedIn", () => {
+  const SERIES = "6f9619ff-8b86-4011-b42d-00c04fc96400" as ItemId;
+  const override = makeItem({ recurrence: { kind: "override", seriesId: SERIES, originalOn: "2026-10-07" as LocalDate } });
+  const plain = makeItem();
+
+  it("finds an item by its id, and an override by the occurrence key it replaced", () => {
+    expect(selectedIn([plain, override], plain.id)).toBe(plain.id);
+    expect(selectedIn([plain, override], `${SERIES}~2026-10-07`)).toBe(override.id);
+  });
+
+  it("passes anything else through", () => {
+    expect(selectedIn([plain, override], `${SERIES}~2026-10-08`)).toBe(`${SERIES}~2026-10-08`);
+    expect(selectedIn([plain], null)).toBeNull();
+  });
+});
 
 describe("parseItemKey", () => {
   it("reads a stored item id", () => {
