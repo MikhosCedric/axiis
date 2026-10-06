@@ -16,6 +16,7 @@ A free, solo-user productivity web app. Tasks, a planner, checklists and notes s
 | The Score (layout, drag, list) | `src/features/score/` (pure logic in `layout.ts`, `drop.ts`, `snap.ts`) |
 | Detail panel and subtasks | `src/features/detail/` |
 | Week planner | `src/features/week/`, `src/app/(app)/week/` |
+| Inbox (open items with no day, plan for a day) | `src/features/inbox/`, `src/app/(app)/inbox/`, harness `src/app/dev/inbox/` |
 | Notes, links, search | `src/features/notes/`, `src/lib/notes/`, `src/app/(app)/{notes,search}/` |
 | Settings, areas, export, account deletion | `src/features/account/`, `src/lib/areas/`, `src/app/(app)/settings/` |
 | Landing, legal drafts, metadata, PWA, error states | `src/app/{page,privacy,terms,not-found,error,manifest,sitemap,robots}`, `src/features/landing/`, `src/components/public/`, `src/lib/site.ts` |
@@ -24,7 +25,7 @@ A free, solo-user productivity web app. Tasks, a planner, checklists and notes s
 | Shell (nav rail, theme, tz cookie) | `src/components/shell/` |
 | Design tokens | `src/app/globals.css` |
 | Database | `supabase/migrations/`, tests in `tests/db/` (PGlite, no Docker) |
-| Dev-only harness pages (blocked in production) | `src/app/dev/{score,detail}/` |
+| Dev-only harness pages (blocked in production) | `src/app/dev/{score,week,inbox,detail,notes,settings,palette}/` |
 | Visual prototype that set the direction | `prototypes/today-score/index.html` |
 
 ## Conventions that matter
@@ -62,7 +63,7 @@ Updated: see the log at the bottom. Phases:
 | 6 Public site (landing, legal drafts, metadata, PWA, error states) | done, merged (PR #6) |
 | 7 Command palette, shortcuts help, browser tests (e2e + axe) | done, merged (#10, #12) |
 | 8 Recurring tasks | done, merged (#13), migration 0004 applied |
-| 9 Tags, Inbox, Lists, DESIGN.md, audits | next (see Next up) |
+| 9 Tags, Inbox, Lists, DESIGN.md, audits | in progress: Inbox in review (`feat-inbox`); tags, Lists and the rest next |
 
 ## Accepted advisories (Supabase security advisor)
 - `delete_my_account` is executable by `authenticated` through RPC. Intended: it only deletes the caller's own account (`auth.uid()`), and `anon`/`public` are revoked.
@@ -78,7 +79,7 @@ Updated: see the log at the bottom. Phases:
 ## Next up (suggested order)
 1. Recurrence follow-ups: un-skip, a schedule editor for "All of them", years in `describeRule`.
 2. Tags: UI, filters, `tags`/`item_tags` already exist.
-3. Inbox page (unscheduled items) and a Lists page (checklists with progress).
+3. A Lists page (checklists with progress). The Inbox is in review; once merged, check it in a signed-in session.
 4. Extend e2e once a test user can sign in without the magic link.
 5. `DESIGN.md` via `impeccable document`, an a11y and `impeccable audit` pass, and a partial unique index on `areas (user_id, lower(name)) where deleted_at is null`.
 6. Order search by rank (RPC), flush pending note saves before nav-rail navigation, subtask counts on week rows, shared date picker for the day and week navs.
@@ -88,6 +89,7 @@ Updated: see the log at the bottom. Phases:
 - The Score/List view-transition morph has not been seen playing; the preview pane reports the page hidden.
 - Touch drag tested with synthetic events only.
 - Recurrence column exists but is not expanded yet.
+- The Inbox is verified by unit tests, a stubbed PostgREST query test and its dev harness (e2e and axe), not by a signed-in session.
 - Notes, week, settings, export and deletion are verified by unit tests, rolled-back SQL on the hosted project and dev harnesses, not by a signed-in browser session.
 - `[`/`]` shortcuts do nothing on layouts where those keys need AltGr; the on-screen buttons work everywhere.
 
@@ -96,6 +98,7 @@ Updated: see the log at the bottom. Phases:
 - Put real name and contact email into the privacy policy and terms (placeholders are marked).
 
 ## Log
+- 2026-10-06 (Inbox): `/inbox` with plan-for-a-day, nav and palette links, `/dev/inbox` harness; PR open from `feat-inbox`. No migration.
 - 2026-10-05: Phases 0 to 2 merged to `main` (PRs #1 to #3). Owner away; overnight run started.
 - 2026-10-06 (later): palette merged (#10); usage limit reached while e2e and recurrence were pending.
 - 2026-10-06: Prep (#4), week planner (#5), public site (#6), account (#7), notes and search (#8) merged. Migrations 0002 and 0003 applied to the hosted project and verified in rolled-back blocks. Nav links and copy refresh in progress.
