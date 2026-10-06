@@ -245,7 +245,7 @@ describe("weekSummary", () => {
       now,
     );
     expect(weekSummary(week, [entry(makeItem()), entry(makeItem({ status: "done" }))])).toBe(
-      "2 open across the week. 1 waiting for a time.",
+      "2 open across the week. 1 waiting.",
     );
     expect(weekSummary(week, [])).toBe("2 open across the week.");
     expect(weekSummary(bucketWeek([], days, "UTC", now), [])).toBe("Nothing open across the week.");

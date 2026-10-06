@@ -9,6 +9,7 @@ import { captureAction, setDoneAction } from "@/features/today/actions";
 import { CaptureField } from "@/features/today/capture-field";
 import type { ActionResult } from "@/features/today/commands";
 import { Glyph } from "@/features/today/glyph";
+import { WAITING } from "@/features/today/model";
 import { RowTags } from "@/features/tags/row-tags";
 import { planAction } from "./actions";
 import { dayWords, inboxRows, inboxSummary, planDate, type InboxData, type PlanFor } from "./model";
@@ -139,7 +140,7 @@ export function InboxView({
 
         <section aria-labelledby="inbox-list-h">
           <h2 id="inbox-list-h" className="font-serif text-lg font-medium">
-            Waiting for a day
+            {WAITING}
           </h2>
           <p className="mt-1 border-b border-rule pb-2.5 text-[13px] text-ink-2">
             Everything you captured without a day. Plan each one when you are ready.

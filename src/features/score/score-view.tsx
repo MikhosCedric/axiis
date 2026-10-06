@@ -17,7 +17,8 @@ import { tagLine } from "@/features/tags/model";
 import { RowTags } from "@/features/tags/row-tags";
 import { formatClock } from "@/features/today/format";
 import { Glyph } from "@/features/today/glyph";
-import { EMPTY_TRAY, type BeamState, type TodayEntry, type TodayView } from "@/features/today/model";
+import { SameInInbox } from "@/features/inbox/same-in-inbox";
+import { EMPTY_TRAY, WAITING, type BeamState, type TodayEntry, type TodayView } from "@/features/today/model";
 import { instantAt, localMinutes } from "@/lib/dates";
 import type { ChildCount } from "@/lib/items/repo";
 import { keyPlacement, type DropContext, type Placement } from "./drop";
@@ -294,12 +295,15 @@ export function ScoreView({
         className={`mt-7 pt-2 ${target?.kind === "tray" ? styles.dropZone : ""}`}
       >
         <h3 id="tray-h" className="font-serif text-lg leading-tight font-medium">
-          Waiting for a time
+          {WAITING}
         </h3>
         <p className="mt-1 mb-3.5 text-[13px] text-ink-3">
-          <span className="pointer-coarse:hidden">Drag one onto an area to give it a time.</span>
-          <span className="hidden pointer-coarse:inline">Press and hold one, then drag it onto an area to give it a time.</span>{" "}
-          Drag a beam back here to clear its time.
+          No day yet.{" "}
+          <span className="pointer-coarse:hidden">Drag one onto an area to plan it for a time today.</span>
+          <span className="hidden pointer-coarse:inline">
+            Press and hold one, then drag it onto an area to plan it for a time today.
+          </span>{" "}
+          Drag a beam back here to clear its day. <SameInInbox />
         </p>
         {score.waiting.length ? (
           <ul className="flex flex-wrap gap-2.5">

@@ -8,7 +8,7 @@ import { ScoreHarness } from "./harness";
 
 export const metadata: Metadata = { title: "Score harness" };
 
-/** Dev-only page that renders the day screen from fixture data, for checking the Score without a session. `?tray=empty` leaves nothing waiting for a time. */
+/** Dev-only page that renders the day screen from fixture data, for checking the Score without a session. `?tray=empty` leaves nothing waiting. */
 export default async function ScoreHarnessPage({ searchParams }: PageProps<"/dev/score">) {
   if (process.env.NODE_ENV === "production") notFound();
   const params = await searchParams;

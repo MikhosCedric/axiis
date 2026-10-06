@@ -1,5 +1,16 @@
 import { expect, test } from "@playwright/test";
 
+test("the Score and Week trays are the Inbox's waiting pile and say so", async ({ page }) => {
+  for (const path of ["/dev/score", "/dev/week"]) {
+    await page.goto(path);
+    const tray = page.getByRole("region", { name: "Waiting", exact: true });
+    await expect(tray).toContainText("No day yet.");
+    await expect(tray.getByRole("link", { name: "Inbox" })).toHaveAttribute("href", "/inbox");
+  }
+  await page.goto("/dev/inbox");
+  await expect(page.getByRole("region", { name: "Waiting", exact: true })).toBeVisible();
+});
+
 test.describe("shell on a phone", () => {
   test.use({ viewport: { width: 375, height: 812 }, hasTouch: true });
 

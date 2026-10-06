@@ -27,7 +27,8 @@ import { CaptureField } from "@/features/today/capture-field";
 import type { ActionResult } from "@/features/today/commands";
 import { formatClock, formatDayHeading } from "@/features/today/format";
 import { Glyph } from "@/features/today/glyph";
-import { buildToday, EMPTY_TRAY, stateOf, type TodayEntry } from "@/features/today/model";
+import { SameInInbox } from "@/features/inbox/same-in-inbox";
+import { buildToday, EMPTY_TRAY, stateOf, WAITING, type TodayEntry } from "@/features/today/model";
 import { dayRangeFor } from "@/lib/dates";
 import { moveAction } from "./actions";
 import type { WeekData } from "./load";
@@ -123,7 +124,7 @@ export function WeekView({
   }
 
   function describe(item: ShownItem, to: Destination) {
-    if (to === "tray") return `${item.title} is waiting for a time.`;
+    if (to === "tray") return `${item.title} is waiting, with no day.`;
     const s = moveTo(item, to, timeZone).schedule;
     const at = s.kind === "timed" ? ` at ${formatClock(s.start, timeZone)}` : "";
     return `${item.title} is on ${formatDayHeading(to)}${at}.`;
@@ -246,10 +247,11 @@ export function WeekView({
           }`}
         >
           <h2 id="week-tray-h" className="font-serif text-lg leading-tight font-medium">
-            Waiting for a time
+            {WAITING}
           </h2>
           <p className="mt-1 mb-3.5 text-[13px] text-ink-3">
-            Drag one onto a day to plan it for that day. Drag a planned item back here to clear its day.
+            No day yet. Drag one onto a day to plan it for that day. Drag a planned item back here to clear its day.{" "}
+            <SameInInbox />
           </p>
           {waiting.length ? (
             <ul className="flex flex-wrap gap-2.5">
