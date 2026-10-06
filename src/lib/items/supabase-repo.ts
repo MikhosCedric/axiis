@@ -13,7 +13,7 @@ import {
 } from "@/domain/item";
 import { sameTag, type Tag, type TagId, type TagName, type TagSummary } from "@/domain/tag";
 import { AREA_COLUMNS, ITEM_COLUMNS, areaFromRow, itemFromRow, newItemToInsert, patchToUpdate } from "./mappers";
-import { INBOX_LIMIT, MAX_SERIES, TAGGED_LIMIT, type ChildCount, type ItemsRepo } from "./repo";
+import { INBOX_LIMIT, LISTS_LIMIT, MAX_SERIES, TAGGED_LIMIT, type ChildCount, type ItemsRepo } from "./repo";
 
 type QueryResult = { data: unknown; error: { message: string; code?: string } | null };
 
@@ -95,6 +95,19 @@ export class SupabaseItemsRepo implements ItemsRepo {
       .order("created_at", { ascending: false })
       .limit(INBOX_LIMIT);
     return unwrap("listInbox", result, itemList);
+  }
+
+  async listChecklists(): Promise<Item[]> {
+    const result = await this.items()
+      .eq("type", "checklist")
+      .is("parent_id", null)
+      .is("series_id", null)
+      .neq("status", "dropped")
+      // The status enum is declared open, done, dropped, so this puts open first.
+      .order("status")
+      .order("created_at", { ascending: false })
+      .limit(LISTS_LIMIT);
+    return unwrap("listChecklists", result, itemList);
   }
 
   async listOverrides(fromDate: LocalDate, toDate: LocalDate, seriesId?: ItemId): Promise<Item[]> {
