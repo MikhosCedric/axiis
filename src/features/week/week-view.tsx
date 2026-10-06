@@ -19,6 +19,7 @@ import { tagLine } from "@/features/tags/model";
 import { selectedIn, type ItemKey } from "@/domain/item-key";
 import { dayHref } from "@/features/day/nav";
 import { SELECTED_ITEM_PARAM } from "@/features/day/types";
+import { HelpHint } from "@/components/help-hint";
 import { DetailAside } from "@/features/detail/detail-aside";
 import { STATE_WORD } from "@/features/score/score-view";
 import { captureAction, setDoneAction } from "@/features/today/actions";
@@ -230,12 +231,12 @@ export function WeekView({
           </div>
         </section>
 
-        <p id={KEYS_ID} className="mt-3 max-w-[72ch] text-[13px] leading-relaxed text-ink-3">
+        <HelpHint id={KEYS_ID} label="Keyboard help">
           Drag an item to another day, or down to the tray to clear its day. With an item focused, <Kbd>←</Kbd>{" "}
           <Kbd>→</Kbd> move it a day, <Kbd>Backspace</Kbd> sends it to the tray, <Kbd>Space</Kbd> marks it done and{" "}
           <Kbd>Enter</Kbd> opens it. On a waiting item, <Kbd>↑</Kbd> gives it a day. <Kbd>[</Kbd> <Kbd>]</Kbd> change
           the week and <Kbd>T</Kbd> comes back to this one.
-        </p>
+        </HelpHint>
 
         <section
           data-drop="tray"
