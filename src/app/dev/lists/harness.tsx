@@ -40,19 +40,27 @@ export function ListsHarness({ empty, itemId }: { empty: boolean; itemId: string
     };
   }, [store, itemId, version]);
 
-  async function run<R extends ActionResult>(command: () => Promise<R>): Promise<R | { ok: false; error: string }> {
-    await pause();
-    if (settings.failing) return { ok: false, error: FAILED };
-    const result = await command();
+  async function saved<R extends ActionResult>(result: R): Promise<R> {
     if (result.ok) setVersion((v) => v + 1);
     return result;
   }
 
   const actions: DetailActions = {
-    ...harnessDetailActions(store.repo, TZ, run),
+    ...harnessDetailActions(store.repo, TZ, async (command) => {
+      await pause();
+      return settings.failing ? { ok: false, error: FAILED } : saved(await command());
+    }),
     newLinkedNote: async () => ({ ok: false, error: "Notes are not part of this harness." }),
   };
-  const capture = (title: string): Promise<CaptureResult> => run(() => captureChecklist(store.repo, title));
+
+  // A failing capture fails in the repo, so the command's own words reach the field.
+  async function capture(title: string): Promise<CaptureResult> {
+    await pause();
+    const fail = async (): Promise<never> => {
+      throw new Error("harness: saves are set to fail");
+    };
+    return saved(await captureChecklist(settings.failing ? { ...store.repo, create: fail } : store.repo, title));
+  }
 
   const current = loaded && loaded.key === itemId ? loaded : null;
   const detail = current ? (
