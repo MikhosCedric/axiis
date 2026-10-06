@@ -38,20 +38,25 @@ export function clockOf(minutes: number): string {
   return `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`;
 }
 
-function minutesOf(clock: string): number | null {
-  const m = /^([01]\d|2[0-3]):([0-5]\d)$/.exec(clock);
-  return m ? Number(m[1]) * 60 + Number(m[2]) : null;
+/** Minutes past midnight for a 24-hour clock typed loosely ("14:30", "14.30", "1430", "930", "9"), or null. */
+export function minutesOf(clock: string): number | null {
+  const m = /^(\d{1,2})(?:[:.]?(\d{2}))?$/.exec(clock.trim());
+  if (!m) return null;
+  const [hours, minutes] = [Number(m[1]), Number(m[2] ?? 0)];
+  return hours < 24 && minutes < 60 ? hours * 60 + minutes : null;
 }
 
 /**
- * The time two `HH:MM` fields describe, or null without a start. An end at or
- * before the start runs past midnight; no end gives the default length.
+ * The time two clock fields describe, or null without a readable start or
+ * with an end that cannot be read. An end at or before the start runs past
+ * midnight; no end gives the default length.
  */
 export function timeFrom(start: string, end: string): TimeOfDay | null {
   const from = minutesOf(start);
   if (from === null) return null;
+  if (end.trim() === "") return { start: from, length: DEFAULT_MINUTES };
   const to = minutesOf(end);
-  return { start: from, length: to === null ? DEFAULT_MINUTES : (to - from + DAY_MINUTES) % DAY_MINUTES || DAY_MINUTES };
+  return to === null ? null : { start: from, length: (to - from + DAY_MINUTES) % DAY_MINUTES || DAY_MINUTES };
 }
 
 /**

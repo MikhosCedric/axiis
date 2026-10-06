@@ -143,6 +143,31 @@ test("detail: all of them can go back to any time and start on another day", asy
   await expect(when("When")).toHaveText(wednesday!);
 });
 
+test("detail: times are typed and shown on the 24-hour clock, and an unreadable one is not saved", async ({ page }) => {
+  const when = (label: string) => page.getByRole("complementary").locator("dt", { hasText: label }).locator("+ dd");
+  await page.goto("/dev/detail?item=00000000-0000-4000-8000-000000000070~2026-10-11");
+  const time = page.getByRole("group", { name: "Time" });
+  const start = time.getByLabel("Starts at");
+  const end = time.getByLabel("Ends at");
+
+  await start.fill("1430");
+  await end.fill("15.15");
+  await end.press("Enter");
+  await expect(start).toHaveValue("14:30");
+  await expect(end).toHaveValue("15:15");
+  await expect(when("When")).toHaveText("Sunday 11 October, 14:30 to 15:15");
+  await start.fill("930");
+  await start.press("Enter");
+  await expect(start).toHaveValue("09:30");
+  await expect(when("When")).toHaveText("Sunday 11 October, 09:30 to 15:15");
+
+  await end.fill("3pm");
+  await end.press("Enter");
+  await expect(end).toHaveAttribute("aria-invalid", "true");
+  await expect(page.getByText("That time could not be read. 24-hour clock, like 14:30 or 1430.")).toBeVisible();
+  await expect(when("When")).toHaveText("Sunday 11 October, 09:30 to 15:15");
+});
+
 test("week: dragging an item to another day plans it there", async ({ page }) => {
   await page.goto("/dev/week");
   const days = page.getByRole("region", { name: "Days" }).getByRole("region");
