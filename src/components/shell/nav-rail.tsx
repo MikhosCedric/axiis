@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 import type { LocalDate } from "@/domain/item";
-import { BrandMark, InboxIcon, ListsIcon, NotesIcon, SignOutIcon, TodayIcon } from "./icons";
+import { BrandMark, InboxIcon, ListsIcon, NotesIcon, SettingsIcon, SignOutIcon, TodayIcon, WeekIcon } from "./icons";
 import { ThemeToggle } from "./theme-toggle";
 
 export type NavArea = { id: string; name: string; open: number };
@@ -24,9 +24,30 @@ function Soon({ icon, label }: { icon: ReactNode; label: string }) {
   );
 }
 
+function NavLink({ href, current, icon, label }: { href: string; current: boolean; icon: ReactNode; label: string }) {
+  return (
+    <li>
+      <Link
+        href={href}
+        aria-current={current ? "page" : undefined}
+        className={
+          current
+            ? "flex items-center gap-2.5 rounded-md bg-ink p-2 font-medium text-paper max-rail:px-2.5 max-rail:py-1.5"
+            : `${quiet} max-rail:px-2.5`
+        }
+      >
+        {icon}
+        {label}
+      </Link>
+    </li>
+  );
+}
+
 export function NavRail({ today, areas }: { today: LocalDate; areas: NavArea[] }) {
   const pathname = usePathname();
   const onToday = pathname === "/today" || pathname === `/day/${today}`;
+  const onWeek = pathname === "/week" || pathname.startsWith("/week/");
+  const onSettings = pathname === "/settings" || pathname.startsWith("/settings/");
   return (
     <nav
       aria-label="Primary"
@@ -38,20 +59,8 @@ export function NavRail({ today, areas }: { today: LocalDate; areas: NavArea[] }
       </div>
 
       <ul className="flex gap-0.5 rail:grid">
-        <li>
-          <Link
-            href="/today"
-            aria-current={onToday ? "page" : undefined}
-            className={
-              onToday
-                ? "flex items-center gap-2.5 rounded-md bg-ink p-2 font-medium text-paper max-rail:px-2.5 max-rail:py-1.5"
-                : `${quiet} max-rail:px-2.5`
-            }
-          >
-            <TodayIcon />
-            Today
-          </Link>
-        </li>
+        <NavLink href="/today" current={onToday} icon={<TodayIcon />} label="Today" />
+        <NavLink href="/week" current={onWeek} icon={<WeekIcon />} label="Week" />
         <Soon icon={<InboxIcon />} label="Inbox" />
         <Soon icon={<NotesIcon />} label="Notes" />
         <Soon icon={<ListsIcon />} label="Lists" />
@@ -83,12 +92,28 @@ export function NavRail({ today, areas }: { today: LocalDate; areas: NavArea[] }
 
       <div className="ml-auto flex items-center gap-1 rail:mt-auto rail:ml-0 rail:grid rail:gap-0.5">
         <ThemeToggle className={`${quiet} w-full`} />
+        <Link
+          href="/settings"
+          aria-current={onSettings ? "page" : undefined}
+          className={`${quiet} w-full ${onSettings ? "bg-accent-wash text-ink" : ""}`}
+        >
+          <SettingsIcon />
+          <span className="max-rail:sr-only">Settings</span>
+        </Link>
         <form action="/auth/signout" method="post">
           <button type="submit" className={`${quiet} w-full`}>
             <SignOutIcon />
             <span className="max-rail:sr-only">Sign out</span>
           </button>
         </form>
+        <p className="mt-2 flex gap-3 px-2 text-xs text-ink-3 max-rail:hidden">
+          <Link href="/privacy" className="underline-offset-2 hover:underline">
+            Privacy
+          </Link>
+          <Link href="/terms" className="underline-offset-2 hover:underline">
+            Terms
+          </Link>
+        </p>
       </div>
     </nav>
   );
