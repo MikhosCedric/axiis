@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { startTransition, useId, useOptimistic, useState } from "react";
+import { startTransition, useEffect, useId, useOptimistic, useRef, useState } from "react";
 import type { AreaId, ItemType } from "@/domain/item";
 import type { ActionResult } from "@/features/today/commands";
 import { ConfirmDelete } from "./confirm-delete";
@@ -13,16 +13,23 @@ import { RepeatMark } from "@/features/today/repeat-mark";
 import { InlineTitle } from "./inline-title";
 import { LinkedNotes } from "./linked-notes";
 import { useItemHref } from "./item-href";
-import { clockOf, type DetailActions, type DetailView, type Scope, type SkippedDate } from "./model";
+import { clockOf, planOptions, TYPE_CHOICES, type TypeChoice, type DetailActions, type DetailView, type Scope, type SkippedDate } from "./model";
+import { PlanRow } from "./plan-row";
+import { startsRepeating } from "./repeat";
+import { dayWords, planDate } from "@/features/inbox/model";
 import { RepeatRows } from "./repeat-control";
 import { SkippedDates } from "./skipped-dates";
 import { Subtasks } from "./subtasks";
-import { FirstDayRow, TimeRow } from "./time-row";
+import { DateRow, TimeRow } from "./time-row";
 import { formatDayHeading } from "@/features/today/format";
 import { TagField } from "@/features/tags/tag-field";
 
 const TYPE_WORD: Record<ItemType, string> = { task: "Task", event: "Event", note: "Note", checklist: "Checklist" };
+const EVENT_NEEDS_TIME = "An event needs a time. Add one under Time.";
+const EVENT_NEEDS_DAY = "An event needs a day and a time. Plan it under When.";
 
+const field =
+  "-ml-2 max-w-full rounded-md border border-transparent bg-transparent py-1 pr-1 pl-1.5 text-ink hover:border-rule-soft focus:border-field focus:bg-sheet";
 const iconButton = "grid size-8 pointer-coarse:size-11 place-items-center rounded-md text-ink-2 hover:bg-accent-wash hover:text-ink";
 const textButton = "-ml-2 inline-flex items-center gap-2 rounded-md px-2 py-1 font-medium text-ink-2 hover:bg-accent-wash hover:text-ink";
 
@@ -55,16 +62,25 @@ export function DetailSheet({
   const router = useRouter();
   const [done, setDone] = useOptimistic(item.done);
   const [areaId, setAreaId] = useOptimistic(item.areaId);
+  const [type, setType] = useOptimistic(item.type);
   const [justDone, setJustDone] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
+  // Set once a change to Event lands, and cleared by the next write. What it
+  // asks for is read from the view as it is now, since a plan saved alongside
+  // may have given it a day since, and it outranks that plan's own message.
+  const [needsTime, setNeedsTime] = useState(false);
   const [promoted, setPromoted] = useState(false);
   // Only an occurrence offers a choice; anything else is always its own target.
   const [scope, setScope] = useState<Scope>("one");
+  const planTrigger = useRef<HTMLButtonElement>(null);
+  const timeStart = useRef<HTMLInputElement>(null);
   const headingId = useId();
   const areaFieldId = useId();
+  const typeFieldId = useId();
 
   function write(save: () => Promise<ActionResult>, after?: () => void) {
     setStatus(null);
+    setNeedsTime(false);
     startTransition(async () => {
       const result = await save();
       if (result.ok) after?.();
@@ -88,6 +104,16 @@ export function DetailSheet({
     });
   }
 
+  function changeType(next: TypeChoice) {
+    write(
+      () => {
+        setType(next);
+        return actions.setType(item.id, next);
+      },
+      () => setNeedsTime(next === "event"),
+    );
+  }
+
   function restore(date: SkippedDate) {
     write(
       () => actions.restore(date.key),
@@ -103,6 +129,14 @@ export function DetailSheet({
   const skipped = isOccurrence ? repeat.skipped : null;
   // The series itself has no "This one": every change to it is to all of them.
   const seriesScope: Scope = isSeries ? "all" : scope;
+  const plan = planOptions(view, scope);
+  // An event is drawn by its time, so point at where one goes.
+  const eventHint = !needsTime || view.time !== null ? null : plan.time ? EVENT_NEEDS_TIME : EVENT_NEEDS_DAY;
+
+  useEffect(() => {
+    if (eventHint === null) return;
+    (eventHint === EVENT_NEEDS_TIME ? timeStart : planTrigger).current?.focus();
+  }, [eventHint]);
 
   return (
     <aside aria-labelledby={headingId} className="grid gap-5">
@@ -132,7 +166,7 @@ export function DetailSheet({
         {item.type !== "note" && !isSeries && (
           <span className="pt-1.5">
             <GlyphCheckbox
-              type={item.type}
+              type={type}
               done={done}
               justDone={justDone}
               label={`Done: ${item.title}`}
@@ -150,6 +184,13 @@ export function DetailSheet({
           }`}
         />
       </div>
+
+      {isSeries && (
+        <p className="-mt-2 flex items-center gap-2 text-[13px] text-ink-2">
+          <RepeatMark className="text-ink-3" />
+          Repeats. Each time is ticked done on its own day, on the Score or the week.
+        </p>
+      )}
 
       {isOccurrence && (
         <div className="grid gap-2.5">
@@ -183,40 +224,84 @@ export function DetailSheet({
 
       <div>
         <dl className="grid grid-cols-[5.5rem_minmax(0,1fr)] items-baseline gap-x-3 gap-y-3">
-          <dt className="text-[13px] text-ink-3">Type</dt>
-          <dd>{TYPE_WORD[item.type]}</dd>
-
-          {view.when !== null && (
+          {view.retype ? (
             <>
-              <dt className="text-[13px] text-ink-3">{isSeries ? "Starts" : "When"}</dt>
+              <dt className="text-[13px] text-ink-3">
+                <label htmlFor={typeFieldId}>Type</label>
+              </dt>
               <dd>
-                <span className="tabular">{view.when}</span>
-                {view.due && <span className="block text-ink-2 tabular">{view.due}</span>}
+                <select
+                  id={typeFieldId}
+                  value={type}
+                  onChange={(e) => changeType(e.target.value as TypeChoice)}
+                  className={field}
+                >
+                  {TYPE_CHOICES.map((t) => (
+                    <option key={t} value={t}>
+                      {TYPE_WORD[t]}
+                    </option>
+                  ))}
+                </select>
+                {(isSeries || isOccurrence) && (
+                  <span className="block text-[13px] text-ink-2">The type belongs to every time it repeats.</span>
+                )}
               </dd>
+            </>
+          ) : (
+            <>
+              <dt className="text-[13px] text-ink-3">Type</dt>
+              <dd>{TYPE_WORD[item.type]}</dd>
             </>
           )}
 
-          {(isOccurrence || isSeries) && (
+          {view.when !== null && (
+            <PlanRow
+              label={isSeries ? "Starts" : "When"}
+              when={view.when}
+              day={view.day}
+              today={view.today}
+              days={plan.days}
+              unplan={plan.unplan}
+              trigger={planTrigger}
+              onPlan={(when) =>
+                write(
+                  () => actions.plan(item.id, when),
+                  () => {
+                    const on = dayWords(planDate(when, view.today), view.today);
+                    setStatus(isOccurrence ? `This one moved to ${on}.` : `Planned for ${on}.`);
+                  },
+                )
+              }
+              onUnplan={() => write(() => actions.unplan(item.id), () => setStatus("It has no day now."))}
+            />
+          )}
+          {plan.time && (
             <TimeRow
               time={view.time}
+              startRef={timeStart}
               save={(time) =>
                 write(
                   () => actions.setTime(item.id, time, seriesScope),
-                  seriesScope === "all" ? () => setStatus(`All of them are at ${clockOf(time.start)} now.`) : undefined,
+                  () =>
+                    setStatus(
+                      seriesScope === "all" ? `All of them are at ${clockOf(time.start)} now.` : `At ${clockOf(time.start)} now.`,
+                    ),
                 )
               }
               clear={() =>
                 write(
                   () => actions.clearTime(item.id, seriesScope),
-                  seriesScope === "all" ? () => setStatus("All of them are at any time of day now.") : undefined,
+                  () =>
+                    setStatus(seriesScope === "all" ? "All of them are at any time of day now." : "At any time of day now."),
                 )
               }
             />
           )}
 
-          {(isOccurrence || isSeries) && seriesScope === "all" && (
-            <FirstDayRow
-              firstOn={repeat.firstOn}
+          {plan.firstDay && (repeat.kind === "series" || repeat.kind === "occurrence") && (
+            <DateRow
+              label="First day"
+              on={repeat.firstOn}
               save={(on) =>
                 write(
                   () => actions.setFirstDay(item.id, on),
@@ -226,16 +311,30 @@ export function DetailSheet({
             />
           )}
 
+          {view.due.editable ? (
+            <DateRow
+              label="Due"
+              on={view.due.on}
+              save={(on) => write(() => actions.setDue(item.id, on), () => setStatus(`Due ${formatDayHeading(on)}.`))}
+              clear={{
+                label: "No due date",
+                run: () => write(() => actions.setDue(item.id, null), () => setStatus("No due date now.")),
+              }}
+            />
+          ) : (
+            view.due.on && (
+              <>
+                <dt className="text-[13px] text-ink-3">Due</dt>
+                <dd className="tabular">{formatDayHeading(view.due.on)}</dd>
+              </>
+            )
+          )}
+
           <dt className="text-[13px] text-ink-3">
             <label htmlFor={areaFieldId}>Area</label>
           </dt>
           <dd>
-            <select
-              id={areaFieldId}
-              value={areaId ?? ""}
-              onChange={(e) => changeArea(e.target.value)}
-              className="-ml-2 max-w-full rounded-md border border-transparent bg-transparent py-1 pr-1 pl-1.5 text-ink hover:border-rule-soft focus:border-field focus:bg-sheet"
-            >
+            <select id={areaFieldId} value={areaId ?? ""} onChange={(e) => changeArea(e.target.value)} className={field}>
               <option value="">None</option>
               {view.areas.map((a) => (
                 <option key={a.id} value={a.id}>
@@ -255,16 +354,19 @@ export function DetailSheet({
             <RepeatRows
               repeat={repeat}
               save={(choice, show) =>
-                write(() => {
-                  show();
-                  return actions.setRepeat(item.id, choice);
-                })
+                write(
+                  () => {
+                    show();
+                    return actions.setRepeat(item.id, choice);
+                  },
+                  repeat.kind === "off" ? () => setStatus(startsRepeating(choice, view.day, view.today)) : undefined,
+                )
               }
             />
           )}
         </dl>
         <p role="status" className="mt-2 min-h-5 text-[13px] text-ink-2">
-          {status}
+          {eventHint ?? status}
         </p>
       </div>
 

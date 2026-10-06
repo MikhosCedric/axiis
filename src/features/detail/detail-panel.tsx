@@ -14,11 +14,15 @@ import {
   renameItemAction,
   restoreOccurrenceAction,
   setAreaAction,
+  setDueAction,
   setFirstDayAction,
   setRepeatAction,
   setTimeAction,
+  setTypeAction,
   stopRepeatingAction,
+  unplanAction,
 } from "./actions";
+import { planAction } from "@/features/inbox/actions";
 import { loadDetail } from "./commands";
 import { DetailSheet, MissingItem } from "./detail-sheet";
 import type { DetailActions } from "./model";
@@ -27,7 +31,11 @@ const actions: DetailActions = {
   rename: renameItemAction,
   setDone: setDoneAction,
   setArea: setAreaAction,
+  plan: planAction,
+  unplan: unplanAction,
   setTime: setTimeAction,
+  setType: setTypeAction,
+  setDue: setDueAction,
   clearTime: clearTimeAction,
   setFirstDay: setFirstDayAction,
   addSubtask: addSubtaskAction,
@@ -49,5 +57,7 @@ export async function DetailPanel({ itemId }: { itemId: string | null }) {
   const view = await loadDetail(repo, key, getNow(), timeZone);
   if (!view) return <MissingItem />;
   const linked = await linkedNotes(notes, view.notesFor);
-  return <DetailSheet key={view.item.id} view={view} actions={actions} linkedNotes={linked} />;
+  // Keyed by the key it was opened with: the first "This one" change to an
+  // occurrence stores it under a new id, and the sheet must not remount then.
+  return <DetailSheet key={itemId} view={view} actions={actions} linkedNotes={linked} />;
 }
