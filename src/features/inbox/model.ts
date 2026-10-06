@@ -1,4 +1,5 @@
 import type { Area, Item, LocalDate } from "@/domain/item";
+import type { TagName } from "@/domain/tag";
 import { formatDayHeading } from "@/features/today/format";
 import { addDays, parseLocalDate } from "@/lib/dates";
 import type { ChildCount } from "@/lib/items/repo";
@@ -11,6 +12,8 @@ export type InboxData = {
   /** Open, unscheduled, top-level items, newest first. */
   items: Item[];
   childCounts: Record<string, ChildCount>;
+  /** Tag names by item id. */
+  tags: Record<string, TagName[]>;
   /** The read hit its cap, so older items may not be shown. */
   full: boolean;
 };

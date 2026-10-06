@@ -56,6 +56,7 @@ A virtual occurrence is drawn as a `VirtualItem` whose id is an occurrence key, 
 - **Deleting a series** soft-deletes it and leaves its overrides as ordinary items. Deleting "all of them" from an override also removes that override.
 - Changing a rule can leave an override whose date the series no longer produces. It stays as an ordinary row.
 - Linked notes on any occurrence attach to the series.
+- **Tags** live on the series. An occurrence key, or an override of a live series, shows and edits the series' tags, so every time it repeats wears the same ones and there is no "This one" for tags; the panel says "Tags belong to every time it repeats". `tagOwner` in `src/domain/tag.ts` picks the owner. An override whose series is gone (deleted, or detached by "Does not repeat") is an ordinary item and carries only tags of its own, starting with none.
 
 ## Out of scope
 

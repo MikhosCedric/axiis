@@ -1,8 +1,10 @@
 import { z } from "zod";
-import { idSchema, type AreaId, type ItemId } from "@/domain/item";
+import { idSchema, type AreaId, type Item, type ItemId } from "@/domain/item";
+import { sameTag, type TagName } from "@/domain/tag";
 import type { ItemsRepo } from "@/lib/items/repo";
 import type { LinkId, NotesRepo } from "@/lib/notes/repo";
 import { parseItemId } from "@/features/detail/commands";
+import { splitTagTerms } from "@/features/tags/model";
 import type { ActionResult } from "@/features/today/commands";
 import { SAVE_FAILED } from "./autosave";
 import { NOTE_TITLE_MAX, parseBody } from "./doc";
@@ -109,18 +111,42 @@ export async function saveNote(notes: NotesRepo, rawId: unknown, rawTitle: unkno
   }
 }
 
-/** Search across every item type, for the search page and the link picker. */
-export async function searchItems(notes: NotesRepo, rawQuery: unknown): Promise<SearchRow[]> {
+/** The live items carrying every one of the tags, or none when a tag does not exist. */
+async function carryingAll(items: ItemsRepo, names: readonly TagName[]): Promise<Item[]> {
+  const all = await items.listTags();
+  const tags = names.map((n) => all.find((t) => sameTag(t.name, n)));
+  if (tags.some((t) => !t)) return [];
+  const lists = await Promise.all(tags.map((t) => items.listTagged(t!.id)));
+  const rest = lists.slice(1).map((l) => new Set(l.map((i) => i.id as string)));
+  return lists[0].filter((i) => rest.every((ids) => ids.has(i.id)));
+}
+
+/**
+ * Search across every item type, for the search page and the link picker.
+ * `#name` words keep to items carrying that tag; an override of a tagged
+ * series counts, since it wears the series' tags. With only tags, every item
+ * carrying them is listed, most recently edited first like any search.
+ */
+export async function searchItems(notes: NotesRepo, items: ItemsRepo, rawQuery: unknown): Promise<SearchRow[]> {
   const query = parseQuery(rawQuery);
   if (!query) return [];
-  return (await notes.search(query)).map(({ item, snippet }) => ({
+  const { text, tags } = splitTagTerms(query);
+  const toRow = (item: Item, snippet: string): SearchRow => ({
     id: item.id,
     type: item.type,
     title: displayTitle(item),
     snippet,
     done: item.status === "done",
     href: hrefFor(item),
-  }));
+  });
+  if (tags.length === 0) return (await notes.search(query)).map(({ item, snippet }) => toRow(item, snippet));
+
+  const tagged = await carryingAll(items, tags);
+  if (tagged.length === 0) return [];
+  if (!text) return [...tagged].sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime()).map((i) => toRow(i, ""));
+  const ids = new Set<string>(tagged.map((i) => i.id));
+  const wears = (item: Item) => ids.has(item.id) || (item.recurrence.kind === "override" && ids.has(item.recurrence.seriesId));
+  return (await notes.search(text)).filter(({ item }) => wears(item)).map(({ item, snippet }) => toRow(item, snippet));
 }
 
 /** Connects two items. Already connected, in either direction, counts as done. */

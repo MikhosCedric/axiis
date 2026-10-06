@@ -12,6 +12,8 @@ import {
 } from "react";
 import { repeats, type Area, type LocalDate, type ShownItem } from "@/domain/item";
 import { RepeatMark } from "@/features/today/repeat-mark";
+import { tagLine } from "@/features/tags/model";
+import { RowTags } from "@/features/tags/row-tags";
 import { formatClock } from "@/features/today/format";
 import { Glyph } from "@/features/today/glyph";
 import { EMPTY_TRAY, type BeamState, type TodayEntry, type TodayView } from "@/features/today/model";
@@ -50,6 +52,7 @@ export function ScoreView({
   timeZone,
   nowMinutes,
   childCounts,
+  tags,
   selectedId,
   justDone,
   onSelect,
@@ -63,6 +66,8 @@ export function ScoreView({
   /** Local minutes of now when the day shown is today, else null. */
   nowMinutes: number | null;
   childCounts: Record<string, ChildCount>;
+  /** Tag names by shown id. Beams are too tight for them, so only their labels say them; chips show them. */
+  tags: Record<string, readonly string[]>;
   selectedId: string | null;
   justDone: string | null;
 } & ScoreHandlers) {
@@ -175,6 +180,7 @@ export function ScoreView({
                 <Chip
                   entry={entry}
                   count={childCounts[entry.item.id]}
+                  tags={tags[entry.item.id]}
                   selected={selectedId === entry.item.id}
                   justDone={justDone === entry.item.id}
                   lifted={preview?.item.id === entry.item.id && preview.kind !== "resize"}
@@ -249,6 +255,7 @@ export function ScoreView({
                   ctx={ctx}
                   preview={preview}
                   count={childCounts[beam.value.item.id]}
+                  tags={tags[beam.value.item.id]}
                   selected={selectedId === beam.value.item.id}
                   justDone={justDone === beam.value.item.id}
                   onPointerDown={(e, kind) => start(e, kind, beam.value.item)}
@@ -295,6 +302,7 @@ export function ScoreView({
                 <Chip
                   entry={entry}
                   count={childCounts[entry.item.id]}
+                  tags={tags[entry.item.id]}
                   selected={selectedId === entry.item.id}
                   justDone={justDone === entry.item.id}
                   lifted={preview?.item.id === entry.item.id && preview.kind !== "resize"}
@@ -338,6 +346,7 @@ function BeamView({
   ctx,
   preview,
   count,
+  tags,
   selected,
   justDone,
   onPointerDown,
@@ -348,6 +357,7 @@ function BeamView({
   ctx: DropContext;
   preview: DragPreview | null;
   count: ChildCount | undefined;
+  tags: readonly string[] | undefined;
   selected: boolean;
   justDone: boolean;
   onPointerDown: (e: ReactPointerEvent<HTMLElement>, kind: "move" | "resize") => void;
@@ -374,7 +384,7 @@ function BeamView({
       role="button"
       tabIndex={0}
       aria-pressed={selected}
-      aria-label={`${item.title}, ${startClock} to ${endClock}, ${staff.name}, ${STATE_WORD[state]}${repeats(item) ? ", repeats" : ""}${p ? `, ${p.spoken}` : ""}`}
+      aria-label={`${item.title}, ${startClock} to ${endClock}, ${staff.name}, ${STATE_WORD[state]}${repeats(item) ? ", repeats" : ""}${p ? `, ${p.spoken}` : ""}${spokenTags(tags)}`}
       aria-describedby={KEYS_ID}
       className={cls}
       style={{
@@ -422,9 +432,15 @@ function Ghost({ top, placement, ctx }: { top: number; placement: Placement; ctx
   );
 }
 
+function spokenTags(tags: readonly string[] | undefined) {
+  const { spoken } = tagLine(tags ?? []);
+  return spoken ? `, ${spoken}` : "";
+}
+
 function Chip({
   entry,
   count,
+  tags,
   selected,
   justDone,
   lifted,
@@ -434,6 +450,7 @@ function Chip({
 }: {
   entry: TodayEntry;
   count: ChildCount | undefined;
+  tags: readonly string[] | undefined;
   selected: boolean;
   justDone: boolean;
   lifted: boolean;
@@ -449,7 +466,7 @@ function Chip({
       role="button"
       tabIndex={0}
       aria-pressed={selected}
-      aria-label={`${item.title}, ${where}, ${STATE_WORD[state]}${repeats(item) ? ", repeats" : ""}${p ? `, ${p.spoken}` : ""}`}
+      aria-label={`${item.title}, ${where}, ${STATE_WORD[state]}${repeats(item) ? ", repeats" : ""}${p ? `, ${p.spoken}` : ""}${spokenTags(tags)}`}
       aria-describedby={KEYS_ID}
       className={`${styles.chip} ${selected ? styles.selected : ""} ${state === "done" ? styles.done : ""} ${lifted ? styles.lifted : ""}`}
       onPointerDown={onPointerDown}
@@ -461,6 +478,7 @@ function Chip({
       <span className="min-w-0 truncate">{item.title}</span>
       {repeats(item) && <RepeatMark className="text-ink-3" />}
       {p && <span className={styles.count}>{p.text}</span>}
+      <RowTags tags={tags} max={2} className="whitespace-nowrap" />
     </div>
   );
 }

@@ -1,0 +1,66 @@
+import { z } from "zod";
+import { idSchema, type ItemId, type ShownItem } from "./item";
+
+export type TagId = string & { readonly __brand: "TagId" };
+
+/**
+ * A tag's name as stored and shown: as typed, but trimmed, with runs of spaces
+ * collapsed and any leading `#` dropped. Two names are the same tag when they
+ * match without case; the database holds that with a unique index on `lower(name)`.
+ */
+export type TagName = string & { readonly __brand: "TagName" };
+
+export type Tag = { id: TagId; name: TagName };
+
+/** A tag with how many open items carry it. Deleted items do not count; done and dropped ones are not open. */
+export type TagSummary = Tag & { open: number };
+
+export const TAG_NAME_MAX = 32;
+/** Most tags one item can carry. */
+export const TAGS_PER_ITEM = 10;
+/** Most tags one user can have. */
+export const TAGS_PER_USER = 200;
+
+const nameSchema = z
+  .string()
+  .transform((s) => s.normalize("NFC").replace(/\s+/g, " ").trim().replace(/^#+/, "").trim())
+  .pipe(
+    z
+      .string()
+      .min(1)
+      .max(TAG_NAME_MAX)
+      .refine((s) => !/\p{Cc}/u.test(s)),
+  );
+
+/** Parses an untrusted name into its stored form, or null when nothing usable is left. */
+export function parseTagName(raw: unknown): TagName | null {
+  const name = nameSchema.safeParse(raw);
+  return name.success ? (name.data as TagName) : null;
+}
+
+export function parseTagId(raw: unknown): TagId | null {
+  const id = idSchema.safeParse(raw);
+  return id.success ? (id.data as TagId) : null;
+}
+
+/** What two names are compared by. */
+export const tagKey = (name: string) => name.toLowerCase();
+
+export const sameTag = (a: string, b: string) => tagKey(a) === tagKey(b);
+
+/** Tags in the order every list shows them: by name, ignoring case. */
+export function byName<T extends { name: string }>(tags: readonly T[]): T[] {
+  return [...tags].sort((a, b) => tagKey(a.name).localeCompare(tagKey(b.name)));
+}
+
+/**
+ * The stored item whose tags a shown item wears. Tags live on a series, so
+ * every occurrence and override of a live series shows and edits the series'
+ * tags. An override whose series is gone is an ordinary item with its own.
+ */
+export function tagOwner(item: Pick<ShownItem, "id" | "recurrence">, liveSeries: ReadonlySet<string>): ItemId {
+  const r = item.recurrence;
+  if (r.kind === "occurrence") return r.seriesId;
+  if (r.kind === "override" && liveSeries.has(r.seriesId)) return r.seriesId;
+  return item.id as ItemId;
+}

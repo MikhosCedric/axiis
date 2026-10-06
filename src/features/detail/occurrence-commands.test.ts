@@ -413,6 +413,23 @@ describe("loadDetail for repeating items", () => {
     expect(view?.notesFor).toBe(w.series.id);
   });
 
+  it("shows the series' tags on an occurrence and its override, and every tag most used first", async () => {
+    const w = world();
+    const other = makeItem({ title: "Loose" });
+    w.items.push(other);
+    w.tag(w.series.id, "work", "Daily");
+    w.tag(other.id, "home");
+    const occurrence = { kind: "occurrence" as const, seriesId: w.series.id, originalOn: d("2026-10-07") };
+    expect((await loadDetail(w.repo, occurrence, TZ))?.tags).toEqual({ on: ["Daily", "work"], known: ["Daily", "home", "work"] });
+    await renameItem(w.repo, w.key("2026-10-07"), "Short one", TZ);
+    expect((await loadDetail(w.repo, occurrence, TZ))?.tags.on).toEqual(["Daily", "work"]);
+    w.tag(other.id, "work");
+    expect((await loadDetail(w.repo, { kind: "item", id: other.id as ItemId }, TZ))?.tags).toEqual({
+      on: ["home", "work"],
+      known: ["work", "Daily", "home"],
+    });
+  });
+
   it("offers repeat only where it is allowed", async () => {
     const parent = makeItem({ type: "task" });
     const child = makeItem({ parentId: parent.id });

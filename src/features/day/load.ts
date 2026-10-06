@@ -1,6 +1,7 @@
 import { isStored, type LocalDate } from "@/domain/item";
 import { firstDay } from "@/features/detail/model";
 import { cadence } from "@/features/detail/repeat";
+import { tagsOfShown } from "@/features/tags/commands";
 import { buildToday } from "@/features/today/model";
 import { addDays, dayRangeFor, isSameDay } from "@/lib/dates";
 import { loadOccurrences } from "@/lib/items/occurrences";
@@ -17,8 +18,12 @@ export async function loadDay(repo: ItemsRepo, date: LocalDate, now: Date, timeZ
   ]);
   const view = buildToday({ scheduled: [...items.scheduled, ...occurrences], unscheduled: items.unscheduled }, range, now);
   // Virtual occurrences are never parents, so only stored items are counted.
-  const storedIds = [...view.scheduled, ...view.waiting].flatMap((e) => (isStored(e.item) ? [e.item.id] : []));
-  const childCounts = storedIds.length ? await repo.childCounts(storedIds) : {};
+  const shown = [...view.scheduled, ...view.waiting].map((e) => e.item);
+  const storedIds = shown.flatMap((i) => (isStored(i) ? [i.id] : []));
+  const [childCounts, tags] = await Promise.all([
+    storedIds.length ? repo.childCounts(storedIds) : {},
+    tagsOfShown(repo, shown, series.map((s) => s.id)),
+  ]);
   return {
     timeZone,
     date,
@@ -27,6 +32,7 @@ export async function loadDay(repo: ItemsRepo, date: LocalDate, now: Date, timeZ
     areas,
     view,
     childCounts,
+    tags,
     cadences: Object.fromEntries(
       series.flatMap((s) => (s.recurrence.kind === "series" ? [[s.id, cadence(s.recurrence.rule, firstDay(s.schedule, timeZone))]] : [])),
     ),

@@ -7,7 +7,7 @@ test("the landing page shows the pitch, the sample day and a way in", async ({ p
   await expect(page.getByRole("link", { name: "Sign in" }).first()).toHaveAttribute("href", "/login");
 });
 
-for (const path of ["/today", "/day/2026-10-08", "/week", "/inbox", "/settings", "/notes"]) {
+for (const path of ["/today", "/day/2026-10-08", "/week", "/inbox", "/settings", "/notes", "/tags", "/tags/Deep%20work"]) {
   test(`${path} sends a stranger to sign in`, async ({ page }) => {
     await page.goto(path);
     await expect(page).toHaveURL(`/login?next=${encodeURIComponent(path)}`);

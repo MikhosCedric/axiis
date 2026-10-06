@@ -85,7 +85,7 @@ export function HarnessEditor({ noteId, timeZone }: { noteId: string; timeZone: 
 
 export function HarnessSearch({ query }: { query: string }) {
   const load = useCallback(
-    async () => (await searchItems(store.notes, query)).map((r): SearchRow => ({ ...r, href: harnessHref(r) })),
+    async () => (await searchItems(store.notes, store.items, query)).map((r): SearchRow => ({ ...r, href: harnessHref(r) })),
     [query],
   );
   const [rows] = useLoaded<SearchRow[]>(load);

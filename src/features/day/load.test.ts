@@ -33,6 +33,26 @@ describe("loadDay", () => {
     expect(day.view.waiting.map((e) => e.item.title)).toEqual(["Someday"]);
   });
 
+  it("names the tags on everything shown in one read, an occurrence wearing its series'", async () => {
+    const series = makeItem({
+      title: "Standup",
+      schedule: { kind: "timed", start: new Date("2026-10-05T09:00:00Z"), end: new Date("2026-10-05T09:15:00Z") },
+      recurrence: { kind: "series", rule: { freq: "daily", interval: 1, end: { kind: "never" } } },
+    });
+    const loose = makeItem({ title: "Someday" });
+    const plain = makeItem({ title: "Plain" });
+    const fake = fakeRepo([series, loose, plain]);
+    fake.tag(series.id, "team");
+    fake.tag(loose.id, "home", "Errands");
+    let reads = 0;
+    const repo = { ...fake.repo, tagsForItems: (ids: Parameters<typeof fake.repo.tagsForItems>[0]) => (reads++, fake.repo.tagsForItems(ids)) };
+
+    const day = await loadDay(repo, d("2026-10-08"), new Date("2026-10-08T08:00:00Z"), "UTC");
+
+    expect(day.tags).toEqual({ [`${series.id}~2026-10-08`]: ["team"], [loose.id]: ["Errands", "home"] });
+    expect(reads).toBe(1);
+  });
+
   it("knows whether the date is today in the user's zone", async () => {
     const { repo } = fakeRepo();
     // 20:00 UTC on the 6th is already the 7th in Kolkata.

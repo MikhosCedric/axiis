@@ -2,6 +2,7 @@ import { createLinkedNoteAction } from "@/features/notes/actions";
 import { linkedNotes } from "@/features/notes/commands";
 import { getTimeZone } from "@/features/day/server";
 import { setDoneAction } from "@/features/today/actions";
+import { addTagAction, removeTagAction } from "@/features/tags/actions";
 import { parseItemKey } from "@/domain/item-key";
 import { getItemsRepo } from "@/lib/items";
 import { getNotesRepo } from "@/lib/notes";
@@ -33,6 +34,8 @@ const actions: DetailActions = {
   remove: deleteItemAction,
   setRepeat: setRepeatAction,
   stopRepeating: stopRepeatingAction,
+  addTag: addTagAction,
+  removeTag: removeTagAction,
   newLinkedNote: createLinkedNoteAction,
 };
 
