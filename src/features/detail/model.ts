@@ -29,6 +29,32 @@ export type Scope = "one" | "all";
 /** A time of day as the client sends it: local wall-clock minutes past midnight and a length in minutes. */
 export type TimeOfDay = { start: number; length: number };
 
+const DAY_MINUTES = 24 * 60;
+/** Length given to a start with no end, as on the Score. */
+const DEFAULT_LENGTH = 30;
+
+/** `HH:MM` for minutes past midnight, wrapping past the end of the day. */
+export function clockOf(minutes: number): string {
+  const m = ((minutes % DAY_MINUTES) + DAY_MINUTES) % DAY_MINUTES;
+  return `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`;
+}
+
+function minutesOf(clock: string): number | null {
+  const m = /^([01]\d|2[0-3]):([0-5]\d)$/.exec(clock);
+  return m ? Number(m[1]) * 60 + Number(m[2]) : null;
+}
+
+/**
+ * The time two `HH:MM` fields describe, or null without a start. An end at or
+ * before the start runs past midnight; no end gives the default length.
+ */
+export function timeFrom(start: string, end: string): TimeOfDay | null {
+  const from = minutesOf(start);
+  if (from === null) return null;
+  const to = minutesOf(end);
+  return { start: from, length: to === null ? DEFAULT_LENGTH : (to - from + DAY_MINUTES) % DAY_MINUTES || DAY_MINUTES };
+}
+
 /**
  * How the item takes part in repetition, as the sheet shows it. Only a top-level
  * task, event or checklist with no subtasks may start repeating.
