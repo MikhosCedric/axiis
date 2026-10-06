@@ -82,7 +82,7 @@ Updated: see the log at the bottom. Phases:
 - Merged this stretch: command palette (#10), phone nav fix (#11), Playwright and axe browser tests with an `e2e` CI job (#12).
 
 ## Next up (suggested order)
-1. **Owner: a signed-in pass** (the agent cannot receive the magic link): capture, Inbox plan-for, a repeat with "Same time every day", skip and restore a day, set a series to "Any time", tags (add, remove, rename, delete, `/tags/[name]`, `#tag` search), `/lists` (capture a checklist, tick lines), the detail panel on a real phone, and the nav bar on a real phone. Report anything off.
+1. **Owner: a signed-in pass** (the agent cannot receive the magic link): capture (plain, and with words such as "dentist tomorrow 9:00 #health"), palette item actions, Inbox plan-for, a repeat with "Same time every day", skip and restore a day, set a series to "Any time", tags (add, remove, rename, delete, `/tags/[name]`, `#tag` search), `/lists` (capture a checklist, tick lines), the detail panel on a real phone, and the nav bar on a real phone. Report anything off.
 2. Owner-only launch items: `docs/launch-checklist.md` (Vercel, domain, Google OAuth, production redirect URLs, real name and contact in the legal drafts).
 3. Deferred design calls in `docs/design-audit.md` (beam labels on short beams, verdigris hover wash, dark-token duplication, headline utility, chip edges).
 4. The When, Starts and Due lines show no year; they could use `formatDayIn`. The "Part of" link lacks the pending state.
@@ -101,6 +101,7 @@ Updated: see the log at the bottom. Phases:
 - The Inbox is verified by unit tests, a stubbed PostgREST query test and its dev harness (e2e and axe), not by a signed-in session.
 - Lists are verified by unit tests against `fakeRepo`, a stubbed PostgREST query test and the `/dev/lists` harness (e2e and axe, with an item open), not by a signed-in session. A series cannot have subtasks, so a repeating checklist's row shows how it repeats instead of progress. Progress counts every live line, so a dropped line counts as not done, as the Inbox and Score counts already do.
 - The tags and lists harnesses keep their store in memory, so a page reload from `next dev` after a cold compile empties it. The e2e warm-up compiles both first.
+- Capture words and palette actions are verified by unit tests against `fakeRepo` and the score, week, inbox, lists and palette harnesses (e2e and axe), not by a signed-in session. The parser knows English words only, and a day after a preposition such as "for" stays in the title, so "Groceries for Sunday" is not planned.
 - Notes, week, settings, export and deletion are verified by unit tests, rolled-back SQL on the hosted project and dev harnesses, not by a signed-in browser session.
 - `[`/`]` shortcuts do nothing on layouts where those keys need AltGr; the on-screen buttons work everywhere.
 
@@ -109,6 +110,7 @@ Updated: see the log at the bottom. Phases:
 - Put real name and contact email into the privacy policy and terms (placeholders are marked).
 
 ## Log
+- 2026-10-07 (capture and palette): the capture field says where an item went and rings it; capture reads a day, a time, a length and tags (`parseCapture` in `src/features/today/capture-syntax.ts`, read on the server against the user's time zone) with a preview chip and a `?` help note; Lists takes a checklist's name as typed; the palette acts on a found or selected item (open, done, plan today or tomorrow, tag). PR #27 from `feat-capture-palette`. No migration.
 - 2026-10-07 (audit fixes): the design audit's three P1s and its cheap P2s. The detail panel scrolls into view and takes focus below 1180px; selected Score List rows are AA; the landing lists what ships; 44px icon buttons and a press-and-hold hint on touch; a focus rule on the note body. Design calls are deferred in `docs/design-audit.md`. PR #22 from `fix-audit`. No migration.
 - 2026-10-06 (recurrence follow-ups): `restoreOccurrence` and "Skipped dates" on the series panel, "Restore this one" on a skipped occurrence; repeat ends, occurrence lines and skipped dates name the year when it is not this year's (`formatDayIn`, shared with the palette); Time and First day rows on the series itself; `loadDetail` takes `now`. PR #21 from `feat-recurrence-followups`. No migration.
 - 2026-10-06 (lists): `/lists` with checklists open first, a line-form progress meter, and capture that opens the new checklist beside the list; Lists in the nav and the palette; `listChecklists` on the repo; selected Inbox rows readable on the accent wash (axe now checks the Inbox and Lists with an item open). PR #19 from `feat-lists`. No migration.
