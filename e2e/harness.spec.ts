@@ -461,3 +461,32 @@ for (const { path, from, to } of SWITCHES) {
     expect(await insideInert()).toBe(false);
   });
 }
+
+test.describe("on a phone", () => {
+  test.use({ viewport: { width: 375, height: 812 } });
+
+  test("a row opens its details in view with focus there, and Close returns focus to the row", async ({ page }) => {
+    await page.goto("/dev/lists");
+    const row = page.getByRole("button", { name: "Launch day" });
+    await row.click();
+    const details = page.getByRole("complementary", { name: "Details" });
+    await expect(details.getByRole("textbox", { name: "Title" })).toHaveValue("Launch day");
+
+    await expect(details.first()).toBeFocused();
+    await expect(details.getByRole("link", { name: "Close details" })).toBeInViewport();
+    await expect(details.getByRole("textbox", { name: "Title" })).toBeInViewport();
+
+    await details.getByRole("link", { name: "Close details" }).click();
+    await expect(details).toHaveCount(0);
+    await expect(row).toBeFocused();
+    await expect(row).toBeInViewport();
+  });
+
+  test("a beam opens its details in view with focus there", async ({ page }) => {
+    await page.goto("/dev/score");
+    await page.getByRole("button", { name: /^Design sync, / }).click();
+    const details = page.getByRole("complementary", { name: "Details" });
+    await expect(details.getByRole("heading", { name: "Design sync" })).toBeInViewport();
+    await expect(details.first()).toBeFocused();
+  });
+});
