@@ -25,7 +25,7 @@ import { CaptureField } from "@/features/today/capture-field";
 import type { ActionResult } from "@/features/today/commands";
 import { formatClock, formatDayHeading } from "@/features/today/format";
 import { Glyph } from "@/features/today/glyph";
-import { buildToday, stateOf, type TodayEntry } from "@/features/today/model";
+import { buildToday, EMPTY_TRAY, stateOf, type TodayEntry } from "@/features/today/model";
 import { dayRangeFor } from "@/lib/dates";
 import { moveAction } from "./actions";
 import type { WeekData } from "./load";
@@ -257,7 +257,7 @@ export function WeekView({
               ))}
             </ul>
           ) : (
-            <p className="text-[13px] text-ink-3">Everything has a day. Capture something new above.</p>
+            <p className="text-[13px] text-ink-3">{EMPTY_TRAY}</p>
           )}
         </section>
 
