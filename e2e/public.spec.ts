@@ -7,6 +7,16 @@ test("the landing page shows the pitch, the sample day and a way in", async ({ p
   await expect(page.getByRole("link", { name: "Sign in" }).first()).toHaveAttribute("href", "/login");
 });
 
+test("the landing page lists shipped features as shipped, and nothing as coming", async ({ page }) => {
+  await page.goto("/");
+  const today = page.getByRole("region", { name: "What it does today" }).getByRole("listitem");
+  for (const shipped of [/repeat/, /inbox/, /Checklists/, /Tags/, /command palette/]) {
+    await expect(today.filter({ hasText: shipped })).toHaveCount(1);
+  }
+  await expect(page.getByRole("heading", { name: "Coming" })).toHaveCount(0);
+  await expect(page.getByText(/come next/)).toHaveCount(0);
+});
+
 for (const path of ["/today", "/day/2026-10-08", "/week", "/inbox", "/settings", "/notes", "/tags", "/tags/Deep%20work"]) {
   test(`${path} sends a stranger to sign in`, async ({ page }) => {
     await page.goto(path);
