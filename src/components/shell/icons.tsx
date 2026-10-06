@@ -79,3 +79,18 @@ export function BrandMark() {
     </svg>
   );
 }
+
+export const WeekIcon = () => (
+  <Icon>
+    <rect x="2.5" y="3.5" width="13" height="11" rx="1.5" />
+    <path d="M6.8 3.5v11M11.2 3.5v11" />
+  </Icon>
+);
+
+export const SettingsIcon = () => (
+  <Icon>
+    <path d="M3 5.5h12M3 12.5h12" />
+    <circle cx="6.5" cy="5.5" r="1.6" fill="var(--paper-2)" />
+    <circle cx="11.5" cy="12.5" r="1.6" fill="var(--paper-2)" />
+  </Icon>
+);
