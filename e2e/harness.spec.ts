@@ -45,7 +45,10 @@ test.describe("score", () => {
     await beam.focus();
     await page.keyboard.press("ArrowRight");
 
-    const moved = page.getByRole("button", { name: `Design sync, ${later(start)} to ${later(end)}, Work, planned` });
+    // The fixture fixes this event at 13:00, so when the suite runs near then the moved beam covers now.
+    const moved = page.getByRole("button", {
+      name: new RegExp(`^Design sync, ${later(start)} to ${later(end)}, Work, (planned|happening now)$`),
+    });
     await expect(moved).toBeVisible();
     await expect(moved).toBeFocused();
     await expect(page.getByRole("status").filter({ hasText: /^Design sync, / })).toBeVisible();
