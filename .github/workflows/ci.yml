@@ -26,6 +26,8 @@ jobs:
         env:
           NEXT_PUBLIC_SUPABASE_URL: http://localhost:54321
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-placeholder-not-a-secret
+      # The browser-test fake session must not exist in the production build just made (docs/e2e-session.md).
+      - run: npm run check:no-fake-session -- --skip-build
 
   e2e:
     needs: check
