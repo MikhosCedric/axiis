@@ -551,7 +551,7 @@ test.describe("on a touch phone", () => {
     const details = page.getByRole("complementary", { name: "Details" });
     await expect(details.getByRole("button", { name: /^Make .* a task$/ }).first()).toBeVisible();
     await expect(details.getByRole("button", { name: /^Remove tag / }).first()).toBeVisible();
-    const small = await details.locator("button").evaluateAll((buttons) =>
+    const small = await details.locator("button").evaluateAll((buttons: HTMLButtonElement[]) =>
       buttons
         .filter((b) => b.offsetParent && !b.textContent?.trim())
         .map((b) => ({ name: b.getAttribute("aria-label") ?? "", ...b.getBoundingClientRect().toJSON() }))
