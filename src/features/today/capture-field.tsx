@@ -2,22 +2,61 @@
 
 import { useEffect, useRef, useState, useTransition, type FormEvent } from "react";
 import { captureAction as serverCapture } from "./actions";
-import type { ActionResult } from "./commands";
+import type { ActionResult, CaptureResult } from "./commands";
+import { capturedLine } from "./capture-syntax";
 import { TITLE_MAX } from "./model";
+
+/** How long a new item wears the accent ring once it shows up. */
+const MARK_MS = 2400;
+/** How long to wait for the new item to render before giving up on marking it. */
+const LOOK_MS = 4000;
+
+/**
+ * Rings the element that draws item `id` once it appears: a Score beam or chip
+ * and a Week chip carry `data-item`, an Inbox row's title carries `data-open`.
+ * The page is not scrolled, so the field stays put for the next thought.
+ * Returns a function that stops looking and takes the ring off.
+ */
+function markWhenShown(id: string): () => void {
+  const selector = `[data-item="${CSS.escape(id)}"], [data-open="${CSS.escape(id)}"]`;
+  const giveUp = Date.now() + LOOK_MS;
+  let frame = 0;
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  let marked: Element | null = null;
+  const look = () => {
+    marked = document.querySelector(selector);
+    if (marked) {
+      marked.setAttribute("data-captured", "");
+      timer = setTimeout(() => marked?.removeAttribute("data-captured"), MARK_MS);
+    } else if (Date.now() < giveUp) {
+      frame = requestAnimationFrame(look);
+    }
+  };
+  look();
+  return () => {
+    cancelAnimationFrame(frame);
+    clearTimeout(timer);
+    marked?.removeAttribute("data-captured");
+  };
+}
 
 export function CaptureField({
   captureAction = serverCapture,
   label = "Capture anything",
   placeholder = "Capture anything, then place it later",
 }: {
-  captureAction?: (title: string) => Promise<ActionResult>;
+  // Some screens still type their capture as a plain ActionResult; the server sends the full CaptureResult.
+  captureAction?: (title: string) => Promise<CaptureResult | ActionResult>;
   label?: string;
   placeholder?: string;
 }) {
   const input = useRef<HTMLInputElement>(null);
   const [value, setValue] = useState("");
-  const [error, setError] = useState<string | null>(null);
+  const [status, setStatus] = useState<{ text: string; error: boolean } | null>(null);
   const [pending, startTransition] = useTransition();
+  const unmark = useRef<() => void>(() => {});
+
+  useEffect(() => () => unmark.current(), []);
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -38,12 +77,18 @@ export function CaptureField({
     if (!title) return;
     // Clear at once so the next thought can start while this one saves.
     setValue("");
-    setError(null);
+    setStatus(null);
+    unmark.current();
     startTransition(async () => {
       const result = await captureAction(title);
       if (!result.ok) {
         setValue((current) => current || title);
-        setError(result.error);
+        setStatus({ text: result.error, error: true });
+        return;
+      }
+      if ("id" in result) {
+        setStatus({ text: capturedLine(result), error: false });
+        unmark.current = markWhenShown(result.id);
       }
     });
   }
@@ -74,8 +119,12 @@ export function CaptureField({
           C
         </kbd>
       </div>
-      <p id="capture-status" role="status" className="mt-1.5 min-h-5 text-[13px] text-ink-2">
-        {error ?? (pending ? "Saving" : "")}
+      <p
+        id="capture-status"
+        role="status"
+        className={`mt-1.5 min-h-5 text-[13px] ${status?.error ? "font-medium text-ink" : "text-ink-2"}`}
+      >
+        {pending ? "Saving" : status?.text}
       </p>
     </form>
   );

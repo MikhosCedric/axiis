@@ -7,13 +7,13 @@ import { fakeRepo, makeItem } from "./test-support";
 describe("captureTask", () => {
   it("creates a trimmed, unscheduled task", async () => {
     const { repo, calls, items } = fakeRepo();
-    expect(await captureTask(repo, "  Renew passport ")).toEqual({ ok: true, id: items[0].id });
+    expect(await captureTask(repo, "  Renew passport ")).toEqual({ ok: true, id: items[0].id, type: "task" });
     expect(calls.create).toEqual([{ type: "task", title: "Renew passport", schedule: { kind: "unscheduled" } }]);
   });
 
   it("captures a checklist the same way, naming the new one", async () => {
     const { repo, calls, items } = fakeRepo();
-    expect(await captureChecklist(repo, " Pack for the coast ")).toEqual({ ok: true, id: items[0].id });
+    expect(await captureChecklist(repo, " Pack for the coast ")).toEqual({ ok: true, id: items[0].id, type: "checklist" });
     expect(calls.create).toEqual([{ type: "checklist", title: "Pack for the coast", schedule: { kind: "unscheduled" } }]);
     expect(await captureChecklist(repo, "  ")).toMatchObject({ ok: false });
     expect(calls.create).toHaveLength(1);
