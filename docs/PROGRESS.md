@@ -63,7 +63,7 @@ Updated: see the log at the bottom. Phases:
 | 6 Public site (landing, legal drafts, metadata, PWA, error states) | done, merged (PR #6) |
 | 7 Command palette, shortcuts help, browser tests (e2e + axe) | done, merged (#10, #12) |
 | 8 Recurring tasks | done, merged (#13), migration 0004 applied |
-| 9 Tags, Inbox, Lists, DESIGN.md, audits | in progress: Inbox merged (#15), series time in review (`feat-series-time`); tags, Lists and the rest next |
+| 9 Tags, Inbox, Lists, DESIGN.md, audits | in progress: Inbox (#15) and series time (#16) merged, series quality in review (`feat-series-quality`); tags, Lists and the rest next |
 
 ## Accepted advisories (Supabase security advisor)
 - `delete_my_account` is executable by `authenticated` through RPC. Intended: it only deletes the caller's own account (`auth.uid()`), and `anon`/`public` are revoked.
@@ -77,7 +77,7 @@ Updated: see the log at the bottom. Phases:
 - Merged this stretch: command palette (#10), phone nav fix (#11), Playwright and axe browser tests with an `e2e` CI job (#12).
 
 ## Next up (suggested order)
-1. Recurrence follow-ups: un-skip, years in `describeRule`, moving a whole series back to "Any time" or to another first day (series time is in review on `feat-series-time`).
+1. Recurrence follow-ups: un-skip, years in `describeRule`, a Time and First day row when the series itself is opened (today they show on an occurrence only). Series "Any time" and first day are in review on `feat-series-quality`.
 2. Tags: UI, filters, `tags`/`item_tags` already exist.
 3. A Lists page (checklists with progress). The Inbox is in review; once merged, check it in a signed-in session.
 4. Extend e2e once a test user can sign in without the magic link.
@@ -89,7 +89,8 @@ Updated: see the log at the bottom. Phases:
 - The Score/List view-transition morph has not been seen playing; the preview pane reports the page hidden.
 - Touch drag tested with synthetic events only.
 - Recurrence column exists but is not expanded yet.
-- Series time is verified by unit tests against `fakeRepo` (including a DST day) and the score and detail harnesses (e2e and axe), not by a signed-in session. The detail Time row uses native time inputs, which show 12- or 24-hour clocks by the browser's locale.
+- Series time, "Any time" and first day are verified by unit tests against `fakeRepo` (including DST days) and the score and detail harnesses (e2e and axe), not by a signed-in session. The Time row is two 24-hour text fields; date fields (First day, the repeat end, the day and week pickers) are still native and show dates in the browser's locale format.
+- The detail panel goes inert and `aria-busy` while the day, week or inbox screen switches items. A link inside the panel (the "Part of" parent link) navigates without that pending state.
 - The Inbox is verified by unit tests, a stubbed PostgREST query test and its dev harness (e2e and axe), not by a signed-in session.
 - Notes, week, settings, export and deletion are verified by unit tests, rolled-back SQL on the hosted project and dev harnesses, not by a signed-in browser session.
 - `[`/`]` shortcuts do nothing on layouts where those keys need AltGr; the on-screen buttons work everywhere.
@@ -99,6 +100,7 @@ Updated: see the log at the bottom. Phases:
 - Put real name and contact email into the privacy policy and terms (placeholders are marked).
 
 ## Log
+- 2026-10-06 (series quality): `clearTime` and `setFirstDay` for a whole series from the detail panel; the old panel is inert while the next item loads (shared `DetailAside`); empty-tray copy no longer says everything has a time; Time row typed on the 24-hour clock. PR open from `feat-series-quality`. No migration.
 - 2026-10-06 (series time): owner found that dragging one day of a day-only series to 14:00 timed only that day. `setTime` command, "Same time every day" on the Score's status line, a Time row in the detail panel for occurrences. PR open from `feat-series-time`. No migration.
 - 2026-10-06 (Inbox): `/inbox` with plan-for-a-day, nav and palette links, `/dev/inbox` harness; PR open from `feat-inbox`. No migration.
 - 2026-10-05: Phases 0 to 2 merged to `main` (PRs #1 to #3). Owner away; overnight run started.
