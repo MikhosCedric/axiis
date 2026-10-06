@@ -12,7 +12,7 @@ import {
   type SpanRange,
 } from "@/domain/item";
 import { AREA_COLUMNS, ITEM_COLUMNS, areaFromRow, itemFromRow, newItemToInsert, patchToUpdate } from "./mappers";
-import { MAX_SERIES, type ChildCount, type ItemsRepo } from "./repo";
+import { INBOX_LIMIT, MAX_SERIES, type ChildCount, type ItemsRepo } from "./repo";
 
 type QueryResult = { data: unknown; error: { message: string; code?: string } | null };
 
@@ -74,6 +74,19 @@ export class SupabaseItemsRepo implements ItemsRepo {
   async listSeries(): Promise<Item[]> {
     const result = await this.items().not("rrule", "is", null).order("created_at").limit(MAX_SERIES);
     return unwrap("listSeries", result, itemList);
+  }
+
+  async listInbox(): Promise<Item[]> {
+    const result = await this.single()
+      .is("start_at", null)
+      .is("scheduled_on", null)
+      .is("parent_id", null)
+      .is("series_id", null)
+      .eq("status", "open")
+      .neq("type", "note")
+      .order("created_at", { ascending: false })
+      .limit(INBOX_LIMIT);
+    return unwrap("listInbox", result, itemList);
   }
 
   async listOverrides(fromDate: LocalDate, toDate: LocalDate, seriesId?: ItemId): Promise<Item[]> {

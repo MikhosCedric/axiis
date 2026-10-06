@@ -38,6 +38,24 @@ describe("SupabaseItemsRepo and series", () => {
     expect(requests[0].get("limit")).toBe("200");
   });
 
+  it("reads the inbox as open, unscheduled, top-level non-notes outside any series, newest first, at most 200", async () => {
+    const { repo, requests } = stubbed();
+    await repo.listInbox();
+    const q = requests[0];
+    expect(Object.fromEntries(["deleted_at", "rrule", "start_at", "scheduled_on", "parent_id", "series_id"].map((k) => [k, q.get(k)]))).toEqual({
+      deleted_at: "is.null",
+      rrule: "is.null",
+      start_at: "is.null",
+      scheduled_on: "is.null",
+      parent_id: "is.null",
+      series_id: "is.null",
+    });
+    expect(q.get("status")).toBe("eq.open");
+    expect(q.get("type")).toBe("neq.note");
+    expect(q.get("order")).toBe("created_at.desc");
+    expect(q.get("limit")).toBe("200");
+  });
+
   it("reads live overrides by the date they replace, of one series when asked", async () => {
     const { repo, requests } = stubbed();
     await repo.listOverrides(d("2026-10-05"), d("2026-10-12"));

@@ -10,6 +10,8 @@ const PAGES = [
   "/dev/score",
   "/dev/score?view=list",
   "/dev/week",
+  "/dev/inbox",
+  "/dev/inbox?empty",
   "/dev/detail",
   "/dev/detail?item=00000000-0000-4000-8000-000000000001",
   "/dev/notes",

@@ -1,5 +1,5 @@
 import type { Area, AreaId, DayRange, Item, ItemId, ItemPatch, NewItem } from "@/domain/item";
-import { MAX_SERIES, type ItemsRepo } from "@/lib/items/repo";
+import { INBOX_LIMIT, MAX_SERIES, type ItemsRepo } from "@/lib/items/repo";
 
 let seq = 0;
 const uuid = () => `00000000-0000-4000-8000-${String(++seq).padStart(12, "0")}`;
@@ -56,6 +56,19 @@ export function fakeRepo(items: Item[] = [], areas: Area[] = []) {
     },
     async listSeries() {
       return items.filter((i) => i.recurrence.kind === "series").slice(0, MAX_SERIES);
+    },
+    async listInbox() {
+      return items
+        .filter(
+          (i) =>
+            i.schedule.kind === "unscheduled" &&
+            i.parentId === null &&
+            i.recurrence.kind === "none" &&
+            i.status === "open" &&
+            i.type !== "note",
+        )
+        .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+        .slice(0, INBOX_LIMIT);
     },
     async listOverrides(fromDate, toDate, seriesId) {
       return items.filter(

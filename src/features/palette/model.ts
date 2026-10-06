@@ -30,6 +30,7 @@ type Place = { label: string; href: string | null; also: string[] };
 const PLACES: Place[] = [
   { label: "Today", href: "/today", also: ["score", "day"] },
   { label: "Week", href: "/week", also: ["planner"] },
+  { label: "Inbox", href: "/inbox", also: ["unscheduled", "waiting"] },
   { label: "Notes", href: "/notes", also: [] },
   { label: "Search", href: "/search", also: ["find"] },
   { label: "Settings", href: "/settings", also: ["account", "areas", "export"] },

@@ -108,3 +108,82 @@ test("settings: an area can be added and renamed", async ({ page }) => {
   await expect(areas.getByRole("textbox", { name: "Rename Garden", exact: true })).toHaveValue("Garden");
   await expect(areas.getByRole("listitem")).toHaveCount(5);
 });
+
+test.describe("inbox", () => {
+  test.beforeEach(async ({ page }) => {
+    await page.goto("/dev/inbox");
+  });
+
+  test("an item can be planned for a picked day, and leaves the inbox", async ({ page }) => {
+    const list = page.getByRole("region", { name: "Waiting for a day" });
+    const later = new Date(Date.now() + 10 * 86_400_000).toISOString().slice(0, 10);
+
+    await list.getByRole("button", { name: "Plan for: Return the library books" }).click();
+    const choices = list.getByRole("group", { name: "Plan Return the library books for" });
+    await expect(choices.getByRole("button", { name: "Today" })).toBeFocused();
+    await choices.getByLabel("Another day").fill(later);
+    await choices.getByRole("button", { name: "Plan", exact: true }).click();
+
+    await expect(
+      page.getByRole("status").filter({ hasText: /^Return the library books is planned for \w+day \d+ \w+\.$/ }),
+    ).toBeVisible();
+    await expect(list.getByRole("button", { name: "Return the library books" })).toHaveCount(0);
+    await expect(page.getByText("4 items waiting for a day.")).toBeVisible();
+  });
+
+  test("Escape closes the day choices and returns to the button", async ({ page }) => {
+    const list = page.getByRole("region", { name: "Waiting for a day" });
+    const plan = list.getByRole("button", { name: "Plan for: Book the dentist" });
+
+    await plan.click();
+    await expect(list.getByRole("group", { name: "Plan Book the dentist for" })).toBeVisible();
+    await page.keyboard.press("Escape");
+
+    await expect(list.getByRole("group")).toHaveCount(0);
+    await expect(plan).toBeFocused();
+    await expect(plan).toHaveAttribute("aria-expanded", "false");
+  });
+
+  test("a tick marks an item done in place, and can be undone", async ({ page }) => {
+    const done = page.getByRole("checkbox", { name: "Done: Book the dentist" });
+
+    await done.focus();
+    await page.keyboard.press("Space");
+    await expect(page.getByRole("status").filter({ hasText: "Book the dentist is done." })).toBeVisible();
+    await expect(done).toBeChecked();
+    await expect(page.getByText("4 items waiting for a day.")).toBeVisible();
+
+    await done.focus();
+    await page.keyboard.press("Space");
+    await expect(page.getByRole("status").filter({ hasText: "Book the dentist is open again." })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Plan for: Book the dentist" })).toBeVisible();
+  });
+
+  test("a failed plan puts the item back and says so", async ({ page }) => {
+    await page.getByLabel("Make saves fail").check();
+    await page.getByRole("button", { name: "Plan for: Book the dentist" }).click();
+    await page.getByRole("button", { name: "Tomorrow" }).click();
+
+    await expect(page.getByRole("status").filter({ hasText: "That move did not save, so it is back where it was. Try again." })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Plan for: Book the dentist" })).toBeFocused();
+  });
+
+  test("a title opens the item beside the list", async ({ page }) => {
+    await page.getByRole("button", { name: /^Pack for the coast/ }).click();
+    await expect(page).toHaveURL(/\?item=f2000000-0000-4000-8000-000000000003$/);
+    await expect(
+      page.getByRole("complementary", { name: "Details" }).getByRole("heading", { name: "Pack for the coast" }),
+    ).toBeVisible();
+  });
+
+  test("an empty inbox says so", async ({ page }) => {
+    await page.goto("/dev/inbox?empty");
+    await expect(page.getByText("Nothing is waiting.")).toBeVisible();
+    await expect(page.getByText("Anything you capture without a day lands here, safe until you plan it.")).toBeVisible();
+
+    await page.getByLabel("Capture anything").fill("Fix the gate");
+    await page.getByLabel("Capture anything").press("Enter");
+    await expect(page.getByRole("button", { name: "Plan for: Fix the gate" })).toBeVisible();
+    await expect(page.getByText("1 item waiting for a day.")).toBeVisible();
+  });
+});
