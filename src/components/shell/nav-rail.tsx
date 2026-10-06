@@ -4,6 +4,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 import type { LocalDate } from "@/domain/item";
+import { PaletteIcon } from "@/features/palette/icons";
+import { useIsMac, useOpenPalette } from "@/features/palette/palette";
 import {
   BrandMark,
   InboxIcon,
@@ -60,6 +62,8 @@ export function NavRail({ today, areas }: { today: LocalDate; areas: NavArea[] }
   const onSettings = pathname === "/settings" || pathname.startsWith("/settings/");
   const onNotes = pathname === "/notes" || pathname.startsWith("/notes/");
   const onSearch = pathname === "/search";
+  const openPalette = useOpenPalette();
+  const mac = useIsMac();
   return (
     <nav
       aria-label="Primary"
@@ -104,6 +108,16 @@ export function NavRail({ today, areas }: { today: LocalDate; areas: NavArea[] }
       )}
 
       <div className="ml-auto flex items-center gap-1 rail:mt-auto rail:ml-0 rail:grid rail:gap-0.5">
+        <button
+          type="button"
+          onClick={openPalette}
+          aria-keyshortcuts={mac ? "Meta+K" : "Control+K"}
+          title={`Search and commands (${mac ? "⌘" : "Ctrl"} K)`}
+          className={`${quiet} w-full whitespace-nowrap rail:gap-2 rail:pr-1`}
+        >
+          <PaletteIcon />
+          <span className="max-rail:sr-only">Search and commands</span>
+        </button>
         <ThemeToggle className={`${quiet} w-full`} />
         <Link
           href="/settings"
