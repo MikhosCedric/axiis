@@ -68,6 +68,27 @@ export function tagLine(tags: readonly string[], max = 3): { shown: string; spok
   return { shown, spoken: `tagged ${spoken}` };
 }
 
+/** The line under a tag page's heading. */
+export function taggedSummary(rows: readonly { done: boolean }[]): string {
+  if (rows.length === 0) return "Nothing carries this tag right now.";
+  const done = rows.filter((r) => r.done).length;
+  const open = rows.length - done;
+  return done === 0 ? `${open} open.` : `${open === 0 ? "None" : open} open, ${done} done.`;
+}
+
+/**
+ * The tag name a route segment names. Next hands dynamic segments over still
+ * percent-encoded, so `/tags/Deep%20work` arrives as `Deep%20work`. A segment
+ * that is not valid encoding is taken as it is.
+ */
+export function tagFromSegment(segment: string): string {
+  try {
+    return decodeURIComponent(segment);
+  } catch {
+    return segment;
+  }
+}
+
 /** Says how many open items carry a tag. */
 export function openCount(n: number): string {
   return n === 0 ? "None open" : `${n} open`;
