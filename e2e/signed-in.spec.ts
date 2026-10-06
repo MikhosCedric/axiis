@@ -58,7 +58,7 @@ signedIn.describe("signed in", () => {
     await expect(page.getByText(title).first()).toBeVisible();
 
     await page.goto("/inbox");
-    const list = page.getByRole("region", { name: "Waiting for a day" });
+    const list = page.getByRole("region", { name: "Waiting", exact: true });
     await list.getByRole("button", { name: `Plan for: ${title}` }).click();
     await list.getByRole("group", { name: `Plan ${title} for` }).getByRole("button", { name: "Tomorrow" }).click();
     // No assertion on the "is planned for" status: `next dev` compiles the action on its first call, and the
