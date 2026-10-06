@@ -22,6 +22,7 @@ import {
 import { DetailSheet, MissingItem } from "@/features/detail/detail-sheet";
 import type { DetailActions, DetailView } from "@/features/detail/model";
 import { createLinkedNote } from "@/features/notes/commands";
+import { addTag, removeTag } from "@/features/tags/commands";
 import { connectedRow } from "@/features/notes/model";
 import { fakeNotesRepo, type NotesStore } from "@/lib/notes/fake";
 import type { LinkId } from "@/lib/notes/repo";
@@ -115,6 +116,10 @@ const FIXTURES: { id: string; label: string }[] = [
 function createStore() {
   const items = fixtures();
   const fake = fakeRepo(items, AREAS);
+  fake.tag(id(1), "travel", "Lisbon");
+  fake.tag(id(60), "health");
+  fake.tag(id(40), "Deep work");
+  fake.tag(id(50), "errands");
   const notesStore: NotesStore = {
     items,
     bodyText: new Map(),
@@ -162,6 +167,8 @@ export function DetailHarness({ itemId, timeZone }: { itemId: string | null; tim
     remove: fake((repo, key: string, scope?: unknown) => deleteItem(repo, key, timeZone, scope)),
     setRepeat: fake((repo, key: string, choice: unknown) => setRepeat(repo, key, choice, new Date(), timeZone)),
     stopRepeating: fake((repo, key: string) => stopRepeating(repo, key, timeZone)),
+    addTag: fake((repo, key: string, name: string) => addTag(repo, key, name, timeZone)),
+    removeTag: fake((repo, key: string, name: string) => removeTag(repo, key, name, timeZone)),
     newLinkedNote: async (itemId) => {
       await pause();
       if (failing) return { ok: false, error: "A new note could not be made. Try again." };

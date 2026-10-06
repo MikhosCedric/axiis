@@ -1,5 +1,5 @@
 import type { ItemId, ItemType } from "@/domain/item";
-import { parseTagName, sameTag, type TagName } from "@/domain/tag";
+import { byName, parseTagName, sameTag, type TagName, type TagSummary } from "@/domain/tag";
 import { rank } from "@/features/palette/rank";
 
 export const TAGS_PATH = "/tags";
@@ -21,6 +21,13 @@ export type TaggedRow = {
   /** Its other tags. */
   tags: TagName[];
 };
+
+/** Tag names with the most open items first, then by name, the order suggestions start from. */
+export function byUse(tags: readonly TagSummary[]): TagName[] {
+  return byName(tags)
+    .sort((a, b) => b.open - a.open)
+    .map((t) => t.name);
+}
 
 /** Most suggestions the tag field offers at once. */
 export const SUGGESTIONS_MAX = 6;
@@ -46,6 +53,19 @@ export function splitTagTerms(query: string): { text: string; tags: TagName[] } 
     } else if (word) words.push(word);
   }
   return { text: words.join(" "), tags };
+}
+
+/**
+ * A row's tags as a quiet line ("#home #errands +2", the first `max` and a
+ * count of the rest) and as words for a label ("tagged home and errands").
+ * Both are empty for no tags.
+ */
+export function tagLine(tags: readonly string[], max = 3): { shown: string; spoken: string } {
+  if (tags.length === 0) return { shown: "", spoken: "" };
+  const rest = tags.length - max;
+  const shown = tags.slice(0, max).map((t) => `#${t}`).join(" ") + (rest > 0 ? ` +${rest}` : "");
+  const spoken = tags.length === 1 ? tags[0] : `${tags.slice(0, -1).join(", ")} and ${tags.at(-1)}`;
+  return { shown, spoken: `tagged ${spoken}` };
 }
 
 /** Says how many open items carry a tag. */
