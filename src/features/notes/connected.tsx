@@ -157,7 +157,7 @@ export function Connected({ noteId, rows, actions }: { noteId: string; rows: Con
                 aria-label={`Unlink ${r.title}`}
                 title="Unlink"
                 onClick={() => write({ kind: "remove", linkId: r.linkId }, () => actions.unlink(r.linkId), "Unlinked.")}
-                className="grid size-8 flex-none place-items-center rounded-md text-ink-3 hover:bg-accent-wash hover:text-ink"
+                className="grid size-8 pointer-coarse:size-11 flex-none place-items-center rounded-md text-ink-3 hover:bg-accent-wash hover:text-ink"
               >
                 <UnlinkIcon />
               </button>

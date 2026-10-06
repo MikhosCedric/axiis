@@ -490,3 +490,27 @@ test.describe("on a phone", () => {
     await expect(details.first()).toBeFocused();
   });
 });
+
+test.describe("on a touch phone", () => {
+  test.use({ viewport: { width: 375, height: 812 }, hasTouch: true, isMobile: true });
+
+  test("the detail panel's icon buttons are 44px touch targets, and a tag's remove button at least 24px", async ({
+    page,
+  }) => {
+    await page.goto("/dev/detail?item=00000000-0000-4000-8000-000000000001");
+    const details = page.getByRole("complementary", { name: "Details" });
+    await expect(details.getByRole("button", { name: /^Make .* a task$/ }).first()).toBeVisible();
+    await expect(details.getByRole("button", { name: /^Remove tag / }).first()).toBeVisible();
+    const small = await details.locator("button").evaluateAll((buttons) =>
+      buttons
+        .filter((b) => b.offsetParent && !b.textContent?.trim())
+        .map((b) => ({ name: b.getAttribute("aria-label") ?? "", ...b.getBoundingClientRect().toJSON() }))
+        .filter((r) => {
+          const min = r.name.startsWith("Remove tag ") ? 24 : 44;
+          return r.width < min || r.height < min;
+        })
+        .map((r) => `${r.name} ${r.width}x${r.height}`),
+    );
+    expect(small).toEqual([]);
+  });
+});
