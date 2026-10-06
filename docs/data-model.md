@@ -40,6 +40,8 @@ Checks:
 - `type = 'note'` has no schedule (`start_at`, `end_at`, `scheduled_on`, `due_on` all null).
 - Recurrence (migration 0004): `series_id` and `original_on` are both set or both null; an override is not its own series and never repeats; a note never repeats; a series has a schedule and no parent; `rrule` matches the canonical allowlist. A trigger keeps series and overrides out of the subtask hierarchy, requires an override's series to be a repeating top-level task, event or checklist, and refuses to clear a rule while live overrides point at it. A partial unique index allows one live override per `(series_id, original_on)`.
 
+Due date (`setDue`, the detail panel's Due row): a task or checklist that does not repeat can set `due_on` to a local date or clear it. Only the date comes from the client. Nothing else reads it yet: it is not drawn on the Score, the week, the Inbox or rows, and nothing sorts or warns by it. The panel shows it, it is exported, and that is all. An event or a series that already carries one shows it read-only.
+
 Changing type (`setType` in `src/features/detail/commands.ts`, the detail panel's Type row):
 - A top-level task, event or checklist can become any of the three. A note never changes and nothing becomes a note, since a note has no schedule and opens in its own editor. A subtask keeps its type.
 - An event cannot hold subtasks (the hierarchy trigger), so a parent is refused as an event with a sentence instead of a failed save. A task and a checklist both hold subtasks, so a parent moves freely between them.

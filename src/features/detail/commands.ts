@@ -7,7 +7,7 @@ import type { ItemsRepo } from "@/lib/items/repo";
 import type { ActionResult } from "@/features/today/commands";
 import { TITLE_MAX } from "@/features/today/model";
 import { DAY_MINUTES } from "@/features/score/layout";
-import { buildDetail, firstDay, retypable, subtaskPolicy, TYPE_CHOICES, type DetailView, type Scope, type TimeOfDay } from "./model";
+import { buildDetail, firstDay, retypable, subtaskPolicy, takesDue, TYPE_CHOICES, type DetailView, type Scope, type TimeOfDay } from "./model";
 import { repeatSchema, ruleFor } from "./repeat";
 import { byName } from "@/domain/tag";
 import { byUse } from "@/features/tags/model";
@@ -193,6 +193,24 @@ export async function setTime(
 /** Takes the time away, leaving the item on its day at any time, for this one or all of them. */
 export async function clearTime(repo: ItemsRepo, rawKey: unknown, timeZone: string, rawScope?: unknown): Promise<ActionResult> {
   return scheduleOnOwnDay(repo, rawKey, rawScope, timeZone, (on) => ({ kind: "day", on }));
+}
+
+/**
+ * Sets a deadline, or clears it with null. Only a date comes from the client.
+ * Only a task or checklist that does not repeat takes one; doing it twice
+ * writes once.
+ */
+export async function setDue(repo: ItemsRepo, rawId: unknown, rawOn: unknown): Promise<ActionResult> {
+  const id = parseItemId(rawId);
+  if (!id) return { ok: false, error: MISSING };
+  const on = rawOn === null ? null : parseLocalDate(rawOn);
+  if (rawOn !== null && !on) return { ok: false, error: "That date is not one Axiis can use." };
+  return attempt(async () => {
+    const item = await repo.get(id);
+    if (!item) return { ok: false, error: MISSING };
+    if (!takesDue(item)) return { ok: false, error: "Only a task or checklist that does not repeat has a due date." };
+    if (item.dueOn !== on) await repo.update(id, { dueOn: on });
+  });
 }
 
 const typeSchema = z.enum(TYPE_CHOICES);

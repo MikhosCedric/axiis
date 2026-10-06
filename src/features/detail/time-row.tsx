@@ -110,26 +110,46 @@ export function TimeRow({
   );
 }
 
-/** The first date of a series, saved when focus leaves the field or on Enter, never part way through typing a year. */
-export function FirstDayRow({ firstOn, save }: { firstOn: LocalDate; save: (on: LocalDate) => void }) {
+/**
+ * A date row, such as a series' First day or a Due date, saved when focus
+ * leaves the field or on Enter, never part way through typing a year. With
+ * `clear`, a set date can be taken away.
+ */
+export function DateRow({
+  label,
+  on: initial,
+  save,
+  clear,
+}: {
+  label: string;
+  on: LocalDate | null;
+  save: (on: LocalDate) => void;
+  clear?: { label: string; run: () => void };
+}) {
   const id = useId();
-  const [value, setValue] = useState<string>(firstOn);
-  const [saved, setSaved] = useState(firstOn);
+  const [value, setValue] = useState<string>(initial ?? "");
+  const [saved, setSaved] = useState(initial);
 
   function commit() {
     const on = parseLocalDate(value);
-    if (!on) return setValue(saved);
+    if (!on) return setValue(saved ?? "");
     if (on === saved) return;
     setSaved(on);
     save(on);
   }
 
+  function remove() {
+    setValue("");
+    setSaved(null);
+    clear?.run();
+  }
+
   return (
     <>
       <dt className="text-[13px] text-ink-3">
-        <label htmlFor={id}>First day</label>
+        <label htmlFor={id}>{label}</label>
       </dt>
-      <dd>
+      <dd className="flex flex-wrap items-center gap-x-3 gap-y-1">
         <input
           id={id}
           type="date"
@@ -141,6 +161,15 @@ export function FirstDayRow({ firstOn, save }: { firstOn: LocalDate; save: (on: 
           }}
           className={`-ml-2 ${field}`}
         />
+        {clear && saved !== null && (
+          <button
+            type="button"
+            onClick={remove}
+            className="rounded-md px-1.5 py-1 pointer-coarse:min-h-11 text-[13px] text-ink-2 hover:bg-accent-wash hover:text-ink"
+          >
+            {clear.label}
+          </button>
+        )}
       </dd>
     </>
   );

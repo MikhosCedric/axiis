@@ -12,6 +12,7 @@ import {
   promoteSubtask,
   renameItem,
   restoreOccurrence,
+  setDue,
   setFirstDay,
   setItemArea,
   setRepeat,
@@ -43,6 +44,10 @@ export async function setTimeAction(id: string, time: unknown, scope?: unknown):
 
 export async function unplanAction(id: string): Promise<ActionResult> {
   return refreshed(await moveItem(await getItemsRepo(), id, "tray", await getTimeZone()));
+}
+
+export async function setDueAction(id: string, on: unknown): Promise<ActionResult> {
+  return refreshed(await setDue(await getItemsRepo(), id, on));
 }
 
 export async function setTypeAction(id: string, type: unknown): Promise<ActionResult> {

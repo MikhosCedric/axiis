@@ -131,7 +131,8 @@ export type DetailView = {
   today: LocalDate;
   /** The clock time of a timed item on its first day, null for anything without one. */
   time: TimeOfDay | null;
-  due: string | null;
+  /** The deadline, and whether the panel may set or clear it. */
+  due: { on: LocalDate | null; editable: boolean };
   areas: { id: AreaId; name: string }[];
   nesting: Nesting;
   repeat: RepeatView;
@@ -151,6 +152,8 @@ export type DetailActions = {
   /** Takes it off its day, back to waiting. */
   unplan: (id: string) => Promise<ActionResult>;
   setTime: (id: string, time: TimeOfDay, scope?: Scope) => Promise<ActionResult>;
+  /** Sets the deadline to a local date, or clears it with null. */
+  setDue: (id: string, on: LocalDate | null) => Promise<ActionResult>;
   /** Changes the type; on anything that repeats, of the series and every occurrence. */
   setType: (id: string, type: TypeChoice) => Promise<ActionResult>;
   /** Leaves it on its day at any time. */
@@ -197,8 +200,13 @@ export function describeWhen(schedule: Schedule, timeZone: string): string {
   return endDay === startDay ? `${start} to ${end}` : `${start} to ${formatDayHeading(endDay)}, ${end}`;
 }
 
-export function describeDue(dueOn: LocalDate | null): string | null {
-  return dueOn === null ? null : `Due ${formatDayHeading(dueOn)}`;
+/**
+ * Whether a due date can be set or cleared: on a task or checklist that does
+ * not repeat. A deadline on every occurrence of a series would be the same date
+ * each time, and a note never sits in time.
+ */
+export function takesDue(item: Pick<ShownItem, "type" | "recurrence">): boolean {
+  return (item.type === "task" || item.type === "checklist") && item.recurrence.kind === "none";
 }
 
 export function firstDay(schedule: Schedule, timeZone: string): LocalDate | null {
@@ -279,7 +287,7 @@ export function buildDetail(input: {
     day: firstDay(item.schedule, timeZone),
     today,
     time: timeOf(item.schedule, timeZone),
-    due: describeDue(item.dueOn),
+    due: { on: item.dueOn, editable: takesDue(item) },
     areas: areas.map((a) => ({ id: a.id, name: a.name })),
     nesting,
     repeat: repeatView(item, series, subtasks, skipped, timeZone, today),
