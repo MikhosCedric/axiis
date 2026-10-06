@@ -1,4 +1,5 @@
 import { z } from "zod";
+import type { OccurrenceKey } from "./item-key";
 import type { Rule } from "./recurrence";
 
 export const ITEM_TYPES = ["task", "event", "note", "checklist"] as const;
@@ -50,6 +51,28 @@ export type Item = {
   createdAt: Date;
   updatedAt: Date;
 };
+
+/**
+ * One occurrence of a series that has no override, drawn like a stored item.
+ * Its id is an occurrence key, so it can be selected and acted on, and the
+ * server materializes an override the first time it is changed.
+ */
+export type VirtualItem = Omit<Item, "id" | "recurrence"> & {
+  id: OccurrenceKey;
+  recurrence: { kind: "occurrence"; seriesId: ItemId; originalOn: LocalDate };
+};
+
+/** What a view draws: a stored item, or a virtual occurrence. */
+export type ShownItem = Item | VirtualItem;
+
+export function isStored(item: ShownItem): item is Item {
+  return item.recurrence.kind !== "occurrence";
+}
+
+/** True for anything that belongs to a series: the series itself, an override, or a virtual occurrence. */
+export function repeats(item: Pick<ShownItem, "recurrence">): boolean {
+  return item.recurrence.kind !== "none";
+}
 
 export type Area = {
   id: AreaId;

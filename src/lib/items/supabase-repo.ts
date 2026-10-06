@@ -1,8 +1,18 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
-import { ITEM_STATUSES, type Area, type DayRange, type Item, type ItemId, type ItemPatch, type NewItem, type SpanRange } from "@/domain/item";
+import {
+  ITEM_STATUSES,
+  type Area,
+  type DayRange,
+  type Item,
+  type ItemId,
+  type ItemPatch,
+  type LocalDate,
+  type NewItem,
+  type SpanRange,
+} from "@/domain/item";
 import { AREA_COLUMNS, ITEM_COLUMNS, areaFromRow, itemFromRow, newItemToInsert, patchToUpdate } from "./mappers";
-import type { ChildCount, ItemsRepo } from "./repo";
+import { MAX_SERIES, type ChildCount, type ItemsRepo } from "./repo";
 
 type QueryResult = { data: unknown; error: { message: string; code?: string } | null };
 
@@ -36,10 +46,15 @@ export class SupabaseItemsRepo implements ItemsRepo {
     return unwrap("listAreas", result, (raw) => rowList.parse(raw).map(areaFromRow));
   }
 
+  /** Items that are not series. A series is drawn through its expanded occurrences instead. */
+  private single() {
+    return this.items().is("rrule", null);
+  }
+
   async listForDay(range: DayRange): Promise<{ scheduled: Item[]; unscheduled: Item[] }> {
     const [timed, dayOnly, unscheduled] = await Promise.all([
-      this.items().gte("start_at", range.from.toISOString()).lt("start_at", range.to.toISOString()).order("start_at"),
-      this.items().eq("scheduled_on", range.date).order("position"),
+      this.single().gte("start_at", range.from.toISOString()).lt("start_at", range.to.toISOString()).order("start_at"),
+      this.single().eq("scheduled_on", range.date).order("position"),
       this.items().is("start_at", null).is("scheduled_on", null).is("parent_id", null).order("position"),
     ]);
     return {
@@ -50,10 +65,22 @@ export class SupabaseItemsRepo implements ItemsRepo {
 
   async listRange(range: SpanRange): Promise<Item[]> {
     const [timed, dayOnly] = await Promise.all([
-      this.items().gte("start_at", range.from.toISOString()).lt("start_at", range.to.toISOString()).order("start_at"),
-      this.items().gte("scheduled_on", range.fromDate).lt("scheduled_on", range.toDate).order("scheduled_on").order("position"),
+      this.single().gte("start_at", range.from.toISOString()).lt("start_at", range.to.toISOString()).order("start_at"),
+      this.single().gte("scheduled_on", range.fromDate).lt("scheduled_on", range.toDate).order("scheduled_on").order("position"),
     ]);
     return [...unwrap("listRange", timed, itemList), ...unwrap("listRange", dayOnly, itemList)];
+  }
+
+  async listSeries(): Promise<Item[]> {
+    const result = await this.items().not("rrule", "is", null).order("created_at").limit(MAX_SERIES);
+    return unwrap("listSeries", result, itemList);
+  }
+
+  async listOverrides(fromDate: LocalDate, toDate: LocalDate, seriesId?: ItemId): Promise<Item[]> {
+    let query = this.items().not("series_id", "is", null).gte("original_on", fromDate).lt("original_on", toDate);
+    if (seriesId) query = query.eq("series_id", seriesId);
+    const result = await query.order("original_on");
+    return unwrap("listOverrides", result, itemList);
   }
 
   async listChildren(parentId: ItemId): Promise<Item[]> {

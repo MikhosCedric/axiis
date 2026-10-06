@@ -1,7 +1,7 @@
 "use client";
 
 import { ViewTransition } from "react";
-import type { Area, Item } from "@/domain/item";
+import type { Area, ShownItem } from "@/domain/item";
 import { formatClock } from "@/features/today/format";
 import { Glyph } from "@/features/today/glyph";
 import type { BeamState, TodayEntry, TodayView } from "@/features/today/model";
@@ -30,7 +30,7 @@ export function ListView({
   selectedId: string | null;
   justDone: string | null;
   onSelect: (id: string | null) => void;
-  onToggleDone: (item: Item) => void;
+  onToggleDone: (item: ShownItem) => void;
 }) {
   const areaName = new Map<string, string>(areas.map((a) => [a.id, a.name]));
   const row = ({ item, state }: TodayEntry) => {
