@@ -18,6 +18,7 @@ import { RepeatMark } from "@/features/today/repeat-mark";
 import { selectedIn, type ItemKey } from "@/domain/item-key";
 import { dayHref } from "@/features/day/nav";
 import { SELECTED_ITEM_PARAM } from "@/features/day/types";
+import { DetailAside } from "@/features/detail/detail-aside";
 import { STATE_WORD } from "@/features/score/score-view";
 import { captureAction, setDoneAction } from "@/features/today/actions";
 import { CaptureField } from "@/features/today/capture-field";
@@ -275,13 +276,7 @@ export function WeekView({
         </div>
       </div>
 
-      {selectedParam && (
-        <aside aria-label="Details" className="border-t border-rule bg-sheet min-[1180px]:border-t-0 min-[1180px]:border-l">
-          <div className="px-4 py-6 rail:px-9 min-[1180px]:sticky min-[1180px]:top-0 min-[1180px]:max-h-dvh min-[1180px]:overflow-y-auto min-[1180px]:px-6 min-[1180px]:py-8">
-            {detail}
-          </div>
-        </aside>
-      )}
+      {selectedParam && <DetailAside pending={selectedId !== selectedParam}>{detail}</DetailAside>}
     </div>
   );
 }

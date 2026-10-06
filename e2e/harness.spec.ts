@@ -270,3 +270,41 @@ test.describe("inbox", () => {
     await expect(page.getByText("1 item waiting for a day.")).toBeVisible();
   });
 });
+
+const SWITCHES = [
+  { path: "/dev/score", from: "Book the dentist", to: "Take vitamins" },
+  { path: "/dev/week", from: "Renew passport", to: "Book the dentist" },
+  { path: "/dev/inbox", from: "Pack for the coast", to: "Return the library books" },
+];
+
+for (const { path, from, to } of SWITCHES) {
+  test(`${path}: while the next item opens, the one still showing cannot be used`, async ({ page }) => {
+    await page.goto(path);
+    const details = page.getByRole("complementary", { name: "Details" });
+    const insideInert = () => details.locator("h2").evaluate((h) => h.closest("[inert]") !== null);
+    await page.getByRole("button", { name: new RegExp(`^${from},?`) }).first().click();
+    await expect(details.getByRole("heading", { name: from })).toBeVisible();
+    await expect(details).toHaveAttribute("aria-busy", "false");
+
+    // Holds the server's answer for the next item, so the switch stays part way for as long as the test needs.
+    let release!: () => void;
+    const held = new Promise<void>((resolve) => (release = resolve));
+    await page.route(
+      (url) => url.searchParams.has("_rsc"),
+      async (route) => {
+        await held;
+        await route.continue();
+      },
+    );
+    await page.getByRole("button", { name: new RegExp(`^${to},?`) }).first().click();
+
+    await expect(details).toHaveAttribute("aria-busy", "true");
+    await expect(details.getByRole("heading", { name: from })).toBeVisible();
+    expect(await insideInert()).toBe(true);
+
+    release();
+    await expect(details.getByRole("heading", { name: to })).toBeVisible();
+    await expect(details).toHaveAttribute("aria-busy", "false");
+    expect(await insideInert()).toBe(false);
+  });
+}
