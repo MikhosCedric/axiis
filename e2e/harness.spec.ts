@@ -559,11 +559,21 @@ test.describe("on a phone", () => {
   });
 });
 
-test("with a mouse, the Score shows the keyboard help and no press-and-hold hint", async ({ page }) => {
+test("with a mouse, the Score keeps its keyboard help behind a ? and shows no press-and-hold hint", async ({ page }) => {
   await page.goto("/dev/score");
   const keys = page.getByText(/^Drag a beam to move it/);
+  await expect(keys).toBeHidden();
+  const help = page.getByRole("button", { name: "Keyboard help" });
+  await help.hover();
   await expect(keys).toBeVisible();
   expect(await keys.evaluate((el) => el.getBoundingClientRect().width)).toBeGreaterThan(100);
+  await page.mouse.move(0, 0);
+  await expect(keys).toBeHidden();
+  await help.focus();
+  await expect(keys).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(keys).toBeHidden();
+  await expect(page.getByRole("button", { name: "Keyboard help" })).toHaveAttribute("aria-expanded", "false");
   await expect(page.getByText(/^Drag one onto an area/)).toBeVisible();
   await expect(page.locator("kbd", { hasText: /^C$/ })).toBeVisible();
   await expect(page.getByText(/Press and hold/)).toHaveCount(2);
@@ -583,7 +593,9 @@ test.describe("on a touch phone", () => {
     await expect(page.locator("kbd", { hasText: /^C$/ })).toBeHidden();
 
     const keys = page.getByText(/^Drag a beam to move it/);
-    expect(await keys.evaluate((el) => el.getBoundingClientRect().width)).toBeLessThanOrEqual(1);
+    await expect(keys).toBeHidden();
+    await page.getByRole("button", { name: "Keyboard help" }).tap();
+    await expect(keys).toBeVisible();
     await expect(page.getByRole("button", { name: /^Design sync, / })).toHaveAccessibleDescription(
       /Space marks it done/,
     );
