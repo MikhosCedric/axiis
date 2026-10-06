@@ -277,7 +277,11 @@ export function ScoreView({
         </div>
       </div>
 
-      <p id={KEYS_ID} className="mt-3 max-w-[72ch] text-[13px] leading-relaxed text-ink-3">
+      <p aria-hidden="true" className="mt-3 hidden text-[13px] leading-relaxed text-ink-3 pointer-coarse:block">
+        Press and hold a beam, then drag it to move it, or hold and drag its right end to change its length.
+      </p>
+      {/* Touch screens see the line above instead; this stays as every beam's description for keyboard users. */}
+      <p id={KEYS_ID} className="mt-3 max-w-[72ch] text-[13px] leading-relaxed text-ink-3 pointer-coarse:sr-only">
         Drag a beam to move it, or its right end to change its length. With a beam focused, <Kbd>←</Kbd> <Kbd>→</Kbd>{" "}
         move it a quarter hour, <Kbd>Shift</Kbd> with <Kbd>←</Kbd> <Kbd>→</Kbd> changes its length, <Kbd>↑</Kbd>{" "}
         <Kbd>↓</Kbd> change its area, <Kbd>Space</Kbd> marks it done, <Kbd>Enter</Kbd> opens it and <Kbd>Backspace</Kbd>{" "}
@@ -293,7 +297,9 @@ export function ScoreView({
           Waiting for a time
         </h3>
         <p className="mt-1 mb-3.5 text-[13px] text-ink-3">
-          Drag one onto an area to give it a time. Drag a beam back here to clear its time.
+          <span className="pointer-coarse:hidden">Drag one onto an area to give it a time.</span>
+          <span className="hidden pointer-coarse:inline">Press and hold one, then drag it onto an area to give it a time.</span>{" "}
+          Drag a beam back here to clear its time.
         </p>
         {score.waiting.length ? (
           <ul className="flex flex-wrap gap-2.5">
