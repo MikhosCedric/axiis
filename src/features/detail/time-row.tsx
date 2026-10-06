@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useState, type FocusEvent } from "react";
+import { useId, useState, type FocusEvent, type RefObject } from "react";
 import type { LocalDate } from "@/domain/item";
 import { parseLocalDate } from "@/lib/dates";
 import { clockOf, timeFrom, type TimeOfDay } from "./model";
@@ -9,7 +9,7 @@ const field =
   "rounded-md border border-transparent bg-transparent py-1 pr-1 pl-1.5 text-ink tabular hover:border-rule-soft focus:border-field focus:bg-sheet";
 
 /**
- * The Time row for an occurrence: a start and an end, saved when focus leaves
+ * The Time row: a start and an end, saved when focus leaves
  * the pair or on Enter, and a way back to any time. Where the change goes
  * (this one or all of them) is the sheet's scope.
  */
@@ -17,10 +17,13 @@ export function TimeRow({
   time,
   save,
   clear,
+  startRef,
 }: {
   time: TimeOfDay | null;
   save: (time: TimeOfDay) => void;
   clear: () => void;
+  /** The sheet's handle on the start field, so it can send focus here when the item needs a time. */
+  startRef?: RefObject<HTMLInputElement | null>;
 }) {
   const labelId = useId();
   const hintId = useId();
@@ -39,9 +42,10 @@ export function TimeRow({
     if (time?.start !== next.start || time.length !== next.length) save(next);
   }
 
-  function clockField(label: string, value: string, set: (value: string) => void) {
+  function clockField(label: string, value: string, set: (value: string) => void, ref?: RefObject<HTMLInputElement | null>) {
     return (
       <input
+        ref={ref}
         type="text"
         inputMode="numeric"
         autoComplete="off"
@@ -83,7 +87,7 @@ export function TimeRow({
             if (e.key === "Enter") commit();
           }}
         >
-          {clockField("Starts at", start, setStart)}
+          {clockField("Starts at", start, setStart, startRef)}
           <span className="text-ink-2">to</span>
           {clockField("Ends at", end, setEnd)}
         </span>
@@ -106,26 +110,46 @@ export function TimeRow({
   );
 }
 
-/** The first date of a series, saved when focus leaves the field or on Enter, never part way through typing a year. */
-export function FirstDayRow({ firstOn, save }: { firstOn: LocalDate; save: (on: LocalDate) => void }) {
+/**
+ * A date row, such as a series' First day or a Due date, saved when focus
+ * leaves the field or on Enter, never part way through typing a year. With
+ * `clear`, a set date can be taken away.
+ */
+export function DateRow({
+  label,
+  on: initial,
+  save,
+  clear,
+}: {
+  label: string;
+  on: LocalDate | null;
+  save: (on: LocalDate) => void;
+  clear?: { label: string; run: () => void };
+}) {
   const id = useId();
-  const [value, setValue] = useState<string>(firstOn);
-  const [saved, setSaved] = useState(firstOn);
+  const [value, setValue] = useState<string>(initial ?? "");
+  const [saved, setSaved] = useState(initial);
 
   function commit() {
     const on = parseLocalDate(value);
-    if (!on) return setValue(saved);
+    if (!on) return setValue(saved ?? "");
     if (on === saved) return;
     setSaved(on);
     save(on);
   }
 
+  function remove() {
+    setValue("");
+    setSaved(null);
+    clear?.run();
+  }
+
   return (
     <>
       <dt className="text-[13px] text-ink-3">
-        <label htmlFor={id}>First day</label>
+        <label htmlFor={id}>{label}</label>
       </dt>
-      <dd>
+      <dd className="flex flex-wrap items-center gap-x-3 gap-y-1">
         <input
           id={id}
           type="date"
@@ -137,6 +161,15 @@ export function FirstDayRow({ firstOn, save }: { firstOn: LocalDate; save: (on: 
           }}
           className={`-ml-2 ${field}`}
         />
+        {clear && saved !== null && (
+          <button
+            type="button"
+            onClick={remove}
+            className="rounded-md px-1.5 py-1 pointer-coarse:min-h-11 text-[13px] text-ink-2 hover:bg-accent-wash hover:text-ink"
+          >
+            {clear.label}
+          </button>
+        )}
       </dd>
     </>
   );

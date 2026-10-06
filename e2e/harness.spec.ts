@@ -192,7 +192,8 @@ test("detail: a skipped day is listed on the series and can be restored", async 
 });
 
 test("detail: times are typed and shown on the 24-hour clock, and an unreadable one is not saved", async ({ page }) => {
-  const when = (label: string) => page.getByRole("complementary").locator("dt", { hasText: label }).locator("+ dd");
+  // The When row also holds the Move to button, so read only the words it shows.
+  const when = (label: string) => page.getByRole("complementary").locator("dt", { hasText: label }).locator("+ dd > span").first();
   await page.goto("/dev/detail?item=00000000-0000-4000-8000-000000000070~2026-10-11");
   const time = page.getByRole("group", { name: "Time" });
   const start = time.getByLabel("Starts at");
