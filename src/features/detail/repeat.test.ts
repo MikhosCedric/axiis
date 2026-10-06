@@ -30,7 +30,15 @@ describe("describeRule", () => {
     [ruleFor("yearly", { kind: "count", count: 1 }), "Every year, once"],
     [{ freq: "weekly", interval: 1, byDay: ["MO", "WE", "FR"], end: never }, "Every week on Monday, Wednesday and Friday"],
   ])("%j reads as %s", (rule, text) => {
-    expect(describeRule(rule, d("2026-10-06"))).toBe(text);
+    expect(describeRule(rule, d("2026-10-06"), d("2026-10-06"))).toBe(text);
+  });
+
+  it("names the year of an end that is not in this year, either way", () => {
+    const until = (on: string) => ruleFor("weekly", { kind: "until", on: d(on) });
+    const today = d("2026-10-06");
+    expect(describeRule(until("2027-01-07"), today, today)).toBe("Every week on Tuesday, until Thursday 7 January 2027");
+    expect(describeRule(until("2025-12-31"), d("2025-10-07"), today)).toBe("Every week on Tuesday, until Wednesday 31 December 2025");
+    expect(describeRule(until("2026-12-31"), today, today)).toBe("Every week on Tuesday, until Thursday 31 December");
   });
 
   it("names weekdays from a local date", () => {

@@ -7,10 +7,11 @@ import { setDone } from "@/features/today/commands";
 import { area, fakeRepo, makeItem } from "@/features/today/test-support";
 import { moveItem } from "@/features/week/commands";
 import { loadOccurrences } from "@/lib/items/occurrences";
-import { clearTime, deleteItem, loadDetail, renameItem, setFirstDay, setItemArea, setRepeat, setTime, stopRepeating } from "./commands";
+import { clearTime, deleteItem, loadDetail, renameItem, restoreOccurrence, setFirstDay, setItemArea, setRepeat, setTime, stopRepeating } from "./commands";
 
 const d = (s: string) => s as LocalDate;
 const TZ = "UTC";
+const NOW = new Date("2026-10-06T12:00:00Z");
 const daily: Rule = { freq: "daily", interval: 1, end: { kind: "never" } };
 const work = area("Work");
 const home = area("Home");
@@ -127,6 +128,73 @@ describe("delete and skip", () => {
     expect(await deleteItem(w.repo, inView.id, TZ, "all")).toEqual({ ok: true });
     expect(w.items.some((i) => i.id === w.series.id || i.id === inView.id)).toBe(false);
     expect(w.overrides().map((o) => o.status)).toEqual(["done"]);
+  });
+});
+
+describe("restoreOccurrence", () => {
+  it("brings a skipped occurrence back open, keeping what was changed on it", async () => {
+    const w = world();
+    await renameItem(w.repo, w.key("2026-10-07"), "Standup, short", TZ);
+    await deleteItem(w.repo, w.key("2026-10-07"), TZ);
+    expect(await restoreOccurrence(w.repo, w.key("2026-10-07"), TZ)).toEqual({ ok: true });
+    expect(w.overrides()).toEqual([expect.objectContaining({ status: "open", title: "Standup, short" })]);
+  });
+
+  it("a second restore changes nothing and still succeeds", async () => {
+    const w = world();
+    await deleteItem(w.repo, w.key("2026-10-07"), TZ);
+    await restoreOccurrence(w.repo, w.key("2026-10-07"), TZ);
+    const writes = w.calls.update.length;
+    expect(await restoreOccurrence(w.repo, w.key("2026-10-07"), TZ)).toEqual({ ok: true });
+    expect(w.calls.update).toHaveLength(writes);
+    expect(w.overrides()).toHaveLength(1);
+  });
+
+  it("refuses one never skipped, one done, a stored id, a gone series and nonsense, and writes nothing", async () => {
+    const w = world();
+    await setDone(w.repo, w.key("2026-10-08"), true, TZ);
+    await deleteItem(w.repo, w.key("2026-10-09"), TZ);
+    const [, skipped] = w.overrides();
+    const writes = w.calls.update.length;
+    const refused = ["That one was not skipped.", "That one was not skipped.", "That item is not here any more."];
+    for (const [i, key] of [w.key("2026-10-07"), w.key("2026-10-08"), skipped.id].entries()) {
+      expect(await restoreOccurrence(w.repo, key, TZ)).toEqual({ ok: false, error: refused[i] });
+    }
+    for (const bad of [null, "", `${w.series.id}~2026-02-30`]) expect((await restoreOccurrence(w.repo, bad, TZ)).ok).toBe(false);
+    await deleteItem(w.repo, w.series.id, TZ);
+    expect((await restoreOccurrence(w.repo, w.key("2026-10-09"), TZ)).ok).toBe(false);
+    expect(w.calls.update).toHaveLength(writes);
+    expect(skipped.status).toBe("dropped");
+  });
+
+  it("the series' panel lists its skipped dates in order, each with the key that restores it", async () => {
+    const w = world();
+    await deleteItem(w.repo, w.key("2027-01-04"), TZ);
+    await deleteItem(w.repo, w.key("2026-10-09"), TZ);
+    await setDone(w.repo, w.key("2026-10-08"), true, TZ);
+    const view = await loadDetail(w.repo, { kind: "item", id: w.series.id as ItemId }, NOW, TZ);
+    expect(view?.repeat).toMatchObject({
+      kind: "series",
+      skipped: [
+        { key: w.key("2026-10-09"), on: "Friday 9 October" },
+        { key: w.key("2027-01-04"), on: "Monday 4 January 2027" },
+      ],
+    });
+    await restoreOccurrence(w.repo, w.key("2026-10-09"), TZ);
+    const after = await loadDetail(w.repo, { kind: "item", id: w.series.id as ItemId }, NOW, TZ);
+    expect(after?.repeat).toMatchObject({ skipped: [{ key: w.key("2027-01-04") }] });
+  });
+
+  it("a skipped occurrence's own panel names the key that restores it, opened by its key or its stored id", async () => {
+    const w = world();
+    await deleteItem(w.repo, w.key("2026-10-09"), TZ);
+    const restoring = { key: w.key("2026-10-09"), on: "Friday 9 October" };
+    const byKey = await loadDetail(w.repo, { kind: "occurrence", seriesId: w.series.id as ItemId, originalOn: d("2026-10-09") }, NOW, TZ);
+    const byId = await loadDetail(w.repo, { kind: "item", id: w.overrides()[0].id as ItemId }, NOW, TZ);
+    expect(byKey?.repeat).toMatchObject({ kind: "occurrence", skipped: restoring });
+    expect(byId?.repeat).toMatchObject({ kind: "occurrence", skipped: restoring });
+    const open = await loadDetail(w.repo, { kind: "occurrence", seriesId: w.series.id as ItemId, originalOn: d("2026-10-08") }, NOW, TZ);
+    expect(open?.repeat).toMatchObject({ kind: "occurrence", skipped: null });
   });
 });
 
@@ -291,6 +359,17 @@ describe("clearTime", () => {
     expect(next.occurrences.map((o) => o.schedule)).toEqual([{ kind: "day", on: "2026-10-09" }]);
   });
 
+  it("from the series itself, changes the series and no override", async () => {
+    const w = world();
+    await renameItem(w.repo, w.key("2026-10-07"), "Kept", TZ);
+    const before = structuredClone(w.overrides());
+    expect(await clearTime(w.repo, w.series.id, TZ, "all")).toEqual({ ok: true });
+    expect(w.series.schedule).toEqual({ kind: "day", on: "2026-10-05" });
+    expect(await setTime(w.repo, w.series.id, { start: 7 * 60, length: 20 }, TZ, "all")).toEqual({ ok: true });
+    expect(w.series.schedule).toEqual({ kind: "timed", start: new Date("2026-10-05T07:00:00Z"), end: new Date("2026-10-05T07:20:00Z") });
+    expect(w.overrides()).toEqual(before);
+  });
+
   it("with scope one, clears that occurrence only", async () => {
     const w = world();
     expect(await clearTime(w.repo, w.key("2026-10-08"), TZ, "one")).toEqual({ ok: true });
@@ -392,7 +471,7 @@ describe("stopRepeating", () => {
 describe("loadDetail for repeating items", () => {
   it("shows a virtual occurrence with its day, rule and the series as the notes target", async () => {
     const w = world();
-    const view = await loadDetail(w.repo, { kind: "occurrence", seriesId: w.series.id, originalOn: d("2026-10-07") }, TZ);
+    const view = await loadDetail(w.repo, { kind: "occurrence", seriesId: w.series.id, originalOn: d("2026-10-07") }, NOW, TZ);
     expect(view).toMatchObject({
       item: { id: w.key("2026-10-07"), title: "Standup", done: false },
       when: "Wednesday 7 October, 09:00 to 09:15",
@@ -407,7 +486,7 @@ describe("loadDetail for repeating items", () => {
   it("an occurrence key opens its override once there is one", async () => {
     const w = world();
     await renameItem(w.repo, w.key("2026-10-07"), "Short one", TZ);
-    const view = await loadDetail(w.repo, { kind: "occurrence", seriesId: w.series.id, originalOn: d("2026-10-07") }, TZ);
+    const view = await loadDetail(w.repo, { kind: "occurrence", seriesId: w.series.id, originalOn: d("2026-10-07") }, NOW, TZ);
     expect(view?.item).toMatchObject({ id: w.overrides()[0].id, title: "Short one" });
     expect(view?.repeat.kind).toBe("occurrence");
     expect(view?.notesFor).toBe(w.series.id);
@@ -420,11 +499,11 @@ describe("loadDetail for repeating items", () => {
     w.tag(w.series.id, "work", "Daily");
     w.tag(other.id, "home");
     const occurrence = { kind: "occurrence" as const, seriesId: w.series.id, originalOn: d("2026-10-07") };
-    expect((await loadDetail(w.repo, occurrence, TZ))?.tags).toEqual({ on: ["Daily", "work"], known: ["Daily", "home", "work"] });
+    expect((await loadDetail(w.repo, occurrence, NOW, TZ))?.tags).toEqual({ on: ["Daily", "work"], known: ["Daily", "home", "work"] });
     await renameItem(w.repo, w.key("2026-10-07"), "Short one", TZ);
-    expect((await loadDetail(w.repo, occurrence, TZ))?.tags.on).toEqual(["Daily", "work"]);
+    expect((await loadDetail(w.repo, occurrence, NOW, TZ))?.tags.on).toEqual(["Daily", "work"]);
     w.tag(other.id, "work");
-    expect((await loadDetail(w.repo, { kind: "item", id: other.id as ItemId }, TZ))?.tags).toEqual({
+    expect((await loadDetail(w.repo, { kind: "item", id: other.id as ItemId }, NOW, TZ))?.tags).toEqual({
       on: ["home", "work"],
       known: ["work", "Daily", "home"],
     });
@@ -436,7 +515,7 @@ describe("loadDetail for repeating items", () => {
     const note = makeItem({ type: "note" });
     const lone = makeItem({ type: "event" });
     const { repo } = fakeRepo([parent, child, note, lone]);
-    const repeatOf = async (i: Item) => (await loadDetail(repo, { kind: "item", id: i.id as ItemId }, TZ))?.repeat.kind;
+    const repeatOf = async (i: Item) => (await loadDetail(repo, { kind: "item", id: i.id as ItemId }, NOW, TZ))?.repeat.kind;
     expect(await repeatOf(parent)).toBe("unavailable");
     expect(await repeatOf(child)).toBe("unavailable");
     expect(await repeatOf(note)).toBe("hidden");
