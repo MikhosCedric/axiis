@@ -29,6 +29,7 @@ A free, solo-user productivity web app. Tasks, a planner, checklists and notes s
 | Design system as shipped (tokens, type, line-form state, components, rules) | `DESIGN.md`, sidecar `.impeccable/design.json` |
 | Design audit (a11y, responsive, performance, drift; findings by severity) | `docs/design-audit.md` |
 | Database | `supabase/migrations/`, tests in `tests/db/` (PGlite, no Docker) |
+| Browser tests on the real signed-in routes (dev-only fake session, its guard and the production check) | `src/lib/supabase/{fake-session,fake-account}.ts`, `e2e/{session.ts,signed-in.spec.ts}`, `scripts/check-no-fake-session.mjs`, `docs/e2e-session.md` |
 | Dev-only harness pages (blocked in production) | `src/app/dev/{score,week,inbox,lists,detail,notes,settings,palette,tags}/`, their shared detail actions in `src/app/dev/detail-actions.ts` |
 | Visual prototype that set the direction | `prototypes/today-score/index.html` |
 
@@ -45,6 +46,8 @@ A free, solo-user productivity web app. Tasks, a planner, checklists and notes s
 ```bash
 npm run dev          # needs .env.local (Supabase URL + publishable key)
 npm run lint && npm run typecheck && npm test && npm run build   # what CI runs
+npm run check:no-fake-session   # builds, then proves the e2e fake session is absent from the output (CI runs it)
+npm run e2e                     # Playwright and axe; E2E_CHANNEL=msedge on Windows. See docs/e2e-session.md
 ```
 
 ## Supabase
@@ -87,12 +90,14 @@ Updated: see the log at the bottom. Phases:
 2. Owner-only launch items: `docs/launch-checklist.md` (Vercel, domain, Google OAuth, production redirect URLs, real name and contact in the legal drafts).
 3. Deferred design calls in `docs/design-audit.md` (beam labels on short beams, verdigris hover wash, dark-token duplication, headline utility, chip edges).
 4. The When, Starts and Due lines show no year; they could use `formatDayIn`. The "Part of" link lacks the pending state.
-5. Extend e2e once a test user can sign in without the magic link.
+5. Extend the signed-in e2e specs (`e2e/signed-in.spec.ts`): drag on the real Score and Week, the detail panel, notes editing, tag rename, account deletion.
 6. A partial unique index on `areas (user_id, lower(name)) where deleted_at is null` (the app already refuses duplicates; this only closes a race).
 7. Order search by rank (RPC), flush pending note saves before nav-rail navigation, subtask counts on week rows, shared date picker for the day and week navs.
 
 ## Known gaps and risks
-- Saves through the real repo and row-level security have been verified by unit tests and a rolled-back SQL check, but not through a signed-in browser session (the agent cannot receive the magic link).
+- The e2e suite now visits the real signed-in routes through a dev-only fake session with in-memory repos (`docs/e2e-session.md`): the proxy, layouts, nav rail and server actions are covered there. Supabase Auth (magic link, Google, callback, refresh), row-level security and the Supabase repos are not, because the fake session replaces them.
+- Saves through the real repo and row-level security have been verified by unit tests and a rolled-back SQL check, but not through a signed-in browser session against Supabase (the agent cannot receive the magic link).
+- `next dev` on Windows is slow under the parallel suite, so the signed-in specs allow 90 seconds per test and 30 per assertion.
 - The Score/List view-transition morph has not been seen playing; the preview pane reports the page hidden.
 - Touch drag tested with synthetic events only.
 - Restoring a skipped day is verified by unit tests against `fakeRepo` and the detail harness (e2e and axe), not by a signed-in session. "Skipped dates" lists every skipped date of a series, with no cap.
@@ -112,6 +117,7 @@ Updated: see the log at the bottom. Phases:
 - Put real name and contact email into the privacy policy and terms (placeholders are marked).
 
 ## Log
+- 2026-10-07 (e2e session): browser tests on the real signed-in routes through a dev-only fake session (`src/lib/supabase/fake-session.ts`), with in-memory repos for `e2e@axiis.invalid`; `check:no-fake-session` in CI proves a production build carries none of it. Specs for the nav rail, capture to Inbox to tomorrow, Lists, Tags, Settings and export, sign-out, and axe on `/today`, `/inbox`, `/settings`. PR from `feat-e2e-session`. No migration.
 - 2026-10-07 (capture and palette): the capture field says where an item went and rings it; capture reads a day, a time, a length and tags (`parseCapture` in `src/features/today/capture-syntax.ts`, read on the server against the user's time zone) with a preview chip and a `?` help note; Lists takes a checklist's name as typed; the palette acts on a found or selected item (open, done, plan today or tomorrow, tag). PR #27 from `feat-capture-palette`. No migration.
 - 2026-10-07 (shell critique): the phone nav stays inside 375px; the no-day pile is "Waiting" everywhere and the trays link to the Inbox; a printed line-form key on the Score and Week; tag pages and Lists tick items done through the shared `DoneToggle` (`src/features/today/done-toggle.tsx`); Tags index aligned left; quieter rail Areas; a Today icon; neutral loading skeletons (`src/components/page-skeleton.tsx`); 44px view switches on touch and landing links. See `docs/design-audit.md`, "Shell critique follow-ups". PR #28 from `fix-critique-shell`. No migration.
 - 2026-10-07 (plan in panel): the detail panel plans any one-off item (Plan for / Move to: Today, Tomorrow, Another day, No day) and times it once it has a day, reusing `planItem`, `moveItem`, `setTime` and `clearTime`; Type is a Task / Event / Checklist choice (`setType`, whole series on repeats); Due is set and cleared (`setDue`, one-off tasks and checklists); Repeat says where a series starts and the series panel says who ticks it done. Answers the critique's P1 that a one-off could only be planned by dragging. The sheet is now keyed by the key it was opened with, so the first "This one" change to an occurrence no longer remounts it and loses its status line. PR #26 from `feat-plan-in-panel`. No migration.
