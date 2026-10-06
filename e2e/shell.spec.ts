@@ -11,6 +11,22 @@ test("the Score and Week trays are the Inbox's waiting pile and say so", async (
   await expect(page.getByRole("region", { name: "Waiting", exact: true })).toBeVisible();
 });
 
+test("the week's date field shows the focus ring", async ({ page }) => {
+  await page.goto("/dev/week");
+  const picker = page.getByLabel("Go to the week of a date");
+  await picker.focus();
+  await expect(picker).toHaveCSS("outline-style", "solid");
+  await expect(picker).toHaveCSS("outline-width", "2px");
+});
+
+test("the Tags index starts at the same left edge as Lists", async ({ page }) => {
+  const left = async (path: string) => {
+    await page.goto(path);
+    return (await page.getByRole("heading", { level: 1 }).boundingBox())!.x;
+  };
+  expect(await left("/dev/tags")).toBe(await left("/dev/lists"));
+});
+
 test.describe("shell on a phone", () => {
   test.use({ viewport: { width: 375, height: 812 }, hasTouch: true });
 
@@ -27,6 +43,21 @@ test.describe("shell on a phone", () => {
       expect(widths.scroll).toBeLessThanOrEqual(widths.inner);
     });
   }
+
+  test("the view switches and the site's header and footer links are a thumb wide", async ({ page }) => {
+    const atLeastThumb = async (controls: import("@playwright/test").Locator) => {
+      for (const control of await controls.all()) {
+        const box = await control.boundingBox();
+        expect(box!.height, await control.innerText()).toBeGreaterThanOrEqual(44);
+      }
+    };
+    await page.goto("/dev/score");
+    await atLeastThumb(page.getByRole("group", { name: "View" }).getByRole("button"));
+    await atLeastThumb(page.getByRole("group", { name: "Day or week" }).getByRole("link"));
+    await page.goto("/");
+    await atLeastThumb(page.getByRole("banner").getByRole("link", { name: "Sign in" }));
+    await atLeastThumb(page.getByRole("navigation", { name: "Site" }).getByRole("link"));
+  });
 
   test("settings and sign out are on screen without scrolling the bar", async ({ page }) => {
     await page.goto("/dev/palette");
