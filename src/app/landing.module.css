@@ -1,0 +1,181 @@
+.display {
+  max-width: 13ch;
+  font-family: var(--font-serif);
+  font-size: clamp(2.6rem, 1.4rem + 5.2vw, 5.25rem);
+  line-height: 1;
+  font-weight: 500;
+  letter-spacing: -0.025em;
+  text-wrap: balance;
+  color: var(--ink);
+}
+
+.heading {
+  font-family: var(--font-serif);
+  font-size: clamp(1.6rem, 1.2rem + 1.4vw, 2.25rem);
+  line-height: 1.1;
+  font-weight: 500;
+  letter-spacing: -0.015em;
+  text-wrap: balance;
+}
+
+/* Three bars of one staff: barlines between, a double barline at the end. */
+.measures {
+  display: grid;
+  margin-top: 28px;
+  border-block: 1px solid var(--rule);
+}
+
+.measure {
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  gap: 10px;
+  padding: 24px 0 28px;
+}
+
+.measure + .measure {
+  border-top: 1px solid var(--rule);
+}
+
+@media (min-width: 820px) {
+  .measures {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    border-right: 3px double var(--rule);
+  }
+
+  .measure {
+    padding: 28px 28px 32px;
+  }
+
+  .measure:first-child {
+    padding-left: 0;
+  }
+
+  .measure + .measure {
+    border-top: 0;
+    border-left: 1px solid var(--rule);
+  }
+}
+
+.measureTitle {
+  font-family: var(--font-serif);
+  font-size: 22px;
+  line-height: 1.2;
+  font-weight: 500;
+}
+
+.measureText {
+  max-width: 34ch;
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--ink-2);
+}
+
+.figure {
+  display: flex;
+  align-items: flex-end;
+  min-height: 64px;
+  padding-top: 12px;
+}
+
+.miniChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid var(--rule);
+  border-radius: 8px;
+  background: var(--sheet);
+  padding: 7px 11px;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.miniChip .chipGlyph {
+  width: 28px;
+}
+
+.miniStaff {
+  position: relative;
+  display: block;
+  width: 100%;
+  max-width: 260px;
+  height: 25px;
+  background: repeating-linear-gradient(to bottom, var(--rule-soft) 0 1px, transparent 1px 6px);
+}
+
+.ghost {
+  position: absolute;
+  left: 18%;
+  width: 52%;
+  top: 8px;
+  height: 9px;
+  border: 1.5px dashed var(--accent);
+  border-radius: 4px;
+  background: var(--accent-wash);
+}
+
+.ghostTip {
+  position: absolute;
+  left: -1.5px;
+  bottom: calc(100% + 6px);
+  font-size: 12px;
+  line-height: 20px;
+  font-weight: 600;
+  white-space: nowrap;
+  color: var(--accent);
+}
+
+.miniBeam {
+  position: absolute;
+  left: 18%;
+  width: 52%;
+  inset-block: 0;
+}
+
+.miniBeam .miniGlyph {
+  position: absolute;
+  left: -6px;
+  right: 0;
+  top: 4.5px;
+  width: auto;
+}
+
+.miniLabel {
+  position: absolute;
+  left: -6px;
+  bottom: calc(100% + 1px);
+  white-space: nowrap;
+  font-size: 13px;
+  line-height: 20px;
+  font-weight: 500;
+}
+
+.ledger {
+  margin-top: 20px;
+  border-top: 1px solid var(--rule);
+}
+
+.ledger li {
+  border-bottom: 1px solid var(--rule-soft);
+  padding: 11px 0;
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--ink);
+}
+
+.ledgerQuiet li {
+  color: var(--ink-2);
+}
+
+.close {
+  display: grid;
+  gap: 40px;
+  border-top: 1px solid var(--rule);
+  padding-top: 32px;
+}
+
+@media (min-width: 820px) {
+  .close {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: end;
+  }
+}
