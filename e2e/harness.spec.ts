@@ -48,7 +48,65 @@ test.describe("score", () => {
     const moved = page.getByRole("button", { name: `Design sync, ${later(start)} to ${later(end)}, Work, planned` });
     await expect(moved).toBeVisible();
     await expect(moved).toBeFocused();
+    await expect(page.getByRole("status").filter({ hasText: /^Design sync, / })).toBeVisible();
+    await expect(page.getByRole("button", { name: /^Same time/ })).toHaveCount(0);
   });
+
+  test("timing one day of a repeating item offers the same time every day", async ({ page }) => {
+    await page.getByRole("button", { name: "Take vitamins, any time, planned, repeats" }).focus();
+    await page.keyboard.press("ArrowDown");
+
+    const status = page.getByRole("status").filter({ hasText: /^Take vitamins, \d\d:\d\d to \d\d:\d\d, No area\./ });
+    await expect(status).toBeVisible();
+    const clock = (await status.textContent())!.match(/(\d\d:\d\d) to/)![1];
+    await status.getByRole("button", { name: "Same time every day" }).click();
+
+    await expect(page.getByRole("status").filter({ hasText: `Take vitamins is at ${clock} every day.` })).toBeVisible();
+    await expect(page.getByRole("button", { name: /^Same time/ })).toHaveCount(0);
+  });
+
+  test("when the same time for every day does not save, it says so", async ({ page }) => {
+    await page.getByRole("button", { name: "Take vitamins, any time, planned, repeats" }).focus();
+    await page.keyboard.press("ArrowDown");
+    const offer = page.getByRole("button", { name: "Same time every day" });
+    await expect(offer).toBeVisible();
+
+    await page.getByLabel("Make saves fail").check();
+    await offer.click();
+
+    await expect(page.getByRole("status").filter({ hasText: "That change did not save. Try again." })).toBeVisible();
+  });
+
+  test("dragging a repeating item from any time onto an area offers it too", async ({ page }) => {
+    const score = page.getByRole("region", { name: "Score" });
+    const chip = page.getByRole("button", { name: "Take vitamins, any time, planned, repeats" });
+    const home = await center(score.getByText("Home", { exact: true }));
+
+    await dragTo(page, chip, { x: home.box.x + home.box.width + 160, y: home.y });
+
+    await expect(score.getByRole("button", { name: /^Take vitamins, \d\d:\d\d to \d\d:\d\d, Home, planned, repeats$/ })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Same time every day" })).toBeVisible();
+  });
+});
+
+test("detail: a time set for all of them moves the series and leaves other changed days alone", async ({ page }) => {
+  const when = (label: string) => page.getByRole("complementary").locator("dt", { hasText: label }).locator("+ dd");
+  await page.goto("/dev/detail?item=00000000-0000-4000-8000-000000000061");
+  const wednesday = await when("When").textContent();
+
+  await page.getByRole("link", { name: "Repeating: Friday's run, not touched yet" }).click();
+  await expect(page.getByText("Repeats. This is the one for Friday 9 October.")).toBeVisible();
+  await page.getByText("All of them").click();
+  const time = page.getByRole("group", { name: "Time" });
+  await time.getByLabel("Starts at").fill("08:00");
+  await time.getByLabel("Ends at").fill("08:30");
+  await time.getByLabel("Ends at").press("Enter");
+  await expect(when("When")).toHaveText("Friday 9 October, 08:00 to 08:30");
+
+  await page.getByRole("link", { name: "Repeating: the run series itself" }).click();
+  await expect(when("Starts")).toHaveText("Monday 5 October, 08:00 to 08:30");
+  await page.getByRole("link", { name: "Repeating: Wednesday's run, renamed and done" }).click();
+  await expect(when("When")).toHaveText(wednesday!);
 });
 
 test("week: dragging an item to another day plans it there", async ({ page }) => {

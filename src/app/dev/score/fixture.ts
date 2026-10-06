@@ -67,7 +67,8 @@ export function seedFixture(now: Date, timeZone: string): { items: Item[]; areas
   );
 
   // Repeating items: a daily stand-up drawn from its series, a stretch whose
-  // occurrence today is already done (an override), and a weekly any-time chore.
+  // occurrence today is already done (an override), a weekly any-time chore and
+  // a daily one with no time yet.
   const weekAgo = addDays(date, -7);
   const daily = { freq: "daily", interval: 1, end: { kind: "never" } } as const;
   const standup = item({
@@ -93,6 +94,7 @@ export function seedFixture(now: Date, timeZone: string): { items: Item[]; areas
       schedule: { kind: "day", on: weekAgo },
       recurrence: { kind: "series", rule: { freq: "weekly", interval: 1, byDay: [], end: { kind: "never" } } },
     }),
+    item({ title: "Take vitamins", schedule: { kind: "day", on: addDays(date, -2) }, recurrence: { kind: "series", rule: daily } }),
   );
   return { items, areas: [work, home, health] };
 }

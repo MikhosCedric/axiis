@@ -19,7 +19,8 @@ describe("loadOccurrences", () => {
       recurrence: { kind: "series", rule: daily },
     });
     const { repo } = fakeRepo([series]);
-    const occ = await loadOccurrences(repo, span, "UTC");
+    const { occurrences: occ, series: live } = await loadOccurrences(repo, span, "UTC");
+    expect(live).toEqual([series]);
     expect(occ.map((o) => o.id)).toEqual([`${series.id}~2026-10-05`, `${series.id}~2026-10-06`, `${series.id}~2026-10-07`]);
     expect(occ[1]).toMatchObject({
       title: "Stretch",
@@ -42,11 +43,11 @@ describe("loadOccurrences", () => {
       override("2026-10-06", { schedule: { kind: "day", on: d("2026-10-20") } }),
       override("2026-10-07", { status: "dropped", schedule: { kind: "day", on: d("2026-10-07") } }),
     ]);
-    expect(await loadOccurrences(repo, span, "UTC")).toEqual([]);
+    expect((await loadOccurrences(repo, span, "UTC")).occurrences).toEqual([]);
   });
 
   it("ignores items that do not repeat", async () => {
     const { repo } = fakeRepo([makeItem({ schedule: { kind: "day", on: d("2026-10-06") } })]);
-    expect(await loadOccurrences(repo, span, "UTC")).toEqual([]);
+    expect(await loadOccurrences(repo, span, "UTC")).toEqual({ occurrences: [], series: [] });
   });
 });

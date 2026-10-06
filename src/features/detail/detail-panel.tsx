@@ -12,6 +12,7 @@ import {
   renameItemAction,
   setAreaAction,
   setRepeatAction,
+  setTimeAction,
   stopRepeatingAction,
 } from "./actions";
 import { loadDetail } from "./commands";
@@ -22,6 +23,7 @@ const actions: DetailActions = {
   rename: renameItemAction,
   setDone: setDoneAction,
   setArea: setAreaAction,
+  setTime: setTimeAction,
   addSubtask: addSubtaskAction,
   promote: promoteSubtaskAction,
   remove: deleteItemAction,

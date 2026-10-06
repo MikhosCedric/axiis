@@ -74,11 +74,20 @@ export async function materialize(repo: ItemsRepo, key: ParsedItemKey, timeZone:
   }
 }
 
-/** Every virtual occurrence in the span: each live series expanded, minus the dates an override stands for. */
-export async function loadOccurrences(repo: ItemsRepo, span: SpanRange, timeZone: string): Promise<VirtualItem[]> {
+/**
+ * Every virtual occurrence in the span: each live series expanded, minus the
+ * dates an override stands for. The live series come back too, for views that
+ * describe them.
+ */
+export async function loadOccurrences(
+  repo: ItemsRepo,
+  span: SpanRange,
+  timeZone: string,
+): Promise<{ occurrences: VirtualItem[]; series: Item[] }> {
   const [series, overrides] = await Promise.all([repo.listSeries(), repo.listOverrides(span.fromDate, span.toDate)]);
   const byId = new Map(series.map((s) => [s.id, s]));
   const sources = series.map(seriesSource).filter((s) => s !== null);
   const claims = overrides.flatMap((o) => (o.recurrence.kind === "override" ? [o.recurrence] : []));
-  return liveOccurrences(sources, claims, span, timeZone).map((o) => virtualItem(byId.get(o.seriesId)!, o));
+  const occurrences = liveOccurrences(sources, claims, span, timeZone).map((o) => virtualItem(byId.get(o.seriesId)!, o));
+  return { occurrences, series };
 }
