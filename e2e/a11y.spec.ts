@@ -13,6 +13,8 @@ const PAGES = [
   "/dev/week",
   "/dev/inbox",
   "/dev/inbox?empty",
+  "/dev/inbox?item=f2000000-0000-4000-8000-000000000003",
+  "/dev/inbox?item=f2000000-0000-4000-8000-000000000005",
   "/dev/detail",
   "/dev/detail?item=00000000-0000-4000-8000-000000000001",
   "/dev/detail?item=00000000-0000-4000-8000-000000000060~2026-10-09",

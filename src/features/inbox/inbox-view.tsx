@@ -208,6 +208,8 @@ function InboxRow({
   onPlan: (when: PlanFor) => void;
 }) {
   const done = item.status === "done";
+  // The quietest ink is too faint to read on the accent wash of a selected row.
+  const quiet = selected ? "text-ink-2" : "text-ink-3";
   const panelId = useId();
   const trigger = useRef<HTMLButtonElement>(null);
   const first = useRef<HTMLButtonElement>(null);
@@ -237,7 +239,7 @@ function InboxRow({
         aria-pressed={selected}
         onClick={onSelect}
         className={`min-w-0 cursor-pointer rounded text-left break-words hover:underline ${
-          done ? "font-normal text-ink-3" : "font-medium text-ink"
+          done ? `font-normal ${quiet}` : "font-medium text-ink"
         }`}
       >
         {item.title}
@@ -251,11 +253,11 @@ function InboxRow({
             </span>
           </span>
         )}
-        <RowTags tags={tags} />
+        <RowTags tags={tags} selected={selected} />
       </button>
-      <span className="text-[13px] text-ink-3 max-rail:hidden">{area ?? ""}</span>
+      <span className={`text-[13px] max-rail:hidden ${quiet}`}>{area ?? ""}</span>
       {done ? (
-        <span className="pr-1 text-[13px] text-ink-3">Done</span>
+        <span className={`pr-1 text-[13px] ${quiet}`}>Done</span>
       ) : (
         <button
           ref={trigger}
