@@ -16,6 +16,7 @@ describe("safeHref", () => {
   it.each([
     "javascript:alert(1)",
     "JavaScript:alert(1)",
+    "javascript://example.com/%0Aalert(1)",
     " javascript:alert(1)",
     "java\tscript:alert(1)",
     "data:text/html,<script>alert(1)</script>",
