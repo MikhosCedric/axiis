@@ -86,19 +86,18 @@ function listDays(days: Weekday[]): string {
   return names.length === 1 ? names[0] : `${names.slice(0, -1).join(", ")} and ${names.at(-1)}`;
 }
 
+/** How often a rule repeats, mid-sentence: "every weekday", "every 2 weeks on Monday". */
+export function cadence(rule: Rule, firstOn: LocalDate | null): string {
+  if (presetOf(rule) === "weekdays") return "every weekday";
+  const every = rule.interval === 1 ? `every ${UNIT[rule.freq]}` : `every ${rule.interval} ${UNIT[rule.freq]}s`;
+  if (rule.freq !== "weekly") return every;
+  const days = rule.byDay.length > 0 ? rule.byDay : firstOn ? [weekdayOf(firstOn)] : [];
+  return days.length > 0 ? `${every} on ${listDays(days)}` : every;
+}
+
 /** A plain sentence for a rule, such as "Every 2 weeks on Monday, until Thu 31 Dec". */
 export function describeRule(rule: Rule, firstOn: LocalDate | null): string {
-  const preset = presetOf(rule);
-  let every =
-    preset === "weekdays"
-      ? PRESET_LABEL.weekdays
-      : rule.interval === 1
-        ? `Every ${UNIT[rule.freq]}`
-        : `Every ${rule.interval} ${UNIT[rule.freq]}s`;
-  if (rule.freq === "weekly" && preset !== "weekdays") {
-    const days = rule.byDay.length > 0 ? rule.byDay : firstOn ? [weekdayOf(firstOn)] : [];
-    if (days.length > 0) every += ` on ${listDays(days)}`;
-  }
+  const every = `E${cadence(rule, firstOn).slice(1)}`;
   if (rule.end.kind === "until") return `${every}, until ${formatDayHeading(rule.end.on)}`;
   if (rule.end.kind === "count") return `${every}, ${rule.end.count === 1 ? "once" : `${rule.end.count} times`}`;
   return every;

@@ -26,7 +26,7 @@ function world(over: Partial<Item> = {}) {
   const fake = fakeRepo([series], [work, home]);
   const overrides = () => fake.items.filter((i) => i.recurrence.kind === "override");
   const shown = async (from: string, to: string) =>
-    (await loadOccurrences(fake.repo, { from: new Date(0), to: new Date(0), fromDate: d(from), toDate: d(to) }, TZ)).map(
+    (await loadOccurrences(fake.repo, { from: new Date(0), to: new Date(0), fromDate: d(from), toDate: d(to) }, TZ)).occurrences.map(
       (o) => o.recurrence.originalOn,
     );
   return { series, ...fake, overrides, shown, key: (on: string) => occurrenceKey(series.id, d(on)) };
@@ -202,7 +202,7 @@ describe("setTime", () => {
     expect(await setTime(w.repo, w.key("2026-10-06"), { start: 14 * 60, length: 60 }, TZ, "all")).toEqual({ ok: true });
     expect(w.series.schedule).toEqual(at14);
     const next = await loadOccurrences(w.repo, { from: new Date(0), to: new Date(0), fromDate: d("2026-10-07"), toDate: d("2026-10-09") }, TZ);
-    expect(next.map((o) => o.schedule)).toEqual([
+    expect(next.occurrences.map((o) => o.schedule)).toEqual([
       timed("2026-10-07T14:00:00Z", "2026-10-07T15:00:00Z"),
       timed("2026-10-08T14:00:00Z", "2026-10-08T15:00:00Z"),
     ]);
@@ -241,7 +241,7 @@ describe("setTime", () => {
     expect(await setTime(w.repo, w.key("2026-03-09"), { start: 9 * 60, length: 30 }, ny, "all")).toEqual({ ok: true });
     expect(w.series.schedule).toEqual(timed("2026-03-07T14:00:00Z", "2026-03-07T14:30:00Z"));
     const span = { from: new Date(0), to: new Date(0), fromDate: d("2026-03-09"), toDate: d("2026-03-10") };
-    expect((await loadOccurrences(w.repo, span, ny))[0].schedule).toEqual(timed("2026-03-09T13:00:00Z", "2026-03-09T13:30:00Z"));
+    expect((await loadOccurrences(w.repo, span, ny)).occurrences[0].schedule).toEqual(timed("2026-03-09T13:00:00Z", "2026-03-09T13:30:00Z"));
   });
 
   it("moves a time the clocks skip forward with them", async () => {

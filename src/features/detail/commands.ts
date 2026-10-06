@@ -7,7 +7,7 @@ import type { ItemsRepo } from "@/lib/items/repo";
 import type { ActionResult } from "@/features/today/commands";
 import { TITLE_MAX } from "@/features/today/model";
 import { DAY_MINUTES } from "@/features/score/layout";
-import { buildDetail, subtaskPolicy, type DetailView, type Scope, type TimeOfDay } from "./model";
+import { buildDetail, firstDay, subtaskPolicy, type DetailView, type Scope, type TimeOfDay } from "./model";
 import { repeatSchema, ruleFor } from "./repeat";
 
 const titleSchema = z.string().trim().min(1).max(TITLE_MAX);
@@ -33,12 +33,6 @@ async function attempt(work: () => Promise<ActionResult | void>): Promise<Action
   } catch {
     return { ok: false, error: NOT_SAVED };
   }
-}
-
-function firstDayOf(item: Item, timeZone: string): LocalDate | null {
-  if (item.schedule.kind === "day") return item.schedule.on;
-  if (item.schedule.kind === "timed") return toLocalDate(item.schedule.start, timeZone);
-  return null;
 }
 
 /** The series a stored item belongs to: itself for a series, its series for an override, null otherwise. */
@@ -127,7 +121,7 @@ export async function setItemArea(
 
 /** The day a stored item sits on: its own, or for an override with no day, the date it stands for. */
 function dayOf(item: Item, timeZone: string): LocalDate | null {
-  return firstDayOf(item, timeZone) ?? (item.recurrence.kind === "override" ? item.recurrence.originalOn : null);
+  return firstDay(item.schedule, timeZone) ?? (item.recurrence.kind === "override" ? item.recurrence.originalOn : null);
 }
 
 /**
@@ -264,7 +258,7 @@ export async function setRepeat(
       return { ok: false, error: NOT_REPEATABLE };
     }
     const today = toLocalDate(now, timeZone);
-    const firstOn = firstDayOf(item, timeZone) ?? today;
+    const firstOn = firstDay(item.schedule, timeZone) ?? today;
     if (end.kind === "until" && end.on < firstOn) return { ok: false, error: "The end date is before it first happens." };
     await repo.update(item.id, {
       recurrence: { kind: "series", rule: ruleFor(preset, end) },
@@ -290,7 +284,7 @@ export async function stopRepeating(repo: ItemsRepo, rawKey: unknown, timeZone: 
       return { ok: false, error: "That is not one occurrence of a repeating item." };
     }
     const from = r.originalOn;
-    const firstOn = firstDayOf(series, timeZone) ?? from;
+    const firstOn = firstDay(series.schedule, timeZone) ?? from;
     for (const o of await repo.listOverrides(from, "9999-12-31" as LocalDate, series.id)) {
       if (o.status !== "done") await repo.softDelete(o.id);
     }

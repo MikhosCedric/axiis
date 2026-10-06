@@ -20,4 +20,6 @@ export type DayData = {
   view: DayEntries;
   /** Subtask totals for the items shown, keyed by parent id. */
   childCounts: Record<string, ChildCount>;
+  /** How often each live series repeats ("every day"), by series id. */
+  cadences: Record<string, string>;
 };

@@ -106,7 +106,7 @@ export function describeDue(dueOn: LocalDate | null): string | null {
   return dueOn === null ? null : `Due ${formatDayHeading(dueOn)}`;
 }
 
-function firstDay(schedule: Schedule, timeZone: string): LocalDate | null {
+export function firstDay(schedule: Schedule, timeZone: string): LocalDate | null {
   if (schedule.kind === "day") return schedule.on;
   if (schedule.kind === "timed") return toLocalDate(schedule.start, timeZone);
   return null;
