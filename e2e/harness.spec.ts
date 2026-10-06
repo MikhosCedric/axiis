@@ -226,6 +226,60 @@ test("settings: an area can be added and renamed", async ({ page }) => {
   await expect(areas.getByRole("listitem")).toHaveCount(5);
 });
 
+test.describe("tags", () => {
+  test("the index lists tags with open counts and opens a tag's page", async ({ page }) => {
+    await page.goto("/dev/tags");
+    await expect(page.getByRole("heading", { level: 1, name: "Tags" })).toBeVisible();
+    await expect(page.getByRole("link", { name: /^Deep work\s*1 open$/ })).toBeVisible();
+
+    await page.getByRole("link", { name: /^errands/ }).click();
+    await expect(page).toHaveURL(/\/dev\/tags\/errands$/);
+    await expect(page.getByRole("heading", { level: 1, name: "errands" })).toBeVisible();
+    await expect(page.getByText("4 open, 1 done.")).toBeVisible();
+  });
+
+  test("a tag whose name has a space opens from its link", async ({ page }) => {
+    await page.goto("/dev/tags");
+    await page.getByRole("link", { name: /^Deep work/ }).click();
+    await expect(page).toHaveURL(/\/dev\/tags\/Deep%20work$/);
+    await expect(page.getByRole("heading", { level: 1, name: "Deep work" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Write the launch brief" })).toBeVisible();
+  });
+
+  test("a row opens the item beside the list, and removing the tag there takes it off the page", async ({ page }) => {
+    await page.goto("/dev/tags/errands");
+    await page.getByRole("button", { name: "Renew passport" }).click();
+    const details = page.getByRole("complementary", { name: "Details" });
+    await expect(details.getByRole("textbox", { name: "Title" })).toHaveValue("Renew passport");
+
+    await details.getByRole("button", { name: "Remove tag errands" }).click();
+    await expect(page.getByRole("button", { name: "Renew passport" })).toHaveCount(0);
+    await expect(page.getByText("3 open, 1 done.")).toBeVisible();
+  });
+
+  test("a name that is no tag says so", async ({ page }) => {
+    await page.goto("/dev/tags/nothing-here");
+    await expect(page.getByText("No tag is called nothing-here.")).toBeVisible();
+  });
+});
+
+test("settings: a tag can be renamed, and deleted after a yes", async ({ page }) => {
+  await page.goto("/dev/settings");
+  const tags = page.getByRole("region", { name: "Tags" });
+  const travel = tags.getByRole("textbox", { name: "Rename #travel", exact: true });
+  await expect(travel).toHaveValue("travel");
+
+  await travel.fill("#trips");
+  await travel.press("Enter");
+  const trips = tags.getByRole("textbox", { name: "Rename #trips", exact: true });
+  await expect(trips).toHaveValue("trips");
+
+  await tags.getByRole("button", { name: "Delete #trips" }).click();
+  await tags.getByRole("group", { name: "Delete #trips? Its items stay." }).getByRole("button", { name: "Yes" }).click();
+  await expect(trips).toHaveCount(0);
+  await expect(tags.getByRole("listitem")).toHaveCount(4);
+});
+
 test.describe("inbox", () => {
   test.beforeEach(async ({ page }) => {
     await page.goto("/dev/inbox");
