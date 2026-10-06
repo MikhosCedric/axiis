@@ -84,7 +84,7 @@ export function TaggedHarness({ name, itemId }: { name: string; itemId: string |
   const current = loaded && loaded.key === itemId ? loaded : null;
   const detail = current ? (
     current.view ? (
-      <DetailSheet key={current.view.item.id} view={current.view} actions={actions} />
+      <DetailSheet key={current.key} view={current.view} actions={actions} />
     ) : (
       <MissingItem />
     )

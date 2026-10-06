@@ -119,7 +119,7 @@ export type Nesting =
 
 /** Everything the detail sheet draws, already formatted for the user's zone and safe to send to the client. */
 export type DetailView = {
-  /** `id` is the key the sheet was opened with, so an occurrence that is not stored yet can still be acted on. */
+  /** `id` is the occurrence key until the occurrence is stored, then its stored id, so either can be acted on. */
   item: { id: ItemKey; type: ItemType; title: string; done: boolean; areaId: AreaId | null };
   /** Whether the panel offers Task, Event and Checklist. A note stays a note and a subtask stays a task. */
   retype: boolean;
