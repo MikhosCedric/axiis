@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { ITEM_TYPES, type ItemId, type LocalDate } from "@/domain/item";
 import { area, makeItem } from "@/features/today/test-support";
-import { buildDetail, clockOf, describeDue, describeWhen, progressLine, subtaskPolicy, timeFrom } from "./model";
+import { buildDetail, clockOf, describeDue, describeWhen, minutesOf, progressLine, subtaskPolicy, timeFrom } from "./model";
 
 describe("timeFrom", () => {
   it("reads a start and an end as minutes and a length", () => {
@@ -19,6 +19,30 @@ describe("timeFrom", () => {
     expect(timeFrom("07:15", "")).toEqual({ start: 435, length: 30 });
     expect(timeFrom("", "10:00")).toBeNull();
     expect(timeFrom("24:00", "")).toBeNull();
+  });
+
+  it("refuses an end it cannot read rather than guessing a length", () => {
+    expect(timeFrom("07:15", "7pm")).toBeNull();
+    expect(timeFrom("07:15", "25:00")).toBeNull();
+  });
+});
+
+describe("minutesOf", () => {
+  it.each([
+    ["14:30", 870],
+    ["14.30", 870],
+    ["1430", 870],
+    ["0930", 570],
+    ["930", 570],
+    ["9", 540],
+    [" 23:59 ", 1439],
+    ["00:00", 0],
+  ])("reads %s as a 24-hour clock", (raw, minutes) => {
+    expect(minutesOf(raw)).toBe(minutes);
+  });
+
+  it.each(["", "24:00", "12:60", "2:5", "9am", "12345", "-1:00", "1:2:3"])("refuses %j", (raw) => {
+    expect(minutesOf(raw)).toBeNull();
   });
 });
 

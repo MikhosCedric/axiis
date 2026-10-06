@@ -23,16 +23,37 @@ export function TimeRow({
   clear: () => void;
 }) {
   const labelId = useId();
+  const hintId = useId();
   const [start, setStart] = useState(time ? clockOf(time.start) : "");
   const [end, setEnd] = useState(time ? clockOf(time.start + time.length) : "");
   const [timed, setTimed] = useState(time !== null);
+  const [unread, setUnread] = useState(false);
 
   function commit() {
     const next = timeFrom(start, end);
+    setUnread(next === null && (start.trim() !== "" || end.trim() !== ""));
     if (!next) return;
+    setStart(clockOf(next.start));
     setEnd(clockOf(next.start + next.length));
     setTimed(true);
     if (time?.start !== next.start || time.length !== next.length) save(next);
+  }
+
+  function clockField(label: string, value: string, set: (value: string) => void) {
+    return (
+      <input
+        type="text"
+        inputMode="numeric"
+        autoComplete="off"
+        placeholder="hh:mm"
+        aria-label={label}
+        aria-describedby={hintId}
+        aria-invalid={unread || undefined}
+        value={value}
+        onChange={(e) => set(e.target.value)}
+        className={`${field} w-[7ch] text-center`}
+      />
+    );
   }
 
   function leave(e: FocusEvent<HTMLElement>) {
@@ -43,6 +64,7 @@ export function TimeRow({
     setStart("");
     setEnd("");
     setTimed(false);
+    setUnread(false);
     clear();
   }
 
@@ -61,9 +83,9 @@ export function TimeRow({
             if (e.key === "Enter") commit();
           }}
         >
-          <input type="time" aria-label="Starts at" value={start} onChange={(e) => setStart(e.target.value)} className={field} />
+          {clockField("Starts at", start, setStart)}
           <span className="text-ink-2">to</span>
-          <input type="time" aria-label="Ends at" value={end} onChange={(e) => setEnd(e.target.value)} className={field} />
+          {clockField("Ends at", end, setEnd)}
         </span>
         {timed ? (
           <button
@@ -76,6 +98,9 @@ export function TimeRow({
         ) : (
           <span className="text-[13px] text-ink-3">Any time</span>
         )}
+        <p id={hintId} aria-live="polite" className={unread ? "basis-full text-[13px] font-medium text-ink" : "sr-only"}>
+          {unread ? "That time could not be read. " : ""}24-hour clock, like 14:30 or 1430.
+        </p>
       </dd>
     </>
   );
