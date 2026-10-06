@@ -67,7 +67,7 @@ export function NavRail({ today, areas }: { today: LocalDate; areas: NavArea[] }
   return (
     <nav
       aria-label="Primary"
-      className="flex items-center gap-3.5 border-b border-rule bg-paper-2 px-4 py-3 rail:sticky rail:top-0 rail:h-dvh rail:flex-col rail:items-stretch rail:gap-7 rail:border-r rail:border-b-0 rail:px-4 rail:py-6"
+      className="flex items-center gap-3.5 border-b border-rule bg-paper-2 px-4 py-3 max-rail:[&>*]:shrink-0 max-rail:overflow-x-auto max-rail:[scrollbar-width:none] rail:sticky rail:top-0 rail:h-dvh rail:flex-col rail:items-stretch rail:gap-7 rail:border-r rail:border-b-0 rail:px-4 rail:py-6"
     >
       <div className="flex items-center gap-2.5 rail:px-2">
         <BrandMark />
