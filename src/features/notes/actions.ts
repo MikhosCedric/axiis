@@ -35,7 +35,8 @@ export async function deleteNoteAction(id: string): Promise<ActionResult> {
 }
 
 export async function searchItemsAction(query: string): Promise<SearchRow[]> {
-  return searchItems(await getNotesRepo(), query);
+  const [notes, items] = await Promise.all([getNotesRepo(), getItemsRepo()]);
+  return searchItems(notes, items, query);
 }
 
 export async function linkItemsAction(fromId: string, toId: string): Promise<ActionResult> {

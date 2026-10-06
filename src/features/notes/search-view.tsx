@@ -35,7 +35,8 @@ export function SearchView({ query, rows, basePath = "/search" }: { query: strin
 
       {!query ? (
         <p className="mt-6 max-w-[52ch] text-ink-2">
-          Search finds words in titles and inside notes. Put a phrase in quotes, or a minus before a word to leave it out.
+          Search finds words in titles and inside notes. Put a phrase in quotes, a minus before a word to leave it out, or
+          #name to keep to one tag.
         </p>
       ) : rows.length === 0 ? (
         <p className="mt-6 max-w-[52ch] text-ink-2">Nothing matches “{query}”. Try fewer words.</p>
