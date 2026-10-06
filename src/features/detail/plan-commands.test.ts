@@ -4,7 +4,45 @@ import { occurrenceKey } from "@/domain/item-key";
 import { planItem } from "@/features/inbox/commands";
 import { fakeRepo, makeItem } from "@/features/today/test-support";
 import { moveItem } from "@/features/week/commands";
-import { clearTime, setTime, setType } from "./commands";
+import { clearTime, setDue, setTime, setType } from "./commands";
+
+describe("setDue", () => {
+  it("sets a due date from a local date and clears it, writing once when nothing changes", async () => {
+    const task = makeItem();
+    const { repo, calls } = fakeRepo([task]);
+    expect(await setDue(repo, task.id, "2026-10-12")).toEqual({ ok: true });
+    expect(task.dueOn).toBe("2026-10-12");
+    expect(await setDue(repo, task.id, "2026-10-12")).toEqual({ ok: true });
+    expect(await setDue(repo, task.id, null)).toEqual({ ok: true });
+    expect(task.dueOn).toBeNull();
+    expect(calls.update).toEqual([
+      [task.id, { dueOn: "2026-10-12" }],
+      [task.id, { dueOn: null }],
+    ]);
+  });
+
+  it("refuses an unreadable date, an instant, a note, an event and anything that repeats", async () => {
+    const task = makeItem();
+    const note = makeItem({ type: "note" });
+    const event = makeItem({ type: "event" });
+    const series = makeItem({
+      schedule: { kind: "day", on: "2026-10-05" as LocalDate },
+      recurrence: { kind: "series", rule: { freq: "daily", interval: 1, end: { kind: "never" } } },
+    });
+    const { repo, calls } = fakeRepo([task, note, event, series]);
+
+    for (const bad of ["2026-02-30", "2026-10-12T00:00:00Z", "", 20261012, undefined]) {
+      expect(await setDue(repo, task.id, bad)).toEqual({ ok: false, error: "That date is not one Axiis can use." });
+    }
+    const refused = { ok: false, error: "Only a task or checklist that does not repeat has a due date." };
+    for (const id of [note.id, event.id, series.id]) expect(await setDue(repo, id, "2026-10-12")).toEqual(refused);
+    expect(await setDue(repo, occurrenceKey(series.id, "2026-10-07" as LocalDate), "2026-10-12")).toEqual({
+      ok: false,
+      error: "That item is not here any more.",
+    });
+    expect(calls.update).toEqual([]);
+  });
+});
 
 describe("setType", () => {
   const daily = { freq: "daily", interval: 1, end: { kind: "never" } } as const;

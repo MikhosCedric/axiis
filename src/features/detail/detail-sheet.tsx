@@ -19,7 +19,7 @@ import { dayWords, planDate } from "@/features/inbox/model";
 import { RepeatRows } from "./repeat-control";
 import { SkippedDates } from "./skipped-dates";
 import { Subtasks } from "./subtasks";
-import { FirstDayRow, TimeRow } from "./time-row";
+import { DateRow, TimeRow } from "./time-row";
 import { formatDayHeading } from "@/features/today/format";
 import { TagField } from "@/features/tags/tag-field";
 
@@ -263,13 +263,6 @@ export function DetailSheet({
               onUnplan={() => write(() => actions.unplan(item.id), () => setStatus("It has no day now."))}
             />
           )}
-          {view.due && (
-            <>
-              <dt className="text-[13px] text-ink-3">Due</dt>
-              <dd className="tabular">{view.due}</dd>
-            </>
-          )}
-
           {plan.time && (
             <TimeRow
               time={view.time}
@@ -294,8 +287,9 @@ export function DetailSheet({
           )}
 
           {plan.firstDay && (repeat.kind === "series" || repeat.kind === "occurrence") && (
-            <FirstDayRow
-              firstOn={repeat.firstOn}
+            <DateRow
+              label="First day"
+              on={repeat.firstOn}
               save={(on) =>
                 write(
                   () => actions.setFirstDay(item.id, on),
@@ -303,6 +297,25 @@ export function DetailSheet({
                 )
               }
             />
+          )}
+
+          {view.due.editable ? (
+            <DateRow
+              label="Due"
+              on={view.due.on}
+              save={(on) => write(() => actions.setDue(item.id, on), () => setStatus(`Due ${formatDayHeading(on)}.`))}
+              clear={{
+                label: "No due date",
+                run: () => write(() => actions.setDue(item.id, null), () => setStatus("No due date now.")),
+              }}
+            />
+          ) : (
+            view.due.on && (
+              <>
+                <dt className="text-[13px] text-ink-3">Due</dt>
+                <dd className="tabular">{formatDayHeading(view.due.on)}</dd>
+              </>
+            )
           )}
 
           <dt className="text-[13px] text-ink-3">

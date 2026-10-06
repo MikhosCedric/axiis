@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { ITEM_TYPES, type ItemId, type LocalDate } from "@/domain/item";
 import { area, makeItem } from "@/features/today/test-support";
-import { buildDetail, clockOf, describeDue, describeWhen, minutesOf, planOptions, progressLine, subtaskPolicy, timeFrom } from "./model";
+import { buildDetail, clockOf, describeWhen, minutesOf, planOptions, progressLine, subtaskPolicy, timeFrom } from "./model";
 
 describe("timeFrom", () => {
   it("reads a start and an end as minutes and a length", () => {
@@ -131,10 +131,23 @@ describe("describeWhen", () => {
     };
     expect(describeWhen(schedule, "UTC")).toBe("Tuesday 6 October, 22:00 to Wednesday 7 October, 01:00");
   });
+});
 
-  it("writes a due date plainly", () => {
-    expect(describeDue(null)).toBeNull();
-    expect(describeDue("2026-10-09" as LocalDate)).toBe("Due Friday 9 October");
+describe("due", () => {
+  const base = { areas: [], subtasks: [], parent: null, timeZone: "UTC", today: "2026-10-06" as LocalDate };
+  const daily = { freq: "daily", interval: 1, end: { kind: "never" } } as const;
+
+  it("lets a one-off task or checklist set its due date, and nothing else", () => {
+    const due = "2026-10-09" as LocalDate;
+    expect(buildDetail({ ...base, item: makeItem({ dueOn: due }) }).due).toEqual({ on: due, editable: true });
+    expect(buildDetail({ ...base, item: makeItem({ type: "checklist" }) }).due).toEqual({ on: null, editable: true });
+    for (const item of [
+      makeItem({ type: "event", dueOn: due }),
+      makeItem({ type: "note" }),
+      makeItem({ schedule: { kind: "day", on: due }, recurrence: { kind: "series", rule: daily } }),
+    ]) {
+      expect(buildDetail({ ...base, item }).due.editable).toBe(false);
+    }
   });
 });
 
