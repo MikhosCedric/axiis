@@ -1,7 +1,7 @@
 import { z } from "zod";
-import { idSchema, repeats, type AreaId, type Item, type ItemId, type ItemPatch, type LocalDate } from "@/domain/item";
+import { idSchema, repeats, type AreaId, type Item, type ItemId, type ItemPatch, type LocalDate, type Schedule } from "@/domain/item";
 import { parseItemKey, type ParsedItemKey } from "@/domain/item-key";
-import { addDays, instantAt, toLocalDate } from "@/lib/dates";
+import { addDays, instantAt, localMinutes, parseLocalDate, toLocalDate } from "@/lib/dates";
 import { materialize, resolveKey } from "@/lib/items/occurrences";
 import type { ItemsRepo } from "@/lib/items/repo";
 import type { ActionResult } from "@/features/today/commands";
@@ -21,6 +21,8 @@ const timeSchema = z.object({
 const TITLE_ERROR = `A title needs a few words, up to ${TITLE_MAX} characters.`;
 const MISSING = "That item is not here any more.";
 const NOT_SAVED = "That change did not save. Try again.";
+const AFTER_END = "The end date is before it first happens.";
+const NOT_A_SERIES = "That does not repeat.";
 
 export function parseItemId(raw: unknown): ItemId | null {
   const id = idSchema.safeParse(raw);
@@ -125,11 +127,45 @@ function dayOf(item: Item, timeZone: string): LocalDate | null {
 }
 
 /**
- * Gives an item a time of day on the day it already sits on. With scope "all"
- * the series' own schedule moves to that time on its first date, so every
- * occurrence without an override follows; the override it was changed from
- * follows too, and other overrides keep their own times. Only local
- * wall-clock minutes come from the client; the instants are worked out here.
+ * Gives each target a new schedule on the day it already sits on. With scope
+ * "all" that day is the series' first date, so every occurrence without an
+ * override follows; the override it was changed from follows too, and other
+ * overrides keep their own.
+ */
+function scheduleOnOwnDay(
+  repo: ItemsRepo,
+  rawKey: unknown,
+  rawScope: unknown,
+  timeZone: string,
+  build: (on: LocalDate) => Schedule,
+): Promise<ActionResult> {
+  const key = parseItemKey(rawKey);
+  const scope = scopeSchema.safeParse(rawScope);
+  if (!key || !scope.success) return Promise.resolve({ ok: false, error: MISSING });
+  return attempt(async () => {
+    const items = await targets(repo, key, scope.data, timeZone);
+    if (items.length === 0) return { ok: false, error: MISSING };
+    if (scope.data === "all" && items[0].recurrence.kind !== "series") return { ok: false, error: NOT_A_SERIES };
+    if (items.some((i) => i.type === "note" || dayOf(i, timeZone) === null)) {
+      return { ok: false, error: "It needs a day before it can have a time." };
+    }
+    for (const item of items) await repo.update(item.id, { schedule: build(dayOf(item, timeZone)!) });
+  });
+}
+
+/**
+ * A timed schedule at local wall-clock `start` on `on`. The length is real
+ * time, as expansion keeps it, so a start the clocks skip never leaves it empty.
+ */
+function timedAt(on: LocalDate, start: number, lengthMs: number, timeZone: string): Schedule {
+  const from = instantAt(on, start, timeZone);
+  return { kind: "timed", start: from, end: new Date(from.getTime() + lengthMs) };
+}
+
+/**
+ * Gives an item a time of day on the day it already sits on, for this one or
+ * all of them. Only local wall-clock minutes come from the client; the
+ * instants are worked out here.
  */
 export async function setTime(
   repo: ItemsRepo,
@@ -138,24 +174,41 @@ export async function setTime(
   timeZone: string,
   rawScope?: unknown,
 ): Promise<ActionResult> {
-  const key = parseItemKey(rawKey);
-  const scope = scopeSchema.safeParse(rawScope);
-  if (!key || !scope.success) return { ok: false, error: MISSING };
   const time = timeSchema.safeParse(rawTime);
   if (!time.success) return { ok: false, error: "That time is not one Axiis can use." };
   const { start, length }: TimeOfDay = time.data;
+  return scheduleOnOwnDay(repo, rawKey, rawScope, timeZone, (on) => timedAt(on, start, length * 60_000, timeZone));
+}
+
+/** Takes the time away, leaving the item on its day at any time, for this one or all of them. */
+export async function clearTime(repo: ItemsRepo, rawKey: unknown, timeZone: string, rawScope?: unknown): Promise<ActionResult> {
+  return scheduleOnOwnDay(repo, rawKey, rawScope, timeZone, (on) => ({ kind: "day", on }));
+}
+
+/**
+ * Moves a series' first date, keeping its time of day on the wall clock and
+ * its length in real minutes. Only the series changes: every override keeps
+ * its own day, the one it was changed from included. Only a date comes from
+ * the client.
+ */
+export async function setFirstDay(repo: ItemsRepo, rawKey: unknown, rawDate: unknown, timeZone: string): Promise<ActionResult> {
+  const key = parseItemKey(rawKey);
+  if (!key) return { ok: false, error: MISSING };
+  const on = parseLocalDate(rawDate);
+  if (!on) return { ok: false, error: "That date is not one Axiis can use." };
   return attempt(async () => {
-    const items = await targets(repo, key, scope.data, timeZone);
-    if (items.length === 0) return { ok: false, error: MISSING };
-    if (scope.data === "all" && items[0].recurrence.kind !== "series") return { ok: false, error: "That does not repeat." };
-    if (items.some((i) => i.type === "note" || dayOf(i, timeZone) === null)) {
-      return { ok: false, error: "It needs a day before it can have a time." };
-    }
-    for (const item of items) {
-      const from = instantAt(dayOf(item, timeZone)!, start, timeZone);
-      // The length is real minutes, as expansion keeps it, so a start the clocks skip never leaves it empty.
-      await repo.update(item.id, { schedule: { kind: "timed", start: from, end: new Date(from.getTime() + length * 60_000) } });
-    }
+    const [series] = await targets(repo, key, "all", timeZone);
+    if (!series) return { ok: false, error: MISSING };
+    if (series.recurrence.kind !== "series") return { ok: false, error: NOT_A_SERIES };
+    const { end } = series.recurrence.rule;
+    if (end.kind === "until" && end.on < on) return { ok: false, error: AFTER_END };
+    const s = series.schedule;
+    if (s.kind === "unscheduled") return { ok: false, error: MISSING };
+    const schedule: Schedule =
+      s.kind === "day"
+        ? { kind: "day", on }
+        : timedAt(on, localMinutes(s.start, toLocalDate(s.start, timeZone), timeZone), s.end.getTime() - s.start.getTime(), timeZone);
+    await repo.update(series.id, { schedule });
   });
 }
 
@@ -259,7 +312,7 @@ export async function setRepeat(
     }
     const today = toLocalDate(now, timeZone);
     const firstOn = firstDay(item.schedule, timeZone) ?? today;
-    if (end.kind === "until" && end.on < firstOn) return { ok: false, error: "The end date is before it first happens." };
+    if (end.kind === "until" && end.on < firstOn) return { ok: false, error: AFTER_END };
     await repo.update(item.id, {
       recurrence: { kind: "series", rule: ruleFor(preset, end) },
       ...(item.schedule.kind === "unscheduled" && { schedule: { kind: "day", on: today } }),

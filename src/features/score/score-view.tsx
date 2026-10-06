@@ -14,7 +14,7 @@ import { repeats, type Area, type LocalDate, type ShownItem } from "@/domain/ite
 import { RepeatMark } from "@/features/today/repeat-mark";
 import { formatClock } from "@/features/today/format";
 import { Glyph } from "@/features/today/glyph";
-import type { BeamState, TodayEntry, TodayView } from "@/features/today/model";
+import { EMPTY_TRAY, type BeamState, type TodayEntry, type TodayView } from "@/features/today/model";
 import { instantAt, localMinutes } from "@/lib/dates";
 import type { ChildCount } from "@/lib/items/repo";
 import { keyPlacement, type DropContext, type Placement } from "./drop";
@@ -306,7 +306,7 @@ export function ScoreView({
             ))}
           </ul>
         ) : (
-          <p className="text-[13px] text-ink-3">Everything has a time. Capture something new above.</p>
+          <p className="text-[13px] text-ink-3">{EMPTY_TRAY}</p>
         )}
       </section>
 

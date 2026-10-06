@@ -2,6 +2,9 @@ import type { AreaId, DayRange, ShownItem } from "@/domain/item";
 
 export const TITLE_MAX = 500;
 
+/** The tray with nothing in it. Things under "Any time" have a day but no time, so this must not claim everything has a time. */
+export const EMPTY_TRAY = "Nothing is waiting for a time. What you capture lands here first.";
+
 /** How an item reads on the day: dashed planned, solid live beam, hollow done. */
 export type BeamState = "planned" | "live" | "done";
 

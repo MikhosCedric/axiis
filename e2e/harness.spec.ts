@@ -89,6 +89,15 @@ test.describe("score", () => {
   });
 });
 
+for (const view of ["", "&view=list"]) {
+  test(`score${view}: an empty tray does not claim everything has a time while some are at any time`, async ({ page }) => {
+    await page.goto(`/dev/score?tray=empty${view}`);
+    await expect(page.getByText(/Take vitamins/).first()).toBeVisible();
+    await expect(page.getByText("Nothing is waiting for a time. What you capture lands here first.")).toBeVisible();
+    await expect(page.getByText(/Everything has a/)).toHaveCount(0);
+  });
+}
+
 test("detail: a time set for all of them moves the series and leaves other changed days alone", async ({ page }) => {
   const when = (label: string) => page.getByRole("complementary").locator("dt", { hasText: label }).locator("+ dd");
   await page.goto("/dev/detail?item=00000000-0000-4000-8000-000000000061");
@@ -107,6 +116,56 @@ test("detail: a time set for all of them moves the series and leaves other chang
   await expect(when("Starts")).toHaveText("Monday 5 October, 08:00 to 08:30");
   await page.getByRole("link", { name: "Repeating: Wednesday's run, renamed and done" }).click();
   await expect(when("When")).toHaveText(wednesday!);
+});
+
+test("detail: all of them can go back to any time and start on another day", async ({ page }) => {
+  const when = (label: string) => page.getByRole("complementary").locator("dt", { hasText: label }).locator("+ dd");
+  await page.goto("/dev/detail?item=00000000-0000-4000-8000-000000000061");
+  const wednesday = await when("When").textContent();
+  await page.getByRole("link", { name: "Repeating: Friday's run, not touched yet" }).click();
+  await expect(page.getByText("Repeats. This is the one for Friday 9 October.")).toBeVisible();
+  await expect(page.getByLabel("First day")).toHaveCount(0);
+
+  await page.getByText("All of them").click();
+  await page.getByRole("button", { name: "Any time" }).click();
+  await expect(page.getByRole("status").filter({ hasText: "All of them are at any time of day now." })).toBeVisible();
+  await expect(when("When")).toHaveText("Friday 9 October");
+
+  const first = page.getByLabel("First day");
+  await expect(first).toHaveValue("2026-10-05");
+  await first.fill("2026-10-07");
+  await first.press("Enter");
+  await expect(page.getByRole("status").filter({ hasText: "It starts on Wednesday 7 October now." })).toBeVisible();
+
+  await page.getByRole("link", { name: "Repeating: the run series itself" }).click();
+  await expect(when("Starts")).toHaveText("Wednesday 7 October");
+  await page.getByRole("link", { name: "Repeating: Wednesday's run, renamed and done" }).click();
+  await expect(when("When")).toHaveText(wednesday!);
+});
+
+test("detail: times are typed and shown on the 24-hour clock, and an unreadable one is not saved", async ({ page }) => {
+  const when = (label: string) => page.getByRole("complementary").locator("dt", { hasText: label }).locator("+ dd");
+  await page.goto("/dev/detail?item=00000000-0000-4000-8000-000000000070~2026-10-11");
+  const time = page.getByRole("group", { name: "Time" });
+  const start = time.getByLabel("Starts at");
+  const end = time.getByLabel("Ends at");
+
+  await start.fill("1430");
+  await end.fill("15.15");
+  await end.press("Enter");
+  await expect(start).toHaveValue("14:30");
+  await expect(end).toHaveValue("15:15");
+  await expect(when("When")).toHaveText("Sunday 11 October, 14:30 to 15:15");
+  await start.fill("930");
+  await start.press("Enter");
+  await expect(start).toHaveValue("09:30");
+  await expect(when("When")).toHaveText("Sunday 11 October, 09:30 to 15:15");
+
+  await end.fill("3pm");
+  await end.press("Enter");
+  await expect(end).toHaveAttribute("aria-invalid", "true");
+  await expect(page.getByText("That time could not be read. 24-hour clock, like 14:30 or 1430.")).toBeVisible();
+  await expect(when("When")).toHaveText("Sunday 11 October, 09:30 to 15:15");
 });
 
 test("week: dragging an item to another day plans it there", async ({ page }) => {
@@ -245,3 +304,41 @@ test.describe("inbox", () => {
     await expect(page.getByText("1 item waiting for a day.")).toBeVisible();
   });
 });
+
+const SWITCHES = [
+  { path: "/dev/score", from: "Book the dentist", to: "Take vitamins" },
+  { path: "/dev/week", from: "Renew passport", to: "Book the dentist" },
+  { path: "/dev/inbox", from: "Pack for the coast", to: "Return the library books" },
+];
+
+for (const { path, from, to } of SWITCHES) {
+  test(`${path}: while the next item opens, the one still showing cannot be used`, async ({ page }) => {
+    await page.goto(path);
+    const details = page.getByRole("complementary", { name: "Details" });
+    const insideInert = () => details.locator("h2").evaluate((h) => h.closest("[inert]") !== null);
+    await page.getByRole("button", { name: new RegExp(`^${from},?`) }).first().click();
+    await expect(details.getByRole("heading", { name: from })).toBeVisible();
+    await expect(details).toHaveAttribute("aria-busy", "false");
+
+    // Holds the server's answer for the next item, so the switch stays part way for as long as the test needs.
+    let release!: () => void;
+    const held = new Promise<void>((resolve) => (release = resolve));
+    await page.route(
+      (url) => url.searchParams.has("_rsc"),
+      async (route) => {
+        await held;
+        await route.continue();
+      },
+    );
+    await page.getByRole("button", { name: new RegExp(`^${to},?`) }).first().click();
+
+    await expect(details).toHaveAttribute("aria-busy", "true");
+    await expect(details.getByRole("heading", { name: from })).toBeVisible();
+    expect(await insideInert()).toBe(true);
+
+    release();
+    await expect(details.getByRole("heading", { name: to })).toBeVisible();
+    await expect(details).toHaveAttribute("aria-busy", "false");
+    expect(await insideInert()).toBe(false);
+  });
+}

@@ -7,7 +7,7 @@ import { setDone } from "@/features/today/commands";
 import { area, fakeRepo, makeItem } from "@/features/today/test-support";
 import { moveItem } from "@/features/week/commands";
 import { loadOccurrences } from "@/lib/items/occurrences";
-import { deleteItem, loadDetail, renameItem, setItemArea, setRepeat, setTime, stopRepeating } from "./commands";
+import { clearTime, deleteItem, loadDetail, renameItem, setFirstDay, setItemArea, setRepeat, setTime, stopRepeating } from "./commands";
 
 const d = (s: string) => s as LocalDate;
 const TZ = "UTC";
@@ -271,6 +271,85 @@ describe("setTime", () => {
     ];
     for (const time of bad) expect((await setTime(w.repo, w.key("2026-10-06"), time, TZ, "all")).ok).toBe(false);
     expect((await setTime(w.repo, w.key("2026-10-06"), { start: 600, length: 30 }, TZ, "every")).ok).toBe(false);
+    expect(w.calls.update).toEqual([]);
+    expect(w.calls.create).toEqual([]);
+  });
+});
+
+describe("clearTime", () => {
+  it("with scope all, puts the series back to any time on its first date, and the override it was changed from on its own", async () => {
+    const w = world();
+    await renameItem(w.repo, w.key("2026-10-07"), "Kept", TZ);
+    await renameItem(w.repo, w.key("2026-10-08"), "In view", TZ);
+    const [kept, inView] = w.overrides();
+    const before = structuredClone(kept);
+    expect(await clearTime(w.repo, inView.id, TZ, "all")).toEqual({ ok: true });
+    expect(w.series.schedule).toEqual({ kind: "day", on: "2026-10-05" });
+    expect(inView.schedule).toEqual({ kind: "day", on: "2026-10-08" });
+    expect(kept).toEqual(before);
+    const next = await loadOccurrences(w.repo, { from: new Date(0), to: new Date(0), fromDate: d("2026-10-09"), toDate: d("2026-10-10") }, TZ);
+    expect(next.occurrences.map((o) => o.schedule)).toEqual([{ kind: "day", on: "2026-10-09" }]);
+  });
+
+  it("with scope one, clears that occurrence only", async () => {
+    const w = world();
+    expect(await clearTime(w.repo, w.key("2026-10-08"), TZ, "one")).toEqual({ ok: true });
+    expect(w.overrides()[0].schedule).toEqual({ kind: "day", on: "2026-10-08" });
+    expect(w.series.schedule.kind).toBe("timed");
+  });
+
+  it("refuses all of them for something that does not repeat, and an unknown scope", async () => {
+    const plain = makeItem({ schedule: { kind: "day", on: d("2026-10-06") } });
+    const { repo, calls } = fakeRepo([plain]);
+    expect(await clearTime(repo, plain.id, TZ, "all")).toEqual({ ok: false, error: "That does not repeat." });
+    expect((await clearTime(repo, plain.id, TZ, "every")).ok).toBe(false);
+    expect(calls.update).toEqual([]);
+  });
+});
+
+describe("setFirstDay", () => {
+  const timed = (start: string, end: string) => ({ kind: "timed" as const, start: new Date(start), end: new Date(end) });
+
+  it("moves a timed series to a new first date at the same time, from any occurrence", async () => {
+    const w = world();
+    expect(await setFirstDay(w.repo, w.key("2026-10-09"), "2026-10-12", TZ)).toEqual({ ok: true });
+    expect(w.series.schedule).toEqual(timed("2026-10-12T09:00:00Z", "2026-10-12T09:15:00Z"));
+    expect(await w.shown("2026-10-05", "2026-10-13")).toEqual(["2026-10-12"]);
+    expect(w.overrides()).toEqual([]);
+  });
+
+  it("moves a day-only series earlier", async () => {
+    const w = world({ schedule: { kind: "day", on: d("2026-10-06") } });
+    expect(await setFirstDay(w.repo, w.series.id, "2026-10-01", TZ)).toEqual({ ok: true });
+    expect(w.series.schedule).toEqual({ kind: "day", on: "2026-10-01" });
+  });
+
+  it("leaves every override alone, the one it was changed from included", async () => {
+    const w = world();
+    await renameItem(w.repo, w.key("2026-10-07"), "Kept", TZ);
+    const before = structuredClone(w.overrides());
+    expect(await setFirstDay(w.repo, w.overrides()[0].id, "2026-10-06", TZ)).toEqual({ ok: true });
+    expect(w.overrides()).toEqual(before);
+    expect(w.series.schedule).toEqual(timed("2026-10-06T09:00:00Z", "2026-10-06T09:15:00Z"));
+  });
+
+  it("keeps the wall clock across daylight saving", async () => {
+    const ny = "America/New_York";
+    // 09:00 EST on Saturday 7 March; Monday 9 March is in EDT.
+    const w = world({ schedule: timed("2026-03-07T14:00:00Z", "2026-03-07T14:30:00Z") });
+    expect(await setFirstDay(w.repo, w.series.id, "2026-03-09", ny)).toEqual({ ok: true });
+    expect(w.series.schedule).toEqual(timed("2026-03-09T13:00:00Z", "2026-03-09T13:30:00Z"));
+  });
+
+  it("refuses a first date after the series ends, bad dates and things that do not repeat, and writes nothing", async () => {
+    const w = world({ recurrence: { kind: "series", rule: { ...daily, end: { kind: "until", on: d("2026-10-10") } } } });
+    expect(await setFirstDay(w.repo, w.series.id, "2026-10-11", TZ)).toEqual({ ok: false, error: "The end date is before it first happens." });
+    for (const bad of ["2026-02-30", "2026-10-11T00:00:00Z", new Date("2026-10-11"), null]) {
+      expect((await setFirstDay(w.repo, w.series.id, bad, TZ)).ok).toBe(false);
+    }
+    const plain = makeItem({ schedule: { kind: "day", on: d("2026-10-06") } });
+    w.items.push(plain);
+    expect(await setFirstDay(w.repo, plain.id, "2026-10-07", TZ)).toEqual({ ok: false, error: "That does not repeat." });
     expect(w.calls.update).toEqual([]);
     expect(w.calls.create).toEqual([]);
   });

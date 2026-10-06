@@ -9,6 +9,7 @@ const PAGES = [
   "/dev/no-such-page",
   "/dev/score",
   "/dev/score?view=list",
+  "/dev/score?tray=empty",
   "/dev/week",
   "/dev/inbox",
   "/dev/inbox?empty",
