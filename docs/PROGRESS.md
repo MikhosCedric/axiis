@@ -67,7 +67,8 @@ Updated: see the log at the bottom. Phases:
 | 6 Public site (landing, legal drafts, metadata, PWA, error states) | done, merged (PR #6) |
 | 7 Command palette, shortcuts help, browser tests (e2e + axe) | done, merged (#10, #12) |
 | 8 Recurring tasks | done, merged (#13), migration 0004 applied |
-| 9 Tags, Inbox, Lists, DESIGN.md, audits | in progress: Inbox (#15), series time (#16), series quality (#17), tags (#18) and Lists (#19) merged; recurrence follow-ups in review (#21, `feat-recurrence-followups`); DESIGN.md and audits next |
+| 9 Tags, Inbox, Lists, DESIGN.md, audits | done, merged: Inbox (#15), series time (#16), series quality (#17), tags (#18), Lists (#19), DESIGN.md and audit (#20), recurrence follow-ups (#21), audit fixes (#22) |
+| 10 Signed-in verification, launch | next (see Next up) |
 
 ## Accepted advisories (Supabase security advisor)
 - `delete_my_account` is executable by `authenticated` through RPC. Intended: it only deletes the caller's own account (`auth.uid()`), and `anon`/`public` are revoked.
@@ -81,18 +82,18 @@ Updated: see the log at the bottom. Phases:
 - Merged this stretch: command palette (#10), phone nav fix (#11), Playwright and axe browser tests with an `e2e` CI job (#12).
 
 ## Next up (suggested order)
-1. Recurrence follow-ups (restore a skipped day, years in `describeRule`, Time and First day rows on the series itself) are in review (#21). Once merged, skip and restore a day in a signed-in session. The When, Starts and Due lines still show no year; they could use `formatDayIn` too.
-2. Tags are merged (#18). Check them in a signed-in session: add, remove, rename, delete, `/tags/[name]`, `#tag` search.
-3. Lists are merged (#19). Check `/lists` in a signed-in session: capture a checklist, add and tick its lines, see a repeating checklist once. Check the Inbox there too.
-4. Extend e2e once a test user can sign in without the magic link.
-5. `DESIGN.md` via `impeccable document`, an a11y and `impeccable audit` pass, and a partial unique index on `areas (user_id, lower(name)) where deleted_at is null`.
-6. Order search by rank (RPC), flush pending note saves before nav-rail navigation, subtask counts on week rows, shared date picker for the day and week navs.
+1. **Owner: a signed-in pass** (the agent cannot receive the magic link): capture, Inbox plan-for, a repeat with "Same time every day", skip and restore a day, set a series to "Any time", tags (add, remove, rename, delete, `/tags/[name]`, `#tag` search), `/lists` (capture a checklist, tick lines), the detail panel on a real phone, and the nav bar on a real phone. Report anything off.
+2. Owner-only launch items: `docs/launch-checklist.md` (Vercel, domain, Google OAuth, production redirect URLs, real name and contact in the legal drafts).
+3. Deferred design calls in `docs/design-audit.md` (beam labels on short beams, verdigris hover wash, dark-token duplication, headline utility, chip edges).
+4. The When, Starts and Due lines show no year; they could use `formatDayIn`. The "Part of" link lacks the pending state.
+5. Extend e2e once a test user can sign in without the magic link.
+6. A partial unique index on `areas (user_id, lower(name)) where deleted_at is null` (the app already refuses duplicates; this only closes a race).
+7. Order search by rank (RPC), flush pending note saves before nav-rail navigation, subtask counts on week rows, shared date picker for the day and week navs.
 
 ## Known gaps and risks
 - Saves through the real repo and row-level security have been verified by unit tests and a rolled-back SQL check, but not through a signed-in browser session (the agent cannot receive the magic link).
 - The Score/List view-transition morph has not been seen playing; the preview pane reports the page hidden.
 - Touch drag tested with synthetic events only.
-- Recurrence column exists but is not expanded yet.
 - Restoring a skipped day is verified by unit tests against `fakeRepo` and the detail harness (e2e and axe), not by a signed-in session. "Skipped dates" lists every skipped date of a series, with no cap.
 - Series time, "Any time" and first day are verified by unit tests against `fakeRepo` (including DST days) and the score and detail harnesses (e2e and axe), not by a signed-in session. The Time row is two 24-hour text fields; date fields (First day, the repeat end, the day and week pickers) are still native and show dates in the browser's locale format.
 - The detail panel goes inert and `aria-busy` while the day, week or inbox screen switches items. A link inside the panel (the "Part of" parent link) navigates without that pending state.
