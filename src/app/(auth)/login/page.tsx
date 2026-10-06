@@ -18,6 +18,7 @@ export default async function LoginPage({ searchParams }: PageProps<"/login">) {
   const params = await searchParams;
   const next = safeNextPath(first(params.next));
   const error = ERRORS[first(params.error) ?? ""];
+  const deleted = first(params.deleted) === "1";
 
   return (
     <main className="flex min-h-full flex-1 items-center justify-center bg-paper px-6 py-16 font-sans">
@@ -26,6 +27,12 @@ export default async function LoginPage({ searchParams }: PageProps<"/login">) {
           <h1 className="font-serif text-3xl text-ink">Sign in to Axiis</h1>
           <p className="text-ink-2">Use your email or your Google account. There is no password to remember.</p>
         </header>
+
+        {deleted && (
+          <p role="status" className="rounded-md border border-rule bg-paper-2 px-3 py-2 text-sm text-ink">
+            Your account and its data are gone.
+          </p>
+        )}
 
         {error && (
           <p role="alert" className="rounded-md border border-rule bg-paper-2 px-3 py-2 text-sm text-ink">
