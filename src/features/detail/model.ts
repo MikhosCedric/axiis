@@ -2,6 +2,7 @@ import type { Area, AreaId, Item, ItemId, ItemType, LocalDate, Schedule } from "
 import { toLocalDate } from "@/lib/dates";
 import type { ActionResult } from "@/features/today/commands";
 import { formatClock, formatDayHeading } from "@/features/today/format";
+import type { Created } from "@/features/notes/model";
 
 /**
  * What an item may do with subtasks, mirroring the database trigger: only a
@@ -44,6 +45,8 @@ export type DetailActions = {
   addSubtask: (parentId: string, title: string) => Promise<ActionResult>;
   promote: (id: string) => Promise<ActionResult>;
   remove: (id: string) => Promise<ActionResult>;
+  /** Makes a note linked to the item and answers with its id, so the sheet can open it. */
+  newLinkedNote: (itemId: string) => Promise<Created>;
 };
 
 export function describeWhen(schedule: Schedule, timeZone: string): string {
