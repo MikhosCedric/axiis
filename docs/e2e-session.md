@@ -19,7 +19,9 @@ There is no default secret, and no query string or header route in. When the gua
 - The settings page shows that email, the export route reads the in-memory rows, and deleting the account resets the fixtures.
 - The landing page sends the user to `/today`, and sign-out clears the cookie.
 
-Everything else takes the unchanged production path. No request goes to Supabase.
+Everything else takes the unchanged production path. The proxy still runs `updateSession` first, which builds a Supabase client and asks for claims. With no Supabase cookie in the browser it finds no session, and the dev server points at the unused placeholder `http://localhost:54321`, so no real Supabase project is ever contacted.
+
+The guard's tests are mutation-checked: removing or weakening any condition above fails them. One mutation no black-box test can catch is a non-empty default secret, since a test cannot guess it. Review keeps that out: the secret reads `process.env.E2E_FAKE_SESSION_SECRET ?? ""`, and the 32-character floor rejects the empty fallback.
 
 `POST /dev/e2e-session` resets the fixtures. It answers 404 without the fake session. The e2e warm-up calls it once per run.
 
