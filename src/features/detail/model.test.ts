@@ -1,7 +1,26 @@
 import { describe, expect, it } from "vitest";
 import { ITEM_TYPES, type ItemId, type LocalDate } from "@/domain/item";
 import { area, makeItem } from "@/features/today/test-support";
-import { buildDetail, describeDue, describeWhen, progressLine, subtaskPolicy } from "./model";
+import { buildDetail, clockOf, describeDue, describeWhen, progressLine, subtaskPolicy, timeFrom } from "./model";
+
+describe("timeFrom", () => {
+  it("reads a start and an end as minutes and a length", () => {
+    expect(timeFrom("14:00", "15:30")).toEqual({ start: 840, length: 90 });
+    expect(clockOf(840 + 90)).toBe("15:30");
+  });
+
+  it("runs past midnight when the end is not after the start", () => {
+    expect(timeFrom("23:00", "01:00")).toEqual({ start: 1380, length: 120 });
+    expect(timeFrom("09:00", "09:00")).toEqual({ start: 540, length: 1440 });
+    expect(clockOf(1380 + 120)).toBe("01:00");
+  });
+
+  it("gives a start with no end the default length, and nothing without a start", () => {
+    expect(timeFrom("07:15", "")).toEqual({ start: 435, length: 30 });
+    expect(timeFrom("", "10:00")).toBeNull();
+    expect(timeFrom("24:00", "")).toBeNull();
+  });
+});
 
 const parentId = "00000000-0000-4000-8000-0000000000aa" as ItemId;
 const NONE = { kind: "none" } as const;

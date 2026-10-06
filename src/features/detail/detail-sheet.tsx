@@ -13,9 +13,10 @@ import { RepeatMark } from "@/features/today/repeat-mark";
 import { InlineTitle } from "./inline-title";
 import { LinkedNotes } from "./linked-notes";
 import { useItemHref } from "./item-href";
-import type { DetailActions, DetailView, Scope } from "./model";
+import { clockOf, type DetailActions, type DetailView, type Scope } from "./model";
 import { RepeatRows } from "./repeat-control";
 import { Subtasks } from "./subtasks";
+import { TimeRow } from "./time-row";
 
 const TYPE_WORD: Record<ItemType, string> = { task: "Task", event: "Event", note: "Note", checklist: "Checklist" };
 
@@ -180,6 +181,18 @@ export function DetailSheet({
                 {view.due && <span className="block text-ink-2 tabular">{view.due}</span>}
               </dd>
             </>
+          )}
+
+          {isOccurrence && (
+            <TimeRow
+              time={view.time}
+              save={(time) =>
+                write(
+                  () => actions.setTime(item.id, time, scope),
+                  scope === "all" ? () => setStatus(`All of them are at ${clockOf(time.start)} now.`) : undefined,
+                )
+              }
+            />
           )}
 
           <dt className="text-[13px] text-ink-3">

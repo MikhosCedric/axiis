@@ -107,6 +107,17 @@ describe("loadDay with repeating items", () => {
     expect((await loadDay(repo, d("2026-10-08"), now, "UTC")).view.scheduled).toEqual([]);
   });
 
+  it("says how often each series repeats, for the offer to time all of them", async () => {
+    const standup = makeItem({ schedule: nineToTen, recurrence: { kind: "series", rule: daily } });
+    const weekly = makeItem({
+      schedule: { kind: "day", on: d("2026-10-06") },
+      recurrence: { kind: "series", rule: { freq: "weekly", interval: 1, byDay: [], end: { kind: "never" } } },
+    });
+    const { repo } = fakeRepo([standup, weekly]);
+    const day = await loadDay(repo, d("2026-10-07"), new Date("2026-10-06T08:00:00Z"), "UTC");
+    expect(day.cadences).toEqual({ [standup.id]: "every day", [weekly.id]: "every week on Tuesday" });
+  });
+
   it("asks for child counts of stored items only", async () => {
     const series = makeItem({ schedule: { kind: "day", on: d("2026-10-06") }, recurrence: { kind: "series", rule: daily } });
     const plain = makeItem({ schedule: { kind: "day", on: d("2026-10-06") } });
