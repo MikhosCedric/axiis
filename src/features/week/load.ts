@@ -21,7 +21,7 @@ export type WeekData = {
 export async function loadWeek(repo: ItemsRepo, date: LocalDate, now: Date, timeZone: string): Promise<WeekData> {
   const days = weekOf(date);
   const span = weekRange(days, timeZone);
-  const [areas, scheduled, occurrences, first] = await Promise.all([
+  const [areas, scheduled, { occurrences }, first] = await Promise.all([
     repo.listAreas(),
     repo.listRange(span),
     loadOccurrences(repo, span, timeZone),

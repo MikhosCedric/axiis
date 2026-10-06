@@ -1,4 +1,6 @@
 import { isStored, type LocalDate } from "@/domain/item";
+import { firstDay } from "@/features/detail/model";
+import { cadence } from "@/features/detail/repeat";
 import { buildToday } from "@/features/today/model";
 import { addDays, dayRangeFor, isSameDay } from "@/lib/dates";
 import { loadOccurrences } from "@/lib/items/occurrences";
@@ -8,7 +10,7 @@ import type { DayData } from "./types";
 export async function loadDay(repo: ItemsRepo, date: LocalDate, now: Date, timeZone: string): Promise<DayData> {
   const range = dayRangeFor(date, timeZone);
   const span = { from: range.from, to: range.to, fromDate: date, toDate: addDays(date, 1) };
-  const [areas, items, occurrences] = await Promise.all([
+  const [areas, items, { occurrences, series }] = await Promise.all([
     repo.listAreas(),
     repo.listForDay(range),
     loadOccurrences(repo, span, timeZone),
@@ -25,5 +27,8 @@ export async function loadDay(repo: ItemsRepo, date: LocalDate, now: Date, timeZ
     areas,
     view,
     childCounts,
+    cadences: Object.fromEntries(
+      series.flatMap((s) => (s.recurrence.kind === "series" ? [[s.id, cadence(s.recurrence.rule, firstDay(s.schedule, timeZone))]] : [])),
+    ),
   };
 }
