@@ -167,6 +167,30 @@ test("detail: the series itself has a Time and a First day row", async ({ page }
   await expect(when("Starts")).toHaveText("Wednesday 7 October");
 });
 
+test("detail: a skipped day is listed on the series and can be restored", async ({ page }) => {
+  const skipped = page.getByRole("region", { name: "Skipped dates" });
+  await page.goto("/dev/detail?item=00000000-0000-4000-8000-000000000060~2026-10-09");
+  await expect(page.getByText("Repeats. This is the one for Friday 9 October.")).toBeVisible();
+  await expect(skipped).toHaveCount(0);
+
+  await page.getByRole("link", { name: "Repeating: the run series itself" }).click();
+  await expect(skipped.getByRole("listitem")).toHaveText(["Friday 16 OctoberRestore", "Monday 4 January 2027Restore"]);
+  await skipped.getByRole("button", { name: "Restore Friday 16 October" }).click();
+  await expect(page.getByRole("status").filter({ hasText: "Friday 16 October is back." })).toBeVisible();
+  await expect(skipped.getByRole("listitem")).toHaveText(["Monday 4 January 2027Restore"]);
+
+  await page.getByRole("link", { name: "Repeating: a skipped run in January" }).click();
+  await expect(page.getByText("Repeats. This is the one for Monday 4 January 2027, skipped.")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Skip this one" })).toHaveCount(0);
+  await page.getByRole("button", { name: "Restore this one" }).click();
+  await expect(page.getByText("Repeats. This is the one for Monday 4 January 2027.")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Skip this one" })).toBeVisible();
+
+  await page.getByRole("link", { name: "Repeating: the run series itself" }).click();
+  await expect(page.getByText("Every week on Monday, Wednesday and Friday")).toBeVisible();
+  await expect(skipped).toHaveCount(0);
+});
+
 test("detail: times are typed and shown on the 24-hour clock, and an unreadable one is not saved", async ({ page }) => {
   const when = (label: string) => page.getByRole("complementary").locator("dt", { hasText: label }).locator("+ dd");
   await page.goto("/dev/detail?item=00000000-0000-4000-8000-000000000070~2026-10-11");

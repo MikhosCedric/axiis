@@ -13,8 +13,9 @@ import { RepeatMark } from "@/features/today/repeat-mark";
 import { InlineTitle } from "./inline-title";
 import { LinkedNotes } from "./linked-notes";
 import { useItemHref } from "./item-href";
-import { clockOf, type DetailActions, type DetailView, type Scope } from "./model";
+import { clockOf, type DetailActions, type DetailView, type Scope, type SkippedDate } from "./model";
 import { RepeatRows } from "./repeat-control";
+import { SkippedDates } from "./skipped-dates";
 import { Subtasks } from "./subtasks";
 import { FirstDayRow, TimeRow } from "./time-row";
 import { formatDayHeading } from "@/features/today/format";
@@ -87,11 +88,19 @@ export function DetailSheet({
     });
   }
 
+  function restore(date: SkippedDate) {
+    write(
+      () => actions.restore(date.key),
+      () => setStatus(`${date.on} is back.`),
+    );
+  }
+
   const close = () => router.replace(itemHref(null), { scroll: false });
   const subtaskCount = nesting.kind === "holds-subtasks" ? nesting.subtasks.length : 0;
   const word = TYPE_WORD[item.type].toLowerCase();
   const isSeries = repeat.kind === "series";
   const isOccurrence = repeat.kind === "occurrence";
+  const skipped = isOccurrence ? repeat.skipped : null;
   // The series itself has no "This one": every change to it is to all of them.
   const seriesScope: Scope = isSeries ? "all" : scope;
 
@@ -146,7 +155,7 @@ export function DetailSheet({
         <div className="grid gap-2.5">
           <p className="flex items-center gap-2 text-[13px] text-ink-2">
             <RepeatMark className="text-ink-3" />
-            Repeats. This is the one for {repeat.on}.
+            Repeats. This is the one for {repeat.on}{skipped && ", skipped"}.
           </p>
           <fieldset className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
             <legend className="float-left mr-1 text-[13px] text-ink-3">Changes apply to</legend>
@@ -259,6 +268,10 @@ export function DetailSheet({
         </p>
       </div>
 
+      {isSeries && (
+        <SkippedDates skipped={repeat.skipped} restore={restore} />
+      )}
+
       {nesting.kind === "holds-subtasks" && (
         <Subtasks
           parentId={item.id}
@@ -315,7 +328,11 @@ export function DetailSheet({
       <div className="grid justify-items-start gap-1 border-t border-rule pt-4">
         {isOccurrence ? (
           <>
-            {scope === "one" ? (
+            {scope === "one" && skipped ? (
+              <button type="button" className={textButton} onClick={() => restore(skipped)}>
+                Restore this one
+              </button>
+            ) : scope === "one" ? (
               <ConfirmDelete
                 key="skip"
                 label="Skip this one"
