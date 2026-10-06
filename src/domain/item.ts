@@ -1,4 +1,5 @@
 import { z } from "zod";
+import type { Rule } from "./recurrence";
 
 export const ITEM_TYPES = ["task", "event", "note", "checklist"] as const;
 export const ITEM_STATUSES = ["open", "done", "dropped"] as const;
@@ -23,6 +24,16 @@ export type Schedule =
   | { kind: "day"; on: LocalDate }
   | { kind: "timed"; start: Date; end: Date };
 
+/**
+ * How an item takes part in repetition. A series carries the rule, and its own
+ * schedule is the first occurrence. An override stands in for one occurrence of
+ * a series, named by the local date it replaces. Occurrences are never stored.
+ */
+export type Recurrence =
+  | { kind: "none" }
+  | { kind: "series"; rule: Rule }
+  | { kind: "override"; seriesId: ItemId; originalOn: LocalDate };
+
 export type Item = {
   id: ItemId;
   type: ItemType;
@@ -34,7 +45,7 @@ export type Item = {
   position: number;
   schedule: Schedule;
   dueOn: LocalDate | null;
-  rrule: string | null;
+  recurrence: Recurrence;
   completedAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
@@ -54,7 +65,7 @@ export type NewItem = {
   parentId?: ItemId | null;
   schedule?: Schedule;
   dueOn?: LocalDate | null;
-  rrule?: string | null;
+  recurrence?: Recurrence;
 };
 
 export type ItemPatch = Partial<Omit<NewItem, "type">> & { status?: ItemStatus; position?: number };

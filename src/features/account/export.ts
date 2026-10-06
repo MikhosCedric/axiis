@@ -41,6 +41,8 @@ const itemRow = z
     scheduled_on: z.string().nullable(),
     due_on: z.string().nullable(),
     rrule: z.string().nullable(),
+    series_id: z.string().nullable(),
+    original_on: z.string().nullable(),
     completed_at: optionalTimestamp,
     created_at: timestamp,
     updated_at: timestamp,
@@ -60,6 +62,8 @@ const itemRow = z
     scheduledOn: r.scheduled_on,
     dueOn: r.due_on,
     rrule: r.rrule,
+    seriesId: r.series_id,
+    originalOn: r.original_on,
     completedAt: r.completed_at,
     createdAt: r.created_at,
     updatedAt: r.updated_at,
@@ -86,7 +90,7 @@ export const EXPORT_TABLES = {
   areas: { columns: "id,name,position,created_at,updated_at,deleted_at", orderBy: ["id"] },
   items: {
     columns:
-      "id,type,title,body,status,area_id,parent_id,position,start_at,end_at,scheduled_on,due_on,rrule,completed_at,created_at,updated_at,deleted_at",
+      "id,type,title,body,status,area_id,parent_id,position,start_at,end_at,scheduled_on,due_on,rrule,series_id,original_on,completed_at,created_at,updated_at,deleted_at",
     orderBy: ["id"],
   },
   links: { columns: "id,from_id,to_id,kind,created_at,updated_at", orderBy: ["id"] },
