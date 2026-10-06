@@ -23,7 +23,7 @@ A free, solo-user productivity web app. Tasks, a planner, checklists and notes s
 | Settings, areas, export, account deletion | `src/features/account/`, `src/lib/areas/`, `src/app/(app)/settings/` |
 | Landing, legal drafts, metadata, PWA, error states | `src/app/{page,privacy,terms,not-found,error,manifest,sitemap,robots}`, `src/features/landing/`, `src/components/public/`, `src/lib/site.ts` |
 | Launch checklist (owner tasks) | `docs/launch-checklist.md` |
-| Capture and mark-done commands | `src/features/today/` |
+| Capture and mark-done commands, the shared done tick and the line-form key | `src/features/today/` |
 | Shell (nav rail, theme, tz cookie) | `src/components/shell/` |
 | Design tokens | `src/app/globals.css` |
 | Design system as shipped (tokens, type, line-form state, components, rules) | `DESIGN.md`, sidecar `.impeccable/design.json` |
@@ -109,6 +109,7 @@ Updated: see the log at the bottom. Phases:
 - Put real name and contact email into the privacy policy and terms (placeholders are marked).
 
 ## Log
+- 2026-10-07 (shell critique): the phone nav stays inside 375px; the no-day pile is "Waiting" everywhere and the trays link to the Inbox; a printed line-form key on the Score and Week; tag pages and Lists tick items done through the shared `DoneToggle` (`src/features/today/done-toggle.tsx`); Tags index aligned left; quieter rail Areas; a Today icon; neutral loading skeletons (`src/components/page-skeleton.tsx`); 44px view switches on touch and landing links. See `docs/design-audit.md`, "Shell critique follow-ups". PR #28 from `fix-critique-shell`. No migration.
 - 2026-10-07 (audit fixes): the design audit's three P1s and its cheap P2s. The detail panel scrolls into view and takes focus below 1180px; selected Score List rows are AA; the landing lists what ships; 44px icon buttons and a press-and-hold hint on touch; a focus rule on the note body. Design calls are deferred in `docs/design-audit.md`. PR #22 from `fix-audit`. No migration.
 - 2026-10-06 (recurrence follow-ups): `restoreOccurrence` and "Skipped dates" on the series panel, "Restore this one" on a skipped occurrence; repeat ends, occurrence lines and skipped dates name the year when it is not this year's (`formatDayIn`, shared with the palette); Time and First day rows on the series itself; `loadDetail` takes `now`. PR #21 from `feat-recurrence-followups`. No migration.
 - 2026-10-06 (lists): `/lists` with checklists open first, a line-form progress meter, and capture that opens the new checklist beside the list; Lists in the nav and the palette; `listChecklists` on the repo; selected Inbox rows readable on the accent wash (axe now checks the Inbox and Lists with an item open). PR #19 from `feat-lists`. No migration.

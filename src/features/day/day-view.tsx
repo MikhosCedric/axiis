@@ -200,7 +200,7 @@ export function DayView({
                 type="button"
                 aria-pressed={shownMode === m}
                 onClick={() => switchMode(m)}
-                className={`px-3.5 py-2 font-medium ${shownMode === m ? "bg-ink text-paper" : "text-ink-2 hover:bg-accent-wash"}`}
+                className={`px-3.5 py-2 font-medium pointer-coarse:py-3 ${shownMode === m ? "bg-ink text-paper" : "text-ink-2 hover:bg-accent-wash"}`}
               >
                 {label}
               </button>
