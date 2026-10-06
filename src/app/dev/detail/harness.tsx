@@ -151,7 +151,7 @@ export function DetailHarness({ itemId, timeZone }: { itemId: string | null; tim
     const key = parseItemKey(itemId);
     if (!key || !itemId) return;
     let live = true;
-    loadDetail(store.repo, key, timeZone).then((view) => {
+    loadDetail(store.repo, key, new Date(), timeZone).then((view) => {
       if (live) setLoaded({ key: itemId, view });
     });
     return () => {
