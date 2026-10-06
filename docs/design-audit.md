@@ -72,6 +72,7 @@ axe reported **no violations on any of the 24 loads**, nor with the detail panel
    - **Where.** `src/features/notes/editor.module.css:11-13` (`.prose:focus-visible { outline: none; }`).
    - **Evidence.** This is the one place the global 2px verdigris `:focus-visible` ring is removed. A keyboard user tabbing from the title into an empty body sees only a caret, which is easy to miss in a 68ch field.
    - **Fix.** Replace the outline with a quieter cue that still shows focus, such as a 2px verdigris rule on the left edge or the Field Stroke border used by inputs. Suggested command `/impeccable polish`.
+   - **Status. Fixed.** A focused note body draws a 2px verdigris rule down its left edge, hung 14px into the margin so the text does not move. `e2e/harness.spec.ts` tabs into the body at 375px and checks the rule appears and stays on screen.
 
 9. **[P3, Theming] Dark tokens are declared twice.**
    - **Where.** `src/app/globals.css:20-52`.

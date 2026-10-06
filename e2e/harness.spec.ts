@@ -214,6 +214,29 @@ test("notes: typing in the editor saves", async ({ page }) => {
   await expect(page.getByRole("status").filter({ hasText: /^Saved$/ })).toBeVisible();
 });
 
+test("notes: tabbing into the body shows a focus rule beside it", async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 812 });
+  await page.goto("/dev/notes/00000000-0000-4000-8000-000000000020");
+  const body = page.getByRole("textbox", { name: "Garden through the winter" });
+  const rule = () =>
+    body.evaluate((el) => {
+      const s = getComputedStyle(el);
+      return { width: s.borderLeftWidth, color: s.borderLeftColor, left: el.getBoundingClientRect().left };
+    });
+  const resting = await rule();
+  expect(resting.color).toBe("rgba(0, 0, 0, 0)");
+
+  await page.getByRole("textbox", { name: "Title" }).focus();
+  for (let i = 0; i < 12 && !(await body.evaluate((el) => el === document.activeElement)); i++) {
+    await page.keyboard.press("Tab");
+  }
+  await expect(body).toBeFocused();
+  const focused = await rule();
+  expect(focused.width).toBe("2px");
+  expect(focused.color).not.toBe(resting.color);
+  expect(focused.left).toBeGreaterThanOrEqual(0);
+});
+
 test("settings: an area can be added and renamed", async ({ page }) => {
   await page.goto("/dev/settings");
   const areas = page.getByRole("region", { name: "Areas" });
