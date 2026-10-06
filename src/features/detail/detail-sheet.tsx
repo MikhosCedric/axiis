@@ -15,6 +15,7 @@ import { LinkedNotes } from "./linked-notes";
 import { useItemHref } from "./item-href";
 import { clockOf, planOptions, TYPE_CHOICES, type TypeChoice, type DetailActions, type DetailView, type Scope, type SkippedDate } from "./model";
 import { PlanRow } from "./plan-row";
+import { startsRepeating } from "./repeat";
 import { dayWords, planDate } from "@/features/inbox/model";
 import { RepeatRows } from "./repeat-control";
 import { SkippedDates } from "./skipped-dates";
@@ -180,6 +181,13 @@ export function DetailSheet({
         />
       </div>
 
+      {isSeries && (
+        <p className="-mt-2 flex items-center gap-2 text-[13px] text-ink-2">
+          <RepeatMark className="text-ink-3" />
+          Repeats. Each time is ticked done on its own day, on the Score or the week.
+        </p>
+      )}
+
       {isOccurrence && (
         <div className="grid gap-2.5">
           <p className="flex items-center gap-2 text-[13px] text-ink-2">
@@ -342,10 +350,13 @@ export function DetailSheet({
             <RepeatRows
               repeat={repeat}
               save={(choice, show) =>
-                write(() => {
-                  show();
-                  return actions.setRepeat(item.id, choice);
-                })
+                write(
+                  () => {
+                    show();
+                    return actions.setRepeat(item.id, choice);
+                  },
+                  repeat.kind === "off" ? () => setStatus(startsRepeating(choice, view.day, view.today)) : undefined,
+                )
               }
             />
           )}
