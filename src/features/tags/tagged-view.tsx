@@ -85,7 +85,7 @@ export function TaggedView({
                       {row.done && <span className="sr-only">, done</span>}
                     </button>
                     {meta.length > 0 && (
-                      <p className="mt-0.5 flex flex-wrap gap-x-2 text-xs text-ink-3">
+                      <p className={`mt-0.5 flex flex-wrap gap-x-2 text-xs ${selected ? "text-ink-2" : "text-ink-3"}`}>
                         {row.when && <span className="tabular">{row.when}</span>}
                         {row.area && <span>{row.area}</span>}
                         {others.shown && (
