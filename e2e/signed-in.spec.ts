@@ -1,6 +1,9 @@
 import AxeBuilder from "@axe-core/playwright";
-import { expect, test } from "@playwright/test";
+import { expect as defaultExpect, test } from "@playwright/test";
 import { SESSION_COOKIE, sessionHeader, signedIn } from "./session";
+
+// A client navigation waits on the server render of the next route; see the timeout note below.
+const expect = defaultExpect.configure({ timeout: 30_000 });
 
 // The real signed-in routes, as the in-memory account from src/lib/supabase/fake-account.ts. See docs/e2e-session.md.
 
@@ -15,6 +18,9 @@ test("the reset route answers 404 without the session", async ({ request }) => {
 });
 
 signedIn.describe("signed in", () => {
+  // Each real route renders the whole app shell, and `next dev` on a busy runner can take most of the
+  // default 30 seconds to answer one under the parallel suite. Warm, a route answers in well under a second.
+  signedIn.describe.configure({ timeout: 90_000 });
   signedIn.use({ timezoneId: "UTC" });
 
   signedIn("the landing page and /login send the account to Today", async ({ page }) => {
@@ -24,25 +30,25 @@ signedIn.describe("signed in", () => {
     await expect(page).toHaveURL("/today");
   });
 
-  signedIn("the nav rail reaches every screen", async ({ page }) => {
-    await page.goto("/today");
-    const nav = page.getByRole("navigation", { name: "Primary" });
-    for (const [label, path, heading] of [
-      ["Week", "/week", null],
-      ["Inbox", "/inbox", "Inbox"],
-      ["Lists", "/lists", "Lists"],
-      ["Tags", "/tags", "Tags"],
-      ["Notes", "/notes", "Notes"],
-      ["Search", "/search", "Search"],
-      ["Settings", "/settings", "Settings"],
-      ["Today", "/today", null],
-    ] as const) {
+  for (const [label, path, heading] of [
+    ["Today", "/today", null],
+    ["Week", "/week", null],
+    ["Inbox", "/inbox", "Inbox"],
+    ["Lists", "/lists", "Lists"],
+    ["Tags", "/tags", "Tags"],
+    ["Notes", "/notes", "Notes"],
+    ["Search", "/search", "Search"],
+    ["Settings", "/settings", "Settings"],
+  ] as const) {
+    signedIn(`the nav rail's ${label} link opens ${path}`, async ({ page }) => {
+      await page.goto(path === "/inbox" ? "/lists" : "/inbox");
+      const nav = page.getByRole("navigation", { name: "Primary" });
       await nav.getByRole("link", { name: label, exact: true }).click();
       await expect(page).toHaveURL(path);
       await expect(nav.getByRole("link", { name: label, exact: true })).toHaveAttribute("aria-current", "page");
       await expect(page.getByRole("heading", { level: 1, ...(heading && { name: heading }) })).toBeVisible();
-    }
-  });
+    });
+  }
 
   signedIn("a task captured on Today waits in the Inbox, and planned for tomorrow it shows on that day", async ({ page }) => {
     const title = `Call the plumber ${Date.now()}`;
