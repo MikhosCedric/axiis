@@ -26,6 +26,8 @@ A free, solo-user productivity web app. Tasks, a planner, checklists and notes s
 | Capture and mark-done commands | `src/features/today/` |
 | Shell (nav rail, theme, tz cookie) | `src/components/shell/` |
 | Design tokens | `src/app/globals.css` |
+| Design system as shipped (tokens, type, line-form state, components, rules) | `DESIGN.md`, sidecar `.impeccable/design.json` |
+| Design audit (a11y, responsive, performance, drift; findings by severity) | `docs/design-audit.md` |
 | Database | `supabase/migrations/`, tests in `tests/db/` (PGlite, no Docker) |
 | Dev-only harness pages (blocked in production) | `src/app/dev/{score,week,inbox,lists,detail,notes,settings,palette,tags}/`, their shared detail actions in `src/app/dev/detail-actions.ts` |
 | Visual prototype that set the direction | `prototypes/today-score/index.html` |
