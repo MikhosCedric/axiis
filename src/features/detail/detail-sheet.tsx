@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { startTransition, useId, useOptimistic, useState } from "react";
+import { startTransition, useId, useOptimistic, useRef, useState } from "react";
 import type { AreaId, ItemType } from "@/domain/item";
 import type { ActionResult } from "@/features/today/commands";
 import { ConfirmDelete } from "./confirm-delete";
@@ -13,7 +13,9 @@ import { RepeatMark } from "@/features/today/repeat-mark";
 import { InlineTitle } from "./inline-title";
 import { LinkedNotes } from "./linked-notes";
 import { useItemHref } from "./item-href";
-import { clockOf, type DetailActions, type DetailView, type Scope, type SkippedDate } from "./model";
+import { clockOf, planOptions, type DetailActions, type DetailView, type Scope, type SkippedDate } from "./model";
+import { PlanRow } from "./plan-row";
+import { dayWords, planDate } from "@/features/inbox/model";
 import { RepeatRows } from "./repeat-control";
 import { SkippedDates } from "./skipped-dates";
 import { Subtasks } from "./subtasks";
@@ -60,6 +62,8 @@ export function DetailSheet({
   const [promoted, setPromoted] = useState(false);
   // Only an occurrence offers a choice; anything else is always its own target.
   const [scope, setScope] = useState<Scope>("one");
+  const planTrigger = useRef<HTMLButtonElement>(null);
+  const timeStart = useRef<HTMLInputElement>(null);
   const headingId = useId();
   const areaFieldId = useId();
 
@@ -103,6 +107,7 @@ export function DetailSheet({
   const skipped = isOccurrence ? repeat.skipped : null;
   // The series itself has no "This one": every change to it is to all of them.
   const seriesScope: Scope = isSeries ? "all" : scope;
+  const plan = planOptions(view, scope);
 
   return (
     <aside aria-labelledby={headingId} className="grid gap-5">
@@ -187,34 +192,57 @@ export function DetailSheet({
           <dd>{TYPE_WORD[item.type]}</dd>
 
           {view.when !== null && (
+            <PlanRow
+              label={isSeries ? "Starts" : "When"}
+              when={view.when}
+              day={view.day}
+              today={view.today}
+              days={plan.days}
+              unplan={plan.unplan}
+              trigger={planTrigger}
+              onPlan={(when) =>
+                write(
+                  () => actions.plan(item.id, when),
+                  () => {
+                    const on = dayWords(planDate(when, view.today), view.today);
+                    setStatus(isOccurrence ? `This one moved to ${on}.` : `Planned for ${on}.`);
+                  },
+                )
+              }
+              onUnplan={() => write(() => actions.unplan(item.id), () => setStatus("It has no day now."))}
+            />
+          )}
+          {view.due && (
             <>
-              <dt className="text-[13px] text-ink-3">{isSeries ? "Starts" : "When"}</dt>
-              <dd>
-                <span className="tabular">{view.when}</span>
-                {view.due && <span className="block text-ink-2 tabular">{view.due}</span>}
-              </dd>
+              <dt className="text-[13px] text-ink-3">Due</dt>
+              <dd className="tabular">{view.due}</dd>
             </>
           )}
 
-          {(isOccurrence || isSeries) && (
+          {plan.time && (
             <TimeRow
               time={view.time}
+              startRef={timeStart}
               save={(time) =>
                 write(
                   () => actions.setTime(item.id, time, seriesScope),
-                  seriesScope === "all" ? () => setStatus(`All of them are at ${clockOf(time.start)} now.`) : undefined,
+                  () =>
+                    setStatus(
+                      seriesScope === "all" ? `All of them are at ${clockOf(time.start)} now.` : `At ${clockOf(time.start)} now.`,
+                    ),
                 )
               }
               clear={() =>
                 write(
                   () => actions.clearTime(item.id, seriesScope),
-                  seriesScope === "all" ? () => setStatus("All of them are at any time of day now.") : undefined,
+                  () =>
+                    setStatus(seriesScope === "all" ? "All of them are at any time of day now." : "At any time of day now."),
                 )
               }
             />
           )}
 
-          {(isOccurrence || isSeries) && seriesScope === "all" && (
+          {plan.firstDay && (repeat.kind === "series" || repeat.kind === "occurrence") && (
             <FirstDayRow
               firstOn={repeat.firstOn}
               save={(on) =>

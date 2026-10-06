@@ -12,6 +12,8 @@ import {
   stopRepeating,
 } from "@/features/detail/commands";
 import type { DetailActions } from "@/features/detail/model";
+import { planItem } from "@/features/inbox/commands";
+import { moveItem } from "@/features/week/commands";
 import { addTag, removeTag } from "@/features/tags/commands";
 import { setDone, type ActionResult } from "@/features/today/commands";
 import type { ItemsRepo } from "@/lib/items/repo";
@@ -31,6 +33,8 @@ export function harnessDetailActions(
     rename: (key, title, scope) => run(() => renameItem(repo, key, title, timeZone, scope)),
     setDone: (key, done) => run(() => setDone(repo, key, done, timeZone)),
     setArea: (key, area, scope) => run(() => setItemArea(repo, key, area, timeZone, scope)),
+    plan: (key, when) => run(() => planItem(repo, key, when, new Date(), timeZone)),
+    unplan: (key) => run(() => moveItem(repo, key, "tray", timeZone)),
     setTime: (key, time, scope) => run(() => setTime(repo, key, time, timeZone, scope)),
     clearTime: (key, scope) => run(() => clearTime(repo, key, timeZone, scope)),
     setFirstDay: (key, on) => run(() => setFirstDay(repo, key, on, timeZone)),

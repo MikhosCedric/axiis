@@ -18,7 +18,9 @@ import {
   setRepeatAction,
   setTimeAction,
   stopRepeatingAction,
+  unplanAction,
 } from "./actions";
+import { planAction } from "@/features/inbox/actions";
 import { loadDetail } from "./commands";
 import { DetailSheet, MissingItem } from "./detail-sheet";
 import type { DetailActions } from "./model";
@@ -27,6 +29,8 @@ const actions: DetailActions = {
   rename: renameItemAction,
   setDone: setDoneAction,
   setArea: setAreaAction,
+  plan: planAction,
+  unplan: unplanAction,
   setTime: setTimeAction,
   clearTime: clearTimeAction,
   setFirstDay: setFirstDayAction,

@@ -7,6 +7,7 @@ import { describeRule, presetOf, type RepeatChoice, type RepeatPreset } from "./
 import type { ActionResult } from "@/features/today/commands";
 import { formatClock, formatDayHeading, formatDayIn } from "@/features/today/format";
 import type { Created } from "@/features/notes/model";
+import type { PlanFor } from "@/features/inbox/model";
 import { DEFAULT_MINUTES } from "@/features/score/drop";
 import { DAY_MINUTES } from "@/features/score/layout";
 
@@ -113,6 +114,10 @@ export type DetailView = {
   item: { id: ItemKey; type: ItemType; title: string; done: boolean; areaId: AreaId | null };
   /** Null for notes, which never sit in time. */
   when: string | null;
+  /** The local date it sits on, null while it waits for a day. */
+  day: LocalDate | null;
+  /** The user's local date, so the panel can plan for today or tomorrow and say so. */
+  today: LocalDate;
   /** The clock time of a timed item on its first day, null for anything without one. */
   time: TimeOfDay | null;
   due: string | null;
@@ -130,6 +135,10 @@ export type DetailActions = {
   rename: (id: string, title: string, scope?: Scope) => Promise<ActionResult>;
   setDone: (id: string, done: boolean) => Promise<ActionResult>;
   setArea: (id: string, areaId: string | null, scope?: Scope) => Promise<ActionResult>;
+  /** Puts it on a day the server works out from "today", "tomorrow" or a date, keeping any time it has. */
+  plan: (id: string, when: PlanFor) => Promise<ActionResult>;
+  /** Takes it off its day, back to waiting. */
+  unplan: (id: string) => Promise<ActionResult>;
   setTime: (id: string, time: TimeOfDay, scope?: Scope) => Promise<ActionResult>;
   /** Leaves it on its day at any time. */
   clearTime: (id: string, scope?: Scope) => Promise<ActionResult>;
@@ -148,6 +157,22 @@ export type DetailActions = {
   /** Makes a note linked to the item and answers with its id, so the sheet can open it. */
   newLinkedNote: (itemId: string) => Promise<Created>;
 };
+
+/**
+ * What the When part of the panel lets someone change. A note has none. A
+ * series moves by its First day; one occurrence moves on its own only with
+ * "This one", and never off its day, since it stands for that date. Anything
+ * else can go to any day or back to waiting, and takes a time once it has a day.
+ */
+export type PlanOptions = { days: boolean; unplan: boolean; time: boolean; firstDay: boolean };
+
+export function planOptions(view: Pick<DetailView, "when" | "day" | "repeat">, scope: Scope): PlanOptions {
+  const { repeat } = view;
+  if (view.when === null) return { days: false, unplan: false, time: false, firstDay: false };
+  if (repeat.kind === "series") return { days: false, unplan: false, time: true, firstDay: true };
+  if (repeat.kind === "occurrence") return { days: scope === "one", unplan: false, time: true, firstDay: scope === "all" };
+  return { days: true, unplan: view.day !== null, time: view.day !== null, firstDay: false };
+}
 
 export function describeWhen(schedule: Schedule, timeZone: string): string {
   if (schedule.kind === "unscheduled") return "Waiting for a time";
@@ -237,6 +262,8 @@ export function buildDetail(input: {
   return {
     item: { id: item.id, type: item.type, title: item.title, done: item.status === "done", areaId: item.areaId },
     when: item.type === "note" ? null : describeWhen(item.schedule, timeZone),
+    day: firstDay(item.schedule, timeZone),
+    today,
     time: timeOf(item.schedule, timeZone),
     due: describeDue(item.dueOn),
     areas: areas.map((a) => ({ id: a.id, name: a.name })),
