@@ -266,12 +266,15 @@ type Captured = Extract<CaptureResult, { ok: true }>;
  * which sits above the tray, or in the palette, which can be opened anywhere.
  */
 export function capturedLine(result: Captured, where: "field" | "palette"): string {
-  if (result.type === "checklist") return "Captured. It is open, ready for its lines.";
   const tags = result.tags.length ? ` with ${tagList(result.tags)}` : "";
   const what = where === "palette" ? `Captured “${result.title}”` : "Captured";
-  const line = result.plan
-    ? `${where === "palette" ? `${what}. ` : ""}Planned for ${result.plan}${tags ? `,${tags}` : ""}.`
-    : `${what}${tags}. It is waiting for a time${where === "palette" ? " on Today" : ", below"}.`;
+  const planned = `Planned for ${result.plan}${tags ? `,${tags}` : ""}.`;
+  const line =
+    result.type === "checklist"
+      ? `${result.plan ? planned : `${what}${tags}.`} It is open, ready for its lines.`
+      : result.plan
+        ? `${where === "palette" ? `${what}. ` : ""}${planned}`
+        : `${what}${tags}. It is waiting for a time${where === "palette" ? " on Today" : ", below"}.`;
   if (!result.missed.length) return line;
   return `${line} ${result.missed.length === 1 ? "The tag" : "The tags"} ${tagList(result.missed)} did not save.`;
 }

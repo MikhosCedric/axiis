@@ -59,7 +59,7 @@ export function ListsHarness({ empty, itemId }: { empty: boolean; itemId: string
     const fail = async (): Promise<never> => {
       throw new Error("harness: saves are set to fail");
     };
-    return saved(await captureChecklist(settings.failing ? { ...store.repo, create: fail } : store.repo, title));
+    return saved(await captureChecklist(settings.failing ? { ...store.repo, create: fail } : store.repo, title, new Date(), "UTC"));
   }
 
   const current = loaded && loaded.key === itemId ? loaded : null;
