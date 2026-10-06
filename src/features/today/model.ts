@@ -2,8 +2,14 @@ import type { AreaId, DayRange, ShownItem } from "@/domain/item";
 
 export const TITLE_MAX = 500;
 
-/** The tray with nothing in it. Things under "Any time" have a day but no time, so this must not claim everything has a time. */
-export const EMPTY_TRAY = "Nothing is waiting for a time. What you capture lands here first.";
+/**
+ * The one name for open items with no day, on the Score, the Week, the List view, the Inbox and the detail panel.
+ * Not "unplanned": a waiting item is drawn with the dashed planned line.
+ */
+export const WAITING = "Waiting";
+
+/** The tray with nothing in it. Things under "Any time" have a day, so this must not claim everything has one. */
+export const EMPTY_TRAY = "Nothing is waiting. What you capture lands here first.";
 
 /** How an item reads on the day: dashed planned, solid live beam, hollow done. */
 export type BeamState = "planned" | "live" | "done";
@@ -70,7 +76,7 @@ export function summaryLine({ scheduled, waiting }: TodayView, isToday = true): 
           ? "Everything planned for today is done"
           : "Everything planned for this day is done"
         : `${open} open${done ? `, ${done} done` : ""}${isToday ? " today" : ""}`;
-  return waitingOpen ? `${plan}. ${waitingOpen} waiting for a time.` : `${plan}.`;
+  return waitingOpen ? `${plan}. ${waitingOpen} waiting.` : `${plan}.`;
 }
 
 /** Open items per area across the day, for the nav's extent bars. */

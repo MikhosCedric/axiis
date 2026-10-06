@@ -194,6 +194,7 @@ describe("patchToUpdate", () => {
   it("leaves out every key the patch does not mention", () => {
     expect(patchToUpdate({}, now)).toEqual({});
     expect(patchToUpdate({ title: "Renamed" }, now)).toEqual({ title: "Renamed" });
+    expect(patchToUpdate({ type: "event" }, now)).toEqual({ type: "event" });
   });
 
   it("passes explicit nulls through so fields can be cleared", () => {

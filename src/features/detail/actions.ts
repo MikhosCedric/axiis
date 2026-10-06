@@ -4,6 +4,7 @@ import { refresh } from "next/cache";
 import { getNow, getTimeZone } from "@/features/day/server";
 import { getItemsRepo } from "@/lib/items";
 import type { ActionResult } from "@/features/today/commands";
+import { moveItem } from "@/features/week/commands";
 import {
   addSubtask,
   clearTime,
@@ -11,10 +12,12 @@ import {
   promoteSubtask,
   renameItem,
   restoreOccurrence,
+  setDue,
   setFirstDay,
   setItemArea,
   setRepeat,
   setTime,
+  setType,
   stopRepeating,
 } from "./commands";
 
@@ -37,6 +40,18 @@ export async function setAreaAction(id: string, areaId: string | null, scope?: u
 
 export async function setTimeAction(id: string, time: unknown, scope?: unknown): Promise<ActionResult> {
   return refreshed(await setTime(await getItemsRepo(), id, time, await getTimeZone(), scope));
+}
+
+export async function unplanAction(id: string): Promise<ActionResult> {
+  return refreshed(await moveItem(await getItemsRepo(), id, "tray", await getTimeZone()));
+}
+
+export async function setDueAction(id: string, on: unknown): Promise<ActionResult> {
+  return refreshed(await setDue(await getItemsRepo(), id, on));
+}
+
+export async function setTypeAction(id: string, type: unknown): Promise<ActionResult> {
+  return refreshed(await setType(await getItemsRepo(), id, type, await getTimeZone()));
 }
 
 export async function clearTimeAction(id: string, scope?: unknown): Promise<ActionResult> {

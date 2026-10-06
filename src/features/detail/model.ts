@@ -7,6 +7,7 @@ import { describeRule, presetOf, type RepeatChoice, type RepeatPreset } from "./
 import type { ActionResult } from "@/features/today/commands";
 import { formatClock, formatDayHeading, formatDayIn } from "@/features/today/format";
 import type { Created } from "@/features/notes/model";
+import type { PlanFor } from "@/features/inbox/model";
 import { DEFAULT_MINUTES } from "@/features/score/drop";
 import { DAY_MINUTES } from "@/features/score/layout";
 
@@ -24,6 +25,15 @@ export function subtaskPolicy(item: Pick<ShownItem, "type" | "parentId" | "recur
   if (repeats(item)) return { kind: "no-subtasks" };
   if (item.type === "task" || item.type === "checklist") return { kind: "holds-subtasks" };
   return { kind: "no-subtasks" };
+}
+
+/** The types an item may switch between in the panel, in menu order. Nothing becomes a note or stops being one. */
+export const TYPE_CHOICES = ["task", "event", "checklist"] as const;
+export type TypeChoice = (typeof TYPE_CHOICES)[number];
+
+/** A note stays a note, and a subtask stays what it is. */
+export function retypable(item: Pick<ShownItem, "type" | "parentId">): boolean {
+  return item.type !== "note" && item.parentId === null;
 }
 
 /** Which way a change to one occurrence goes: to that occurrence alone, or to the whole series. */
@@ -109,13 +119,20 @@ export type Nesting =
 
 /** Everything the detail sheet draws, already formatted for the user's zone and safe to send to the client. */
 export type DetailView = {
-  /** `id` is the key the sheet was opened with, so an occurrence that is not stored yet can still be acted on. */
+  /** `id` is the occurrence key until the occurrence is stored, then its stored id, so either can be acted on. */
   item: { id: ItemKey; type: ItemType; title: string; done: boolean; areaId: AreaId | null };
+  /** Whether the panel offers Task, Event and Checklist. A note stays a note and a subtask stays a task. */
+  retype: boolean;
   /** Null for notes, which never sit in time. */
   when: string | null;
+  /** The local date it sits on, null while it waits for a day. */
+  day: LocalDate | null;
+  /** The user's local date, so the panel can plan for today or tomorrow and say so. */
+  today: LocalDate;
   /** The clock time of a timed item on its first day, null for anything without one. */
   time: TimeOfDay | null;
-  due: string | null;
+  /** The deadline, and whether the panel may set or clear it. */
+  due: { on: LocalDate | null; editable: boolean };
   areas: { id: AreaId; name: string }[];
   nesting: Nesting;
   repeat: RepeatView;
@@ -130,7 +147,15 @@ export type DetailActions = {
   rename: (id: string, title: string, scope?: Scope) => Promise<ActionResult>;
   setDone: (id: string, done: boolean) => Promise<ActionResult>;
   setArea: (id: string, areaId: string | null, scope?: Scope) => Promise<ActionResult>;
+  /** Puts it on a day the server works out from "today", "tomorrow" or a date, keeping any time it has. */
+  plan: (id: string, when: PlanFor) => Promise<ActionResult>;
+  /** Takes it off its day, back to waiting. */
+  unplan: (id: string) => Promise<ActionResult>;
   setTime: (id: string, time: TimeOfDay, scope?: Scope) => Promise<ActionResult>;
+  /** Sets the deadline to a local date, or clears it with null. */
+  setDue: (id: string, on: LocalDate | null) => Promise<ActionResult>;
+  /** Changes the type; on anything that repeats, of the series and every occurrence. */
+  setType: (id: string, type: TypeChoice) => Promise<ActionResult>;
   /** Leaves it on its day at any time. */
   clearTime: (id: string, scope?: Scope) => Promise<ActionResult>;
   /** Moves the first date of the series the item belongs to. */
@@ -149,6 +174,22 @@ export type DetailActions = {
   newLinkedNote: (itemId: string) => Promise<Created>;
 };
 
+/**
+ * What the When part of the panel lets someone change. A note has none. A
+ * series moves by its First day; one occurrence moves on its own only with
+ * "This one", and never off its day, since it stands for that date. Anything
+ * else can go to any day or back to waiting, and takes a time once it has a day.
+ */
+export type PlanOptions = { days: boolean; unplan: boolean; time: boolean; firstDay: boolean };
+
+export function planOptions(view: Pick<DetailView, "when" | "day" | "repeat">, scope: Scope): PlanOptions {
+  const { repeat } = view;
+  if (view.when === null) return { days: false, unplan: false, time: false, firstDay: false };
+  if (repeat.kind === "series") return { days: false, unplan: false, time: true, firstDay: true };
+  if (repeat.kind === "occurrence") return { days: scope === "one", unplan: false, time: true, firstDay: scope === "all" };
+  return { days: true, unplan: view.day !== null, time: view.day !== null, firstDay: false };
+}
+
 export function describeWhen(schedule: Schedule, timeZone: string): string {
   if (schedule.kind === "unscheduled") return "Waiting for a time";
   if (schedule.kind === "day") return formatDayHeading(schedule.on);
@@ -159,8 +200,13 @@ export function describeWhen(schedule: Schedule, timeZone: string): string {
   return endDay === startDay ? `${start} to ${end}` : `${start} to ${formatDayHeading(endDay)}, ${end}`;
 }
 
-export function describeDue(dueOn: LocalDate | null): string | null {
-  return dueOn === null ? null : `Due ${formatDayHeading(dueOn)}`;
+/**
+ * Whether a due date can be set or cleared: on a task or checklist that does
+ * not repeat. A deadline on every occurrence of a series would be the same date
+ * each time, and a note never sits in time.
+ */
+export function takesDue(item: Pick<ShownItem, "type" | "recurrence">): boolean {
+  return (item.type === "task" || item.type === "checklist") && item.recurrence.kind === "none";
 }
 
 export function firstDay(schedule: Schedule, timeZone: string): LocalDate | null {
@@ -236,9 +282,12 @@ export function buildDetail(input: {
         : { kind: "no-subtasks" };
   return {
     item: { id: item.id, type: item.type, title: item.title, done: item.status === "done", areaId: item.areaId },
+    retype: retypable(item),
     when: item.type === "note" ? null : describeWhen(item.schedule, timeZone),
+    day: firstDay(item.schedule, timeZone),
+    today,
     time: timeOf(item.schedule, timeZone),
-    due: describeDue(item.dueOn),
+    due: { on: item.dueOn, editable: takesDue(item) },
     areas: areas.map((a) => ({ id: a.id, name: a.name })),
     nesting,
     repeat: repeatView(item, series, subtasks, skipped, timeZone, today),
