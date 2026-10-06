@@ -11,8 +11,8 @@ const NOT_FOUND = "That item could not be found.";
 
 const titleSchema = z.string().trim().min(1).max(TITLE_MAX);
 
-/** A capture's result. On success it names the new item, so a screen can open it. */
-export type CaptureResult = { ok: true; id: ItemId } | { ok: false; error: string };
+/** A capture's result. On success it names the new item, so a screen can open it and say where it went. */
+export type CaptureResult = { ok: true; id: ItemId; type: "task" | "checklist" } | { ok: false; error: string };
 
 export function captureTask(repo: ItemsRepo, raw: unknown): Promise<CaptureResult> {
   return capture(repo, raw, "task");
@@ -30,7 +30,7 @@ async function capture(repo: ItemsRepo, raw: unknown, type: "task" | "checklist"
   }
   try {
     const item = await repo.create({ type, title: title.data, schedule: { kind: "unscheduled" } });
-    return { ok: true, id: item.id };
+    return { ok: true, id: item.id, type };
   } catch {
     return { ok: false, error: "That did not save. Your words are still here, so try again." };
   }
