@@ -59,7 +59,7 @@ describe("inboxSummary", () => {
     const done = makeItem({ status: "done" });
     expect(inboxSummary([])).toBe("Nothing is waiting.");
     expect(inboxSummary([done])).toBe("Everything here is done.");
-    expect(inboxSummary([open, done])).toBe("1 item waiting for a day.");
-    expect(inboxSummary([open, open])).toBe("2 items waiting for a day.");
+    expect(inboxSummary([open, done])).toBe("1 item waiting.");
+    expect(inboxSummary([open, open])).toBe("2 items waiting.");
   });
 });

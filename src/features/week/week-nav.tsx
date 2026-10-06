@@ -115,7 +115,7 @@ function WeekPicker({ start, onPick }: { start: LocalDate; onPick: (date: LocalD
           if (typed.current) commit(e.currentTarget.value, e.currentTarget);
           typed.current = false;
         }}
-        className="h-9 rounded-md border border-rule bg-sheet px-2.5 text-ink tabular"
+        className="h-9 rounded-md border border-rule bg-sheet px-2.5 text-ink tabular focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-accent"
       />
     </>
   );

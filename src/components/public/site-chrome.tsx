@@ -18,8 +18,8 @@ export function SiteHeader() {
         <span className="font-serif text-[22px] leading-none font-semibold tracking-[-0.01em]">Axiis</span>
       </Link>
       <div className="flex items-center gap-1.5">
-        <ThemeToggle className="flex items-center gap-2 rounded-md px-2.5 py-2 text-ink-2 hover:bg-paper-2 hover:text-ink [&>span]:sr-only" />
-        <Link href="/login" className="rounded-md px-3 py-2 font-medium text-ink underline-offset-4 hover:underline">
+        <ThemeToggle className="flex min-h-11 min-w-11 items-center justify-center gap-2 rounded-md px-2.5 text-ink-2 hover:bg-paper-2 hover:text-ink [&>span]:sr-only" />
+        <Link href="/login" className="inline-flex min-h-11 items-center rounded-md px-3 font-medium text-ink underline-offset-4 hover:underline">
           Sign in
         </Link>
       </div>
@@ -30,19 +30,19 @@ export function SiteHeader() {
 export function SiteFooter() {
   return (
     <footer className="mt-24 border-t border-rule">
-      <div className={`${siteWrap} flex flex-wrap items-center justify-between gap-x-8 gap-y-3 py-8 text-[13px] text-ink-3`}>
+      <div className={`${siteWrap} flex flex-wrap items-center justify-between gap-x-8 gap-y-3 py-6 text-[13px] text-ink-3`}>
         <span className="flex items-center gap-2">
           <span className="font-serif text-[15px] font-semibold text-ink-2">Axiis</span>
           <span>Tasks and time, on one page.</span>
         </span>
         <nav aria-label="Site" className="flex gap-5">
-          <Link href="/privacy" className="hover:text-ink hover:underline">
+          <Link href="/privacy" className="inline-flex min-h-11 items-center hover:text-ink hover:underline">
             Privacy
           </Link>
-          <Link href="/terms" className="hover:text-ink hover:underline">
+          <Link href="/terms" className="inline-flex min-h-11 items-center hover:text-ink hover:underline">
             Terms
           </Link>
-          <Link href="/login" className="hover:text-ink hover:underline">
+          <Link href="/login" className="inline-flex min-h-11 items-center hover:text-ink hover:underline">
             Sign in
           </Link>
         </nav>
