@@ -52,7 +52,7 @@ export function ListsView({
         <p className="mt-2.5 text-[15px] text-ink-2">{listsSummary(data.rows)}</p>
 
         <div className="mt-6">
-          <CaptureField captureAction={captureAndOpen} label="New checklist" placeholder="Name a checklist, then add its lines" />
+          <CaptureField captureAction={captureAndOpen} label="New checklist" placeholder="Name a checklist, then add its lines" plans={false} />
         </div>
 
         {data.rows.length > 0 ? (

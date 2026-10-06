@@ -68,10 +68,15 @@ test.describe("capture field", () => {
     await expect(page.locator("[data-captured]")).toHaveText(/Return the library books/);
   });
 
-  test("Lists: a new checklist says it is open, and reads the same words", async ({ page }) => {
+  test("Lists: a checklist keeps its name as typed, with no preview or syntax help", async ({ page }) => {
     await page.goto("/dev/lists?empty");
-    await capture(page, "Pack for the city tomorrow");
-    await expect(status(page)).toHaveText("Planned for tomorrow. It is open, ready for its lines.");
+    await field(page).fill("Pack for the city tomorrow #trip");
+    await expect(page.locator("#capture-preview")).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "How capture reads days, times and tags" })).toHaveCount(0);
+    await field(page).press("Enter");
+    await expect(status(page)).toHaveText("Captured. It is open, ready for its lines.");
+    const details = page.getByRole("complementary", { name: "Details" });
+    await expect(details.getByRole("textbox", { name: "Title" })).toHaveValue("Pack for the city tomorrow #trip");
   });
 
   test("a failed capture keeps the words and says so", async ({ page }) => {
