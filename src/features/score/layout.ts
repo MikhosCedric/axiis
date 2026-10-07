@@ -28,16 +28,24 @@ export function spanOf(item: ShownItem, date: LocalDate, timeZone: string): Span
   return { start, end: Math.max(end, start) };
 }
 
-/** 07:00 to 20:00, widened to whole hours that hold every span and, on today, now. */
-export function axisFor(spans: Span[], now: number | null): Axis {
+/**
+ * 07:00 to 20:00, widened to whole hours that hold every span and, on today, now.
+ * Given `room`, the pixels the axis has on screen, it then gains as many more
+ * whole hours as fit: later ones up to midnight first, so nothing already drawn
+ * moves, then earlier ones down to midnight. It never shrinks below its content.
+ */
+export function axisFor(spans: Span[], now: number | null, room = 0): Axis {
   let start = DEFAULT_AXIS.start;
   let end = DEFAULT_AXIS.end;
   const marks = now === null ? spans : [...spans, { start: now, end: now + 1 }];
   for (const s of marks) {
-    start = Math.min(start, Math.floor(s.start / 60) * 60);
-    end = Math.max(end, Math.ceil(s.end / 60) * 60);
+    start = Math.max(0, Math.min(start, Math.floor(s.start / 60) * 60));
+    end = Math.min(DAY_MINUTES, Math.max(end, Math.ceil(s.end / 60) * 60));
   }
-  return { start: Math.max(0, start), end: Math.min(DAY_MINUTES, end) };
+  const spare = Math.max(0, Math.floor((room - (end - start) * PX_PER_MINUTE) / HOUR_PX));
+  const later = Math.min(spare, (DAY_MINUTES - end) / 60);
+  const earlier = Math.min(spare - later, start / 60);
+  return { start: start - earlier * 60, end: end + later * 60 };
 }
 
 export const xAt = (axis: Axis, minutes: number) => (minutes - axis.start) * PX_PER_MINUTE;
@@ -130,6 +138,7 @@ export function layoutScore({
   timeZone,
   now,
   pending = null,
+  room = 0,
 }: {
   view: TodayView;
   areas: Area[];
@@ -138,6 +147,8 @@ export function layoutScore({
   /** Local minutes of now, or null when the day shown is not today. */
   now: number | null;
   pending?: Pending | null;
+  /** Pixels the axis has on screen; the axis grows by whole hours to fill them. */
+  room?: number;
 }): ScoreLayout {
   const known = new Set<AreaId>(areas.map((a) => a.id));
   const timed: { value: TodayEntry; span: Span }[] = [];
@@ -150,6 +161,7 @@ export function layoutScore({
   const axis = axisFor(
     timed.map((t) => t.span),
     now,
+    room,
   );
   const areaOf = (e: TodayEntry) => (e.item.areaId !== null && known.has(e.item.areaId) ? e.item.areaId : null);
   const needsNoArea = areas.length === 0 || timed.some((t) => areaOf(t.value) === null);

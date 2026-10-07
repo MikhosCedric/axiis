@@ -68,6 +68,37 @@ describe("axisFor", () => {
   });
 });
 
+describe("axisFor with room on screen", () => {
+  const hours = (n: number) => n * 76;
+
+  it("changes nothing when the room is narrower than the default span, or not measured", () => {
+    expect(axisFor([], null, hours(5))).toEqual(DEFAULT_AXIS);
+    expect(axisFor([], null, hours(13) + 75)).toEqual(DEFAULT_AXIS);
+    expect(axisFor([], null)).toEqual(DEFAULT_AXIS);
+  });
+
+  it("adds later whole hours first, filling the room to within one hour", () => {
+    expect(axisFor([], null, hours(13) + 76)).toEqual(span(420, 21 * 60));
+    expect(axisFor([], null, hours(15) + 40)).toEqual(span(420, 22 * 60));
+  });
+
+  it("adds earlier hours only once the axis reaches midnight", () => {
+    expect(axisFor([], null, hours(17))).toEqual(span(420, 1440));
+    expect(axisFor([], null, hours(19) + 10)).toEqual(span(300, 1440));
+  });
+
+  it("stops at 00:00 and 24:00 however wide the room", () => {
+    expect(axisFor([], null, hours(40))).toEqual(span(0, 1440));
+  });
+
+  it("keeps items and now that sit outside the default, and fills from there", () => {
+    // 05:00 to 21:00 is 16 hours; 18 hours of room adds 21:00 to 23:00.
+    expect(axisFor([span(5 * 60 + 30, 6 * 60)], 20 * 60 + 30, hours(18))).toEqual(span(300, 23 * 60));
+    // Wider content than the room never shrinks.
+    expect(axisFor([span(60, 23 * 60)], null, hours(3))).toEqual(span(60, 23 * 60));
+  });
+});
+
 describe("x and minutes", () => {
   const axis = span(420, 1200);
   it("are inverse, with the axis start at x = 0", () => {
@@ -149,6 +180,13 @@ describe("layoutScore", () => {
     expect(score.staves.map((s) => s.name)).toEqual(["Work", "Home"]);
     expect(score.staves[0].beams.map((b) => b.value.item.title)).toEqual(["Brief"]);
     expect(score.areaOrder).toEqual([work.id, home.id, null]);
+  });
+
+  it("fills the room it is given, and the last beam's label may run to the new axis end", () => {
+    const view = buildToday({ scheduled: [timed("Late", at(19), at(19, 30), { areaId: work.id })], unscheduled: [] }, range, now);
+    const score = layoutScore({ view, areas: [work, home], date, timeZone: zone, now: 640, room: 15 * 76 });
+    expect(score.axis).toEqual(span(420, 22 * 60));
+    expect(score.staves[0].beams[0].free).toBe(3 * 60);
   });
 
   it("adds a final No area staff for timed items without a known area", () => {
