@@ -223,6 +223,7 @@ export function ScoreView({
             {hourTicks(axis).map((m) => (
               <span
                 key={m}
+                data-hour={m / 60}
                 className="absolute inset-y-0 border-l border-rule pt-[9px] pl-1.5 text-xs leading-none font-medium text-ink-3 tabular"
                 style={{ left: xAt(axis, m) }}
               >
