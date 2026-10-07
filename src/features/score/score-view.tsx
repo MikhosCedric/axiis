@@ -87,6 +87,23 @@ export function ScoreView({
   const target = preview?.target ?? null;
   const landing = target?.kind === "staff" ? target.placement : null;
 
+  // Pixels the axis has beside the label column. 0 until measured, which draws the default axis, as on the server.
+  const [measured, setMeasured] = useState(0);
+  // A drag keeps the axis it started on, so a resize mid-gesture never moves what is held.
+  const [room, setRoom] = useState(0);
+  if (preview === null && room !== measured) setRoom(measured);
+
+  useLayoutEffect(() => {
+    const el = scroller.current;
+    if (!el) return;
+    const observer = new ResizeObserver(() => {
+      const label = root.current?.querySelector<HTMLElement>("[data-staff-label]")?.offsetWidth ?? 0;
+      setMeasured(Math.max(0, el.clientWidth - label));
+    });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
   const score = useMemo(() => {
     const s = landing?.schedule;
     const pending =
@@ -97,8 +114,8 @@ export function ScoreView({
             span: { start: localMinutes(s.start, date, timeZone), end: localMinutes(s.end, date, timeZone) },
           }
         : null;
-    return layoutScore({ view, areas, date, timeZone, now: nowMinutes, pending });
-  }, [view, areas, date, timeZone, nowMinutes, preview, landing]);
+    return layoutScore({ view, areas, date, timeZone, now: nowMinutes, pending, room });
+  }, [view, areas, date, timeZone, nowMinutes, preview, landing, room]);
   const { axis, staves } = score;
   const ctx: DropContext = { date, timeZone, axis, now: nowMinutes };
   const start = useScoreDrag(
@@ -206,6 +223,7 @@ export function ScoreView({
             {hourTicks(axis).map((m) => (
               <span
                 key={m}
+                data-hour={m / 60}
                 className="absolute inset-y-0 border-l border-rule pt-[9px] pl-1.5 text-xs leading-none font-medium text-ink-3 tabular"
                 style={{ left: xAt(axis, m) }}
               >
