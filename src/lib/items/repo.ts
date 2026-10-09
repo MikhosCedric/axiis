@@ -15,6 +15,8 @@ export const LISTS_LIMIT = 200;
 
 /** Most items one read of the Due page returns. */
 export const DUE_LIMIT = 200;
+/** Most items one read of what is left over from earlier days returns. */
+export const BEHIND_LIMIT = 50;
 
 export type ChildCount = { total: number; done: number };
 
@@ -54,6 +56,12 @@ export interface ItemsRepo {
    * at or after `doneSince`, so a mistaken tick can be undone.
    */
   listDue(doneSince: Date): Promise<Item[]>;
+  /**
+   * Open top-level tasks and checklists planned for a day before `range.date`
+   * (a day, or a time that began before `range.from`), not repeating, oldest
+   * first, at most `BEHIND_LIMIT`.
+   */
+  listBehind(range: DayRange): Promise<Item[]>;
   /** Live overrides whose `originalOn` is in `[fromDate, toDate)`, skipped ones included, of one series when given. */
   listOverrides(fromDate: LocalDate, toDate: LocalDate, seriesId?: ItemId): Promise<Item[]>;
   /** Live children of one parent, ordered by position then creation. */

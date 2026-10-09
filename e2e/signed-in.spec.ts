@@ -85,6 +85,16 @@ signedIn.describe("signed in", () => {
     await expect(page.getByRole("status")).toHaveText("File the tax form is done.");
   });
 
+  signedIn("Today names what is left over from earlier days, and one can be moved to today", async ({ page }) => {
+    await page.goto("/today");
+    const strip = page.getByRole("region", { name: /from earlier/ });
+    await expect(strip.getByText("Return the library books")).toBeVisible();
+    await expect(strip.getByText("Planned Monday 3 February 2020")).toBeVisible();
+    await strip.getByRole("button", { name: "Move to today: Return the library books" }).click();
+    await expect(page.getByRole("status").filter({ hasText: "Return the library books is on today." })).toBeVisible();
+    await expect(strip.getByText("Return the library books")).toHaveCount(0);
+  });
+
   signedIn("Lists and Tags show the account's checklist and tag", async ({ page }) => {
     await page.goto("/lists");
     await expect(page.getByText("Packing for Lisbon")).toBeVisible();

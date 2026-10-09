@@ -1,6 +1,6 @@
 import type { Area, AreaId, DayRange, Item, ItemId, ItemPatch, NewItem } from "@/domain/item";
 import { sameTag, type Tag, type TagId, type TagName } from "@/domain/tag";
-import { DUE_LIMIT, INBOX_LIMIT, LISTS_LIMIT, MAX_SERIES, TAGGED_LIMIT, type ItemsRepo } from "@/lib/items/repo";
+import { BEHIND_LIMIT, DUE_LIMIT, INBOX_LIMIT, LISTS_LIMIT, MAX_SERIES, TAGGED_LIMIT, type ItemsRepo } from "@/lib/items/repo";
 
 let seq = 0;
 /** Status order where open comes first, as the database's enum declares it. */
@@ -92,6 +92,20 @@ export function fakeRepo(items: Item[] = [], areas: Area[] = []) {
         )
         .sort((a, b) => (a.dueOn! < b.dueOn! ? -1 : a.dueOn! > b.dueOn! ? 1 : a.createdAt.getTime() - b.createdAt.getTime()))
         .slice(0, DUE_LIMIT);
+    },
+    async listBehind(range) {
+      const startOf = (i: Item) => (i.schedule.kind === "timed" ? i.schedule.start.getTime() : i.schedule.kind === "day" ? Date.parse(`${i.schedule.on}T00:00:00Z`) : 0);
+      return items
+        .filter(
+          (i) =>
+            i.status === "open" &&
+            i.parentId === null &&
+            i.type !== "note" &&
+            i.recurrence.kind === "none" &&
+            ((i.schedule.kind === "timed" && i.schedule.start < range.from) || (i.schedule.kind === "day" && i.schedule.on < range.date)),
+        )
+        .sort((a, b) => startOf(a) - startOf(b))
+        .slice(0, BEHIND_LIMIT);
     },
     async listOverrides(fromDate, toDate, seriesId) {
       return items.filter(
