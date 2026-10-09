@@ -36,7 +36,7 @@ import {
   type Target,
 } from "./model";
 import styles from "./palette.module.css";
-import { chordCaps, chordSpoken, globalShortcut, SHORTCUTS, type Chord } from "./shortcuts";
+import { chordCaps, chordSpoken, globalShortcut, goShortcut, GO_WINDOW_MS, SHORTCUTS, type Chord } from "./shortcuts";
 
 /** The writes and reads the palette makes. Server actions in the app, in-memory fakes in the dev harness. */
 export type PaletteActions = {
@@ -89,11 +89,13 @@ export function PaletteProvider({
   children: ReactNode;
 }) {
   const [open, setOpen] = useState<Open>(null);
+  const router = useRouter();
 
   useEffect(() => {
+    let goTimer: ReturnType<typeof setTimeout> | undefined;
     function onKey(e: KeyboardEvent) {
       const target = e.target as HTMLElement | null;
-      const action = globalShortcut({
+      const press = {
         key: e.key,
         altKey: e.altKey,
         ctrlKey: e.ctrlKey,
@@ -101,14 +103,31 @@ export function PaletteProvider({
         isComposing: e.isComposing,
         defaultPrevented: e.defaultPrevented,
         typing: target !== null && isTypingTarget(target),
-      });
+      };
+      // G, then a place's key. Any other key ends the wait and is handled as usual.
+      const step = goShortcut(goTimer !== undefined, press);
+      clearTimeout(goTimer);
+      goTimer = undefined;
+      if (step === "wait") {
+        goTimer = setTimeout(() => (goTimer = undefined), GO_WINDOW_MS);
+        return;
+      }
+      if (step) {
+        e.preventDefault();
+        router.push(step.href);
+        return;
+      }
+      const action = globalShortcut(press);
       if (!action) return;
       e.preventDefault();
       setOpen((o) => (action === "help" ? (o ?? "help") : o === "palette" ? null : "palette"));
     }
     document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
-  }, []);
+    return () => {
+      clearTimeout(goTimer);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [router]);
 
   return (
     <OpenPalette.Provider value={() => setOpen("palette")}>
@@ -523,11 +542,17 @@ function ShortcutsBody({ onClose }: { onClose: () => void }) {
               {group.shortcuts.map((s) => (
                 <div key={`${s.handler}-${s.does}`} className="contents">
                   <dt className="mb-1 flex flex-wrap items-center gap-x-1.5 gap-y-1 min-[480px]:mb-0">
-                    <span className="sr-only">{s.chords.map((c) => chordSpoken(c, mac)).join(" or ")}</span>
+                    <span className="sr-only">{s.chords.map((c) => chordSpoken(c, mac, s.then)).join(" or ")}</span>
                     {s.chords.map((chord, i) => (
                       <span key={i} aria-hidden="true" className="inline-flex items-center gap-1.5">
                         {i > 0 && <span className="text-ink-3">or</span>}
                         <ChordKeys chord={chord} mac={mac} />
+                        {s.then && (
+                          <>
+                            <span className="text-ink-3">then</span>
+                            <ChordKeys chord={s.then} mac={mac} />
+                          </>
+                        )}
                       </span>
                     ))}
                   </dt>

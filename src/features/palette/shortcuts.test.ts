@@ -6,7 +6,7 @@ import { keyPlacement, type DropContext } from "@/features/score/drop";
 import { makeItem } from "@/features/today/test-support";
 import { keyDestination, weekOf } from "@/features/week/model";
 import { instantAt } from "@/lib/dates";
-import { chordCaps, chordSpoken, globalShortcut, SHORTCUTS, type Chord, type Handler } from "./shortcuts";
+import { chordCaps, chordSpoken, globalShortcut, goShortcut, GO_PLACES, SHORTCUTS, type Chord, type Handler } from "./shortcuts";
 
 const source = (path: string) => readFileSync(new URL(`../${path}`, import.meta.url), "utf8");
 
@@ -36,6 +36,7 @@ const planned = makeItem({ schedule: { kind: "day", on: "2026-10-07" as LocalDat
 /** Asks the code behind each handler whether it answers the chord. Every handler must have one. */
 const answers: Record<Handler, (chord: Chord) => boolean> = {
   global: (c) => globalShortcut(press(c)) !== null,
+  go: (c) => goShortcut(false, press(c)) === "wait" && GO_PLACES.every((p) => goShortcut(true, press({ key: p.key })) !== null),
   dialog: (c) => c.key === "Escape" && source("palette/palette.tsx").includes(".showModal()"),
   "day-nav": (c) =>
     shortcutAction(press(c)) !== null &&
@@ -56,14 +57,14 @@ const answers: Record<Handler, (chord: Chord) => boolean> = {
 };
 
 describe("the shortcuts table", () => {
-  const rows = SHORTCUTS.flatMap((g) => g.shortcuts.flatMap((s) => s.chords.map((chord) => ({ where: g.where, does: s.does, handler: s.handler, chord }))));
+  const rows = SHORTCUTS.flatMap((g) => g.shortcuts.flatMap((s) => s.chords.map((chord) => ({ where: g.where, does: s.does, handler: s.handler, chord, then: s.then }))));
 
   it.each(rows)("$where: $does ($chord.key) is answered by $handler", ({ handler, chord }) => {
     expect(answers[handler](chord)).toBe(true);
   });
 
   it("does not list a key twice for the same thing in one place", () => {
-    const seen = rows.map((r) => `${r.where}|${r.handler}|${r.chord.key}|${!!r.chord.mod}|${!!r.chord.shift}`);
+    const seen = rows.map((r) => `${r.where}|${r.handler}|${r.chord.key}|${!!r.chord.mod}|${!!r.chord.shift}|${r.then?.key ?? ""}`);
     expect(new Set(seen).size).toBe(seen.length);
   });
 });
@@ -103,5 +104,37 @@ describe("chord labels", () => {
     expect(chordSpoken({ key: "ArrowLeft", shift: true }, false)).toBe("Shift Left arrow");
     expect(chordSpoken({ key: "k", mod: true }, true)).toBe("Command K");
     expect(chordSpoken({ key: "[" }, false)).toBe("Left bracket");
+  });
+});
+
+describe("goShortcut", () => {
+  const go = (waiting: boolean, key: string, over: Partial<KeyPress> = {}) => goShortcut(waiting, press({ key }, over));
+
+  it("waits after G, then goes where the next key says", () => {
+    expect(go(false, "g")).toBe("wait");
+    expect(go(true, "i")).toEqual({ href: "/inbox" });
+    expect(go(true, "T")).toEqual({ href: "/today" });
+    expect(go(true, ",")).toEqual({ href: "/settings" });
+  });
+
+  it("ignores a place key that was not preceded by G", () => {
+    expect(go(false, "i")).toBeNull();
+  });
+
+  it("ends the wait on a key that goes nowhere", () => {
+    expect(go(true, "x")).toBeNull();
+  });
+
+  it("does nothing while typing, composing, or with a modifier held", () => {
+    expect(go(false, "g", { typing: true })).toBeNull();
+    expect(go(true, "i", { typing: true })).toBeNull();
+    expect(go(false, "g", { isComposing: true })).toBeNull();
+    expect(go(false, "g", { ctrlKey: true })).toBeNull();
+    expect(go(false, "g", { metaKey: true })).toBeNull();
+    expect(go(false, "g", { defaultPrevented: true })).toBeNull();
+  });
+
+  it("gives every place a distinct key", () => {
+    expect(new Set(GO_PLACES.map((p) => p.key)).size).toBe(GO_PLACES.length);
   });
 });
