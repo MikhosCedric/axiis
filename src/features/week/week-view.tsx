@@ -200,7 +200,7 @@ export function WeekView({
   return (
     <div className={selectedParam ? "min-[1180px]:grid min-[1180px]:grid-cols-[minmax(0,1fr)_328px]" : ""}>
       <div className="min-w-0 px-4 pt-6 pb-14 rail:px-9 rail:pt-8">
-        <header className="flex flex-col gap-3 rail:flex-row-reverse rail:items-start rail:justify-between rail:gap-6">
+        <header className="flex flex-col-reverse gap-3 rail:flex-row-reverse rail:items-start rail:justify-between rail:gap-6">
           {nav}
           <div className="min-w-0">
             <h1 className="font-serif text-[clamp(28px,3vw,40px)] leading-[1.1] font-medium tracking-[-0.015em] text-balance">
