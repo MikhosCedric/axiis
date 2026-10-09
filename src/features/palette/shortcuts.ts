@@ -1,4 +1,5 @@
 import type { KeyPress } from "@/features/day/nav";
+import { DUE_PATH } from "@/features/due/model";
 import { LISTS_PATH } from "@/features/lists/model";
 import { SNAP_MINUTES } from "@/features/score/snap";
 
@@ -34,6 +35,7 @@ export const GO_PLACES = [
   { key: "t", label: "Today", href: "/today" },
   { key: "w", label: "Week", href: "/week" },
   { key: "i", label: "Inbox", href: "/inbox" },
+  { key: "d", label: "Due", href: DUE_PATH },
   { key: "l", label: "Lists", href: LISTS_PATH },
   { key: "n", label: "Notes", href: "/notes" },
   { key: "s", label: "Search", href: "/search" },

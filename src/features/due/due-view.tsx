@@ -106,7 +106,7 @@ function DueRowView({
   const quiet = selected ? "text-ink-2" : "text-ink-3";
   return (
     <li
-      className={`grid grid-cols-[48px_minmax(0,1fr)] items-start gap-x-3 border-b border-rule-soft py-2.5 ${selected ? "bg-accent-wash" : ""}`}
+      className={`grid grid-cols-[48px_minmax(0,1fr)] items-start gap-x-3 border-b border-rule-soft py-(--row-y) ${selected ? "bg-accent-wash" : ""}`}
     >
       <span className="-my-1 grid place-items-center">
         <DoneToggle type={row.type} title={row.title} done={row.done} justDone={justDone} onToggle={onToggleDone} />
