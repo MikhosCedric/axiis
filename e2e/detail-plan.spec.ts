@@ -124,10 +124,11 @@ test("detail: one occurrence moves on its own with This one, and All of them kee
   await page.goto(FRIDAYS_RUN);
   await details(page).getByRole("button", { name: "Move to" }).click();
   await expect(details(page).getByRole("button", { name: "No day" })).toHaveCount(0);
-  await details(page).getByLabel("Another day").fill("2026-10-10");
+  // The harness reads the real clock, and the app says "today" or "tomorrow" for those two days, so the target is far off.
+  await details(page).getByLabel("Another day").fill("2099-06-10");
   await details(page).getByRole("button", { name: "Move", exact: true }).click();
-  await expect(status(page, "This one moved to Saturday 10 October.")).toBeVisible();
-  await expect(row(page, "When")).toContainText("Saturday 10 October");
+  await expect(status(page, "This one moved to Wednesday 10 June.")).toBeVisible();
+  await expect(row(page, "When")).toContainText("Wednesday 10 June");
 
   await details(page).getByText("All of them").click();
   await expect(details(page).getByRole("button", { name: "Move to" })).toHaveCount(0);
