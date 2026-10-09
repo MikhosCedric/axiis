@@ -40,3 +40,14 @@ describe("proxy with the browser-test cookie", () => {
     expect(response.headers.get("location")).toBe("http://localhost:3600/login?next=%2Ftoday");
   });
 });
+
+describe("proxy and the Content-Security-Policy", () => {
+  it("sets a nonce policy on a pass-through response and on a redirect, with a new nonce each time", async () => {
+    const pass = await proxy(withCookie(SECRET));
+    const redirect = await proxy(withCookie("t".repeat(48)));
+    const nonceOf = (r: Response) => /'nonce-([^']+)'/.exec(r.headers.get("content-security-policy") ?? "")?.[1];
+    expect(nonceOf(pass)).toBeTruthy();
+    expect(nonceOf(redirect)).toBeTruthy();
+    expect(nonceOf(pass)).not.toBe(nonceOf(redirect));
+  });
+});

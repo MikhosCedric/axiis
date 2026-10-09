@@ -18,6 +18,8 @@ import { parseRule, serializeRule } from "@/domain/recurrence";
 
 export const ITEM_COLUMNS =
   "id,type,title,body,status,area_id,parent_id,position,start_at,end_at,scheduled_on,due_on,rrule,series_id,original_on,completed_at,created_at,updated_at";
+/** Everything but `body`, which is the heaviest column and which no list view draws. Lists read items with `body: null`. */
+export const LIST_COLUMNS = ITEM_COLUMNS.replace("body,", "");
 export const AREA_COLUMNS = "id,name,position";
 
 const timestampSchema = z.iso.datetime({ offset: true }).transform((s) => new Date(s));

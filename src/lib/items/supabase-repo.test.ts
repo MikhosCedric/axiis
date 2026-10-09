@@ -101,3 +101,31 @@ describe("SupabaseItemsRepo.listDue", () => {
     expect(q.get("limit")).toBe("200");
   });
 });
+
+describe("SupabaseItemsRepo columns", () => {
+  const selects = (requests: URLSearchParams[]) => requests.map((q) => q.get("select") ?? "");
+
+  it("leaves the body out of every list read, and keeps it for one item and for series", async () => {
+    const { repo, requests } = stubbed();
+    const day = { date: d("2026-10-06"), from: new Date(0), to: new Date(1) };
+    await repo.listForDay(day);
+    await repo.listRange({ from: new Date(0), to: new Date(1), fromDate: d("2026-10-05"), toDate: d("2026-10-12") });
+    await repo.listInbox();
+    await repo.listChecklists();
+    await repo.listOverrides(d("2026-10-05"), d("2026-10-12"));
+    await repo.listChildren(SERIES);
+    await repo.listDue(new Date(0));
+    for (const select of selects(requests)) expect(select.split(",")).not.toContain("body");
+
+    requests.length = 0;
+    await repo.get(SERIES);
+    await repo.listSeries();
+    for (const select of selects(requests)) expect(select.split(",")).toContain("body");
+  });
+
+  it("keeps notes out of the day's unscheduled read", async () => {
+    const { repo, requests } = stubbed();
+    await repo.listForDay({ date: d("2026-10-06"), from: new Date(0), to: new Date(1) });
+    expect(requests[2].get("type")).toBe("neq.note");
+  });
+});
