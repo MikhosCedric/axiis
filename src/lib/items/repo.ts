@@ -22,7 +22,7 @@ export type ChildCount = { total: number; done: number };
 export interface ItemsRepo {
   listAreas(): Promise<Area[]>;
   /**
-   * Items on a day (timed in range, or day-only on the date) plus every top-level item with no schedule.
+   * Items on a day (timed in range, or day-only on the date) plus every top-level item with no schedule, notes excepted.
    * Soft-deleted rows are excluded. Unscheduled subtasks are not returned: they live under their parent.
    * A subtask with its own schedule is returned in `scheduled` like any other item.
    */

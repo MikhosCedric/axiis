@@ -12,7 +12,7 @@ import {
   type SpanRange,
 } from "@/domain/item";
 import { sameTag, type Tag, type TagId, type TagName, type TagSummary } from "@/domain/tag";
-import { AREA_COLUMNS, ITEM_COLUMNS, areaFromRow, itemFromRow, newItemToInsert, patchToUpdate } from "./mappers";
+import { AREA_COLUMNS, ITEM_COLUMNS, LIST_COLUMNS, areaFromRow, itemFromRow, newItemToInsert, patchToUpdate } from "./mappers";
 import { INBOX_LIMIT, LISTS_LIMIT, MAX_SERIES, TAGGED_LIMIT, type ChildCount, type ItemsRepo } from "./repo";
 
 type QueryResult = { data: unknown; error: { message: string; code?: string } | null };
@@ -41,8 +41,8 @@ const UNIQUE_VIOLATION = "23505";
 export class SupabaseItemsRepo implements ItemsRepo {
   constructor(private readonly db: SupabaseClient) {}
 
-  private items() {
-    return this.db.from("items").select(ITEM_COLUMNS).is("deleted_at", null);
+  private items(columns: string = LIST_COLUMNS) {
+    return this.db.from("items").select(columns).is("deleted_at", null);
   }
 
   async listAreas(): Promise<Area[]> {
@@ -63,7 +63,7 @@ export class SupabaseItemsRepo implements ItemsRepo {
     const [timed, dayOnly, unscheduled] = await Promise.all([
       this.single().gte("start_at", range.from.toISOString()).lt("start_at", range.to.toISOString()).order("start_at"),
       this.single().eq("scheduled_on", range.date).order("position"),
-      this.items().is("start_at", null).is("scheduled_on", null).is("parent_id", null).order("position"),
+      this.items().is("start_at", null).is("scheduled_on", null).is("parent_id", null).neq("type", "note").order("position"),
     ]);
     return {
       scheduled: [...unwrap("listForDay", timed, itemList), ...unwrap("listForDay", dayOnly, itemList)],
@@ -80,7 +80,7 @@ export class SupabaseItemsRepo implements ItemsRepo {
   }
 
   async listSeries(): Promise<Item[]> {
-    const result = await this.items().not("rrule", "is", null).order("created_at").limit(MAX_SERIES);
+    const result = await this.items(ITEM_COLUMNS).not("rrule", "is", null).order("created_at").limit(MAX_SERIES);
     return unwrap("listSeries", result, itemList);
   }
 
@@ -141,7 +141,7 @@ export class SupabaseItemsRepo implements ItemsRepo {
   }
 
   async get(id: ItemId): Promise<Item | null> {
-    const result = await this.items().eq("id", id).maybeSingle();
+    const result = await this.items(ITEM_COLUMNS).eq("id", id).maybeSingle();
     return unwrap("get", result, (raw) => (raw === null ? null : itemFromRow(raw)));
   }
 
@@ -215,7 +215,7 @@ export class SupabaseItemsRepo implements ItemsRepo {
   async listTagged(tagId: TagId): Promise<Item[]> {
     const result = await this.db
       .from("items")
-      .select(`${ITEM_COLUMNS},item_tags!inner(tag_id)`)
+      .select(`${LIST_COLUMNS},item_tags!inner(tag_id)`)
       .eq("item_tags.tag_id", tagId)
       .is("deleted_at", null)
       .neq("status", "dropped")
