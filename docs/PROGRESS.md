@@ -17,6 +17,8 @@ A free, solo-user productivity web app. Tasks, a planner, checklists and notes s
 | Detail panel and subtasks | `src/features/detail/` |
 | Week planner | `src/features/week/`, `src/app/(app)/week/` |
 | Inbox (open items with no day, plan for a day) | `src/features/inbox/`, `src/app/(app)/inbox/`, harness `src/app/dev/inbox/` |
+| Due (open items with a due date, soonest first) | `src/features/due/`, `src/app/(app)/due/` |
+| Left over (open items planned for earlier days, shown on Today) | `src/features/day/leftover*.ts`, `leftover-strip.tsx` |
 | Lists (top-level checklists with progress, capture a checklist) | `src/features/lists/`, `src/app/(app)/lists/`, harness `src/app/dev/lists/` |
 | Notes, links, search | `src/features/notes/`, `src/lib/notes/`, `src/app/(app)/{notes,search}/` |
 | Tags (pages, detail field, row lines, Settings section) | `src/domain/tag.ts`, `src/features/tags/`, `src/app/(app)/tags/`, harness `src/app/dev/tags/` |
@@ -80,6 +82,19 @@ Updated: see the log at the bottom. Phases:
 ## Migrations applied to the hosted project
 `0001_core`, `0002_account` (applied as `account_deletion`), `0003_search` (applied as `search_and_excerpt`). `0004_recurrence` (applied as `recurrence`). Any new file in `supabase/migrations/` must be applied with the Supabase MCP `apply_migration`, after a rolled-back `DO` block check, then `get_advisors`.
 
+## Overnight run, 2026-10-09 (owner away)
+Open PRs, each from `main` unless noted. Merge in any order, except the two stacked ones.
+- #32 `perf-db`: migration `0005_hardening` (covering indexes for three foreign keys and for due dates, a unique live-area-name index, bounds on title, area, tag and body size). **Not applied to the hosted project**: the agent's write to Supabase was refused by its permission classifier. Apply it with the Supabase MCP `apply_migration` after a rolled-back check, then `get_advisors`. The same PR stops list reads selecting `body` and keeps notes out of Today's waiting read; neither needs the migration.
+- #33 `sec-csp`: per-request nonce Content-Security-Policy in the proxy; every page now renders per request.
+- #34 `feat-go-keys`: G then T, W, I, L, N, S or comma jumps between pages.
+- #35 `feat-due`: the Due page. #38 `feat-leftover` is stacked on it (Today's "left over" strip).
+- #36 `perf-requests`: repo getters memoised per request, `vercel.json` pins functions to `hnd1` (the Supabase project is in Tokyo).
+- #37 `fix-e2e-clock`: an e2e test read the real date and failed from 9 October; also cherry-picked into the other branches.
+- #39 `design-phone-header`: heading above the day and week controls on a phone.
+- #40 `feat-density`: Settings Density (Spacious or Compact), stacked on #33 because both change the root layout. Follow-up once both land: the Due rows should use `py-(--row-y)` like the other lists.
+
+The e2e suite is slow and flakes under load on CI (`ERR_CONNECTION_RESET` from the dev server, a drag test in `score-axis.spec.ts`). Re-run a red job before assuming a PR broke it.
+
 ## In flight
 - Recurrence merged (#13). Migration 0004 applied to the hosted project; `get_advisors` then failed with an FGA auth error, so re-run the security advisor and do a non-DDL check of the new columns.
 - Merged this stretch: command palette (#10), phone nav fix (#11), Playwright and axe browser tests with an `e2e` CI job (#12).
@@ -117,6 +132,7 @@ Updated: see the log at the bottom. Phases:
 - Put real name and contact email into the privacy policy and terms (placeholders are marked).
 
 ## Log
+- 2026-10-09 (overnight run): see "Overnight run" above. New: Due page, left-over strip on Today, G-then-letter shortcuts, Density setting, nonce CSP, migration 0005 (unapplied), per-request session check, Tokyo function region, phone header order. Changed: list reads leave out `body`. No change to the data model's meaning.
 - 2026-10-07 (score fill): owner asked why the Score stopped at 19 on a full-screen window. The axis was always 07:00 to 20:00 at 76px an hour, so a wide window showed an empty strip. `axisFor` now takes the pixels the axis has (`room`, measured by a ResizeObserver in `ScoreView`) and adds whole hours to fill them: later ones up to 24:00 first, then earlier ones down to 00:00. 76px an hour stays the density, narrow windows still scroll, and a drag keeps the axis it started on. Unit tests in `layout.test.ts`, browser checks at 1920, 1280 (panel open and shut) and 375 in `e2e/score-axis.spec.ts`. PR from `fix-score-fill`.
 - 2026-10-07 (e2e session): browser tests on the real signed-in routes through a dev-only fake session (`src/lib/supabase/fake-session.ts`), with in-memory repos for `e2e@axiis.invalid`; `check:no-fake-session` in CI proves a production build carries none of it. Specs for the nav rail, capture to Inbox to tomorrow, Lists, Tags, Settings and export, sign-out, and axe on `/today`, `/inbox`, `/settings`. PR from `feat-e2e-session`. No migration.
 - 2026-10-07 (capture and palette): the capture field says where an item went and rings it; capture reads a day, a time, a length and tags (`parseCapture` in `src/features/today/capture-syntax.ts`, read on the server against the user's time zone) with a preview chip and a `?` help note; Lists takes a checklist's name as typed; the palette acts on a found or selected item (open, done, plan today or tomorrow, tag). PR #27 from `feat-capture-palette`. No migration.
