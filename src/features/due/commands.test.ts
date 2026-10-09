@@ -34,7 +34,7 @@ describe("loadDue", () => {
         title: "A series",
         dueOn: d("2026-10-09"),
         schedule: { kind: "day", on: d("2026-10-01") },
-        recurrence: { kind: "series", rule: { freq: "daily", interval: 1 } },
+        recurrence: { kind: "series", rule: { freq: "daily", interval: 1, end: { kind: "never" } } },
       }),
       parent,
     ]);
