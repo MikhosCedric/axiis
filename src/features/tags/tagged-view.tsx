@@ -69,7 +69,7 @@ export function TaggedView({
               return (
                 <li
                   key={row.id}
-                  className={`grid grid-cols-[48px_minmax(0,1fr)] items-start gap-x-3 border-b border-rule-soft py-2.5 ${
+                  className={`grid grid-cols-[48px_minmax(0,1fr)] items-start gap-x-3 border-b border-rule-soft py-(--row-y) ${
                     selected ? "bg-accent-wash" : ""
                   }`}
                 >

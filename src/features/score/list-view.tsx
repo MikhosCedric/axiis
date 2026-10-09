@@ -48,7 +48,7 @@ export function ListView({
       <li
         key={item.id}
         data-item={item.id}
-        className={`grid grid-cols-[4.5rem_48px_minmax(0,1fr)] items-center gap-x-3 border-b border-rule-soft py-2.5 rail:grid-cols-[minmax(6.5rem,auto)_48px_minmax(0,1fr)_auto] ${
+        className={`grid grid-cols-[4.5rem_48px_minmax(0,1fr)] items-center gap-x-3 border-b border-rule-soft py-(--row-y) rail:grid-cols-[minmax(6.5rem,auto)_48px_minmax(0,1fr)_auto] ${
           selected ? "bg-accent-wash" : ""
         }`}
       >

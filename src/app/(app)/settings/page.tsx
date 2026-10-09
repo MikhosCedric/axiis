@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { cookies } from "next/headers";
+import { DENSITY_COOKIE, readDensity } from "@/components/shell/cookies";
 import {
   addAreaAction,
   deleteAccountAction,
@@ -39,6 +41,7 @@ export default async function SettingsPage() {
       tags={tags}
       tagActions={{ rename: renameTagAction, remove: deleteTagAction }}
       deleteAccount={deleteAccountAction}
+      density={readDensity((await cookies()).get(DENSITY_COOKIE)?.value)}
     />
   );
 }
