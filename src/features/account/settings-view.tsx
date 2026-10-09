@@ -1,6 +1,8 @@
 import type { Area } from "@/domain/item";
+import type { Density } from "@/components/shell/cookies";
 import type { TagSummary } from "@/domain/tag";
 import { TagsSection, type TagActions } from "@/features/tags/tags-section";
+import { AppearanceSection } from "./appearance-section";
 import { AreasSection, type AreaActions } from "./areas-section";
 import { DeleteAccountSection, type DeleteAccountAction } from "./delete-account-section";
 
@@ -14,6 +16,7 @@ export function SettingsView({
   tagActions,
   tagHref,
   deleteAccount,
+  density = "spacious",
 }: {
   email: string | null;
   areas: Area[];
@@ -22,6 +25,8 @@ export function SettingsView({
   tagActions: TagActions;
   tagHref?: (name: string) => string;
   deleteAccount: DeleteAccountAction;
+  /** The density saved on this device. */
+  density?: Density;
 }) {
   return (
     <div className="max-w-[640px] px-4 pt-6 pb-16 rail:px-9 rail:pt-8">
@@ -40,6 +45,8 @@ export function SettingsView({
         <AreasSection areas={areas} actions={areaActions} />
 
         <TagsSection tags={tags} actions={tagActions} hrefFor={tagHref} />
+
+        <AppearanceSection initial={density} />
 
         <section aria-labelledby="export-heading">
           <h2 id="export-heading" className="font-serif text-xl font-medium">

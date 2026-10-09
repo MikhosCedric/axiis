@@ -118,6 +118,25 @@ signedIn.describe("signed in", () => {
     await expect(page.getByText("Renew passport")).toBeVisible();
   });
 
+  signedIn("Density tightens the rows of a list, and is kept on reload", async ({ page }) => {
+    const rowPadding = async () => {
+      await page.goto("/lists");
+      return page.getByRole("list").filter({ hasText: "Packing for Lisbon" }).getByRole("listitem").first().evaluate((el) => getComputedStyle(el).paddingTop);
+    };
+    expect(await rowPadding()).toBe("10px");
+
+    await page.goto("/settings");
+    await page.getByRole("button", { name: "Compact" }).click();
+    await expect(page.locator("html")).toHaveAttribute("data-density", "compact");
+    expect(await rowPadding()).toBe("4px");
+    await expect(page.locator("html")).toHaveAttribute("data-density", "compact");
+
+    await page.goto("/settings");
+    await page.getByRole("button", { name: "Spacious" }).click();
+    await expect(page.locator("html")).not.toHaveAttribute("data-density", "compact");
+    expect(await rowPadding()).toBe("10px");
+  });
+
   signedIn("Settings names the account and exports its data", async ({ page, request }) => {
     await page.goto("/settings");
     await expect(page.getByText("Signed in as e2e@axiis.invalid")).toBeVisible();

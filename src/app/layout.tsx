@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from "next";
-import { headers } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { Besley, Hanken_Grotesk } from "next/font/google";
-import { THEME_COOKIE } from "@/components/shell/cookies";
+import { DENSITY_COOKIE, readDensity, THEME_COOKIE } from "@/components/shell/cookies";
 import { SITE_DESCRIPTION, SITE_NAME, siteUrl } from "@/lib/site";
 import { PAPER_DARK, PAPER_LIGHT } from "@/lib/theme-colors";
 import "./globals.css";
@@ -44,8 +44,14 @@ const themeScript = `(function(){try{var m=document.cookie.match(/(?:^|; )${THEM
 export default async function RootLayout({ children }: LayoutProps<"/">) {
   // Reading the request's nonce also makes every page render per request, which a nonce needs.
   const nonce = (await headers()).get("x-nonce") ?? undefined;
+  const density = readDensity((await cookies()).get(DENSITY_COOKIE)?.value);
   return (
-    <html lang="en" className={`${besley.variable} ${hanken.variable}`} suppressHydrationWarning>
+    <html
+      lang="en"
+      className={`${besley.variable} ${hanken.variable}`}
+      data-density={density === "compact" ? "compact" : undefined}
+      suppressHydrationWarning
+    >
       <head>
         <script nonce={nonce} suppressHydrationWarning dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>

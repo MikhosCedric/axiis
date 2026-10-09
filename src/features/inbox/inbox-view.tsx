@@ -226,7 +226,7 @@ function InboxRow({
 
   return (
     <li
-      className={`grid grid-cols-[48px_minmax(0,1fr)_auto] items-center gap-x-3 border-b border-rule-soft py-2.5 rail:grid-cols-[48px_minmax(0,1fr)_auto_auto] ${
+      className={`grid grid-cols-[48px_minmax(0,1fr)_auto] items-center gap-x-3 border-b border-rule-soft py-(--row-y) rail:grid-cols-[48px_minmax(0,1fr)_auto_auto] ${
         selected ? "bg-accent-wash" : ""
       }`}
     >

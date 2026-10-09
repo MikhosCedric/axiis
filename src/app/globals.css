@@ -13,7 +13,13 @@
   --accent: #0a675a;
   --accent-wash: rgba(10, 103, 90, 0.14);
   --on-accent: #f3eee1;
+  /* Vertical padding of a list row; the Density setting tightens it. */
+  --row-y: 0.625rem;
   color-scheme: light;
+}
+
+:root[data-density="compact"] {
+  --row-y: 0.25rem;
 }
 
 /* Keep in sync with the prefers-color-scheme block below. */
