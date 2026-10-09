@@ -80,25 +80,20 @@ Updated: see the log at the bottom. Phases:
 - Leaked-password protection is off. Axiis has no passwords (magic link and Google only), so it does not apply.
 
 ## Migrations applied to the hosted project
-`0001_core`, `0002_account` (applied as `account_deletion`), `0003_search` (applied as `search_and_excerpt`). `0004_recurrence` (applied as `recurrence`). Any new file in `supabase/migrations/` must be applied with the Supabase MCP `apply_migration`, after a rolled-back `DO` block check, then `get_advisors`.
+`0001_core`, `0002_account` (applied as `account_deletion`), `0003_search` (applied as `search_and_excerpt`). `0004_recurrence` (applied as `recurrence`), `0005_hardening` (applied as `hardening` on 2026-10-10 after a read-only check that no row broke a new constraint; the security advisor then showed only the two accepted advisories). Any new file in `supabase/migrations/` must be applied with the Supabase MCP `apply_migration`, after a rolled-back `DO` block check, then `get_advisors`.
 
 ## Overnight run, 2026-10-09 (owner away) and how to resume
 **Merged to `main`** (all green in CI): #32 migration `0005_hardening` plus list reads that leave out `body` and keep notes out of Today's waiting read; #33 per-request nonce Content-Security-Policy (every page now renders per request); #34 G-then-letter page shortcuts; #36 repo getters memoised per request and `vercel.json` pinning functions to `hnd1` (Tokyo, next to the Supabase project); #37 an e2e test that read the real date, plus a drag test that failed whenever the drop landed on the current half hour; #39 heading above the day and week controls on a phone; #41 docs; #42 `npm audit --omit=dev` in CI and Dependabot; #43 link-preview card, iOS icon and PNG install icons.
 
-**Still open** (CI e2e was re-run after a load flake; check `gh pr checks <n>`):
-- #35 `feat-due`: the Due page (`/due`). #38 `feat-leftover` is stacked on it (Today's "left over from earlier days" strip); merge #35 first, and GitHub retargets #38 to `main`.
-- #40 `feat-density`: Settings Density (Spacious or Compact), retargeted to `main`.
+**Landed afterwards (2026-10-10):** #35 the Due page, #38 the left-over strip and #40 Density, each brought up to date with `main` and green in CI.
 
 **Owner actions that code cannot do**
-1. **Migration `0005_hardening.sql` is merged but not applied to the hosted project.** The agent's write to Supabase was refused by its permission classifier. Apply it with the Supabase MCP `apply_migration` (or the SQL editor) after a rolled-back check, then run `get_advisors`. The app works without it; it adds indexes, a unique live-area-name index and size limits.
+1. ~~Migration `0005_hardening.sql`~~ is applied to the hosted project (see above).
 2. Set `NEXT_PUBLIC_SITE_URL` in Vercel, so the link-preview image URL is absolute. Change `vercel.json` if the Supabase region moves.
 3. The rest of `docs/launch-checklist.md` (Vercel, domain, Google OAuth, legal names).
 
-**Follow-ups that need the open PRs to land first**
-- Add `{ key: "d", label: "Due", href: DUE_PATH }` to `GO_PLACES` in `src/features/palette/shortcuts.ts` (needs #35).
-- Switch the Due rows from `py-2.5` to `py-(--row-y)` like the other lists (needs #35 and #40).
-- Log lines for the Due page, the left-over strip and Density were left out of those PRs to avoid conflicts here; add them to the Log.
-- Not done, and why: search ranked by relevance needs an RPC in a new migration, which cannot be applied until item 1 is solved; a neutral hover colour was skipped because DESIGN.md names Verdigris Wash as the hover colour on purpose.
+**Follow-ups from that run (done 2026-10-10 in `follow-ups-due`):** G then D goes to Due, Due rows use `py-(--row-y)`, the e2e warm-up compiles the POST-only sign-out route and `/due`.
+- Not done, and why: search ranked by relevance needs an RPC in a new migration, migration 0005 is now applied, so this is unblocked; a neutral hover colour was skipped because DESIGN.md names Verdigris Wash as the hover colour on purpose.
 
 **Working on this repo from a new machine**
 - Clone, `npm ci` (delete `node_modules` and retry once if OneDrive makes it fail), copy `.env.example` to `.env.local` and fill the project URL and publishable key. The hosted project is `axiis`, ref `eseknelafyqcvqhqvfua`, region ap-northeast-1; the Supabase MCP can print both values. The hosted database holds one real user with a few test items.
@@ -144,6 +139,7 @@ Updated: see the log at the bottom. Phases:
 - Put real name and contact email into the privacy policy and terms (placeholders are marked).
 
 ## Log
+- 2026-10-10 (catch-up): pulled the overnight run, applied `0005_hardening` to the hosted project, landed Due (#35), left-over (#38) and Density (#40) after resolving their conflicts with `main`. The sign-out e2e test had failed in four CI runs: `next dev` compiled the POST-only `/auth/signout` route during the test under load, so the warm-up now calls it first. G then D opens Due; Due rows follow the density setting.
 - 2026-10-09 (overnight run): see "Overnight run" above. Merged: nonce CSP, G-then-letter shortcuts, migration 0005 (unapplied), per-request session check, Tokyo function region, phone header order, link-preview and install icons, dependency audit in CI. List reads leave out `body`. Open: Due page, left-over strip, Density.
 - 2026-10-07 (score fill): owner asked why the Score stopped at 19 on a full-screen window. The axis was always 07:00 to 20:00 at 76px an hour, so a wide window showed an empty strip. `axisFor` now takes the pixels the axis has (`room`, measured by a ResizeObserver in `ScoreView`) and adds whole hours to fill them: later ones up to 24:00 first, then earlier ones down to 00:00. 76px an hour stays the density, narrow windows still scroll, and a drag keeps the axis it started on. Unit tests in `layout.test.ts`, browser checks at 1920, 1280 (panel open and shut) and 375 in `e2e/score-axis.spec.ts`. PR from `fix-score-fill`.
 - 2026-10-07 (e2e session): browser tests on the real signed-in routes through a dev-only fake session (`src/lib/supabase/fake-session.ts`), with in-memory repos for `e2e@axiis.invalid`; `check:no-fake-session` in CI proves a production build carries none of it. Specs for the nav rail, capture to Inbox to tomorrow, Lists, Tags, Settings and export, sign-out, and axe on `/today`, `/inbox`, `/settings`. PR from `feat-e2e-session`. No migration.
