@@ -1,4 +1,5 @@
 import type { KeyPress } from "@/features/day/nav";
+import { LISTS_PATH } from "@/features/lists/model";
 import { SNAP_MINUTES } from "@/features/score/snap";
 
 /** A key as `KeyboardEvent#key` names it, with Ctrl (Cmd on a Mac) or Shift held when set. */
@@ -8,6 +9,7 @@ export type Chord = { key: string; mod?: true; shift?: true };
 export type Handler =
   | "global"
   | "dialog"
+  | "go"
   | "day-nav"
   | "capture"
   | "score-item"
@@ -17,11 +19,26 @@ export type Handler =
   | "note-editor"
   | "link-picker";
 
-export type Shortcut = { chords: Chord[]; does: string; handler: Handler };
+/** `then` makes the shortcut a sequence: press the chord, then this key. */
+export type Shortcut = { chords: Chord[]; then?: Chord; does: string; handler: Handler };
 export type ShortcutGroup = { where: string; shortcuts: Shortcut[] };
 
 export const PALETTE_KEY = "k";
 export const HELP_KEY = "?";
+export const GO_KEY = "g";
+/** How long the key after G is waited for, in milliseconds. */
+export const GO_WINDOW_MS = 1500;
+
+/** Where G followed by a key goes. */
+export const GO_PLACES = [
+  { key: "t", label: "Today", href: "/today" },
+  { key: "w", label: "Week", href: "/week" },
+  { key: "i", label: "Inbox", href: "/inbox" },
+  { key: "l", label: "Lists", href: LISTS_PATH },
+  { key: "n", label: "Notes", href: "/notes" },
+  { key: "s", label: "Search", href: "/search" },
+  { key: ",", label: "Settings", href: "/settings" },
+] as const;
 
 const k = (key: string, extra: Omit<Chord, "key"> = {}): Chord => ({ key, ...extra });
 
@@ -33,6 +50,10 @@ export const SHORTCUTS: ShortcutGroup[] = [
       { chords: [k(HELP_KEY)], does: "Show these shortcuts", handler: "global" },
       { chords: [k("Escape")], does: "Close search or this list", handler: "dialog" },
     ],
+  },
+  {
+    where: "Go to a page",
+    shortcuts: GO_PLACES.map((p) => ({ chords: [k(GO_KEY)], then: k(p.key), does: `Go to ${p.label}`, handler: "go" as const })),
   },
   {
     where: "Today and Week",
@@ -95,6 +116,21 @@ export const SHORTCUTS: ShortcutGroup[] = [
 
 export type GlobalAction = "palette" | "help";
 
+export type GoStep = "wait" | { href: string } | null;
+
+/**
+ * The "go to" sequence: G, then a place's key. `waiting` says G was just pressed.
+ * Returns "wait" for that G, the page for the key that follows it, and null for
+ * anything else, which also ends the wait. Never acts while typing or with a modifier held.
+ */
+export function goShortcut(waiting: boolean, e: KeyPress): GoStep {
+  if (e.isComposing || e.defaultPrevented || e.altKey || e.ctrlKey || e.metaKey || e.typing) return null;
+  const key = e.key.toLowerCase();
+  if (!waiting) return key === GO_KEY ? "wait" : null;
+  const place = GO_PLACES.find((p) => p.key === key);
+  return place ? { href: place.href } : null;
+}
+
 /**
  * What a key press anywhere in the app asks for. Ctrl or Cmd with K works even
  * while typing, unless something closer already took it (the note editor's
@@ -137,7 +173,8 @@ export function chordCaps(chord: Chord, mac: boolean): string[] {
 }
 
 /** The chord as words, for a screen reader: "Control K", "Shift Left arrow". */
-export function chordSpoken(chord: Chord, mac: boolean): string {
+export function chordSpoken(chord: Chord, mac: boolean, then?: Chord): string {
   const key = SPOKEN[chord.key] ?? NAMES[chord.key] ?? chord.key.toUpperCase();
-  return [...(chord.mod ? [mac ? "Command" : "Control"] : []), ...(chord.shift ? ["Shift"] : []), key].join(" ");
+  const spoken = [...(chord.mod ? [mac ? "Command" : "Control"] : []), ...(chord.shift ? ["Shift"] : []), key].join(" ");
+  return then ? `${spoken} then ${chordSpoken(then, mac)}` : spoken;
 }
