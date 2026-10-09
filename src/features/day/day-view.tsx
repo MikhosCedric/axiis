@@ -13,6 +13,8 @@ import { ListView } from "@/features/score/list-view";
 import { ScoreView, STATE_WORD } from "@/features/score/score-view";
 import { captureAction, setDoneAction } from "@/features/today/actions";
 import { CaptureField } from "@/features/today/capture-field";
+import { LeftoverStrip } from "./leftover-strip";
+import type { LeftoverData } from "./leftover-model";
 import type { ActionResult } from "@/features/today/commands";
 import { formatClock, formatDayHeading } from "@/features/today/format";
 import { buildToday, stateOf, summaryLine } from "@/features/today/model";
@@ -60,12 +62,15 @@ export function DayView({
   mode,
   nav,
   detail,
+  leftover,
   actions = serverActions,
 }: {
   data: DayData;
   mode: DayViewMode;
   nav?: ReactNode;
   detail?: ReactNode;
+  /** What is still open from earlier days. Today's page passes it; no other day does. */
+  leftover?: LeftoverData | null;
   actions?: DayActions;
 }) {
   const { date, timeZone, areas, isToday, childCounts } = data;
@@ -224,6 +229,10 @@ export function DayView({
             </button>
           )}
         </p>
+
+        {isToday && leftover && (
+          <LeftoverStrip data={leftover} onSelect={select} onStatus={(text, error) => setStatus({ text, error })} />
+        )}
 
         {shownMode === "score" ? (
           <ScoreView {...shared} date={date} nowMinutes={nowMinutes} onPlace={place} />

@@ -30,6 +30,8 @@ A solo productivity web app. One connected set of items, shown through many view
 
 **Due**: the view of every open task and checklist that has a due date, soonest first, in three groups: past due, this week (today and the six days after) and later. Items done in the last day stay listed so a tick can be undone. A series never appears: a deadline on every occurrence would be the same date each time. Wording never counts days late.
 
+**Left over**: open one-off tasks and checklists planned for a day before today (a day, or a time that began before today's start in the user's zone). Today names the first few above the Score and moves them to today one at a time or all at once; a timed one keeps its time of day. Series occurrences are not included, since they are not stored until touched.
+
 **Today**: the view of one local day: timed items in that day's range, day-only items on that date, and everything unscheduled.
 
 **Score**: the Today view drawn as parallel staves, one per area, sharing one hour axis. The signature view of Axiis.
