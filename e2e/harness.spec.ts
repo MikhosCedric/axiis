@@ -33,7 +33,8 @@ test.describe("score", () => {
 
     await dragTo(page, chip, { x: home.box.x + home.box.width + 160, y: home.y });
 
-    await expect(score.getByRole("button", { name: /^Book the dentist, \d\d:\d\d to \d\d:\d\d, Home, planned$/ })).toBeVisible();
+    // The harness seeds from the real clock, so a drop that lands on the current half hour reads "happening now".
+    await expect(score.getByRole("button", { name: /^Book the dentist, \d\d:\d\d to \d\d:\d\d, Home, (?:planned|happening now)$/ })).toBeVisible();
     await expect(chip).toHaveCount(0);
   });
 
@@ -87,7 +88,7 @@ test.describe("score", () => {
 
     await dragTo(page, chip, { x: home.box.x + home.box.width + 160, y: home.y });
 
-    await expect(score.getByRole("button", { name: /^Take vitamins, \d\d:\d\d to \d\d:\d\d, Home, planned, repeats$/ })).toBeVisible();
+    await expect(score.getByRole("button", { name: /^Take vitamins, \d\d:\d\d to \d\d:\d\d, Home, (?:planned|happening now), repeats$/ })).toBeVisible();
     await expect(page.getByRole("button", { name: "Same time every day" })).toBeVisible();
   });
 });
