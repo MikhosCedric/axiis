@@ -1,6 +1,6 @@
 import type { Area, AreaId, DayRange, Item, ItemId, ItemPatch, NewItem } from "@/domain/item";
 import { sameTag, type Tag, type TagId, type TagName } from "@/domain/tag";
-import { INBOX_LIMIT, LISTS_LIMIT, MAX_SERIES, TAGGED_LIMIT, type ItemsRepo } from "@/lib/items/repo";
+import { DUE_LIMIT, INBOX_LIMIT, LISTS_LIMIT, MAX_SERIES, TAGGED_LIMIT, type ItemsRepo } from "@/lib/items/repo";
 
 let seq = 0;
 /** Status order where open comes first, as the database's enum declares it. */
@@ -79,6 +79,19 @@ export function fakeRepo(items: Item[] = [], areas: Area[] = []) {
         .filter((i) => i.type === "checklist" && i.parentId === null && i.recurrence.kind !== "override" && i.status !== "dropped")
         .sort((a, b) => RANK[a.status] - RANK[b.status] || b.createdAt.getTime() - a.createdAt.getTime())
         .slice(0, LISTS_LIMIT);
+    },
+    async listDue(doneSince) {
+      return items
+        .filter(
+          (i) =>
+            i.dueOn !== null &&
+            i.parentId === null &&
+            i.type !== "note" &&
+            i.recurrence.kind === "none" &&
+            (i.status === "open" || (i.status === "done" && i.completedAt !== null && i.completedAt >= doneSince)),
+        )
+        .sort((a, b) => (a.dueOn! < b.dueOn! ? -1 : a.dueOn! > b.dueOn! ? 1 : a.createdAt.getTime() - b.createdAt.getTime()))
+        .slice(0, DUE_LIMIT);
     },
     async listOverrides(fromDate, toDate, seriesId) {
       return items.filter(

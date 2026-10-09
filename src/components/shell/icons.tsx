@@ -27,6 +27,14 @@ export const TodayIcon = () => (
   </Icon>
 );
 
+export const DueIcon = () => (
+  <Icon>
+    <rect x="2.5" y="3.5" width="13" height="11" rx="1.5" />
+    <path d="M2.5 7h13M6 2v3M12 2v3" />
+    <path d="M9 9.5v2.2l1.4 0.8" />
+  </Icon>
+);
+
 export const InboxIcon = () => (
   <Icon>
     <path d="M2.5 10.5l2-6h9l2 6v4h-13z" />

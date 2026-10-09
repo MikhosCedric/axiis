@@ -84,3 +84,20 @@ describe("SupabaseItemsRepo and series", () => {
     expect(requests[1].getAll("series_id")).toEqual(["not.is.null", `eq.${SERIES}`]);
   });
 });
+
+describe("SupabaseItemsRepo.listDue", () => {
+  it("reads dated, live, top-level tasks and checklists that are open or done since the cut, soonest first", async () => {
+    const { repo, requests } = stubbed();
+    await repo.listDue(new Date("2026-10-07T10:00:00Z"));
+    const q = requests[0];
+    expect(q.get("due_on")).toBe("not.is.null");
+    expect(q.get("deleted_at")).toBe("is.null");
+    expect(q.get("rrule")).toBe("is.null");
+    expect(q.get("series_id")).toBe("is.null");
+    expect(q.get("parent_id")).toBe("is.null");
+    expect(q.get("type")).toBe("neq.note");
+    expect(q.get("or")).toBe("(status.eq.open,and(status.eq.done,completed_at.gte.2026-10-07T10:00:00.000Z))");
+    expect(q.get("order")).toBe("due_on.asc,created_at.asc");
+    expect(q.get("limit")).toBe("200");
+  });
+});

@@ -4,11 +4,13 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 import type { LocalDate } from "@/domain/item";
+import { DUE_PATH } from "@/features/due/model";
 import { LISTS_PATH } from "@/features/lists/model";
 import { PaletteIcon } from "@/features/palette/icons";
 import { useIsMac, useOpenPalette } from "@/features/palette/palette";
 import {
   BrandMark,
+  DueIcon,
   InboxIcon,
   ListsIcon,
   NotesIcon,
@@ -51,6 +53,7 @@ export function NavRail({ today, areas }: { today: LocalDate; areas: NavArea[] }
   const onToday = pathname === "/today" || pathname === `/day/${today}`;
   const onWeek = pathname === "/week" || pathname.startsWith("/week/");
   const onInbox = pathname === "/inbox";
+  const onDue = pathname === DUE_PATH;
   const onLists = pathname === LISTS_PATH;
   const onSettings = pathname === "/settings" || pathname.startsWith("/settings/");
   const onNotes = pathname === "/notes" || pathname.startsWith("/notes/");
@@ -73,6 +76,7 @@ export function NavRail({ today, areas }: { today: LocalDate; areas: NavArea[] }
         <NavLink href="/today" current={onToday} icon={<TodayIcon />} label="Today" />
         <NavLink href="/week" current={onWeek} icon={<WeekIcon />} label="Week" />
         <NavLink href="/inbox" current={onInbox} icon={<InboxIcon />} label="Inbox" />
+        <NavLink href={DUE_PATH} current={onDue} icon={<DueIcon />} label="Due" />
         <NavLink href={LISTS_PATH} current={onLists} icon={<ListsIcon />} label="Lists" />
         <NavLink href="/notes" current={onNotes} icon={<NotesIcon />} label="Notes" />
         <NavLink href="/tags" current={onTags} icon={<TagsIcon />} label="Tags" />

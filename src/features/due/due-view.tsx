@@ -1,0 +1,132 @@
+"use client";
+
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useOptimistic, useTransition, type ReactNode } from "react";
+import { SELECTED_ITEM_PARAM } from "@/features/day/types";
+import { DetailAside } from "@/features/detail/detail-aside";
+import { setDoneAction } from "@/features/today/actions";
+import { DoneToggle, useDoneToggles, type SetDone } from "@/features/today/done-toggle";
+import { dueSummary, GROUP_LABEL, inGroup, type DueData, type DueGroup, type DueRow } from "./model";
+
+const GROUPS: DueGroup[] = ["past", "week", "later"];
+
+/** Everything with a due date, soonest first, in three groups. A row opens the detail panel, where the date is changed or cleared. */
+export function DueView({
+  data,
+  detail,
+  setDone = setDoneAction,
+}: {
+  data: DueData;
+  detail?: ReactNode;
+  /** Defaults to the server action; the dev harness passes an in-memory one. */
+  setDone?: SetDone;
+}) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const params = useSearchParams();
+  const selectedParam = params.get(SELECTED_ITEM_PARAM);
+  const [selectedId, setSelectedId] = useOptimistic(selectedParam);
+  const [, startTransition] = useTransition();
+  const ticks = useDoneToggles(setDone);
+
+  function select(id: string) {
+    startTransition(() => {
+      setSelectedId(id);
+      const next = new URLSearchParams(params.toString());
+      next.set(SELECTED_ITEM_PARAM, id);
+      router.replace(`${pathname}?${next.toString()}`, { scroll: false });
+    });
+  }
+
+  const rows = data.rows.map((r) => ({ ...r, done: ticks.isDone(r.id, r.done) }));
+
+  return (
+    <div className={selectedParam ? "min-[1180px]:grid min-[1180px]:grid-cols-[minmax(0,1fr)_328px]" : ""}>
+      <div className="min-w-0 px-4 pt-6 pb-14 rail:px-9 rail:pt-8">
+        <h1 className="font-serif text-[clamp(28px,3vw,40px)] leading-[1.1] font-medium tracking-[-0.015em]">Due</h1>
+        <p className="mt-2.5 text-[15px] text-ink-2">{dueSummary(rows)}</p>
+        <p role="status" className={`mt-4 min-h-5 text-[13px] ${ticks.status?.error ? "font-medium text-ink" : "text-ink-2"}`}>
+          {ticks.status?.text}
+        </p>
+
+        {rows.length === 0 ? (
+          <p className="mt-2 max-w-[52ch] text-ink-2">
+            A due date is a deadline, kept apart from the day you plan to do the thing. Set one from an item&rsquo;s
+            details and it shows up here, soonest first.
+          </p>
+        ) : (
+          GROUPS.map((group) => {
+            const inThis = inGroup(rows, group);
+            if (inThis.length === 0) return null;
+            return (
+              <section key={group} aria-labelledby={`due-${group}`} className="mt-6 max-w-[760px]">
+                <h2 id={`due-${group}`} className="mb-1 text-xs font-semibold tracking-[0.06em] text-ink-3 uppercase">
+                  {GROUP_LABEL[group]}
+                </h2>
+                <ul className="border-t border-rule">
+                  {inThis.map((row) => (
+                    <DueRowView
+                      key={row.id}
+                      row={row}
+                      selected={selectedId === row.id}
+                      justDone={ticks.justDone === row.id}
+                      onSelect={() => select(row.id)}
+                      onToggleDone={() => ticks.toggle(row.id, row.title, !row.done)}
+                    />
+                  ))}
+                </ul>
+              </section>
+            );
+          })
+        )}
+        {data.full && (
+          <p className="mt-3 text-[13px] text-ink-3">Showing the first {data.rows.length}. Later due dates may not be listed.</p>
+        )}
+      </div>
+
+      {selectedParam && <DetailAside pending={selectedId !== selectedParam}>{detail}</DetailAside>}
+    </div>
+  );
+}
+
+function DueRowView({
+  row,
+  selected,
+  justDone,
+  onSelect,
+  onToggleDone,
+}: {
+  row: DueRow;
+  selected: boolean;
+  justDone: boolean;
+  onSelect: () => void;
+  onToggleDone: () => void;
+}) {
+  // The quietest ink is too faint to read on the accent wash of a selected row.
+  const quiet = selected ? "text-ink-2" : "text-ink-3";
+  return (
+    <li
+      className={`grid grid-cols-[48px_minmax(0,1fr)] items-start gap-x-3 border-b border-rule-soft py-2.5 ${selected ? "bg-accent-wash" : ""}`}
+    >
+      <span className="-my-1 grid place-items-center">
+        <DoneToggle type={row.type} title={row.title} done={row.done} justDone={justDone} onToggle={onToggleDone} />
+      </span>
+      <div className="min-w-0">
+        <button
+          type="button"
+          aria-pressed={selected}
+          onClick={onSelect}
+          className={`cursor-pointer rounded text-left break-words hover:underline ${row.done ? `font-normal ${quiet}` : "font-medium text-ink"}`}
+        >
+          {row.title}
+          {row.done && <span className="sr-only">, done</span>}
+        </button>
+        <p className={`mt-0.5 flex flex-wrap gap-x-3 text-xs ${quiet}`}>
+          <span className="tabular">{row.due}</span>
+          {row.when && <span className="tabular">Planned {row.when}</span>}
+          {row.area && <span>{row.area}</span>}
+        </p>
+      </div>
+    </li>
+  );
+}
