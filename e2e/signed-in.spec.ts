@@ -88,11 +88,12 @@ signedIn.describe("signed in", () => {
   signedIn("Today names what is left over from earlier days, and one can be moved to today", async ({ page }) => {
     await page.goto("/today");
     const strip = page.getByRole("region", { name: /from earlier/ });
-    await expect(strip.getByText("Return the library books")).toBeVisible();
+    const row = strip.getByRole("button", { name: "Return the library books", exact: true });
+    await expect(row).toBeVisible();
     await expect(strip.getByText("Planned Monday 3 February 2020")).toBeVisible();
     await strip.getByRole("button", { name: "Move to today: Return the library books" }).click();
     await expect(page.getByRole("status").filter({ hasText: "Return the library books is on today." })).toBeVisible();
-    await expect(strip.getByText("Return the library books")).toHaveCount(0);
+    await expect(row).toHaveCount(0);
   });
 
   signedIn("Lists and Tags show the account's checklist and tag", async ({ page }) => {
