@@ -23,7 +23,7 @@ export const metadata: Metadata = {
     locale: "en",
   },
   twitter: {
-    card: "summary",
+    card: "summary_large_image",
     title: `${SITE_NAME} · Tasks and time, on one page`,
     description: SITE_DESCRIPTION,
   },
