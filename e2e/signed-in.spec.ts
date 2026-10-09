@@ -79,7 +79,9 @@ signedIn.describe("signed in", () => {
     await expect(page.getByRole("region", { name: "Later" }).getByText("Renew the lease")).toBeVisible();
     await expect(page.getByText("Renew passport")).toHaveCount(0);
 
-    await past.getByRole("checkbox", { name: "Done: File the tax form" }).check();
+    // The box is drawn by a glyph over a visually hidden input, so it is ticked from the keyboard.
+    await past.getByRole("checkbox", { name: "Done: File the tax form" }).focus();
+    await page.keyboard.press("Space");
     await expect(page.getByRole("status")).toHaveText("File the tax form is done.");
   });
 
