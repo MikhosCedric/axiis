@@ -108,3 +108,22 @@ for (const path of ["/dev/score", "/dev/week", "/dev/inbox", "/dev/detail", "/de
     await expect(page).toHaveURL(path);
   });
 }
+
+test("every page carries a nonce policy, and the page runs under it without a violation", async ({ page }) => {
+  const violations: string[] = [];
+  page.on("console", (m) => {
+    if (/Content Security Policy|Refused to/i.test(m.text())) violations.push(m.text());
+  });
+  for (const path of ["/", "/login", "/privacy", "/terms"]) {
+    const response = await page.goto(path);
+    const policy = response?.headers()["content-security-policy"] ?? "";
+    expect(policy, path).toMatch(/script-src 'self' 'nonce-[A-Za-z0-9+/=]+' 'strict-dynamic'/);
+    expect(policy, path).toContain("frame-ancestors 'none'");
+  }
+  // Hydration needs the framework's nonced scripts: the theme switch only works once it has run.
+  await page.goto("/");
+  const html = page.locator("html");
+  await page.getByRole("button", { name: "Switch between light and dark" }).click();
+  await expect(html).toHaveAttribute("data-theme", /light|dark/);
+  expect(violations).toEqual([]);
+});
