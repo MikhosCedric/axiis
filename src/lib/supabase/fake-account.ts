@@ -25,6 +25,8 @@ function fixtures(): Item[] {
     // Dated far from any real "today", so the Due page's groups hold whenever the tests run.
     makeItem({ id: id(6), title: "File the tax form", schedule: { kind: "day", on: "2020-01-10" as LocalDate }, dueOn: "2020-01-15" as LocalDate, createdAt: created }),
     makeItem({ id: id(7), title: "Renew the lease", schedule: { kind: "day", on: "2099-05-20" as LocalDate }, dueOn: "2099-06-01" as LocalDate, createdAt: created }),
+    // Planned for a day long past and still open, for the strip on Today.
+    makeItem({ id: id(8), title: "Return the library books", schedule: { kind: "day", on: "2020-02-03" as LocalDate }, createdAt: created }),
     makeItem({ id: id(5), type: "note", title: "Garden through the winter", body: gardenBody, createdAt: created, updatedAt: created }),
   ];
 }
