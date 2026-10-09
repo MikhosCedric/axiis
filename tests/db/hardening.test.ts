@@ -12,7 +12,7 @@ beforeAll(async () => {
 const run = (sql: string, params: unknown[] = []) => db.asUser(userId, (tx) => tx.query(sql, params));
 
 describe("indexes that cover foreign keys", () => {
-  it.each(["items_user_series", "item_tags_user_item", "links_user_from"])("has %s", async (name) => {
+  it.each(["items_user_series", "item_tags_user_item", "links_user_from", "items_user_due_on"])("has %s", async (name) => {
     const { rows } = await db.admin.query("select 1 from pg_indexes where schemaname = 'public' and indexname = $1", [name]);
     expect(rows).toHaveLength(1);
   });

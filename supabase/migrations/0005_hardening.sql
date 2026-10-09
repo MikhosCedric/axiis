@@ -8,6 +8,9 @@ create index items_user_series on public.items (user_id, series_id) where series
 create index item_tags_user_item on public.item_tags (user_id, item_id);
 create index links_user_from on public.links (user_id, from_id);
 
+-- The Due page reads open items by their due date.
+create index items_user_due_on on public.items (user_id, due_on) where due_on is not null and deleted_at is null;
+
 -- The app refuses a second live area with the same name; this closes the race between two requests.
 create unique index areas_user_name_live on public.areas (user_id, lower(name)) where deleted_at is null;
 
