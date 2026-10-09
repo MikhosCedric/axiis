@@ -13,7 +13,7 @@ import {
 } from "@/domain/item";
 import { sameTag, type Tag, type TagId, type TagName, type TagSummary } from "@/domain/tag";
 import { AREA_COLUMNS, ITEM_COLUMNS, areaFromRow, itemFromRow, newItemToInsert, patchToUpdate } from "./mappers";
-import { DUE_LIMIT, INBOX_LIMIT, LISTS_LIMIT, MAX_SERIES, TAGGED_LIMIT, type ChildCount, type ItemsRepo } from "./repo";
+import { BEHIND_LIMIT, DUE_LIMIT, INBOX_LIMIT, LISTS_LIMIT, MAX_SERIES, TAGGED_LIMIT, type ChildCount, type ItemsRepo } from "./repo";
 
 type QueryResult = { data: unknown; error: { message: string; code?: string } | null };
 
@@ -121,6 +121,19 @@ export class SupabaseItemsRepo implements ItemsRepo {
       .order("created_at")
       .limit(DUE_LIMIT);
     return unwrap("listDue", result, itemList);
+  }
+
+  async listBehind(range: DayRange): Promise<Item[]> {
+    const open = () =>
+      this.single().is("series_id", null).is("parent_id", null).eq("status", "open").neq("type", "note");
+    const [timed, dayOnly] = await Promise.all([
+      open().lt("start_at", range.from.toISOString()).order("start_at").limit(BEHIND_LIMIT),
+      open().lt("scheduled_on", range.date).order("scheduled_on").limit(BEHIND_LIMIT),
+    ]);
+    const plannedAt = (i: Item) => (i.schedule.kind === "timed" ? i.schedule.start.getTime() : Date.parse(`${i.schedule.kind === "day" ? i.schedule.on : range.date}T00:00:00Z`));
+    return [...unwrap("listBehind", timed, itemList), ...unwrap("listBehind", dayOnly, itemList)]
+      .sort((a, b) => plannedAt(a) - plannedAt(b))
+      .slice(0, BEHIND_LIMIT);
   }
 
   async listOverrides(fromDate: LocalDate, toDate: LocalDate, seriesId?: ItemId): Promise<Item[]> {

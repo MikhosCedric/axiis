@@ -101,3 +101,24 @@ describe("SupabaseItemsRepo.listDue", () => {
     expect(q.get("limit")).toBe("200");
   });
 });
+
+describe("SupabaseItemsRepo.listBehind", () => {
+  it("reads open one-off tasks planned before the day, timed and day-only, oldest first", async () => {
+    const { repo, requests } = stubbed();
+    await repo.listBehind({ date: d("2026-10-08"), from: new Date("2026-10-08T00:00:00Z"), to: new Date("2026-10-09T00:00:00Z") });
+    const [timed, dayOnly] = requests;
+    for (const q of [timed, dayOnly]) {
+      expect(q.get("status")).toBe("eq.open");
+      expect(q.get("deleted_at")).toBe("is.null");
+      expect(q.get("rrule")).toBe("is.null");
+      expect(q.get("series_id")).toBe("is.null");
+      expect(q.get("parent_id")).toBe("is.null");
+      expect(q.get("type")).toBe("neq.note");
+      expect(q.get("limit")).toBe("50");
+    }
+    expect(timed.get("start_at")).toBe("lt.2026-10-08T00:00:00.000Z");
+    expect(timed.get("order")).toBe("start_at.asc");
+    expect(dayOnly.get("scheduled_on")).toBe("lt.2026-10-08");
+    expect(dayOnly.get("order")).toBe("scheduled_on.asc");
+  });
+});
