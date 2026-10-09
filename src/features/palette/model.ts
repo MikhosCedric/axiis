@@ -1,6 +1,7 @@
 import type { ItemType, LocalDate } from "@/domain/item";
 import { parseTagName, tagKey, type TagName } from "@/domain/tag";
 import { dayHref } from "@/features/day/nav";
+import { DUE_PATH } from "@/features/due/model";
 import { LISTS_PATH } from "@/features/lists/model";
 import { tagHref, TAGS_PATH } from "@/features/tags/model";
 import type { SearchRow } from "@/features/notes/model";
@@ -47,6 +48,7 @@ const PLACES: Place[] = [
   { label: "Today", href: "/today", also: ["score", "day"] },
   { label: "Week", href: "/week", also: ["planner"] },
   { label: "Inbox", href: "/inbox", also: ["unscheduled", "waiting"] },
+  { label: "Due", href: DUE_PATH, also: ["deadlines", "deadline", "overdue"] },
   { label: "Lists", href: LISTS_PATH, also: ["checklists"] },
   { label: "Notes", href: "/notes", also: [] },
   { label: "Tags", href: TAGS_PATH, also: ["labels"] },

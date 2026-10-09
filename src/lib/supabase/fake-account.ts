@@ -1,4 +1,4 @@
-import type { Item, ItemId } from "@/domain/item";
+import type { Item, ItemId, LocalDate } from "@/domain/item";
 import type { ExportTable, PageReader } from "@/features/account/export";
 import { bodyText, type DocNode } from "@/features/notes/doc";
 import { fakeRepo, makeItem } from "@/features/today/test-support";
@@ -22,6 +22,9 @@ function fixtures(): Item[] {
     makeItem({ id: id(2), type: "checklist", title: "Packing for Lisbon", createdAt: created }),
     makeItem({ id: id(3), title: "Passport", parentId: id(2), status: "done", position: 0, createdAt: created }),
     makeItem({ id: id(4), title: "Adapter plug", parentId: id(2), position: 1, createdAt: created }),
+    // Dated far from any real "today", so the Due page's groups hold whenever the tests run.
+    makeItem({ id: id(6), title: "File the tax form", schedule: { kind: "day", on: "2020-01-10" as LocalDate }, dueOn: "2020-01-15" as LocalDate, createdAt: created }),
+    makeItem({ id: id(7), title: "Renew the lease", schedule: { kind: "day", on: "2099-05-20" as LocalDate }, dueOn: "2099-06-01" as LocalDate, createdAt: created }),
     makeItem({ id: id(5), type: "note", title: "Garden through the winter", body: gardenBody, createdAt: created, updatedAt: created }),
   ];
 }

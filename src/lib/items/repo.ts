@@ -13,6 +13,9 @@ export const TAGGED_LIMIT = 200;
 /** Most checklists one read of the Lists page returns. */
 export const LISTS_LIMIT = 200;
 
+/** Most items one read of the Due page returns. */
+export const DUE_LIMIT = 200;
+
 export type ChildCount = { total: number; done: number };
 
 /**
@@ -45,6 +48,12 @@ export interface ItemsRepo {
    * out. Open first, then done, newest first, at most `LISTS_LIMIT`.
    */
   listChecklists(): Promise<Item[]>;
+  /**
+   * Live top-level tasks and checklists with a due date, not repeating and not
+   * dropped, soonest due first, at most `DUE_LIMIT`. Open ones, plus ones done
+   * at or after `doneSince`, so a mistaken tick can be undone.
+   */
+  listDue(doneSince: Date): Promise<Item[]>;
   /** Live overrides whose `originalOn` is in `[fromDate, toDate)`, skipped ones included, of one series when given. */
   listOverrides(fromDate: LocalDate, toDate: LocalDate, seriesId?: ItemId): Promise<Item[]>;
   /** Live children of one parent, ordered by position then creation. */
