@@ -23,6 +23,19 @@ signedIn.describe("signed in", () => {
   signedIn.describe.configure({ timeout: 90_000 });
   signedIn.use({ timezoneId: "UTC" });
 
+  signedIn("G then a letter goes to a page, and a lone letter does not", async ({ page }) => {
+    await page.goto("/today");
+    await page.getByRole("heading", { level: 1 }).first().waitFor();
+    await page.keyboard.press("i");
+    await expect(page).toHaveURL("/today");
+    await page.keyboard.press("g");
+    await page.keyboard.press("i");
+    await expect(page).toHaveURL("/inbox");
+    await page.keyboard.press("g");
+    await page.keyboard.press("l");
+    await expect(page).toHaveURL("/lists");
+  });
+
   signedIn("the landing page and /login send the account to Today", async ({ page }) => {
     await page.goto("/");
     await expect(page).toHaveURL("/today");
