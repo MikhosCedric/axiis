@@ -91,7 +91,7 @@ signedIn.describe("signed in", () => {
     const row = strip.getByRole("button", { name: "Return the library books", exact: true });
     await expect(row).toBeVisible();
     await expect(strip.getByText("Planned Monday 3 February 2020")).toBeVisible();
-    await strip.getByRole("button", { name: "Move to today: Return the library books" }).click();
+    await strip.getByRole("button", { name: /^Move to today\s*: Return the library books$/ }).click();
     await expect(page.getByRole("status").filter({ hasText: "Return the library books is on today." })).toBeVisible();
     await expect(row).toHaveCount(0);
   });
