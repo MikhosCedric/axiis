@@ -21,7 +21,7 @@ const row = (n: number, over: Partial<SearchRow> = {}): SearchRow => ({
 
 describe("paletteSections", () => {
   it("offers every page, then the shortcuts, when nothing is typed", () => {
-    expect(labels("   ")).toEqual({ go: ["Today", "Week", "Inbox", "Lists", "Notes", "Tags", "Search", "Settings", "Keyboard shortcuts"] });
+    expect(labels("   ")).toEqual({ go: ["Today", "Week", "Inbox", "Due", "Lists", "Notes", "Tags", "Search", "Settings", "Keyboard shortcuts"] });
   });
 
   it("goes to a tag's page for #name, any spaces and case kept, and offers no capture", () => {
@@ -38,6 +38,7 @@ describe("paletteSections", () => {
     expect(labels("export").go).toEqual(["Settings"]);
     expect(labels("unscheduled").go).toEqual(["Inbox"]);
     expect(labels("checkl").go).toEqual(["Lists"]);
+    expect(labels("deadline").go).toEqual(["Due"]);
   });
 
   it("links pages to their routes and the shortcuts to the help list", () => {
