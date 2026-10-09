@@ -10,6 +10,9 @@ const PUBLIC_PATHS: ReadonlySet<string> = new Set([
   "/sitemap.xml",
   "/manifest.webmanifest",
   "/icon.svg",
+  // Generated images: link previews and the home-screen icon are fetched before anyone signs in.
+  "/opengraph-image",
+  "/apple-icon",
 ]);
 
 /** Paths that must stay reachable without a session. Static assets and Next internals are excluded by the proxy matcher instead. */
@@ -17,6 +20,7 @@ function isPublicPath(pathname: string): boolean {
   return (
     PUBLIC_PATHS.has(pathname) ||
     pathname === "/auth" ||
+    pathname.startsWith("/pwa-icon/") ||
     pathname.startsWith("/auth/") ||
     // Dev harness pages render fixtures only, and never exist in a production build.
     (process.env.NODE_ENV !== "production" && (pathname === "/dev" || pathname.startsWith("/dev/")))
