@@ -28,6 +28,8 @@ A solo productivity web app. One connected set of items, shown through many view
 
 **Lists**: the view of every top-level checklist, open first, each with how many of its lines are done. A checklist's subtasks are called its lines there. A repeating checklist shows once, as its series.
 
+**Due**: the view of every open task and checklist that has a due date, soonest first, in three groups: past due, this week (today and the six days after) and later. Items done in the last day stay listed so a tick can be undone. A series never appears: a deadline on every occurrence would be the same date each time. Wording never counts days late.
+
 **Today**: the view of one local day: timed items in that day's range, day-only items on that date, and everything unscheduled.
 
 **Score**: the Today view drawn as parallel staves, one per area, sharing one hour axis. The signature view of Axiis.

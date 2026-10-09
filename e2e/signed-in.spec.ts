@@ -47,6 +47,7 @@ signedIn.describe("signed in", () => {
     ["Today", "/today", null],
     ["Week", "/week", null],
     ["Inbox", "/inbox", "Inbox"],
+    ["Due", "/due", "Due"],
     ["Lists", "/lists", "Lists"],
     ["Tags", "/tags", "Tags"],
     ["Notes", "/notes", "Notes"],
@@ -83,6 +84,20 @@ signedIn.describe("signed in", () => {
     await expect(page.getByText(title).first()).toBeVisible();
   });
 
+  signedIn("Due groups dated items, and a tick marks one done", async ({ page }) => {
+    await page.goto("/due");
+    const past = page.getByRole("region", { name: "Past due" });
+    await expect(past.getByText("File the tax form")).toBeVisible();
+    await expect(past.getByText("Was due Wednesday 15 January 2020")).toBeVisible();
+    await expect(page.getByRole("region", { name: "Later" }).getByText("Renew the lease")).toBeVisible();
+    await expect(page.getByText("Renew passport")).toHaveCount(0);
+
+    // The box is drawn by a glyph over a visually hidden input, so it is ticked from the keyboard.
+    await past.getByRole("checkbox", { name: "Done: File the tax form" }).focus();
+    await page.keyboard.press("Space");
+    await expect(page.getByRole("status")).toHaveText("File the tax form is done.");
+  });
+
   signedIn("Lists and Tags show the account's checklist and tag", async ({ page }) => {
     await page.goto("/lists");
     await expect(page.getByText("Packing for Lisbon")).toBeVisible();
@@ -111,7 +126,7 @@ signedIn.describe("signed in", () => {
     await expect(page).toHaveURL("/login?next=%2Ftoday");
   });
 
-  for (const path of ["/today", "/inbox", "/settings"]) {
+  for (const path of ["/today", "/inbox", "/due", "/settings"]) {
     signedIn(`${path} has no serious or critical axe violations`, async ({ page }) => {
       await page.goto(path);
       await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
