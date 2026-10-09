@@ -87,7 +87,7 @@ signedIn.describe("signed in", () => {
 
   signedIn("Today names what is left over from earlier days, and one can be moved to today", async ({ page }) => {
     await page.goto("/today");
-    const strip = page.getByRole("region", { name: /from earlier/ });
+    const strip = page.getByRole("region", { name: /earlier days? (is|are) still open/ });
     const row = strip.getByRole("button", { name: "Return the library books", exact: true });
     await expect(row).toBeVisible();
     await expect(strip.getByText("Planned Monday 3 February 2020")).toBeVisible();
