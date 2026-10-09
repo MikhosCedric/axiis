@@ -78,10 +78,9 @@ Updated: see the log at the bottom. Phases:
 - Leaked-password protection is off. Axiis has no passwords (magic link and Google only), so it does not apply.
 
 ## Migrations applied to the hosted project
-`0001_core`, `0002_account` (applied as `account_deletion`), `0003_search` (applied as `search_and_excerpt`). `0004_recurrence` (applied as `recurrence`). Any new file in `supabase/migrations/` must be applied with the Supabase MCP `apply_migration`, after a rolled-back `DO` block check, then `get_advisors`.
+`0001_core`, `0002_account` (applied as `account_deletion`), `0003_search` (applied as `search_and_excerpt`). `0004_recurrence` (applied as `recurrence`). Security advisor re-run on 2026-10-09 after 0004: only the two accepted advisories above. The 0004 columns, constraints, indexes and trigger were checked on the hosted database, and RLS is on for every public table. Any new file in `supabase/migrations/` must be applied with the Supabase MCP `apply_migration`, after a rolled-back `DO` block check, then `get_advisors`.
 
 ## In flight
-- Recurrence merged (#13). Migration 0004 applied to the hosted project; `get_advisors` then failed with an FGA auth error, so re-run the security advisor and do a non-DDL check of the new columns.
 - Merged this stretch: command palette (#10), phone nav fix (#11), Playwright and axe browser tests with an `e2e` CI job (#12).
 
 ## Next up (suggested order)
