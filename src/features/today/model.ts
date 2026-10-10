@@ -1,4 +1,4 @@
-import type { AreaId, DayRange, ShownItem } from "@/domain/item";
+import type { DayRange, ShownItem } from "@/domain/item";
 import { WAITING_LIMIT } from "@/lib/items/repo";
 
 export const TITLE_MAX = 500;
@@ -81,14 +81,4 @@ export function summaryLine({ scheduled, waiting }: TodayView, isToday = true): 
           : "Everything planned for this day is done"
         : `${open} open${done ? `, ${done} done` : ""}${isToday ? " today" : ""}`;
   return waitingOpen ? `${plan}. ${waitingOpen} waiting.` : `${plan}.`;
-}
-
-/** Open items per area across the day, for the nav's extent bars. */
-export function openByArea({ scheduled, waiting }: TodayView): Map<AreaId, number> {
-  const counts = new Map<AreaId, number>();
-  for (const { item, state } of [...scheduled, ...waiting]) {
-    if (state === "done" || item.areaId === null) continue;
-    counts.set(item.areaId, (counts.get(item.areaId) ?? 0) + 1);
-  }
-  return counts;
 }

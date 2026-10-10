@@ -112,6 +112,30 @@ export class SupabaseItemsRepo implements ItemsRepo {
     };
   }
 
+  async openCountByArea(range: DayRange): Promise<Record<string, number>> {
+    const timed = `and(start_at.gte.${range.from.toISOString()},start_at.lt.${range.to.toISOString()})`;
+    const waiting = "and(start_at.is.null,scheduled_on.is.null,parent_id.is.null)";
+    const rows = await readAll(
+      "openCountByArea",
+      (from, to) =>
+        this.db
+          .from("items")
+          .select("area_id", { count: "exact" })
+          .is("deleted_at", null)
+          .is("rrule", null)
+          .eq("status", "open")
+          .neq("type", "note")
+          .not("area_id", "is", null)
+          .or(`${timed},scheduled_on.eq.${range.date},${waiting}`)
+          .order("id")
+          .range(from, to),
+      (raw) => z.array(z.object({ area_id: z.uuid() })).parse(raw),
+    );
+    const counts: Record<string, number> = {};
+    for (const { area_id } of rows) counts[area_id] = (counts[area_id] ?? 0) + 1;
+    return counts;
+  }
+
   async listRange(range: SpanRange): Promise<Item[]> {
     const timed = `and(start_at.gte.${range.from.toISOString()},start_at.lt.${range.to.toISOString()})`;
     const dayOnly = `and(scheduled_on.gte.${range.fromDate},scheduled_on.lt.${range.toDate})`;

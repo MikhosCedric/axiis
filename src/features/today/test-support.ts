@@ -71,6 +71,18 @@ export function fakeRepo(items: Item[] = [], areas: Area[] = []) {
           .slice(0, WAITING_LIMIT),
       };
     },
+    async openCountByArea(range) {
+      const counts: Record<string, number> = {};
+      for (const i of single()) {
+        const s = i.schedule;
+        const onDay =
+          (s.kind === "timed" && range.from <= s.start && s.start < range.to) ||
+          (s.kind === "day" && s.on === range.date) ||
+          (s.kind === "unscheduled" && i.parentId === null);
+        if (onDay && i.status === "open" && i.type !== "note" && i.areaId !== null) counts[i.areaId] = (counts[i.areaId] ?? 0) + 1;
+      }
+      return counts;
+    },
     async listRange(range) {
       return single()
         .filter(
