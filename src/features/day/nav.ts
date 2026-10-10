@@ -1,6 +1,6 @@
 import type { LocalDate } from "@/domain/item";
 import { parseItemKey } from "@/domain/item-key";
-import { formatDayHeading } from "@/features/today/format";
+import { formatDayHeading, yearOf } from "@/features/today/format";
 import { addDays } from "@/lib/dates";
 import { DAY_VIEW_PARAM, SELECTED_ITEM_PARAM, type DayViewMode } from "./types";
 
@@ -51,5 +51,5 @@ export function isTypingTarget(el: { tagName: string; isContentEditable: boolean
 
 /** "Tuesday 6 October 2026", for the document title. */
 export function dayTitle(date: LocalDate): string {
-  return `${formatDayHeading(date)} ${date.slice(0, 4)}`;
+  return `${formatDayHeading(date)} ${yearOf(date)}`;
 }

@@ -37,11 +37,44 @@ export function addDays(date: LocalDate, days: number): LocalDate {
   return utcCalendarDay(y, m, d + days) as LocalDate;
 }
 
-/** Parse an untrusted `YYYY-MM-DD`, or null when it is malformed or not a real calendar date. */
-export function parseLocalDate(raw: unknown): LocalDate | null {
+/**
+ * The dates Axiis plans on. Past 9999 a date stops being `YYYY-MM-DD` and no
+ * longer parses, so a plan near the end of that range could run into one; this
+ * span keeps every plan, its end and a day either side well clear of that.
+ */
+export const FIRST_DATE = "1970-01-01" as LocalDate;
+export const LAST_DATE = "2200-12-31" as LocalDate;
+export const DATE_RANGE_ERROR = "Axiis plans dates from 1970 to 2200.";
+
+function calendarDate(raw: unknown): string | null {
   if (typeof raw !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(raw)) return null;
   const [y, m, d] = raw.split("-").map(Number);
-  return utcCalendarDay(y, m, d) === raw ? (raw as LocalDate) : null;
+  return utcCalendarDay(y, m, d) === raw ? raw : null;
+}
+
+/** Parse an untrusted `YYYY-MM-DD`, or null when it is malformed, not a real calendar date, or outside the span Axiis plans on. */
+export function parseLocalDate(raw: unknown): LocalDate | null {
+  const date = calendarDate(raw);
+  return date !== null && date >= FIRST_DATE && date <= LAST_DATE ? (date as LocalDate) : null;
+}
+
+/** True for a real calendar date that `parseLocalDate` refuses only for being outside the span, so the refusal can say so. */
+export function outOfRange(raw: unknown): boolean {
+  return calendarDate(raw) !== null && parseLocalDate(raw) === null;
+}
+
+/** True when an instant falls inside the span on some clock on earth (UTC offsets run from -12h to +14h). */
+export function inRange(at: Date): boolean {
+  const t = at.getTime();
+  return t >= utcMidnight(FIRST_DATE) - 15 * HOUR && t < utcMidnight(addDays(LAST_DATE, 1)) + 15 * HOUR;
+}
+
+/** Milliseconds at UTC midnight of a local date, for any year, even one `Date.parse` cannot read. */
+export function utcMidnight(date: LocalDate): number {
+  const [, sign, y, m, d] = /^(-?)(\d+)-(\d+)-(\d+)$/.exec(date) ?? [];
+  const t = new Date(0);
+  t.setUTCFullYear(Number(`${sign}${y}`), Number(m) - 1, Number(d));
+  return t.getTime();
 }
 
 /**
@@ -50,10 +83,10 @@ export function parseLocalDate(raw: unknown): LocalDate | null {
  * offset arithmetic gets wrong.
  */
 function startOf(date: LocalDate, timeZone: string): Date {
-  const utcMidnight = Date.parse(`${date}T00:00:00Z`);
+  const midnight = utcMidnight(date);
   // UTC offsets span -12h..+14h, so the boundary lies inside this window.
-  let lo = utcMidnight - 15 * HOUR;
-  let hi = utcMidnight + 15 * HOUR;
+  let lo = midnight - 15 * HOUR;
+  let hi = midnight + 15 * HOUR;
   while (hi - lo > 1) {
     const mid = Math.floor((lo + hi) / 2);
     if (toLocalDate(new Date(mid), timeZone) < date) lo = mid;
@@ -101,7 +134,7 @@ function wallAsUtc(at: number, timeZone: string): number {
  * count past 1440; seconds are dropped.
  */
 export function localMinutes(at: Date, date: LocalDate, timeZone: string): number {
-  return (wallAsUtc(at.getTime(), timeZone) - Date.parse(`${date}T00:00:00Z`)) / MINUTE;
+  return (wallAsUtc(at.getTime(), timeZone) - utcMidnight(date)) / MINUTE;
 }
 
 /**
@@ -110,7 +143,7 @@ export function localMinutes(at: Date, date: LocalDate, timeZone: string): numbe
  * forward by the size of the gap, as clocks do.
  */
 export function instantAt(date: LocalDate, minutes: number, timeZone: string): Date {
-  const wall = Date.parse(`${date}T00:00:00Z`) + minutes * MINUTE;
+  const wall = utcMidnight(date) + minutes * MINUTE;
   const offsetAt = (t: number) => wallAsUtc(t, timeZone) - Math.floor(t / MINUTE) * MINUTE;
   // Offsets near `wall` give at most two candidates, one per side of a transition.
   const candidates = [...new Set([offsetAt(wall - DAY / 2), offsetAt(wall), offsetAt(wall + DAY / 2)])]

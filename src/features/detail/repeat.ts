@@ -1,5 +1,6 @@
 import { z } from "zod";
-import { localDateSchema, type LocalDate } from "@/domain/item";
+import { planDateSchema, type LocalDate } from "@/domain/item";
+import { utcMidnight } from "@/lib/dates";
 import { MAX_COUNT, WEEKDAYS, type Rule, type RuleEnd, type Weekday } from "@/domain/recurrence";
 import { formatDayIn } from "@/features/today/format";
 import { dayWords } from "@/features/inbox/model";
@@ -26,7 +27,7 @@ export const repeatSchema = z.object({
   end: z
     .discriminatedUnion("kind", [
       z.object({ kind: z.literal("never") }),
-      z.object({ kind: z.literal("until"), on: localDateSchema }),
+      z.object({ kind: z.literal("until"), on: planDateSchema }),
       z.object({ kind: z.literal("count"), count: z.number().int().min(1).max(MAX_COUNT) }),
     ])
     .default({ kind: "never" }),
@@ -79,7 +80,7 @@ const UNIT = { daily: "day", weekly: "week", monthly: "month", yearly: "year" } 
 
 /** The weekday of a local date, as a rule names it. */
 export function weekdayOf(date: LocalDate): Weekday {
-  return WEEKDAYS[(new Date(`${date}T00:00:00Z`).getUTCDay() + 6) % 7];
+  return WEEKDAYS[(new Date(utcMidnight(date)).getUTCDay() + 6) % 7];
 }
 
 function listDays(days: Weekday[]): string {

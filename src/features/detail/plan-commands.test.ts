@@ -4,6 +4,7 @@ import { occurrenceKey } from "@/domain/item-key";
 import { planItem } from "@/features/inbox/commands";
 import { fakeRepo, makeItem } from "@/features/today/test-support";
 import { moveItem } from "@/features/week/commands";
+import { DATE_RANGE_ERROR } from "@/lib/dates";
 import { clearTime, setDue, setTime, setType } from "./commands";
 
 describe("setDue", () => {
@@ -33,6 +34,10 @@ describe("setDue", () => {
 
     for (const bad of ["2026-02-30", "2026-10-12T00:00:00Z", "", 20261012, undefined]) {
       expect(await setDue(repo, task.id, bad)).toEqual({ ok: false, error: "That date is not one Axiis can use." });
+    }
+    for (const far of ["9999-12-31", "1969-12-31"]) {
+      expect(await setDue(repo, task.id, far)).toEqual({ ok: false, error: DATE_RANGE_ERROR });
+      expect(await planItem(repo, task.id, far, new Date("2026-10-06T12:00:00Z"), "UTC")).toEqual({ ok: false, error: DATE_RANGE_ERROR });
     }
     const refused = { ok: false, error: "Only a task or checklist that does not repeat has a due date." };
     for (const id of [note.id, event.id, series.id]) expect(await setDue(repo, id, "2026-10-12")).toEqual(refused);

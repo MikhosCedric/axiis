@@ -7,6 +7,7 @@ import { setDone } from "@/features/today/commands";
 import { area, fakeRepo, makeItem } from "@/features/today/test-support";
 import { moveItem } from "@/features/week/commands";
 import { loadOccurrences } from "@/lib/items/occurrences";
+import { DATE_RANGE_ERROR } from "@/lib/dates";
 import { clearTime, deleteItem, loadDetail, renameItem, restoreOccurrence, setFirstDay, setItemArea, setRepeat, setTime, stopRepeating } from "./commands";
 
 const d = (s: string) => s as LocalDate;
@@ -237,6 +238,10 @@ describe("setRepeat", () => {
       expect((await setRepeat(repo, item.id, bad, new Date(), TZ)).ok).toBe(false);
     }
     expect((await setRepeat(repo, item.id, { preset: "daily", end: { kind: "until", on: "2026-10-05" } }, new Date(), TZ)).ok).toBe(false);
+    expect(await setRepeat(repo, item.id, { preset: "daily", end: { kind: "until", on: "9999-12-31" } }, new Date(), TZ)).toEqual({
+      ok: false,
+      error: DATE_RANGE_ERROR,
+    });
     expect(calls.update).toEqual([]);
   });
 
@@ -426,6 +431,7 @@ describe("setFirstDay", () => {
     for (const bad of ["2026-02-30", "2026-10-11T00:00:00Z", new Date("2026-10-11"), null]) {
       expect((await setFirstDay(w.repo, w.series.id, bad, TZ)).ok).toBe(false);
     }
+    expect(await setFirstDay(w.repo, w.series.id, "1969-12-31", TZ)).toEqual({ ok: false, error: DATE_RANGE_ERROR });
     const plain = makeItem({ schedule: { kind: "day", on: d("2026-10-06") } });
     w.items.push(plain);
     expect(await setFirstDay(w.repo, plain.id, "2026-10-07", TZ)).toEqual({ ok: false, error: "That does not repeat." });

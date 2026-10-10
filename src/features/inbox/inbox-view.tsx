@@ -11,6 +11,7 @@ import type { ActionResult } from "@/features/today/commands";
 import { DoneToggle } from "@/features/today/done-toggle";
 import { WAITING } from "@/features/today/model";
 import { RowTags } from "@/features/tags/row-tags";
+import { LAST_DATE } from "@/lib/dates";
 import { planAction } from "./actions";
 import { dayWords, inboxRows, inboxSummary, planDate, type InboxData, type PlanFor } from "./model";
 
@@ -337,7 +338,7 @@ function PlanChoices({
           type="date"
           required
           min={today}
-          max="9999-12-31"
+          max={LAST_DATE}
           value={picked}
           onChange={(e) => setPicked(e.currentTarget.value)}
           className="h-9 rounded-md border border-rule bg-sheet px-2.5 text-ink tabular"
