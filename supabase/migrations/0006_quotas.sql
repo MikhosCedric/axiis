@@ -7,7 +7,7 @@
 --                             subtasks and moved occurrences included, that is 11 years.
 --   links      50000  [none]  Links join two items, so 2.5 per item on average.
 --   tags         500  [200]   TAGS_PER_USER in src/domain/tag.ts. Tags are hard-deleted.
---   areas         50  [none]  Soft-deleted areas count. The rail shows a handful.
+--   areas        100  [12]    AREA_LIMIT live areas; soft-deleted ones count, so room to churn.
 --   item_tags     20 per item [10]  TAGS_PER_ITEM. Bounds item_tags at 20 x the item cap.
 --
 -- Soft-deleted rows count. They keep their storage, and leaving them out would
@@ -83,7 +83,7 @@ create trigger tags_quota after insert on public.tags
   for each statement execute function public.enforce_user_quota('500');
 create trigger areas_quota after insert on public.areas
   referencing new table as inserted
-  for each statement execute function public.enforce_user_quota('50');
+  for each statement execute function public.enforce_user_quota('100');
 create trigger item_tags_quota after insert on public.item_tags
   referencing new table as inserted
   for each statement execute function public.enforce_item_tags_quota('20');
