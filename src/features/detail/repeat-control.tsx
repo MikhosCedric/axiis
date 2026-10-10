@@ -3,7 +3,7 @@
 import { useId, useOptimistic, useState } from "react";
 import type { LocalDate } from "@/domain/item";
 import { MAX_COUNT, type RuleEnd } from "@/domain/recurrence";
-import { parseLocalDate } from "@/lib/dates";
+import { FIRST_DATE, LAST_DATE, parseLocalDate } from "@/lib/dates";
 import type { RepeatView } from "./model";
 import { PRESET_LABEL, REPEAT_PRESETS, type RepeatChoice, type RepeatPreset } from "./repeat";
 
@@ -96,6 +96,8 @@ export function RepeatRows({
               <input
                 type="date"
                 aria-label="Last date it repeats"
+                min={FIRST_DATE}
+                max={LAST_DATE}
                 value={end.on}
                 onChange={(e) => {
                   const on = parseLocalDate(e.target.value);

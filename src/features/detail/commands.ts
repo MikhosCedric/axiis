@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { idSchema, repeats, type AreaId, type Item, type ItemId, type ItemPatch, type LocalDate, type Schedule } from "@/domain/item";
 import { parseItemKey, type ParsedItemKey } from "@/domain/item-key";
-import { addDays, instantAt, localMinutes, parseLocalDate, toLocalDate } from "@/lib/dates";
+import { addDays, DATE_RANGE_ERROR, instantAt, localMinutes, outOfRange, parseLocalDate, toLocalDate } from "@/lib/dates";
 import { materialize, resolveKey } from "@/lib/items/occurrences";
 import type { ItemsRepo } from "@/lib/items/repo";
 import type { ActionResult } from "@/features/today/commands";
@@ -25,6 +25,8 @@ const MISSING = "That item is not here any more.";
 const NOT_SAVED = "That change did not save. Try again.";
 const AFTER_END = "The end date is before it first happens.";
 const NOT_A_SERIES = "That does not repeat.";
+
+const dateError = (raw: unknown) => (outOfRange(raw) ? DATE_RANGE_ERROR : "That date is not one Axiis can use.");
 
 export function parseItemId(raw: unknown): ItemId | null {
   const id = idSchema.safeParse(raw);
@@ -204,7 +206,7 @@ export async function setDue(repo: ItemsRepo, rawId: unknown, rawOn: unknown): P
   const id = parseItemId(rawId);
   if (!id) return { ok: false, error: MISSING };
   const on = rawOn === null ? null : parseLocalDate(rawOn);
-  if (rawOn !== null && !on) return { ok: false, error: "That date is not one Axiis can use." };
+  if (rawOn !== null && !on) return { ok: false, error: dateError(rawOn) };
   return attempt(async () => {
     const item = await repo.get(id);
     if (!item) return { ok: false, error: MISSING };
@@ -256,7 +258,7 @@ export async function setFirstDay(repo: ItemsRepo, rawKey: unknown, rawDate: unk
   const key = parseItemKey(rawKey);
   if (!key) return { ok: false, error: MISSING };
   const on = parseLocalDate(rawDate);
-  if (!on) return { ok: false, error: "That date is not one Axiis can use." };
+  if (!on) return { ok: false, error: dateError(rawDate) };
   return attempt(async () => {
     const [series] = await targets(repo, key, "all", timeZone);
     if (!series) return { ok: false, error: MISSING };
@@ -370,7 +372,10 @@ export async function setRepeat(
   const key = parseItemKey(rawKey);
   if (!key) return { ok: false, error: MISSING };
   const choice = repeatSchema.safeParse(rawChoice);
-  if (!choice.success) return { ok: false, error: "That repeat setting is not one Axiis knows." };
+  if (!choice.success) {
+    const until = (rawChoice as { end?: { on?: unknown } } | null)?.end?.on;
+    return { ok: false, error: outOfRange(until) ? DATE_RANGE_ERROR : "That repeat setting is not one Axiis knows." };
+  }
   const { preset, end } = choice.data;
   return attempt(async () => {
     const [item] = await targets(repo, key, "all", timeZone);

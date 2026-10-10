@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { parseLocalDate } from "@/lib/dates";
 import type { OccurrenceKey } from "./item-key";
 import type { Rule } from "./recurrence";
 
@@ -15,6 +16,8 @@ export type AreaId = string & { readonly __brand: "AreaId" };
 /** A calendar date in the user's own time zone, `YYYY-MM-DD`. */
 export type LocalDate = string & { readonly __brand: "LocalDate" };
 export const localDateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/).transform((s) => s as LocalDate);
+/** A date the client asks to plan on: a real calendar date inside the span Axiis plans on. Stored rows use `localDateSchema`. */
+export const planDateSchema = z.string().refine((s) => parseLocalDate(s) !== null).transform((s) => s as LocalDate);
 
 /**
  * Where an item sits in time. The three shapes are exclusive by construction;

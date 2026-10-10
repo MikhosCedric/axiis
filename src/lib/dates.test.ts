@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { LocalDate } from "@/domain/item";
-import { addDays, dayRangeFor, instantAt, isSameDay, localMinutes, parseLocalDate, resolveTimeZone, toLocalDate } from "./dates";
+import { addDays, dayRangeFor, instantAt, isSameDay, localMinutes, outOfRange, parseLocalDate, resolveTimeZone, toLocalDate } from "./dates";
 
 const d = (s: string) => s as LocalDate;
 const hours = (r: { from: Date; to: Date }) => (r.to.getTime() - r.from.getTime()) / 3_600_000;
@@ -186,7 +186,16 @@ describe("parseLocalDate", () => {
     expect(parseLocalDate("2026-10-06")).toBe("2026-10-06");
     expect(parseLocalDate("2028-02-29")).toBe("2028-02-29");
     expect(parseLocalDate("2000-02-29")).toBe("2000-02-29");
-    expect(parseLocalDate("0050-01-01")).toBe("0050-01-01");
+    expect(parseLocalDate("1970-01-01")).toBe("1970-01-01");
+    expect(parseLocalDate("2200-12-31")).toBe("2200-12-31");
+  });
+
+  it("rejects real dates outside the span Axiis plans on, and says so", () => {
+    for (const raw of ["1969-12-31", "0050-01-01", "2201-01-01", "9999-12-31"]) {
+      expect(parseLocalDate(raw)).toBeNull();
+      expect(outOfRange(raw)).toBe(true);
+    }
+    for (const raw of ["2026-10-06", "2026-02-30", "tomorrow", undefined]) expect(outOfRange(raw)).toBe(false);
   });
 
   it("rejects dates that do not exist", () => {
