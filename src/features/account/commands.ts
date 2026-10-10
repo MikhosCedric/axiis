@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { idSchema, type AreaId } from "@/domain/item";
 import type { AreasRepo } from "@/lib/areas/repo";
+import { saveFailure } from "@/lib/quota";
 import type { ActionResult } from "@/features/today/commands";
 
 export const AREA_NAME_MAX = 40;
@@ -35,8 +36,8 @@ const sameName = (a: string, b: string) => a.toLowerCase() === b.toLowerCase();
 async function attempt(work: () => Promise<ActionResult | void>): Promise<ActionResult> {
   try {
     return (await work()) ?? { ok: true };
-  } catch {
-    return { ok: false, error: NOT_SAVED };
+  } catch (error) {
+    return { ok: false, error: saveFailure(error, NOT_SAVED) };
   }
 }
 
