@@ -164,6 +164,26 @@ describe("SupabaseItemsRepo bounded reads", () => {
     expect(q.get("limit")).toBe("200");
   });
 
+  it("counts the nav rail's open items in one request that asks for area ids only", async () => {
+    const { repo, requests } = stubbed();
+    expect(
+      await repo.openCountByArea({ date: d("2026-10-06"), from: new Date("2026-10-05T22:00:00Z"), to: new Date("2026-10-06T22:00:00Z") }),
+    ).toEqual({});
+    expect(requests).toHaveLength(1);
+    const q = requests[0];
+    expect(q.get("select")).toBe("area_id");
+    expect(Object.fromEntries(["deleted_at", "rrule", "status", "type", "area_id"].map((k) => [k, q.get(k)]))).toEqual({
+      deleted_at: "is.null",
+      rrule: "is.null",
+      status: "eq.open",
+      type: "neq.note",
+      area_id: "not.is.null",
+    });
+    expect(q.get("or")).toBe(
+      "(and(start_at.gte.2026-10-05T22:00:00.000Z,start_at.lt.2026-10-06T22:00:00.000Z),scheduled_on.eq.2026-10-06,and(start_at.is.null,scheduled_on.is.null,parent_id.is.null))",
+    );
+  });
+
   it("reads several days in one request, timed or day-only, at most 500", async () => {
     const { repo, requests } = stubbed();
     await repo.listRange({

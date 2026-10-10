@@ -44,6 +44,13 @@ export interface ItemsRepo {
    */
   listForDay(range: DayRange): Promise<{ scheduled: Item[]; unscheduled: Item[] }>;
   /**
+   * How many stored items `listForDay(range)` would show open, by area: open,
+   * not notes, not series, with an area, and timed in the range, day-only on
+   * the date, or top-level with no schedule. Areas with none are absent. Every
+   * row is counted, past any cap.
+   */
+  openCountByArea(range: DayRange): Promise<Record<string, number>>;
+  /**
    * Scheduled items across several days: timed in `[from, to)` or day-only in
    * `[fromDate, toDate)`. Top-level and subtasks alike, soft-deleted excluded,
    * at most `RANGE_LIMIT`: timed ones by start, then day-only ones by date.
