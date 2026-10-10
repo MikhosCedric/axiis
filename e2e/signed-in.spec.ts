@@ -84,6 +84,39 @@ signedIn.describe("signed in", () => {
     await expect(page.getByText(title).first()).toBeVisible();
   });
 
+  signedIn("one day of a series opens in the panel from Today, the List view and the Week", async ({ page }) => {
+    const title = `Stretch ${Date.now()}`;
+    const details = page.getByRole("complementary", { name: "Details" }).first();
+    const chip = page.getByRole("button", { name: new RegExp(`^${title}\\s*, `) });
+    const expectOccurrenceOpen = async () => {
+      await expect(page).toHaveURL(/[?&]item=[0-9a-f-]{36}(~|%7E)\d{4}-\d{2}-\d{2}(&|$)/);
+      await expect(details.getByRole("textbox", { name: "Title" })).toHaveValue(title);
+      await expect(details.getByText("This one", { exact: true })).toBeVisible();
+      await expect(details.getByRole("button", { name: "Skip this one" })).toBeVisible();
+    };
+
+    await page.goto("/today");
+    await page.getByLabel("Capture anything").fill(`${title} today`);
+    await page.getByLabel("Capture anything").press("Enter");
+    await chip.click();
+    await details.getByLabel("Repeat").selectOption("daily");
+    await expect(details.getByRole("status").filter({ hasText: /^Repeats every day/ })).toBeVisible();
+
+    await page.goto("/today");
+    await chip.click();
+    await expectOccurrenceOpen();
+    await page.reload();
+    await expectOccurrenceOpen();
+
+    await page.goto("/today?view=list");
+    await chip.click();
+    await expectOccurrenceOpen();
+
+    await page.goto("/week");
+    await chip.last().click();
+    await expectOccurrenceOpen();
+  });
+
   signedIn("Due groups dated items, and a tick marks one done", async ({ page }) => {
     await page.goto("/due");
     const past = page.getByRole("region", { name: "Past due" });

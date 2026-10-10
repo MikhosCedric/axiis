@@ -25,8 +25,19 @@ describe("readDayQuery", () => {
     expect(readDayQuery({ view: "list", item: id })).toEqual({ mode: "list", itemId: id });
   });
 
+  it("reads an occurrence key, which names one day of a series", () => {
+    expect(readDayQuery({ item: `${id}~2026-10-12` })).toEqual({ mode: "score", itemId: `${id}~2026-10-12` });
+  });
+
   it("falls back to the score and no selection for anything else", () => {
-    for (const q of [{}, { view: "week" }, { view: ["list", "list"] }, { item: "not-a-uuid" }, { item: [id, id] }]) {
+    const bad = [
+      { item: "not-a-uuid" },
+      { item: [id, id] },
+      { item: `${id}~2026-02-30` },
+      { item: `${id}~tomorrow` },
+      { item: `not-a-uuid~2026-10-12` },
+    ];
+    for (const q of [{}, { view: "week" }, { view: ["list", "list"] }, ...bad]) {
       expect(readDayQuery(q)).toEqual({ mode: "score", itemId: null });
     }
   });
