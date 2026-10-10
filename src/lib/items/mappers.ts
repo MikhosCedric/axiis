@@ -30,7 +30,8 @@ const itemRowSchema = z.object({
   id: itemIdSchema,
   type: z.enum(ITEM_TYPES),
   title: z.string(),
-  body: z.unknown().transform((v) => v ?? null),
+  // List reads leave the column out (`LIST_COLUMNS`), so the key may be missing.
+  body: z.unknown().optional(),
   status: z.enum(ITEM_STATUSES),
   area_id: areaIdSchema.nullable(),
   parent_id: itemIdSchema.nullable(),
@@ -132,7 +133,7 @@ export function itemFromRow(raw: unknown): Item {
     id: row.id,
     type: row.type,
     title: row.title,
-    body: row.body,
+    body: row.body ?? null,
     status: row.status,
     areaId: row.area_id,
     parentId: row.parent_id,
