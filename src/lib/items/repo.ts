@@ -99,14 +99,26 @@ export interface ItemsRepo {
   update(id: ItemId, patch: ItemPatch): Promise<Item>;
   softDelete(id: ItemId): Promise<void>;
 
-  /** Every tag, with how many open live items carry it. Unordered. Limits and name rules live in the tag commands. */
+  /**
+   * Every tag, with how many open live items carry it. Unordered. The counts
+   * read every open tagged item, so this grows with the account: use
+   * `listTagNames` when the counts are not shown. Limits and name rules live
+   * in the tag commands.
+   */
   listTags(): Promise<TagSummary[]>;
+  /** Every tag, without counts. One read of the tags table, which the commands keep to `TAGS_PER_USER` rows. Unordered. */
+  listTagNames(): Promise<Tag[]>;
   /** Every tag on each item, keyed by item id. Items with none are absent. */
   tagsForItems(ids: ItemId[]): Promise<Record<string, Tag[]>>;
   /** Live items carrying a tag, open first, then done, newest first, at most `TAGGED_LIMIT`. Dropped ones are left out. */
   listTagged(tagId: TagId): Promise<Item[]>;
-  /** Puts the tag on the item, making the tag first when none has this name in any case. Running it again changes nothing. */
-  addTag(itemId: ItemId, name: TagName): Promise<Tag>;
+  /**
+   * Puts the tags on the item, making each first when none has its name in
+   * any case, in a fixed number of requests however many there are. Returns
+   * the tags in the order named, one per distinct name. Running it again
+   * changes nothing.
+   */
+  addTags(itemId: ItemId, names: readonly TagName[]): Promise<Tag[]>;
   /** Takes a tag off an item. A tag that is not on it counts as taken off. */
   removeTag(itemId: ItemId, tagId: TagId): Promise<void>;
   renameTag(tagId: TagId, name: TagName): Promise<Tag>;

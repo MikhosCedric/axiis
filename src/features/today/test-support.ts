@@ -40,11 +40,19 @@ export function makeItem(over: Partial<Item> = {}): Item {
 
 /** In-memory ItemsRepo that records calls and applies the day query from docs/data-model.md. */
 export function fakeRepo(items: Item[] = [], areas: Area[] = []) {
-  const calls: { listForDay: DayRange[]; create: NewItem[]; update: [ItemId, ItemPatch][]; addTag: [ItemId, TagName][] } = {
+  const calls: {
+    listForDay: DayRange[];
+    create: NewItem[];
+    update: [ItemId, ItemPatch][];
+    addTags: [ItemId, TagName[]][];
+    /** Reads of every tag with its open count, which grow with the account. */
+    listTags: number;
+  } = {
     listForDay: [],
     create: [],
     update: [],
-    addTag: [],
+    addTags: [],
+    listTags: 0,
   };
   const repo: ItemsRepo = {
     async listAreas() {
@@ -192,6 +200,7 @@ export function fakeRepo(items: Item[] = [], areas: Area[] = []) {
       if (at !== -1) items.splice(at, 1);
     },
     async listTags() {
+      calls.listTags += 1;
       return tags.map((t) => ({
         ...t,
         open: itemTags.filter((l) => l.tagId === t.id && items.some((i) => i.id === l.itemId && i.status === "open")).length,
@@ -211,9 +220,13 @@ export function fakeRepo(items: Item[] = [], areas: Area[] = []) {
         .sort((a, b) => RANK[a.status] - RANK[b.status] || b.createdAt.getTime() - a.createdAt.getTime())
         .slice(0, TAGGED_LIMIT);
     },
-    async addTag(itemId, name) {
-      calls.addTag.push([itemId, name]);
-      return link(itemId, name);
+    async listTagNames() {
+      return tags.map((t) => ({ ...t }));
+    },
+    async addTags(itemId, names) {
+      calls.addTags.push([itemId, [...names]]);
+      const distinct = names.filter((n, i) => names.findIndex((m) => sameTag(m, n)) === i);
+      return distinct.map((name) => link(itemId, name));
     },
     async removeTag(itemId, id) {
       drop(itemTags, (l) => l.itemId === itemId && l.tagId === id);

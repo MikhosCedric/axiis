@@ -113,7 +113,7 @@ export async function saveNote(notes: NotesRepo, rawId: unknown, rawTitle: unkno
 
 /** The live items carrying every one of the tags, or none when a tag does not exist. */
 async function carryingAll(items: ItemsRepo, names: readonly TagName[]): Promise<Item[]> {
-  const all = await items.listTags();
+  const all = await items.listTagNames();
   const tags = names.map((n) => all.find((t) => sameTag(t.name, n)));
   if (tags.some((t) => !t)) return [];
   const lists = await Promise.all(tags.map((t) => items.listTagged(t!.id)));

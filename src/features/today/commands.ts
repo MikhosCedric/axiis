@@ -4,7 +4,7 @@ import { parseItemKey } from "@/domain/item-key";
 import type { TagName } from "@/domain/tag";
 import { dayWords } from "@/features/inbox/model";
 import { DEFAULT_MINUTES } from "@/features/score/drop";
-import { addTag } from "@/features/tags/commands";
+import { tagCaptured } from "@/features/tags/commands";
 import { instantAt, toLocalDate } from "@/lib/dates";
 import { materialize } from "@/lib/items/occurrences";
 import type { ItemsRepo } from "@/lib/items/repo";
@@ -78,11 +78,7 @@ export async function captureTask(repo: ItemsRepo, raw: unknown, now: Date, time
   } catch {
     return { ok: false, error: NOT_SAVED };
   }
-  const tags: TagName[] = [];
-  const missed: TagName[] = [];
-  for (const name of said.tags) {
-    ((await addTag(repo, id, name, timeZone)).ok ? tags : missed).push(name);
-  }
+  const { tags, missed } = await tagCaptured(repo, id, said.tags);
   return { ok: true, id, type: "task", title: said.title, plan, tags, missed };
 }
 
