@@ -1,6 +1,16 @@
 import type { Area, AreaId, DayRange, Item, ItemId, ItemPatch, NewItem } from "@/domain/item";
 import { sameTag, type Tag, type TagId, type TagName } from "@/domain/tag";
-import { BEHIND_LIMIT, DUE_LIMIT, INBOX_LIMIT, LISTS_LIMIT, MAX_SERIES, TAGGED_LIMIT, type ItemsRepo } from "@/lib/items/repo";
+import {
+  BEHIND_LIMIT,
+  DUE_LIMIT,
+  INBOX_LIMIT,
+  LISTS_LIMIT,
+  MAX_SERIES,
+  RANGE_LIMIT,
+  TAGGED_LIMIT,
+  WAITING_LIMIT,
+  type ItemsRepo,
+} from "@/lib/items/repo";
 
 let seq = 0;
 /** Status order where open comes first, as the database's enum declares it. */
@@ -48,15 +58,27 @@ export function fakeRepo(items: Item[] = [], areas: Area[] = []) {
             (i.schedule.kind === "timed" && range.from <= i.schedule.start && i.schedule.start < range.to) ||
             (i.schedule.kind === "day" && i.schedule.on === range.date),
         ),
-        unscheduled: single().filter((i) => i.schedule.kind === "unscheduled" && i.parentId === null),
+        unscheduled: single()
+          .filter(
+            (i) =>
+              i.schedule.kind === "unscheduled" &&
+              i.parentId === null &&
+              i.type !== "note" &&
+              (i.status === "open" ||
+                (i.status === "done" && i.completedAt !== null && range.from <= i.completedAt && i.completedAt < range.to)),
+          )
+          .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+          .slice(0, WAITING_LIMIT),
       };
     },
     async listRange(range) {
-      return single().filter(
-        (i) =>
-          (i.schedule.kind === "timed" && range.from <= i.schedule.start && i.schedule.start < range.to) ||
-          (i.schedule.kind === "day" && range.fromDate <= i.schedule.on && i.schedule.on < range.toDate),
-      );
+      return single()
+        .filter(
+          (i) =>
+            (i.schedule.kind === "timed" && range.from <= i.schedule.start && i.schedule.start < range.to) ||
+            (i.schedule.kind === "day" && range.fromDate <= i.schedule.on && i.schedule.on < range.toDate),
+        )
+        .slice(0, RANGE_LIMIT);
     },
     async listSeries() {
       return items.filter((i) => i.recurrence.kind === "series").slice(0, MAX_SERIES);

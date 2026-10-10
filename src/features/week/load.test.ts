@@ -30,7 +30,8 @@ describe("loadWeek", () => {
         toDate: "2026-10-12",
       },
     ]);
-    expect(calls.listForDay.map((r) => r.date)).toEqual(["2026-10-05"]);
+    // The tray is today's: what was ticked done today stays in it.
+    expect(calls.listForDay.map((r) => r.date)).toEqual(["2026-10-08"]);
     expect(week.days[0]).toBe("2026-10-05");
     expect(week.today).toBe("2026-10-08");
     expect(week.areas).toEqual([work]);

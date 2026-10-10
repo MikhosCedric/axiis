@@ -1,4 +1,5 @@
 import type { AreaId, DayRange, ShownItem } from "@/domain/item";
+import { WAITING_LIMIT } from "@/lib/items/repo";
 
 export const TITLE_MAX = 500;
 
@@ -10,6 +11,9 @@ export const WAITING = "Waiting";
 
 /** The tray with nothing in it. Things under "Any time" have a day, so this must not claim everything has one. */
 export const EMPTY_TRAY = "Nothing is waiting. What you capture lands here first.";
+
+/** Under a tray whose read hit `WAITING_LIMIT`, so older waiting items are not shown. */
+export const TRAY_FULL = `Showing the newest ${WAITING_LIMIT} waiting. Plan a few to see older ones.`;
 
 /** How an item reads on the day: dashed planned, solid live beam, hollow done. */
 export type BeamState = "planned" | "live" | "done";

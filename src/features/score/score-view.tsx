@@ -19,7 +19,7 @@ import { formatClock } from "@/features/today/format";
 import { Glyph } from "@/features/today/glyph";
 import { LineLegend } from "@/features/today/line-legend";
 import { SameInInbox } from "@/features/inbox/same-in-inbox";
-import { EMPTY_TRAY, WAITING, type BeamState, type TodayEntry, type TodayView } from "@/features/today/model";
+import { EMPTY_TRAY, TRAY_FULL, WAITING,type BeamState, type TodayEntry, type TodayView } from "@/features/today/model";
 import { instantAt, localMinutes } from "@/lib/dates";
 import type { ChildCount } from "@/lib/items/repo";
 import { keyPlacement, type DropContext, type Placement } from "./drop";
@@ -50,6 +50,7 @@ const KEYS_ID = "score-keys";
 
 export function ScoreView({
   view,
+  waitingFull,
   areas,
   date,
   timeZone,
@@ -63,6 +64,7 @@ export function ScoreView({
   onToggleDone,
 }: {
   view: TodayView;
+  waitingFull: boolean;
   areas: Area[];
   date: LocalDate;
   timeZone: string;
@@ -348,6 +350,7 @@ export function ScoreView({
         ) : (
           <p className="text-[13px] text-ink-3">{EMPTY_TRAY}</p>
         )}
+        {waitingFull && <p className="mt-3 text-[13px] text-ink-3">{TRAY_FULL}</p>}
       </section>
 
       <div ref={fly} hidden={!showFly} className={`${styles.chip} ${styles.fly}`} aria-hidden="true">
