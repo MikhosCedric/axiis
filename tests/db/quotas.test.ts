@@ -34,7 +34,7 @@ const CAPPED: Record<"items" | "links" | "tags" | "areas", Capped> = {
     addOne: (tx) => tx.query("insert into tags (name) values (left('extra' || gen_random_uuid(), 32))"),
   },
   areas: {
-    cap: 50,
+    cap: 100,
     // Signup already seeded three areas.
     fill: (userId, n) => bulk("insert into areas (user_id, name) select $1, 'f' || g from generate_series(1, $2 - 3) g")(userId, n),
     addOne: (tx) => tx.query("insert into areas (name) values (left('extra' || gen_random_uuid(), 40))"),
