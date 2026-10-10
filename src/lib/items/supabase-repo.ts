@@ -343,20 +343,38 @@ export class SupabaseItemsRepo implements ItemsRepo {
     return unwrap("listTagged", result, itemList);
   }
 
-  async addTag(itemId: ItemId, name: TagName): Promise<Tag> {
-    const named = async () => (await this.allTags()).find((t) => sameTag(t.name, name)) ?? null;
-    let tag = await named();
-    if (!tag) {
-      const made = await this.db.from("tags").insert({ name }).select(TAG_COLUMNS).single();
-      // Another request made the same tag first: the unique index on lower(name) refused this one, so use theirs.
-      tag = made.error?.code === UNIQUE_VIOLATION ? await named() : unwrap("addTag", made, tagRow.parse);
-      if (!tag) throw new ItemsRepoError(`items.addTag failed: no tag named ${name} after a clash`);
+  async listTagNames(): Promise<Tag[]> {
+    return this.allTags();
+  }
+
+  async addTags(itemId: ItemId, names: readonly TagName[]): Promise<Tag[]> {
+    const wanted = names.filter((n, i) => names.findIndex((m) => sameTag(m, n)) === i);
+    if (wanted.length === 0) return [];
+    const find = (known: Tag[]) => wanted.map((n) => known.find((t) => sameTag(t.name, n)) ?? null);
+    let tags = find(await this.allTags());
+    const missing = wanted.filter((_, i) => !tags[i]);
+    if (missing.length > 0) {
+      const made = await this.db.from("tags").insert(missing.map((name) => ({ name }))).select(TAG_COLUMNS);
+      // Another request made one of them first: the unique index on lower(name) refused the whole insert, so read theirs and make the rest.
+      if (made.error?.code === UNIQUE_VIOLATION) {
+        tags = find(await this.allTags());
+        const rest = wanted.filter((_, i) => !tags[i]);
+        if (rest.length > 0) {
+          const again = await this.db.from("tags").insert(rest.map((name) => ({ name }))).select(TAG_COLUMNS);
+          tags = find([...tags.filter((t) => t !== null), ...unwrap("addTags", again, tagList)]);
+        }
+      } else {
+        tags = find([...tags.filter((t) => t !== null), ...unwrap("addTags", made, tagList)]);
+      }
     }
-    const linked = await this.db
-      .from("item_tags")
-      .upsert({ item_id: itemId, tag_id: tag.id }, { onConflict: "item_id,tag_id", ignoreDuplicates: true });
-    unwrap("addTag", linked, () => undefined);
-    return tag;
+    const found = tags.filter((t) => t !== null);
+    if (found.length !== wanted.length) throw new ItemsRepoError("items.addTags failed: a tag was not there after it was made");
+    const linked = await this.db.from("item_tags").upsert(
+      found.map((t) => ({ item_id: itemId, tag_id: t.id })),
+      { onConflict: "item_id,tag_id", ignoreDuplicates: true },
+    );
+    unwrap("addTags", linked, () => undefined);
+    return found;
   }
 
   async removeTag(itemId: ItemId, tagId: TagId): Promise<void> {
