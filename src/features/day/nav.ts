@@ -1,4 +1,5 @@
-import { idSchema, type LocalDate } from "@/domain/item";
+import type { LocalDate } from "@/domain/item";
+import { parseItemKey } from "@/domain/item-key";
 import { formatDayHeading } from "@/features/today/format";
 import { addDays } from "@/lib/dates";
 import { DAY_VIEW_PARAM, SELECTED_ITEM_PARAM, type DayViewMode } from "./types";
@@ -15,7 +16,7 @@ export function readDayQuery(query: Record<string, string | string[] | undefined
   const item = query[SELECTED_ITEM_PARAM];
   return {
     mode: query[DAY_VIEW_PARAM] === "list" ? "list" : "score",
-    itemId: idSchema.safeParse(item).success ? (item as string) : null,
+    itemId: parseItemKey(item) ? (item as string) : null,
   };
 }
 
