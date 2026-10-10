@@ -1,10 +1,14 @@
 import type { ShownItem, ItemPatch, LocalDate, Schedule, SpanRange } from "@/domain/item";
 import { buildToday, type TodayEntry } from "@/features/today/model";
 import { addDays, dayRangeFor, instantAt, localMinutes, toLocalDate } from "@/lib/dates";
+import { RANGE_LIMIT } from "@/lib/items/repo";
 
 /** First day of the week, as `Date#getUTCDay` numbers it (0 is Sunday). One place, so it can become a setting. */
 export const WEEK_STARTS_ON = 1;
 export const WEEK_LENGTH = 7;
+
+/** Under a week whose read hit `RANGE_LIMIT`, so later planned items are not drawn. */
+export const WEEK_FULL = `Showing the first ${RANGE_LIMIT} planned items of this week. Later ones may be missing.`;
 
 /** The seven local dates of the week that holds `date`, first day first. */
 export function weekOf(date: LocalDate): LocalDate[] {

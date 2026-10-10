@@ -11,7 +11,7 @@ const HOME = "00000000-0000-4000-b000-000000000002" as TagId;
 const name = (s: string) => s as TagName;
 
 type Request = { method: string; table: string; params: URLSearchParams; body: unknown };
-type Reply = { status?: number; body: unknown };
+type Reply = { status?: number; body: unknown; headers?: Record<string, string> };
 
 /** A repo whose PostgREST requests are recorded and answered by `answer`. */
 function stubbed(answer: (r: Request, nth: number) => Reply = () => ({ body: [] })) {
@@ -28,7 +28,10 @@ function stubbed(answer: (r: Request, nth: number) => Reply = () => ({ body: [] 
         };
         requests.push(request);
         const reply = answer(request, requests.filter((r) => r.table === request.table && r.method === request.method).length);
-        return new Response(JSON.stringify(reply.body), { status: reply.status ?? 200, headers: { "content-type": "application/json" } });
+        return new Response(JSON.stringify(reply.body), {
+          status: reply.status ?? 200,
+          headers: { "content-type": "application/json", ...reply.headers },
+        });
       },
     },
   });
@@ -36,11 +39,13 @@ function stubbed(answer: (r: Request, nth: number) => Reply = () => ({ body: [] 
 }
 
 describe("SupabaseItemsRepo tags", () => {
-  it("counts only open, live items per tag, reading every page until one comes back empty", async () => {
+  it("counts only open, live items per tag, reading past the server's row cap", async () => {
     const page = (n: number, tag: string) => Array.from({ length: n }, () => ({ tag_id: tag, items: { id: ITEM } }));
     const { repo, requests } = stubbed((r, nth) => {
       if (r.table === "tags") return { body: [{ id: DEEP, name: "Deep" }, { id: HOME, name: "home" }] };
-      return { body: nth === 1 ? page(1000, DEEP) : nth === 2 ? [...page(3, DEEP), ...page(2, HOME)] : [] };
+      return nth === 1
+        ? { body: page(1000, DEEP), headers: { "content-range": "0-999/1005" } }
+        : { body: [...page(3, DEEP), ...page(2, HOME)], headers: { "content-range": "1000-1004/1005" } };
     });
 
     expect(await repo.listTags()).toEqual([
@@ -49,14 +54,12 @@ describe("SupabaseItemsRepo tags", () => {
     ]);
 
     const counts = requests.filter((r) => r.table === "item_tags");
-    expect(counts).toHaveLength(3);
     expect(counts[0].params.get("select")).toBe("tag_id,items!inner(id)");
     expect(counts[0].params.get("items.status")).toBe("eq.open");
     expect(counts[0].params.get("items.deleted_at")).toBe("is.null");
     expect(counts.map((r) => [r.params.get("offset"), r.params.get("limit")])).toEqual([
       ["0", "1000"],
       ["1000", "1000"],
-      ["1005", "1000"],
     ]);
   });
 

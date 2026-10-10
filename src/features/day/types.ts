@@ -19,6 +19,8 @@ export type DayData = {
   nowIso: string;
   areas: Area[];
   view: DayEntries;
+  /** The waiting read hit its cap, so older waiting items are not shown. */
+  waitingFull: boolean;
   /** Subtask totals for the items shown, keyed by parent id. */
   childCounts: Record<string, ChildCount>;
   /** Tag names on the items shown, by the id they are shown with. An occurrence wears its series' tags. */

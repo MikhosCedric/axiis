@@ -17,6 +17,14 @@ export const LISTS_LIMIT = 200;
 export const DUE_LIMIT = 200;
 /** Most items one read of what is left over from earlier days returns. */
 export const BEHIND_LIMIT = 50;
+/** Most waiting items (no day) one day read returns. */
+export const WAITING_LIMIT = 200;
+/**
+ * Most scheduled items one read of several days returns. Kept under
+ * PostgREST's own row cap (1000 on Supabase), so the cap never cuts a read
+ * short without the app knowing.
+ */
+export const RANGE_LIMIT = 500;
 
 export type ChildCount = { total: number; done: number };
 
@@ -27,12 +35,19 @@ export type ChildCount = { total: number; done: number };
 export interface ItemsRepo {
   listAreas(): Promise<Area[]>;
   /**
-   * Items on a day (timed in range, or day-only on the date) plus every top-level item with no schedule, notes excepted.
-   * Soft-deleted rows are excluded. Unscheduled subtasks are not returned: they live under their parent.
-   * A subtask with its own schedule is returned in `scheduled` like any other item.
+   * Items on a day (timed in range, or day-only on the date) plus the waiting
+   * ones: top-level items with no schedule, notes excepted, that are open or
+   * were done inside the range. Waiting ones come newest first, at most
+   * `WAITING_LIMIT`. Soft-deleted rows are excluded. Unscheduled subtasks are
+   * not returned: they live under their parent. A subtask with its own
+   * schedule is returned in `scheduled` like any other item.
    */
   listForDay(range: DayRange): Promise<{ scheduled: Item[]; unscheduled: Item[] }>;
-  /** Scheduled items across several days: timed in `[from, to)` or day-only in `[fromDate, toDate)`. Top-level and subtasks alike, soft-deleted excluded, ordered by time. */
+  /**
+   * Scheduled items across several days: timed in `[from, to)` or day-only in
+   * `[fromDate, toDate)`. Top-level and subtasks alike, soft-deleted excluded,
+   * at most `RANGE_LIMIT`: timed ones by start, then day-only ones by date.
+   */
   listRange(range: SpanRange): Promise<Item[]>;
   /**
    * Live series, at most `MAX_SERIES`, oldest first. `listForDay` and
@@ -62,11 +77,15 @@ export interface ItemsRepo {
    * first, at most `BEHIND_LIMIT`.
    */
   listBehind(range: DayRange): Promise<Item[]>;
-  /** Live overrides whose `originalOn` is in `[fromDate, toDate)`, skipped ones included, of one series when given. */
+  /**
+   * Live overrides whose `originalOn` is in `[fromDate, toDate)`, skipped ones
+   * included, of one series when given, by date. Every one: callers rewrite or
+   * subtract them, so a short read would be wrong rather than incomplete.
+   */
   listOverrides(fromDate: LocalDate, toDate: LocalDate, seriesId?: ItemId): Promise<Item[]>;
   /** Live children of one parent, ordered by position then creation. */
   listChildren(parentId: ItemId): Promise<Item[]>;
-  /** Live child totals and done counts, keyed by parent id. Parents with no children are absent. */
+  /** Live child totals and done counts, keyed by parent id, counting every child. Parents with no children are absent. */
   childCounts(parentIds: ItemId[]): Promise<Record<string, ChildCount>>;
   get(id: ItemId): Promise<Item | null>;
   create(input: NewItem): Promise<Item>;
@@ -75,7 +94,7 @@ export interface ItemsRepo {
 
   /** Every tag, with how many open live items carry it. Unordered. Limits and name rules live in the tag commands. */
   listTags(): Promise<TagSummary[]>;
-  /** The tags on each item, keyed by item id, in one read for any number of items. Items with none are absent. */
+  /** Every tag on each item, keyed by item id. Items with none are absent. */
   tagsForItems(ids: ItemId[]): Promise<Record<string, Tag[]>>;
   /** Live items carrying a tag, open first, then done, newest first, at most `TAGGED_LIMIT`. Dropped ones are left out. */
   listTagged(tagId: TagId): Promise<Item[]>;

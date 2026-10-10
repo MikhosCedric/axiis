@@ -5,7 +5,7 @@ import { tagsOfShown } from "@/features/tags/commands";
 import { buildToday } from "@/features/today/model";
 import { addDays, dayRangeFor, isSameDay } from "@/lib/dates";
 import { loadOccurrences } from "@/lib/items/occurrences";
-import type { ItemsRepo } from "@/lib/items/repo";
+import { WAITING_LIMIT, type ItemsRepo } from "@/lib/items/repo";
 import type { DayData } from "./types";
 
 export async function loadDay(repo: ItemsRepo, date: LocalDate, now: Date, timeZone: string): Promise<DayData> {
@@ -31,6 +31,7 @@ export async function loadDay(repo: ItemsRepo, date: LocalDate, now: Date, timeZ
     nowIso: now.toISOString(),
     areas,
     view,
+    waitingFull: items.unscheduled.length >= WAITING_LIMIT,
     childCounts,
     tags,
     cadences: Object.fromEntries(
