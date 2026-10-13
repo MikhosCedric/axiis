@@ -27,7 +27,10 @@ export function AppearanceSection({ initial }: { initial: Density }) {
       <h2 id="appearance-heading" className="font-serif text-xl font-medium">
         Density
       </h2>
-      <p className="mt-1.5 max-w-[60ch] text-ink-2">How close the rows of a list sit. This device only.</p>
+      <p className="mt-1.5 max-w-[60ch] text-ink-2">
+        How close the rows of a list sit. Compact tightens list rows only; the Score&rsquo;s staves and the Week stay as
+        they are. This device only.
+      </p>
       <div role="group" aria-label="Density" className="mt-4 inline-flex overflow-hidden rounded-lg border border-rule">
         {DENSITIES.map((d) => (
           <button
