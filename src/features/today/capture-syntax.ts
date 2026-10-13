@@ -298,9 +298,32 @@ export function capturedLine(result: Captured, where: "field" | "palette"): stri
   if (result.type === "checklist") return "Captured. It is open, ready for its lines.";
   const tags = result.tags.length ? ` with ${tagList(result.tags)}` : "";
   const what = where === "palette" ? `Captured “${result.title}”` : "Captured";
-  const line = result.plan
-    ? `${where === "palette" ? `${what}. ` : ""}Planned for ${result.plan}${tags ? `,${tags}` : ""}.`
+  const { landed } = result;
+  const plan = landed && (landed.time ? `${landed.day}, ${landed.time.start}${landed.time.end ? ` to ${landed.time.end}` : ""}` : landed.day);
+  const line = plan
+    ? `${where === "palette" ? `${what}. ` : ""}Planned for ${plan}${tags ? `,${tags}` : ""}.`
     : `${what}${tags}. It is waiting for a time${where === "palette" ? " on Today" : ", below"}.`;
-  if (!result.missed.length) return line;
-  return `${line} ${result.missed.length === 1 ? "The tag" : "The tags"} ${tagList(result.missed)} did not save.`;
+  return line + missedLine(result);
+}
+
+function missedLine({ missed }: Captured): string {
+  return missed.length ? ` ${missed.length === 1 ? "The tag" : "The tags"} ${tagList(missed)} did not save.` : "";
+}
+
+/**
+ * The status line after an account's first capture ever: what capture
+ * understood, as a sentence, and a link to where the item went. A day's link
+ * names that day; a capture with no day goes to the Inbox.
+ */
+export function firstCapturedLine(result: Captured): { text: string; link: { href: string; label: string } } {
+  const { landed } = result;
+  const title = result.title.charAt(0).toUpperCase() + result.title.slice(1);
+  const tags = result.tags.length ? `, tagged ${tagList(result.tags)}` : "";
+  if (!landed) return { text: `${title} is waiting, with no day yet${tags}.${missedLine(result)}`, link: { href: "/inbox", label: "See the Inbox" } };
+  const day = landed.day === "today" || landed.day === "tomorrow" ? landed.day : `on ${landed.day}`;
+  const time = !landed.time ? ", at any time" : landed.time.end ? ` from ${landed.time.start} to ${landed.time.end}` : ` at ${landed.time.start}`;
+  return {
+    text: `${title} is ${day}${time}${tags}.${missedLine(result)}`,
+    link: { href: landed.day === "today" ? "/today" : `/day/${landed.on}`, label: `See ${landed.day}` },
+  };
 }
