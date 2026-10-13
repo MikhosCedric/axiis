@@ -200,7 +200,7 @@ export function DetailHarness({ itemId, timeZone }: { itemId: string | null; tim
         </label>
       </main>
       {current && (
-        <div className="border-t border-rule px-4 pt-5 pb-10 rail:border-t-0 rail:border-l rail:px-6 rail:pt-8">
+        <aside aria-label="Details" className="border-t border-rule px-4 pt-5 pb-10 rail:border-t-0 rail:border-l rail:px-6 rail:pt-8">
           {current.view ? (
             <DetailSheet
               key={current.key}
@@ -211,7 +211,7 @@ export function DetailHarness({ itemId, timeZone }: { itemId: string | null; tim
           ) : (
             <MissingItem />
           )}
-        </div>
+        </aside>
       )}
     </div>
   );

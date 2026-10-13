@@ -1,6 +1,7 @@
-// zod/mini: the panel's client code imports this module, and classic zod ships every locale with it.
+// zod/mini: the panel client code imports this module, and classic zod ships every locale with it.
 import * as z from "zod/mini";
-import { localDateSchema, type LocalDate } from "@/domain/item";
+import { planDateSchema, type LocalDate } from "@/domain/item";
+import { addDays, utcMidnight } from "@/lib/dates";
 import { MAX_COUNT, WEEKDAYS, type Rule, type RuleEnd, type Weekday } from "@/domain/recurrence";
 import { formatDayIn } from "@/features/today/format";
 import { dayWords } from "@/features/inbox/model";
@@ -27,7 +28,7 @@ export const repeatSchema = z.object({
   end: z._default(
     z.discriminatedUnion("kind", [
       z.object({ kind: z.literal("never") }),
-      z.object({ kind: z.literal("until"), on: localDateSchema }),
+      z.object({ kind: z.literal("until"), on: planDateSchema }),
       z.object({ kind: z.literal("count"), count: z.int().check(z.minimum(1), z.maximum(MAX_COUNT)) }),
     ]),
     { kind: "never" },
@@ -81,7 +82,7 @@ const UNIT = { daily: "day", weekly: "week", monthly: "month", yearly: "year" } 
 
 /** The weekday of a local date, as a rule names it. */
 export function weekdayOf(date: LocalDate): Weekday {
-  return WEEKDAYS[(new Date(`${date}T00:00:00Z`).getUTCDay() + 6) % 7];
+  return WEEKDAYS[(new Date(utcMidnight(date)).getUTCDay() + 6) % 7];
 }
 
 function listDays(days: Weekday[]): string {
@@ -98,23 +99,56 @@ export function cadence(rule: Rule, firstOn: LocalDate | null): string {
   return days.length > 0 ? `${every} on ${listDays(days)}` : every;
 }
 
+/** The first date on or after `from` that a rule repeats on: a weekday rule set on a Saturday starts on Monday. */
+export function firstOccurrence(rule: Rule, from: LocalDate): LocalDate {
+  if (rule.freq !== "weekly" || rule.byDay.length === 0) return from;
+  let on = from;
+  while (!rule.byDay.includes(weekdayOf(on))) on = addDays(on, 1);
+  return on;
+}
+
 /**
  * What the status line says when something starts repeating: "Repeats every day
- * from today". A waiting item starts today, as `setRepeat` puts it there.
+ * from today", or "Repeats every weekday, starting Monday 12 October" when its
+ * own day is not one. A waiting item starts today, as `setRepeat` puts it there.
  */
 export function startsRepeating(choice: RepeatChoice, day: LocalDate | null, today: LocalDate): string | null {
   if (choice.preset === "none") return null;
   const from = day ?? today;
-  return `Repeats ${cadence(ruleFor(choice.preset, choice.end), from)} from ${dayWords(from, today)}.`;
+  const rule = ruleFor(choice.preset, choice.end);
+  const first = firstOccurrence(rule, from);
+  const every = cadence(rule, from);
+  const starts = first === from ? `Repeats ${every} from ${dayWords(from, today)}.` : `Repeats ${every}, starting ${dayWords(first, today)}.`;
+  const note = skippedNote(rule, first);
+  return note ? `${starts} ${note}` : starts;
+}
+
+/**
+ * The months or years a rule passes over because they lack its date: a
+ * monthly rule on the 31st has nothing in April, and a yearly one on
+ * 29 February only comes in leap years. Null when every one has it.
+ */
+function skippedNote(rule: Rule, firstOn: LocalDate | null): string | null {
+  if (!firstOn) return null;
+  const [, month, day] = firstOn.split("-").map(Number);
+  if (rule.freq === "monthly" && day >= 29) return `Months with no ${day === 31 ? "31st" : `${day}th`} are skipped.`;
+  if (rule.freq === "yearly" && month === 2 && day === 29) return "Years with no 29 February are skipped.";
+  return null;
 }
 
 /**
  * A plain sentence for a rule, such as "Every 2 weeks on Monday, until
- * Thursday 31 December". An end in another year than `today` names its year.
+ * Thursday 31 December", followed by any months or years it skips. An end in
+ * another year than `today` names its year.
  */
 export function describeRule(rule: Rule, firstOn: LocalDate | null, today: LocalDate): string {
   const every = `E${cadence(rule, firstOn).slice(1)}`;
-  if (rule.end.kind === "until") return `${every}, until ${formatDayIn(rule.end.on, today)}`;
-  if (rule.end.kind === "count") return `${every}, ${rule.end.count === 1 ? "once" : `${rule.end.count} times`}`;
-  return every;
+  const ends =
+    rule.end.kind === "until"
+      ? `${every}, until ${formatDayIn(rule.end.on, today)}`
+      : rule.end.kind === "count"
+        ? `${every}, ${rule.end.count === 1 ? "once" : `${rule.end.count} times`}`
+        : every;
+  const note = skippedNote(rule, firstOn);
+  return note ? `${ends}. ${note}` : ends;
 }

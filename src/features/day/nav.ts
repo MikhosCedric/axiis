@@ -1,6 +1,7 @@
-import { idSchema, type LocalDate } from "@/domain/item";
-import { formatDayHeading } from "@/features/today/format";
-import { addDays } from "@/lib/dates";
+import type { LocalDate } from "@/domain/item";
+import { parseItemKey } from "@/domain/item-key";
+import { formatDayHeading, yearOf } from "@/features/today/format";
+import { addDays, parseLocalDate } from "@/lib/dates";
 import { DAY_VIEW_PARAM, SELECTED_ITEM_PARAM, type DayViewMode } from "./types";
 
 /** Today lives at `/today` so the address stays stable; other days at `/day/<date>`. Any selection is dropped. */
@@ -9,13 +10,28 @@ export function dayHref(date: LocalDate, today: LocalDate, mode: DayViewMode): s
   return mode === "list" ? `${path}?${DAY_VIEW_PARAM}=list` : path;
 }
 
+/**
+ * True for `/day/<x>` where x is no day Axiis plans on. The proxy answers it
+ * with a real 404: the page's own notFound() comes after the app's loading
+ * screen has started the stream, when the status can no longer change.
+ */
+export function namesNoDay(pathname: string): boolean {
+  const match = /^\/day\/([^/]*)\/?$/.exec(pathname);
+  if (!match) return false;
+  try {
+    return parseLocalDate(decodeURIComponent(match[1])) === null;
+  } catch {
+    return true;
+  }
+}
+
 export type DayQuery = { mode: DayViewMode; itemId: string | null };
 
 export function readDayQuery(query: Record<string, string | string[] | undefined>): DayQuery {
   const item = query[SELECTED_ITEM_PARAM];
   return {
     mode: query[DAY_VIEW_PARAM] === "list" ? "list" : "score",
-    itemId: idSchema.safeParse(item).success ? (item as string) : null,
+    itemId: parseItemKey(item) ? (item as string) : null,
   };
 }
 
@@ -50,5 +66,5 @@ export function isTypingTarget(el: { tagName: string; isContentEditable: boolean
 
 /** "Tuesday 6 October 2026", for the document title. */
 export function dayTitle(date: LocalDate): string {
-  return `${formatDayHeading(date)} ${date.slice(0, 4)}`;
+  return `${formatDayHeading(date)} ${yearOf(date)}`;
 }

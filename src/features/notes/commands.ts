@@ -33,9 +33,13 @@ const MISSING = "That note is not here any more.";
 const NOT_SAVED = SAVE_FAILED;
 const TOO_LARGE = "This note is too long to save. Try splitting it in two.";
 
-/** Parses a search box value, or null when there is nothing worth searching for. */
+/**
+ * Parses a search box value, or null when there is nothing worth searching for.
+ * Control characters become spaces: HTML cannot carry a NUL, so a query holding
+ * one renders differently on the server and in the browser.
+ */
 export function parseQuery(raw: unknown): string | null {
-  const q = querySchema.safeParse(raw);
+  const q = querySchema.safeParse(typeof raw === "string" ? raw.replace(/[\u0000-\u001f\u007f]/g, " ") : raw);
   return q.success ? q.data : null;
 }
 

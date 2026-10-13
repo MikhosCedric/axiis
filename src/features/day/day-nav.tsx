@@ -7,7 +7,7 @@ import type { LocalDate } from "@/domain/item";
 import { formatDayHeading } from "@/features/today/format";
 import { weekHref } from "@/features/week/model";
 import { SpanSwitch } from "@/features/week/span-switch";
-import { parseLocalDate } from "@/lib/dates";
+import { FIRST_DATE, LAST_DATE, parseLocalDate } from "@/lib/dates";
 import { dayHref, isTypingTarget, navTarget, shortcutAction } from "./nav";
 import type { DayViewMode } from "./types";
 
@@ -105,8 +105,8 @@ function DatePicker({ date, onPick }: { date: LocalDate; onPick: (date: LocalDat
         id="day-picker"
         type="date"
         required
-        min="1000-01-01"
-        max="9999-12-31"
+        min={FIRST_DATE}
+        max={LAST_DATE}
         value={value}
         onPointerDown={() => (typed.current = false)}
         onKeyDown={(e: ReactKeyboardEvent<HTMLInputElement>) => {

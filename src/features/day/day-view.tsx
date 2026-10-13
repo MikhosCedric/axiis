@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useOptimistic, useState, useTransition, type ReactNode } from "react";
+import { Fragment, useEffect, useMemo, useOptimistic, useState, useTransition, type ReactNode } from "react";
 import type { ShownItem } from "@/domain/item";
 import { selectedIn, type ItemKey } from "@/domain/item-key";
 import { setTimeAction } from "@/features/detail/actions";
@@ -186,7 +186,8 @@ export function DayView({
     <div className={selectedParam ? "min-[1180px]:grid min-[1180px]:grid-cols-[minmax(0,1fr)_328px]" : ""}>
       <div className="min-w-0 px-4 pt-6 pb-14 rail:px-9 rail:pt-8">
         <header className="flex flex-col-reverse gap-3 rail:flex-row-reverse rail:items-start rail:justify-between rail:gap-6">
-          {nav}
+          {/* A server element can arrive late as a lazy chunk, which React then checks for a key among its siblings. */}
+          <Fragment key="nav">{nav}</Fragment>
           <div className="min-w-0">
             <h1 className="font-serif text-[clamp(28px,3vw,40px)] leading-[1.1] font-medium tracking-[-0.015em] text-balance">
               <time dateTime={date}>{formatDayHeading(date)}</time>
