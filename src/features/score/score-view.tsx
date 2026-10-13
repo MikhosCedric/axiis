@@ -124,6 +124,7 @@ export function ScoreView({
   }, [view, areas, date, timeZone, nowMinutes, preview, landing, room]);
   const { axis, staves } = score;
   const examples = useMemo(() => (firstDay ? exampleBeams(areas) : []), [firstDay, areas]);
+  const empty = staves.every((s) => s.beams.length === 0);
   const ctx: DropContext = { date, timeZone, axis, now: nowMinutes };
   const start = useScoreDrag(
     { scroller, layer, tray, anyTime: strip, fly },
@@ -253,7 +254,15 @@ export function ScoreView({
         </div>
       </div>
 
-      <div ref={scroller} onScroll={syncAxis} className="overflow-x-auto overflow-y-hidden border-b border-rule">
+      {/* With no beam to tab to, the hours take focus themselves, so a keyboard can still scroll them. */}
+      <div
+        ref={scroller}
+        onScroll={syncAxis}
+        tabIndex={empty ? 0 : undefined}
+        role={empty ? "region" : undefined}
+        aria-label={empty ? "Hours of the day" : undefined}
+        className="overflow-x-auto overflow-y-hidden border-b border-rule"
+      >
         <div className="relative" style={{ width: `calc(var(--lw) + ${width}px)` }}>
           {staves.map((staff, i) => (
             <div key={staff.areaId ?? "none"} className="flex border-b border-rule last:border-b-0">

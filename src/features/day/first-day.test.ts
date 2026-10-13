@@ -31,9 +31,12 @@ describe("exampleBeams", () => {
   });
 
   it("orders areas by position, not by the order they arrive in", () => {
-    const [work, home] = areas("Studio", "Garden");
-    expect(shown([{ ...home, position: 0 }, { ...work, position: 1 }]).map((r) => r[0])).toEqual(["Garden", "Studio"]);
-    expect(shown([{ ...home, position: 0 }, { ...work, position: 1 }])[0][1]).toBe("Write the plan");
+    const [studio, garden, desk, shed] = areas("Studio", "Garden", "Desk", "Shed");
+    expect(shown([shed, garden, desk, studio]).map((r) => r.slice(0, 2))).toEqual([
+      ["Studio", "Write the plan"],
+      ["Garden", "Groceries"],
+      ["Desk", "Walk"],
+    ]);
   });
 
   it("draws at most three, and none without areas", () => {
