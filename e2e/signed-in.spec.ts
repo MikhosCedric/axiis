@@ -44,6 +44,27 @@ signedIn.describe("signed in", () => {
     });
   }
 
+  for (const path of [
+    "/tags/errands",
+    "/tags/no-such-tag",
+    "/notes/e2e00000-0000-4000-8000-000000000005",
+    "/notes/e2e00000-0000-4000-8000-000000000999",
+  ]) {
+    signedIn(`${path} has one h1`, async ({ page }) => {
+      await page.goto(path);
+      await expect(page.locator("main")).toBeVisible();
+      await expect(page.getByRole("heading", { level: 1 })).toHaveCount(1);
+    });
+  }
+
+  for (const id of ["e2e00000-0000-4000-8000-000000000001", "e2e00000-0000-4000-8000-000000000999"]) {
+    signedIn(`an open item (${id.slice(-3)}) sits in one Details landmark, not one inside another`, async ({ page }) => {
+      await page.goto(`/tags/errands?item=${id}`);
+      await expect(page.getByRole("complementary", { name: "Details" })).toBeVisible();
+      await expect(page.getByRole("complementary")).toHaveCount(1);
+    });
+  }
+
   signedIn("the landing page and /login send the account to Today", async ({ page }) => {
     await page.goto("/");
     await expect(page).toHaveURL("/today");
@@ -131,7 +152,7 @@ signedIn.describe("signed in", () => {
       await context.addCookies([{ name: "tz", value: encodeURIComponent("America/New_York"), url: baseURL }]);
     });
 
-    const details = (page: Page) => page.getByRole("complementary", { name: "Details" }).first();
+    const details = (page: Page) => page.getByRole("complementary", { name: "Details" });
     const when = (page: Page) => details(page).locator("dt", { hasText: "When" }).locator("+ dd > span").first();
 
     async function timeOnDay(page: Page, day: string, title: string) {
