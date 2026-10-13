@@ -48,7 +48,7 @@ export function TaggedView({
         <Link href={indexHref} className="-ml-2 rounded-md px-2 py-1 text-[13px] text-ink-2 hover:bg-hover active:bg-press hover:text-ink">
           All tags
         </Link>
-        <h1 className="mt-2 font-serif text-[clamp(28px,3vw,40px)] leading-[1.1] font-medium tracking-[-0.015em] break-words">
+        <h1 className="mt-2 headline break-words">
           <span aria-hidden="true" className="text-ink-3">
             #
           </span>

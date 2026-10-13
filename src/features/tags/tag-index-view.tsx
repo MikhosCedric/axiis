@@ -6,7 +6,7 @@ import { openCount, tagHref } from "./model";
 export function TagIndexView({ tags, hrefFor = tagHref }: { tags: TagSummary[]; hrefFor?: (name: string) => string }) {
   return (
     <div className="max-w-[760px] px-4 pt-6 pb-14 rail:px-9 rail:pt-8">
-      <h1 className="font-serif text-[clamp(28px,3vw,40px)] leading-[1.1] font-medium tracking-[-0.015em]">Tags</h1>
+      <h1 className="headline">Tags</h1>
       <p className="mt-2.5 text-[15px] text-ink-2">
         {tags.length === 0
           ? "No tags yet. Add one from any item's details."

@@ -126,7 +126,7 @@ export function InboxView({
           <h1
             ref={heading}
             tabIndex={-1}
-            className="font-serif text-[clamp(28px,3vw,40px)] leading-[1.1] font-medium tracking-[-0.015em] outline-none"
+            className="headline outline-none"
           >
             Inbox
           </h1>

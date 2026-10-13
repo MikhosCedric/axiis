@@ -85,6 +85,16 @@
   --breakpoint-rail: 760px;
 }
 
+/* The Headline type step: every app page title. */
+@utility headline {
+  font-family: var(--font-serif);
+  font-size: clamp(28px, 3vw, 40px);
+  font-weight: 500;
+  line-height: 1.1;
+  letter-spacing: -0.015em;
+  text-wrap: balance;
+}
+
 /* A text control inside a row: under a coarse pointer its hit area reaches 44px tall without moving the text. */
 @utility tap-y {
   @media (pointer: coarse) {
