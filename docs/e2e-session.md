@@ -25,6 +25,8 @@ The guard's tests are mutation-checked: removing or weakening any condition abov
 
 `POST /dev/e2e-session` resets the fixtures. It answers 404 without the fake session. The e2e warm-up calls it once per run.
 
+A second cookie, `axiis-e2e-account=empty`, picks a second in-memory account that has the three seeded areas and no items, so a test can see the first-day state without emptying the account every other spec shares. The reset route resets whichever account the cookie picks. The cookie does nothing without the session cookie, and `check:no-fake-session` searches the build for its name too.
+
 ## Why production cannot reach it
 
 Every function body in `fake-session.ts` sits inside `if (process.env.NODE_ENV === "development")`. A production build inlines `"production"` there, so the bundler drops the branch, the cookie name, the env names and the dynamic import of `fake-account.ts`.

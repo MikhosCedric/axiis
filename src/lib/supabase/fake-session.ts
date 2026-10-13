@@ -29,11 +29,15 @@ export function requestHasFakeSession(request: NextRequest): boolean {
   return false;
 }
 
-/** Server only. The in-memory account when this request carries the browser-test session, else null. */
+/**
+ * Server only. The in-memory account when this request carries the browser-test session, else null.
+ * An `axiis-e2e-account=empty` cookie picks a second account that starts with no items, for first-day tests.
+ */
 export async function getFakeAccount(): Promise<FakeAccount | null> {
   if (process.env.NODE_ENV === "development") {
-    if (!isFakeSession((await cookies()).get("axiis-e2e-session")?.value)) return null;
-    return (await import("./fake-account")).fakeAccount();
+    const jar = await cookies();
+    if (!isFakeSession(jar.get("axiis-e2e-session")?.value)) return null;
+    return (await import("./fake-account")).fakeAccount(jar.get("axiis-e2e-account")?.value === "empty" ? "empty" : "fixtures");
   }
   return null;
 }

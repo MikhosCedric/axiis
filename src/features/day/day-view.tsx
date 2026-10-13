@@ -103,6 +103,7 @@ export function DayView({
     [items, range, now],
   );
   const nowMinutes = isToday ? localMinutes(now, date, timeZone) : null;
+  const firstDay = data.firstDay && items.length === 0;
   const areaName = (id: string | null | undefined) => areas.find((a) => a.id === id)?.name ?? "No area";
 
   function replaceParam(key: string, value: string | null) {
@@ -198,7 +199,7 @@ export function DayView({
 
         <div className="mt-6 flex flex-wrap items-start gap-x-3 gap-y-1">
           <div className="min-w-0 flex-[1_1_280px] rail:max-w-[440px]">
-            <CaptureField captureAction={actions.capture} />
+            <CaptureField captureAction={actions.capture} firstDay={firstDay} />
           </div>
           <div role="group" aria-label="View" className="inline-flex overflow-hidden rounded-lg border border-rule">
             {MODES.map(({ mode: m, label }) => (
@@ -237,7 +238,7 @@ export function DayView({
         )}
 
         {shownMode === "score" ? (
-          <ScoreView {...shared} date={date} nowMinutes={nowMinutes} onPlace={place} />
+          <ScoreView {...shared} date={date} nowMinutes={nowMinutes} firstDay={firstDay} onPlace={place} />
         ) : (
           <ListView {...shared} />
         )}

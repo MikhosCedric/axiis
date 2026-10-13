@@ -12,6 +12,7 @@ const PAGES = [
   "/dev/score?view=list&item=f0000000-0000-4000-8000-000000000006",
   "/dev/score?view=list&item=f0000000-0000-4000-8000-000000000007",
   "/dev/score?tray=empty",
+  "/dev/score?firstday",
   "/dev/week",
   "/dev/inbox",
   "/dev/inbox?empty",
