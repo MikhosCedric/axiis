@@ -7,7 +7,7 @@
 web
 
 ## Stack
-Next.js (App Router) + TypeScript, Supabase (Postgres, Auth, Row Level Security, Realtime, Storage), TanStack Query with an IndexedDB persister, Tiptap for notes, Tailwind + Radix primitives, Zod at boundaries, Vitest + Playwright, hosted on Vercel + Supabase. Cloud-first, individual users only.
+Next.js (App Router, server-rendered with Server Actions) + TypeScript, Supabase (Postgres, Auth, Row Level Security), Tiptap for notes, Tailwind, Zod at boundaries (zod/mini in modules the browser loads), Vitest + Playwright, hosted on Vercel + Supabase. Cloud-first, individual users only. There is no client cache or offline layer: every read and write needs a connection. Offline capture is on the roadmap, not built (ADR-0001).
 
 ## Users
 A busy individual running work and personal life together, who currently splits it across a to-do app, a calendar and a notes app and loses things between them. Solo use; no collaboration in v1.
