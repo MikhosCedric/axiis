@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { LocalDate } from "@/domain/item";
-import { collectExport, exportFilename, readAll, serializeExport, type ExportTable, type PageReader } from "./export";
+import { exportChunks, exportFilename, pages, type AxiisExport, type ExportTable, type ExportUser, type PageReader } from "./export";
 
 const USER = "6f1c2a9e-4b7d-4c8e-9a1f-2d3e4f5a6b7c";
 const AREA = "0b6e1c5d-2f3a-4e8b-8c7d-1a2b3c4d5e6f";
@@ -10,8 +10,9 @@ const TAG = "3b6e1c5d-2f3a-4e8b-8c7d-1a2b3c4d5e6f";
 const LINK = "4b6e1c5d-2f3a-4e8b-8c7d-1a2b3c4d5e6f";
 const T = "2026-10-06T08:00:00.123456+00:00";
 const ISO = "2026-10-06T08:00:00.123Z";
+const OWNER: ExportUser = { id: USER, email: "ana@example.com", createdAt: "2026-01-02T03:04:05.000Z" };
 
-const rows = {
+const rows: Record<ExportTable, unknown[]> = {
   areas: [{ id: AREA, name: "Work", position: 1, created_at: T, updated_at: T, deleted_at: "2026-10-07T01:00:00+08:00" }],
   items: [
     {
@@ -62,13 +63,31 @@ const rows = {
   item_tags: [{ item_id: ITEM, tag_id: TAG, created_at: T, updated_at: T }],
 };
 
-describe("serializeExport", () => {
-  it("writes every table in camelCase with ISO timestamps", () => {
-    const doc = serializeExport({ userId: USER, exportedAt: new Date("2026-10-06T12:00:00Z"), rows });
+/** A paged source over fixed rows that, like a capped server, returns at most `cap` rows per call. */
+function source(tables: Record<ExportTable, unknown[]>, cap = Infinity) {
+  const calls: [ExportTable, number, number][] = [];
+  const read: PageReader = async (table, from, to) => {
+    calls.push([table, from, to]);
+    return tables[table].slice(from, Math.min(to + 1, from + cap));
+  };
+  return { read, calls };
+}
+
+async function text(chunks: AsyncIterable<string>): Promise<string> {
+  let out = "";
+  for await (const chunk of chunks) out += chunk;
+  return out;
+}
+
+const exportedAt = new Date("2026-10-06T12:00:00Z");
+
+describe("exportChunks", () => {
+  it("writes every table in camelCase with ISO timestamps and names the account", async () => {
+    const doc: AxiisExport = JSON.parse(await text(exportChunks(source(rows).read, { user: OWNER, exportedAt })));
     expect(doc).toEqual({
       version: 1,
       exportedAt: "2026-10-06T12:00:00.000Z",
-      user: { id: USER },
+      user: OWNER,
       areas: [{ id: AREA, name: "Work", position: 1, createdAt: ISO, updatedAt: ISO, deletedAt: "2026-10-06T17:00:00.000Z" }],
       items: [
         {
@@ -100,34 +119,54 @@ describe("serializeExport", () => {
     });
   });
 
-  it("survives a JSON round trip unchanged", () => {
-    const doc = serializeExport({ userId: USER, exportedAt: new Date(), rows });
-    expect(JSON.parse(JSON.stringify(doc))).toEqual(doc);
+  it("writes valid JSON for an account with nothing in it", async () => {
+    const empty = { areas: [], items: [], links: [], tags: [], item_tags: [] };
+    const user = { id: USER, email: null, createdAt: null };
+    expect(JSON.parse(await text(exportChunks(source(empty).read, { user, exportedAt })))).toEqual({
+      version: 1,
+      exportedAt: "2026-10-06T12:00:00.000Z",
+      user,
+      areas: [],
+      items: [],
+      links: [],
+      tags: [],
+      itemTags: [],
+    });
   });
 
-  it("refuses a row that is missing a column rather than exporting it partly", () => {
+  it("sends one chunk per page, so the whole account is never one string", async () => {
+    const many = { ...rows, tags: Array.from({ length: 2500 }, (_, i) => ({ id: `t${i}`, name: `n${i}`, created_at: T, updated_at: T })) };
+    const chunks: string[] = [];
+    for await (const chunk of exportChunks(source(many).read, { user: OWNER, exportedAt }, 1000)) chunks.push(chunk);
+    expect(chunks.length).toBeGreaterThanOrEqual(7);
+    const doc: AxiisExport = JSON.parse(chunks.join(""));
+    expect(doc.tags.map((t) => t.name)).toEqual(Array.from({ length: 2500 }, (_, i) => `n${i}`));
+  });
+
+  it("reads before it sends anything, so a failed first read never starts a download", async () => {
+    const read: PageReader = async () => {
+      throw new Error("down");
+    };
+    await expect(exportChunks(read, { user: OWNER, exportedAt }).next()).rejects.toThrow("down");
+  });
+
+  it("stops rather than exporting a row that is missing a column", async () => {
     const broken = { ...rows, tags: [{ id: TAG, created_at: T, updated_at: T }] };
-    expect(() => serializeExport({ userId: USER, exportedAt: new Date(), rows: broken })).toThrow();
+    await expect(text(exportChunks(source(broken).read, { user: OWNER, exportedAt }))).rejects.toThrow();
   });
 });
 
-/** A paged source over `n` rows per table that, like a capped server, returns at most `cap` rows per call. */
-function pagedSource(n: number, cap = Infinity) {
-  const calls: [ExportTable, number, number][] = [];
-  const read: PageReader = async (table, from, to) => {
-    calls.push([table, from, to]);
-    const end = Math.min(to + 1, n, from + cap);
-    return Array.from({ length: Math.max(0, end - from) }, (_, i) => ({ table, n: from + i }));
-  };
-  return { read, calls };
-}
+describe("pages", () => {
+  const numbered = (n: number) => ({ ...rows, items: Array.from({ length: n }, (_, i) => i) });
+  async function all(read: PageReader, table: ExportTable) {
+    const out: unknown[] = [];
+    for await (const page of pages(read, table)) out.push(...page);
+    return out;
+  }
 
-describe("readAll", () => {
   it("reads in pages of 1000 until a page comes back empty", async () => {
-    const { read, calls } = pagedSource(2500);
-    const all = await readAll(read, "items");
-    expect(all).toHaveLength(2500);
-    expect(all.map((r) => (r as { n: number }).n)).toEqual(Array.from({ length: 2500 }, (_, i) => i));
+    const { read, calls } = source(numbered(2500));
+    expect(await all(read, "items")).toEqual(Array.from({ length: 2500 }, (_, i) => i));
     expect(calls).toEqual([
       ["items", 0, 999],
       ["items", 1000, 1999],
@@ -137,26 +176,13 @@ describe("readAll", () => {
   });
 
   it("keeps going when the server returns fewer rows than asked for", async () => {
-    const { read } = pagedSource(2500, 300);
-    expect(await readAll(read, "items")).toHaveLength(2500);
+    const { read } = source(numbered(2500), 300);
+    expect(await all(read, "items")).toHaveLength(2500);
   });
 
   it("reads exactly a full page and stops", async () => {
-    const { read } = pagedSource(1000);
-    expect(await readAll(read, "tags")).toHaveLength(1000);
-  });
-});
-
-describe("collectExport", () => {
-  it("reads every table and serializes what it read", async () => {
-    const tables: ExportTable[] = [];
-    const read: PageReader = async (table, from) => {
-      if (from === 0) tables.push(table);
-      return from === 0 ? rows[table] : [];
-    };
-    const doc = await collectExport(read, { userId: USER, exportedAt: new Date("2026-10-06T12:00:00Z") });
-    expect(tables.sort()).toEqual(["areas", "item_tags", "items", "links", "tags"]);
-    expect([doc.areas, doc.items, doc.links, doc.tags, doc.itemTags].map((t) => t.length)).toEqual([1, 2, 1, 1, 1]);
+    const { read } = source(numbered(1000));
+    expect(await all(read, "items")).toHaveLength(1000);
   });
 });
 

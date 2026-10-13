@@ -144,6 +144,7 @@ signedIn.describe("signed in", () => {
     const exported = await request.get("/settings/export", { headers: sessionHeader() });
     expect(exported.status()).toBe(200);
     const body = await exported.json();
+    expect(body.user.email).toBe("e2e@axiis.invalid");
     expect(body.areas.map((a: { name: string }) => a.name)).toEqual(["Work", "Home", "Health"]);
     expect(body.items.map((i: { title: string }) => i.title)).toContain("Packing for Lisbon");
   });
