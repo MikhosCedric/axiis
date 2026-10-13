@@ -13,9 +13,21 @@ import {
 } from "@/domain/item";
 import { sameTag, type Tag, type TagId, type TagName, type TagSummary } from "@/domain/tag";
 import { AREA_COLUMNS, ITEM_COLUMNS, LIST_COLUMNS, areaFromRow, itemFromRow, newItemToInsert, patchToUpdate } from "./mappers";
-import { BEHIND_LIMIT, DUE_LIMIT, INBOX_LIMIT, LISTS_LIMIT, MAX_SERIES, TAGGED_LIMIT, type ChildCount, type ItemsRepo } from "./repo";
+import {
+  BEHIND_LIMIT,
+  DUE_LIMIT,
+  INBOX_LIMIT,
+  LISTS_LIMIT,
+  MAX_SERIES,
+  RANGE_LIMIT,
+  TAGGED_LIMIT,
+  WAITING_LIMIT,
+  type ChildCount,
+  type ItemsRepo,
+} from "./repo";
 
 type QueryResult = { data: unknown; error: { message: string; code?: string } | null };
+type CountedResult = QueryResult & { count: number | null };
 
 export class ItemsRepoError extends Error {
   override name = "ItemsRepoError";
@@ -24,6 +36,27 @@ export class ItemsRepoError extends Error {
 function unwrap<T>(operation: string, { data, error }: QueryResult, parse: (raw: unknown) => T): T {
   if (error) throw new ItemsRepoError(`items.${operation} failed: ${error.message}`, { cause: error });
   return parse(data);
+}
+
+/**
+ * Every row a read matches. PostgREST answers at most its `max-rows` (1000 on
+ * Supabase) and says nothing when it stops early, so the first page asks for
+ * the total, and the rest are read in parallel in pages the size the server
+ * actually returned. `read` must order by a unique key, so pages do not overlap.
+ */
+async function readAll<T>(
+  operation: string,
+  read: (from: number, to: number) => PromiseLike<CountedResult>,
+  parse: (raw: unknown) => T[],
+): Promise<T[]> {
+  const first = await read(0, COUNT_PAGE - 1);
+  const rows = unwrap(operation, first, parse);
+  const total = first.count ?? rows.length;
+  const step = rows.length;
+  if (step === 0 || total <= step) return rows;
+  const starts = Array.from({ length: Math.ceil((total - step) / step) }, (_, i) => step * (i + 1));
+  const pages = await Promise.all(starts.map(async (from) => unwrap(operation, await read(from, from + step - 1), parse)));
+  return rows.concat(...pages);
 }
 
 const rowList = z.array(z.unknown());
@@ -60,10 +93,18 @@ export class SupabaseItemsRepo implements ItemsRepo {
   }
 
   async listForDay(range: DayRange): Promise<{ scheduled: Item[]; unscheduled: Item[] }> {
+    const [from, to] = [range.from.toISOString(), range.to.toISOString()];
     const [timed, dayOnly, unscheduled] = await Promise.all([
-      this.single().gte("start_at", range.from.toISOString()).lt("start_at", range.to.toISOString()).order("start_at"),
+      this.single().gte("start_at", from).lt("start_at", to).order("start_at"),
       this.single().eq("scheduled_on", range.date).order("position"),
-      this.items().is("start_at", null).is("scheduled_on", null).is("parent_id", null).neq("type", "note").order("position"),
+      this.items()
+        .is("start_at", null)
+        .is("scheduled_on", null)
+        .is("parent_id", null)
+        .neq("type", "note")
+        .or(`status.eq.open,and(status.eq.done,completed_at.gte.${from},completed_at.lt.${to})`)
+        .order("created_at", { ascending: false })
+        .limit(WAITING_LIMIT),
     ]);
     return {
       scheduled: [...unwrap("listForDay", timed, itemList), ...unwrap("listForDay", dayOnly, itemList)],
@@ -71,12 +112,40 @@ export class SupabaseItemsRepo implements ItemsRepo {
     };
   }
 
+  async openCountByArea(range: DayRange): Promise<Record<string, number>> {
+    const timed = `and(start_at.gte.${range.from.toISOString()},start_at.lt.${range.to.toISOString()})`;
+    const waiting = "and(start_at.is.null,scheduled_on.is.null,parent_id.is.null)";
+    const rows = await readAll(
+      "openCountByArea",
+      (from, to) =>
+        this.db
+          .from("items")
+          .select("area_id", { count: "exact" })
+          .is("deleted_at", null)
+          .is("rrule", null)
+          .eq("status", "open")
+          .neq("type", "note")
+          .not("area_id", "is", null)
+          .or(`${timed},scheduled_on.eq.${range.date},${waiting}`)
+          .order("id")
+          .range(from, to),
+      (raw) => z.array(z.object({ area_id: z.uuid() })).parse(raw),
+    );
+    const counts: Record<string, number> = {};
+    for (const { area_id } of rows) counts[area_id] = (counts[area_id] ?? 0) + 1;
+    return counts;
+  }
+
   async listRange(range: SpanRange): Promise<Item[]> {
-    const [timed, dayOnly] = await Promise.all([
-      this.single().gte("start_at", range.from.toISOString()).lt("start_at", range.to.toISOString()).order("start_at"),
-      this.single().gte("scheduled_on", range.fromDate).lt("scheduled_on", range.toDate).order("scheduled_on").order("position"),
-    ]);
-    return [...unwrap("listRange", timed, itemList), ...unwrap("listRange", dayOnly, itemList)];
+    const timed = `and(start_at.gte.${range.from.toISOString()},start_at.lt.${range.to.toISOString()})`;
+    const dayOnly = `and(scheduled_on.gte.${range.fromDate},scheduled_on.lt.${range.toDate})`;
+    const result = await this.single()
+      .or(`${timed},${dayOnly}`)
+      .order("start_at", { nullsFirst: false })
+      .order("scheduled_on")
+      .order("position")
+      .limit(RANGE_LIMIT);
+    return unwrap("listRange", result, itemList);
   }
 
   async listSeries(): Promise<Item[]> {
@@ -137,10 +206,21 @@ export class SupabaseItemsRepo implements ItemsRepo {
   }
 
   async listOverrides(fromDate: LocalDate, toDate: LocalDate, seriesId?: ItemId): Promise<Item[]> {
-    let query = this.items().not("series_id", "is", null).gte("original_on", fromDate).lt("original_on", toDate);
-    if (seriesId) query = query.eq("series_id", seriesId);
-    const result = await query.order("original_on");
-    return unwrap("listOverrides", result, itemList);
+    return readAll(
+      "listOverrides",
+      (from, to) => {
+        let query = this.db
+          .from("items")
+          .select(LIST_COLUMNS, { count: "exact" })
+          .is("deleted_at", null)
+          .not("series_id", "is", null)
+          .gte("original_on", fromDate)
+          .lt("original_on", toDate);
+        if (seriesId) query = query.eq("series_id", seriesId);
+        return query.order("original_on").order("id").range(from, to);
+      },
+      itemList,
+    );
   }
 
   async listChildren(parentId: ItemId): Promise<Item[]> {
@@ -150,20 +230,25 @@ export class SupabaseItemsRepo implements ItemsRepo {
 
   async childCounts(parentIds: ItemId[]): Promise<Record<string, ChildCount>> {
     if (parentIds.length === 0) return {};
-    const result = await this.db
-      .from("items")
-      .select("parent_id,status")
-      .in("parent_id", parentIds)
-      .is("deleted_at", null);
-    return unwrap("childCounts", result, (raw) => {
-      const counts: Record<string, ChildCount> = {};
-      for (const row of z.array(childRow).parse(raw)) {
-        const c = (counts[row.parent_id] ??= { total: 0, done: 0 });
-        c.total += 1;
-        if (row.status === "done") c.done += 1;
-      }
-      return counts;
-    });
+    const rows = await readAll(
+      "childCounts",
+      (from, to) =>
+        this.db
+          .from("items")
+          .select("parent_id,status", { count: "exact" })
+          .in("parent_id", parentIds)
+          .is("deleted_at", null)
+          .order("id")
+          .range(from, to),
+      (raw) => z.array(childRow).parse(raw),
+    );
+    const counts: Record<string, ChildCount> = {};
+    for (const row of rows) {
+      const c = (counts[row.parent_id] ??= { total: 0, done: 0 });
+      c.total += 1;
+      if (row.status === "done") c.done += 1;
+    }
+    return counts;
   }
 
   async get(id: ItemId): Promise<Item | null> {
@@ -200,27 +285,24 @@ export class SupabaseItemsRepo implements ItemsRepo {
     return unwrap("listTags", await this.db.from("tags").select(TAG_COLUMNS), tagList);
   }
 
-  /**
-   * Open counts per tag id, from the links whose item is open and live. Read in
-   * pages, advancing by the rows returned, so a server cap on rows per reply
-   * cannot cut the count short.
-   */
+  /** Open counts per tag id, from the links whose item is open and live. */
   private async openCounts(): Promise<Map<string, number>> {
+    const links = await readAll(
+      "listTags",
+      (from, to) =>
+        this.db
+          .from("item_tags")
+          .select("tag_id,items!inner(id)", { count: "exact" })
+          .eq("items.status", "open")
+          .is("items.deleted_at", null)
+          .order("item_id")
+          .order("tag_id")
+          .range(from, to),
+      (raw) => z.array(z.object({ tag_id: z.uuid() })).parse(raw),
+    );
     const counts = new Map<string, number>();
-    for (let read = 0; ; ) {
-      const result = await this.db
-        .from("item_tags")
-        .select("tag_id,items!inner(id)")
-        .eq("items.status", "open")
-        .is("items.deleted_at", null)
-        .order("item_id")
-        .order("tag_id")
-        .range(read, read + COUNT_PAGE - 1);
-      const page = unwrap("listTags", result, (raw) => z.array(z.object({ tag_id: z.uuid() })).parse(raw));
-      if (page.length === 0) return counts;
-      for (const { tag_id } of page) counts.set(tag_id, (counts.get(tag_id) ?? 0) + 1);
-      read += page.length;
-    }
+    for (const { tag_id } of links) counts.set(tag_id, (counts.get(tag_id) ?? 0) + 1);
+    return counts;
   }
 
   async listTags(): Promise<TagSummary[]> {
@@ -230,12 +312,21 @@ export class SupabaseItemsRepo implements ItemsRepo {
 
   async tagsForItems(ids: ItemId[]): Promise<Record<string, Tag[]>> {
     if (ids.length === 0) return {};
-    const result = await this.db.from("item_tags").select(`item_id,tags!inner(${TAG_COLUMNS})`).in("item_id", ids);
-    return unwrap("tagsForItems", result, (raw) => {
-      const byItem: Record<string, Tag[]> = {};
-      for (const row of z.array(itemTagRow).parse(raw)) (byItem[row.item_id] ??= []).push(row.tags);
-      return byItem;
-    });
+    const rows = await readAll(
+      "tagsForItems",
+      (from, to) =>
+        this.db
+          .from("item_tags")
+          .select(`item_id,tags!inner(${TAG_COLUMNS})`, { count: "exact" })
+          .in("item_id", ids)
+          .order("item_id")
+          .order("tag_id")
+          .range(from, to),
+      (raw) => z.array(itemTagRow).parse(raw),
+    );
+    const byItem: Record<string, Tag[]> = {};
+    for (const row of rows) (byItem[row.item_id] ??= []).push(row.tags);
+    return byItem;
   }
 
   async listTagged(tagId: TagId): Promise<Item[]> {
@@ -252,20 +343,38 @@ export class SupabaseItemsRepo implements ItemsRepo {
     return unwrap("listTagged", result, itemList);
   }
 
-  async addTag(itemId: ItemId, name: TagName): Promise<Tag> {
-    const named = async () => (await this.allTags()).find((t) => sameTag(t.name, name)) ?? null;
-    let tag = await named();
-    if (!tag) {
-      const made = await this.db.from("tags").insert({ name }).select(TAG_COLUMNS).single();
-      // Another request made the same tag first: the unique index on lower(name) refused this one, so use theirs.
-      tag = made.error?.code === UNIQUE_VIOLATION ? await named() : unwrap("addTag", made, tagRow.parse);
-      if (!tag) throw new ItemsRepoError(`items.addTag failed: no tag named ${name} after a clash`);
+  async listTagNames(): Promise<Tag[]> {
+    return this.allTags();
+  }
+
+  async addTags(itemId: ItemId, names: readonly TagName[]): Promise<Tag[]> {
+    const wanted = names.filter((n, i) => names.findIndex((m) => sameTag(m, n)) === i);
+    if (wanted.length === 0) return [];
+    const find = (known: Tag[]) => wanted.map((n) => known.find((t) => sameTag(t.name, n)) ?? null);
+    let tags = find(await this.allTags());
+    const missing = wanted.filter((_, i) => !tags[i]);
+    if (missing.length > 0) {
+      const made = await this.db.from("tags").insert(missing.map((name) => ({ name }))).select(TAG_COLUMNS);
+      // Another request made one of them first: the unique index on lower(name) refused the whole insert, so read theirs and make the rest.
+      if (made.error?.code === UNIQUE_VIOLATION) {
+        tags = find(await this.allTags());
+        const rest = wanted.filter((_, i) => !tags[i]);
+        if (rest.length > 0) {
+          const again = await this.db.from("tags").insert(rest.map((name) => ({ name }))).select(TAG_COLUMNS);
+          tags = find([...tags.filter((t) => t !== null), ...unwrap("addTags", again, tagList)]);
+        }
+      } else {
+        tags = find([...tags.filter((t) => t !== null), ...unwrap("addTags", made, tagList)]);
+      }
     }
-    const linked = await this.db
-      .from("item_tags")
-      .upsert({ item_id: itemId, tag_id: tag.id }, { onConflict: "item_id,tag_id", ignoreDuplicates: true });
-    unwrap("addTag", linked, () => undefined);
-    return tag;
+    const found = tags.filter((t) => t !== null);
+    if (found.length !== wanted.length) throw new ItemsRepoError("items.addTags failed: a tag was not there after it was made");
+    const linked = await this.db.from("item_tags").upsert(
+      found.map((t) => ({ item_id: itemId, tag_id: t.id })),
+      { onConflict: "item_id,tag_id", ignoreDuplicates: true },
+    );
+    unwrap("addTags", linked, () => undefined);
+    return found;
   }
 
   async removeTag(itemId: ItemId, tagId: TagId): Promise<void> {

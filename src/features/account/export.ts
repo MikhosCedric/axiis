@@ -104,10 +104,13 @@ export const EXPORT_TABLE_NAMES = Object.keys(EXPORT_TABLES) as ExportTable[];
 /** Reads rows `[from, to]` inclusive, in the table's `orderBy` order. */
 export type PageReader = (table: ExportTable, from: number, to: number) => Promise<unknown[]>;
 
+/** Who the export belongs to. Email and sign-up time are null when the session does not carry them. */
+export type ExportUser = { id: string; email: string | null; createdAt: string | null };
+
 export type AxiisExport = {
   version: 1;
   exportedAt: string;
-  user: { id: string };
+  user: ExportUser;
   areas: z.output<typeof areaRow>[];
   items: z.output<typeof itemRow>[];
   links: z.output<typeof linkRow>[];
@@ -115,48 +118,54 @@ export type AxiisExport = {
   itemTags: z.output<typeof itemTagRow>[];
 };
 
+/** Each table's key in the document and its row parser, in document order. */
+const SECTIONS: Record<ExportTable, { key: keyof AxiisExport; row: z.ZodType }> = {
+  areas: { key: "areas", row: areaRow },
+  items: { key: "items", row: itemRow },
+  links: { key: "links", row: linkRow },
+  tags: { key: "tags", row: tagRow },
+  item_tags: { key: "itemTags", row: itemTagRow },
+};
+
 /**
- * Reads a table to the end. Advances by the rows actually returned and stops
- * only on an empty page, so a server that caps pages below the requested size
- * still yields every row.
+ * Reads a table to the end, a page at a time. Advances by the rows actually
+ * returned and stops only on an empty page, so a server that caps pages below
+ * the requested size still yields every row.
  */
-export async function readAll(read: PageReader, table: ExportTable, pageSize = EXPORT_PAGE_SIZE): Promise<unknown[]> {
-  const rows: unknown[] = [];
-  for (;;) {
-    const page = await read(table, rows.length, rows.length + pageSize - 1);
-    if (page.length === 0) return rows;
-    rows.push(...page);
+export async function* pages(read: PageReader, table: ExportTable, pageSize = EXPORT_PAGE_SIZE): AsyncGenerator<unknown[]> {
+  for (let from = 0; ; ) {
+    const page = await read(table, from, from + pageSize - 1);
+    if (page.length === 0) return;
+    from += page.length;
+    yield page;
   }
 }
 
-export async function collectExport(
+/**
+ * The export document as JSON text, one chunk per page read, so memory holds a
+ * page rather than the account. Every row is parsed before it is written, and a
+ * row that does not match its table throws, which leaves the text unfinished
+ * and unparseable rather than partly exported. The first chunk carries the
+ * first page, so a failure to read at all surfaces before anything is sent.
+ */
+export async function* exportChunks(
   read: PageReader,
-  { userId, exportedAt }: { userId: string; exportedAt: Date },
-): Promise<AxiisExport> {
-  const [areas, items, links, tags, itemTags] = await Promise.all(EXPORT_TABLE_NAMES.map((t) => readAll(read, t)));
-  return serializeExport({ userId, exportedAt, rows: { areas, items, links, tags, item_tags: itemTags } });
-}
-
-/** Parses raw rows into the export document. Throws on a row that does not match its table. */
-export function serializeExport({
-  userId,
-  exportedAt,
-  rows,
-}: {
-  userId: string;
-  exportedAt: Date;
-  rows: Record<ExportTable, unknown[]>;
-}): AxiisExport {
-  return {
-    version: 1,
-    exportedAt: exportedAt.toISOString(),
-    user: { id: userId },
-    areas: rows.areas.map((r) => areaRow.parse(r)),
-    items: rows.items.map((r) => itemRow.parse(r)),
-    links: rows.links.map((r) => linkRow.parse(r)),
-    tags: rows.tags.map((r) => tagRow.parse(r)),
-    itemTags: rows.item_tags.map((r) => itemTagRow.parse(r)),
-  };
+  { user, exportedAt }: { user: ExportUser; exportedAt: Date },
+  pageSize = EXPORT_PAGE_SIZE,
+): AsyncGenerator<string> {
+  let pending = `{"version":1,"exportedAt":${JSON.stringify(exportedAt.toISOString())},"user":${JSON.stringify(user)}`;
+  for (const table of EXPORT_TABLE_NAMES) {
+    const { key, row } = SECTIONS[table];
+    pending += `,\n${JSON.stringify(key)}:[`;
+    let separator = "\n";
+    for await (const page of pages(read, table, pageSize)) {
+      yield pending + separator + page.map((r) => JSON.stringify(row.parse(r))).join(",\n");
+      pending = "";
+      separator = ",\n";
+    }
+    pending += "]";
+  }
+  yield `${pending}}\n`;
 }
 
 export function exportFilename(date: LocalDate): string {

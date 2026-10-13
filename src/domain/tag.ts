@@ -1,4 +1,3 @@
-import { z } from "zod";
 import { idSchema, type ItemId, type ShownItem } from "./item";
 
 export type TagId = string & { readonly __brand: "TagId" };
@@ -21,21 +20,12 @@ export const TAGS_PER_ITEM = 10;
 /** Most tags one user can have. */
 export const TAGS_PER_USER = 200;
 
-const nameSchema = z
-  .string()
-  .transform((s) => s.normalize("NFC").replace(/\s+/g, " ").trim().replace(/^#+/, "").trim())
-  .pipe(
-    z
-      .string()
-      .min(1)
-      .max(TAG_NAME_MAX)
-      .refine((s) => !/\p{Cc}/u.test(s)),
-  );
-
 /** Parses an untrusted name into its stored form, or null when nothing usable is left. */
 export function parseTagName(raw: unknown): TagName | null {
-  const name = nameSchema.safeParse(raw);
-  return name.success ? (name.data as TagName) : null;
+  if (typeof raw !== "string") return null;
+  const name = raw.normalize("NFC").replace(/\s+/g, " ").trim().replace(/^#+/, "").trim();
+  // Lengths count UTF-16 code units, as zod's min and max did.
+  return name.length >= 1 && name.length <= TAG_NAME_MAX && !/\p{Cc}/u.test(name) ? (name as TagName) : null;
 }
 
 export function parseTagId(raw: unknown): TagId | null {

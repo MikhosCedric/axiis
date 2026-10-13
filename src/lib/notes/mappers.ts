@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { idSchema, type AreaId, type ItemId } from "@/domain/item";
+import type { AreaId, ItemId } from "@/domain/item";
 import { itemFromRow } from "@/lib/items/mappers";
 import type { LinkId, Note, NoteSummary, SearchHit } from "./repo";
 import { snippetFor } from "./snippet";
@@ -9,7 +9,7 @@ export const NOTE_SUMMARY_COLUMNS = "id,title,excerpt,area_id,created_at,updated
 export const LINK_COLUMNS = "id,from_id,to_id";
 
 const timestamp = z.iso.datetime({ offset: true }).transform((s) => new Date(s));
-const itemId = idSchema.transform((s) => s as ItemId);
+const itemId = z.uuid().transform((s) => s as ItemId);
 const text = z
   .string()
   .nullable()
@@ -18,14 +18,14 @@ const text = z
 const noteBase = {
   id: itemId,
   title: z.string(),
-  area_id: idSchema.transform((s) => s as AreaId).nullable(),
+  area_id: z.uuid().transform((s) => s as AreaId).nullable(),
   created_at: timestamp,
   updated_at: timestamp,
 };
 
 const noteRow = z.object({ ...noteBase, body: z.unknown().transform((v) => v ?? null), body_text: text });
 const summaryRow = z.object({ ...noteBase, excerpt: text });
-const linkRow = z.object({ id: idSchema.transform((s) => s as LinkId), from_id: itemId, to_id: itemId });
+const linkRow = z.object({ id: z.uuid().transform((s) => s as LinkId), from_id: itemId, to_id: itemId });
 const bodyTextRow = z.object({ body_text: text });
 
 export function noteFromRow(raw: unknown): Note {

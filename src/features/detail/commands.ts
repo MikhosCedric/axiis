@@ -14,7 +14,7 @@ import { byName } from "@/domain/tag";
 import { byUse } from "@/features/tags/model";
 
 const titleSchema = z.string().trim().min(1).max(TITLE_MAX);
-const areaSchema = idSchema.nullable();
+const areaSchema = z.nullable(idSchema);
 const scopeSchema = z.enum(["one", "all"]).default("one");
 const timeSchema = z.object({
   start: z.number().int().min(0).max(DAY_MINUTES - 1),
