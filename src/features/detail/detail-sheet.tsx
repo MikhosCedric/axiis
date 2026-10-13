@@ -37,12 +37,12 @@ const textButton = "-ml-2 inline-flex items-center gap-2 rounded-md px-2 py-1 fo
 export function MissingItem() {
   const itemHref = useItemHref();
   return (
-    <aside aria-label="Details" className="flex items-center gap-3 text-ink-2">
+    <div className="flex items-center gap-3 text-ink-2">
       <p>That item is not here any more.</p>
       <Link href={itemHref(null)} aria-label="Close details" title="Close" className={`ml-auto ${iconButton}`}>
         <CloseIcon />
       </Link>
-    </aside>
+    </div>
   );
 }
 
@@ -74,7 +74,6 @@ export function DetailSheet({
   const [scope, setScope] = useState<Scope>("one");
   const planTrigger = useRef<HTMLButtonElement>(null);
   const timeStart = useRef<HTMLInputElement>(null);
-  const headingId = useId();
   const areaFieldId = useId();
   const typeFieldId = useId();
 
@@ -139,8 +138,8 @@ export function DetailSheet({
   }, [eventHint]);
 
   return (
-    <aside aria-labelledby={headingId} className="grid gap-5">
-      <h2 id={headingId} className="sr-only">
+    <div className="grid gap-5">
+      <h2 className="sr-only">
         Details
       </h2>
 
@@ -472,6 +471,6 @@ export function DetailSheet({
           />
         )}
       </div>
-    </aside>
+    </div>
   );
 }
