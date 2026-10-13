@@ -65,6 +65,20 @@ describe("startsRepeating", () => {
     expect(startsRepeating({ preset: "weekdays", end: never }, null, d("2026-10-11"))).toBe("Repeats every weekday, starting tomorrow.");
   });
 
+  it("says plainly that months or years without its date are skipped", () => {
+    const monthly = { preset: "monthly", end: never } as const;
+    expect(startsRepeating(monthly, d("2026-10-31"), today)).toBe(
+      "Repeats every month from Saturday 31 October. Months with no 31st are skipped.",
+    );
+    expect(startsRepeating(monthly, d("2026-10-29"), today)).toMatch(/ Months with no 29th are skipped\.$/);
+    expect(startsRepeating(monthly, d("2026-10-30"), today)).toMatch(/ Months with no 30th are skipped\.$/);
+    expect(startsRepeating(monthly, d("2026-10-28"), today)).toBe("Repeats every month from Wednesday 28 October.");
+    expect(startsRepeating({ preset: "yearly", end: never }, d("2028-02-29"), today)).toMatch(/ Years with no 29 February are skipped\.$/);
+    expect(describeRule(ruleFor("monthly", { kind: "count", count: 6 }), d("2026-10-31"), today)).toBe(
+      "Every month, 6 times. Months with no 31st are skipped.",
+    );
+  });
+
   it("says nothing when it stops repeating", () => {
     expect(startsRepeating({ preset: "none", end: never }, null, today)).toBeNull();
   });
