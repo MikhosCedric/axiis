@@ -1,9 +1,20 @@
 import { describe, expect, it } from "vitest";
 import type { LocalDate } from "@/domain/item";
-import { dayHref, dayTitle, isTypingTarget, navTarget, readDayQuery, shortcutAction, type KeyPress } from "./nav";
+import { dayHref, dayTitle, isTypingTarget, namesNoDay, navTarget, readDayQuery, shortcutAction, type KeyPress } from "./nav";
 
 const d = (s: string) => s as LocalDate;
 const today = d("2026-10-06");
+
+describe("namesNoDay", () => {
+  it("is true only for a /day address whose date Axiis cannot plan on", () => {
+    for (const path of ["/day/2026-02-30", "/day/abc", "/day/", "/day/1969-12-31", "/day/2201-01-01", "/day/%E0%A4%A"]) {
+      expect(namesNoDay(path), path).toBe(true);
+    }
+    for (const path of ["/day/2026-02-28", "/day/2028-02-29/", "/today", "/day", "/days/abc", "/day/2026-10-06/x"]) {
+      expect(namesNoDay(path), path).toBe(false);
+    }
+  });
+});
 
 describe("dayHref", () => {
   it("uses /today for today and /day/<date> for any other day", () => {
