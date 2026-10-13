@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import Link from "next/link";
+import { BrandMark } from "@/components/shell/icons";
 import { safeNextPath } from "@/lib/auth/next-path";
 import { signInWithGoogle } from "./actions";
 import { EmailForm } from "./email-form";
@@ -20,8 +22,13 @@ export default async function LoginPage({ searchParams }: PageProps<"/login">) {
     <main id="main" className="flex min-h-full flex-1 items-center justify-center bg-paper px-6 py-16 font-sans">
       <div className="w-full max-w-sm space-y-8">
         <header className="space-y-2">
+          <Link href="/" className="mb-8 flex w-fit items-center gap-2.5 rounded-sm text-ink no-underline">
+            <BrandMark />
+            <span className="font-serif text-[22px] leading-none font-semibold tracking-[-0.01em]">Axiis</span>
+          </Link>
           <h1 className="font-serif text-3xl text-ink">Sign in to Axiis</h1>
           <p className="text-ink-2">Use your email or your Google account. There is no password to remember.</p>
+          <p className="text-ink-2">New here? The same link makes your account.</p>
         </header>
 
         {deleted && (
