@@ -33,7 +33,12 @@ type Gesture = {
   dy: number;
   target: DropTarget | null;
   /** The listeners this gesture added, so the same functions come off again. */
-  listeners: { move: (e: PointerEvent) => void; up: (e: PointerEvent) => void; cancel: (e: PointerEvent) => void };
+  listeners: {
+    move: (e: PointerEvent) => void;
+    up: (e: PointerEvent) => void;
+    cancel: (e: PointerEvent) => void;
+    key: (e: KeyboardEvent) => void;
+  };
 };
 
 export type DragSurfaces = {
@@ -141,6 +146,14 @@ export function useScoreDrag(surfaces: DragSurfaces, live: Live, setPreview: (pr
     track(g);
   }
 
+  function detach(g: Gesture) {
+    window.removeEventListener("pointermove", g.listeners.move);
+    window.removeEventListener("pointerup", g.listeners.up);
+    window.removeEventListener("pointercancel", g.listeners.cancel);
+    window.removeEventListener("keydown", g.listeners.key, true);
+    if (g.timer !== null) window.clearTimeout(g.timer);
+  }
+
   function finish(commit: boolean) {
     const g = gesture.current;
     gesture.current = null;
@@ -148,10 +161,7 @@ export function useScoreDrag(surfaces: DragSurfaces, live: Live, setPreview: (pr
     frame.current = null;
     delete document.documentElement.dataset.scoreDragging;
     if (!g) return;
-    window.removeEventListener("pointermove", g.listeners.move);
-    window.removeEventListener("pointerup", g.listeners.up);
-    window.removeEventListener("pointercancel", g.listeners.cancel);
-    if (g.timer !== null) window.clearTimeout(g.timer);
+    detach(g);
     setPreview(null);
     if (!commit) return;
     if (!g.active) {
@@ -188,6 +198,14 @@ export function useScoreDrag(surfaces: DragSurfaces, live: Live, setPreview: (pr
     if (gesture.current && e.pointerId === gesture.current.pointerId) finish(false);
   }
 
+  /** Escape drops a held item where it was. It is kept from closing a panel behind the drag. */
+  function onKey(e: KeyboardEvent) {
+    if (e.key !== "Escape" || !gesture.current) return;
+    e.preventDefault();
+    e.stopPropagation();
+    finish(false);
+  }
+
   useEffect(() => {
     // While an item is held by touch, stop the browser from turning the same finger into a scroll.
     const hold = (e: TouchEvent) => {
@@ -197,11 +215,7 @@ export function useScoreDrag(surfaces: DragSurfaces, live: Live, setPreview: (pr
     return () => {
       document.removeEventListener("touchmove", hold);
       const g = gesture.current;
-      if (!g) return;
-      window.removeEventListener("pointermove", g.listeners.move);
-      window.removeEventListener("pointerup", g.listeners.up);
-      window.removeEventListener("pointercancel", g.listeners.cancel);
-      if (g.timer !== null) window.clearTimeout(g.timer);
+      if (g) detach(g);
       delete document.documentElement.dataset.scoreDragging;
     };
   }, []);
@@ -229,13 +243,14 @@ export function useScoreDrag(surfaces: DragSurfaces, live: Live, setPreview: (pr
       dx: kind === "place" ? e.clientX - el.left : 24,
       dy: kind === "place" ? e.clientY - el.top : 18,
       target: null,
-      listeners: { move: onMove, up: onUp, cancel: onCancel },
+      listeners: { move: onMove, up: onUp, cancel: onCancel, key: onKey },
     };
     gesture.current = g;
     if (touch) g.timer = window.setTimeout(() => activate(g), LONG_PRESS_MS);
     window.addEventListener("pointermove", onMove);
     window.addEventListener("pointerup", onUp);
     window.addEventListener("pointercancel", onCancel);
+    window.addEventListener("keydown", onKey, true);
   }
 
   return start;
