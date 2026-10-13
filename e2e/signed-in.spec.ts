@@ -65,6 +65,26 @@ signedIn.describe("signed in", () => {
     });
   }
 
+  signedIn("a full day and week render with no React key or hydration errors", async ({ page }) => {
+    const errors: string[] = [];
+    page.on("console", (m) => {
+      if (m.type() === "error" && /unique "key"|Hydration/.test(m.text())) errors.push(`${page.url()}: ${m.text()}`);
+    });
+    const field = page.getByLabel("Capture anything");
+    await page.goto("/today");
+    for (let i = 0; i < 12; i++) {
+      await field.fill(`Crowd ${i}${["", " 9:00", " tomorrow"][i % 3]}`);
+      await field.press("Enter");
+      await expect(field).toHaveValue("");
+    }
+    for (const path of ["/week", "/today", "/week"]) {
+      await page.goto(path);
+      await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+      await page.waitForLoadState("networkidle");
+    }
+    expect(errors).toEqual([]);
+  });
+
   signedIn("the landing page and /login send the account to Today", async ({ page }) => {
     await page.goto("/");
     await expect(page).toHaveURL("/today");
