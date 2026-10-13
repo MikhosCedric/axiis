@@ -313,6 +313,9 @@ A 44 by 16px drawing of an item: a head and a beam, and the system's state langu
 - **Rail:** Rail Paper, wordmark in Besley 600 with the crossing-axes mark, links in Hanken 500 Ink Secondary with 18px icons. The current page is an Ink-filled pill with Paper text. Hover is Verdigris Wash. Areas list each open count as a 6px pill bar in Ink Quiet at 55% opacity, 8px plus 7px per open item, capped at 72px.
 - **Mobile:** the same links in a single horizontal scrolling row; utility actions keep icons and hide labels.
 
+### Note Toolbar
+A sticky bar over the note body, held to the body's 68ch measure, with a Hairline Soft rule beneath. Its 32px icon tools (44px on touch) sit in three named groups: Type (Heading, Subheading, Quote, Code), Style (Bold, Italic, Link) and Lists (Bulleted, Numbered), each name in 12px Ink Quiet from 640px and spoken only below. It stays on screen while the note is open, so the tools are found without focusing the body first. A pressed tool is filled with Ink.
+
 ### Command Palette
 A native `<dialog>` in Sheet, 560px wide, 12px radius, Dialog lift shadow, rising 8px with a 0.985 scale-in over 200ms. Options are 40px tall; the active option takes Verdigris Wash.
 
