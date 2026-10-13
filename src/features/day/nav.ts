@@ -1,13 +1,28 @@
 import type { LocalDate } from "@/domain/item";
 import { parseItemKey } from "@/domain/item-key";
 import { formatDayHeading, yearOf } from "@/features/today/format";
-import { addDays } from "@/lib/dates";
+import { addDays, parseLocalDate } from "@/lib/dates";
 import { DAY_VIEW_PARAM, SELECTED_ITEM_PARAM, type DayViewMode } from "./types";
 
 /** Today lives at `/today` so the address stays stable; other days at `/day/<date>`. Any selection is dropped. */
 export function dayHref(date: LocalDate, today: LocalDate, mode: DayViewMode): string {
   const path = date === today ? "/today" : `/day/${date}`;
   return mode === "list" ? `${path}?${DAY_VIEW_PARAM}=list` : path;
+}
+
+/**
+ * True for `/day/<x>` where x is no day Axiis plans on. The proxy answers it
+ * with a real 404: the page's own notFound() comes after the app's loading
+ * screen has started the stream, when the status can no longer change.
+ */
+export function namesNoDay(pathname: string): boolean {
+  const match = /^\/day\/([^/]*)\/?$/.exec(pathname);
+  if (!match) return false;
+  try {
+    return parseLocalDate(decodeURIComponent(match[1])) === null;
+  } catch {
+    return true;
+  }
 }
 
 export type DayQuery = { mode: DayViewMode; itemId: string | null };

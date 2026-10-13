@@ -36,6 +36,14 @@ signedIn.describe("signed in", () => {
     await expect(page).toHaveURL("/lists");
   });
 
+  for (const path of ["/day/2026-02-30", "/day/abc", "/day/1969-12-31"]) {
+    signedIn(`${path} answers 404 with the not-found page`, async ({ page }) => {
+      const response = await page.goto(path);
+      expect(response?.status()).toBe(404);
+      await expect(page.getByRole("heading", { level: 1, name: "There is nothing at this address." })).toBeVisible();
+    });
+  }
+
   signedIn("the landing page and /login send the account to Today", async ({ page }) => {
     await page.goto("/");
     await expect(page).toHaveURL("/today");
