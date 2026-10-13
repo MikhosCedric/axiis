@@ -1,4 +1,5 @@
-import { z } from "zod";
+// zod/mini, not classic zod: this module reaches the browser, and classic zod ships every locale with it.
+import * as z from "zod/mini";
 import type { OccurrenceKey } from "./item-key";
 import type { Rule } from "./recurrence";
 
@@ -14,7 +15,10 @@ export type AreaId = string & { readonly __brand: "AreaId" };
 
 /** A calendar date in the user's own time zone, `YYYY-MM-DD`. */
 export type LocalDate = string & { readonly __brand: "LocalDate" };
-export const localDateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/).transform((s) => s as LocalDate);
+export const localDateSchema = z.pipe(
+  z.string().check(z.regex(/^\d{4}-\d{2}-\d{2}$/)),
+  z.transform((s: string) => s as LocalDate),
+);
 
 /**
  * Where an item sits in time. The three shapes are exclusive by construction;
