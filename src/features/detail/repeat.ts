@@ -116,16 +116,37 @@ export function startsRepeating(choice: RepeatChoice, day: LocalDate | null, tod
   const rule = ruleFor(choice.preset, choice.end);
   const first = firstOccurrence(rule, from);
   const every = cadence(rule, from);
-  return first === from ? `Repeats ${every} from ${dayWords(from, today)}.` : `Repeats ${every}, starting ${dayWords(first, today)}.`;
+  const starts = first === from ? `Repeats ${every} from ${dayWords(from, today)}.` : `Repeats ${every}, starting ${dayWords(first, today)}.`;
+  const note = skippedNote(rule, first);
+  return note ? `${starts} ${note}` : starts;
+}
+
+/**
+ * The months or years a rule passes over because they lack its date: a
+ * monthly rule on the 31st has nothing in April, and a yearly one on
+ * 29 February only comes in leap years. Null when every one has it.
+ */
+function skippedNote(rule: Rule, firstOn: LocalDate | null): string | null {
+  if (!firstOn) return null;
+  const [, month, day] = firstOn.split("-").map(Number);
+  if (rule.freq === "monthly" && day >= 29) return `Months with no ${day === 31 ? "31st" : `${day}th`} are skipped.`;
+  if (rule.freq === "yearly" && month === 2 && day === 29) return "Years with no 29 February are skipped.";
+  return null;
 }
 
 /**
  * A plain sentence for a rule, such as "Every 2 weeks on Monday, until
- * Thursday 31 December". An end in another year than `today` names its year.
+ * Thursday 31 December", followed by any months or years it skips. An end in
+ * another year than `today` names its year.
  */
 export function describeRule(rule: Rule, firstOn: LocalDate | null, today: LocalDate): string {
   const every = `E${cadence(rule, firstOn).slice(1)}`;
-  if (rule.end.kind === "until") return `${every}, until ${formatDayIn(rule.end.on, today)}`;
-  if (rule.end.kind === "count") return `${every}, ${rule.end.count === 1 ? "once" : `${rule.end.count} times`}`;
-  return every;
+  const ends =
+    rule.end.kind === "until"
+      ? `${every}, until ${formatDayIn(rule.end.on, today)}`
+      : rule.end.kind === "count"
+        ? `${every}, ${rule.end.count === 1 ? "once" : `${rule.end.count} times`}`
+        : every;
+  const note = skippedNote(rule, firstOn);
+  return note ? `${ends}. ${note}` : ends;
 }
