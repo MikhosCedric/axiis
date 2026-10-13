@@ -19,7 +19,18 @@ test("the landing page shows the pitch, the sample day and a way in", async ({ p
 test("the landing page lists shipped features as shipped, and nothing as coming", async ({ page }) => {
   await page.goto("/");
   const today = page.getByRole("region", { name: "What it does today" }).getByRole("listitem");
-  for (const shipped of [/repeat/, /inbox/, /Checklists/, /Tags/, /command palette/]) {
+  for (const shipped of [
+    /repeat/,
+    /inbox/,
+    /checklists/,
+    /Tags/,
+    /command palette/,
+    /Due dates/,
+    /dentist tomorrow 9:00/,
+    /earlier day/,
+    /compact density/,
+    /G then a letter/,
+  ]) {
     await expect(today.filter({ hasText: shipped })).toHaveCount(1);
   }
   await expect(page.getByRole("heading", { name: "Coming" })).toHaveCount(0);
