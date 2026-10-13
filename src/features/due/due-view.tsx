@@ -60,7 +60,7 @@ export function DueView({
             if (inThis.length === 0) return null;
             return (
               <section key={group} aria-labelledby={`due-${group}`} className="mt-6 max-w-[760px]">
-                <h2 id={`due-${group}`} className="mb-1 text-xs font-semibold tracking-[0.06em] text-ink-3 uppercase">
+                <h2 id={`due-${group}`} className="mb-2 font-serif text-lg leading-[1.25] font-medium">
                   {GROUP_LABEL[group]}
                 </h2>
                 <ul className="border-t border-rule">
