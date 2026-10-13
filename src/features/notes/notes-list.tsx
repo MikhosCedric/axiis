@@ -53,7 +53,7 @@ export function NotesList({
           type="button"
           onClick={newNote}
           disabled={creating}
-          className="inline-flex items-center gap-2 rounded-md bg-ink px-3 py-1.5 font-medium text-paper hover:opacity-90 disabled:opacity-60"
+          className="inline-flex items-center gap-2 rounded-md bg-ink px-3 py-1.5 font-medium text-paper hover:opacity-90 active:opacity-80 disabled:opacity-60 pointer-coarse:min-h-11"
         >
           <PlusIcon />
           New note
@@ -95,7 +95,7 @@ export function NotesList({
         <ul className="mt-2 grid grid-cols-[minmax(0,1fr)] border-t border-rule">
           {rows.map((r) => (
             <li key={r.id} className="border-b border-rule-soft">
-              <Link href={`${basePath}/${r.id}`} className="block rounded-md px-2 py-3 hover:bg-accent-wash">
+              <Link href={`${basePath}/${r.id}`} className="block rounded-md px-2 py-3 hover:bg-hover active:bg-press">
                 <span className="block truncate font-medium text-ink">{r.title}</span>
                 {r.firstLine && <span className="mt-0.5 block truncate text-ink-2">{r.firstLine}</span>}
                 <span className="mt-1 block text-[13px] text-ink-3 tabular">

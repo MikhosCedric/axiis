@@ -22,7 +22,7 @@ export function GlyphCheckbox({
   return (
     <label
       className={`relative grid h-8 w-12 flex-none place-items-center rounded-md has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-accent ${
-        disabled ? "opacity-50" : "cursor-pointer hover:bg-accent-wash"
+        disabled ? "opacity-50" : "cursor-pointer hover:bg-hover active:bg-press"
       }`}
     >
       <input

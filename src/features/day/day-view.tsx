@@ -211,7 +211,7 @@ export function DayView({
                 type="button"
                 aria-pressed={shownMode === m}
                 onClick={() => switchMode(m)}
-                className={`px-3.5 py-2 font-medium pointer-coarse:py-3 ${shownMode === m ? "bg-ink text-paper" : "text-ink-2 hover:bg-accent-wash"}`}
+                className={`px-3.5 py-2 font-medium pointer-coarse:py-3 ${shownMode === m ? "bg-ink text-paper" : "text-ink-2 hover:bg-hover active:bg-press"}`}
               >
                 {label}
               </button>
@@ -230,7 +230,7 @@ export function DayView({
             <button
               type="button"
               onClick={() => timeSeries(status.offer!)}
-              className="-mx-1 rounded px-1 font-medium text-ink underline decoration-rule underline-offset-2 hover:bg-accent-wash hover:decoration-ink"
+              className="-mx-1 rounded px-1 font-medium text-ink underline decoration-rule underline-offset-2 hover:bg-hover active:bg-press hover:decoration-ink"
             >
               Same time {status.offer.cadence}
             </button>

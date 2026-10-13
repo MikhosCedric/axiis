@@ -95,7 +95,7 @@ export function TimeRow({
           <button
             type="button"
             onClick={anyTime}
-            className="rounded-md px-1.5 py-1 text-[13px] text-ink-2 hover:bg-accent-wash hover:text-ink"
+            className="rounded-md px-1.5 py-1 text-[13px] text-ink-2 hover:bg-hover active:bg-press hover:text-ink"
           >
             Any time
           </button>
@@ -171,7 +171,7 @@ export function DateRow({
           <button
             type="button"
             onClick={remove}
-            className="rounded-md px-1.5 py-1 pointer-coarse:min-h-11 text-[13px] text-ink-2 hover:bg-accent-wash hover:text-ink"
+            className="rounded-md px-1.5 py-1 pointer-coarse:min-h-11 text-[13px] text-ink-2 hover:bg-hover active:bg-press hover:text-ink"
           >
             {clear.label}
           </button>

@@ -37,7 +37,7 @@ function apply(areas: Area[], change: Change): Area[] {
 }
 
 const iconButton =
-  "grid size-8 pointer-coarse:size-11 place-items-center rounded-md text-ink-3 hover:bg-accent-wash hover:text-ink aria-disabled:cursor-default aria-disabled:opacity-35 aria-disabled:hover:bg-transparent aria-disabled:hover:text-ink-3";
+  "grid size-8 pointer-coarse:size-11 place-items-center rounded-md text-ink-3 hover:bg-hover active:bg-press hover:text-ink aria-disabled:cursor-default aria-disabled:opacity-35 aria-disabled:hover:bg-transparent aria-disabled:hover:text-ink-3";
 
 export function AreasSection({ areas, actions }: { areas: Area[]; actions: AreaActions }) {
   const [shown, change] = useOptimistic(areas, apply);
@@ -219,7 +219,7 @@ function AddArea({ onAdd, onError }: { onAdd: AreaActions["add"]; onError: (mess
       <button
         type="submit"
         aria-disabled={pending || undefined}
-        className="rounded-lg border border-rule px-3.5 py-2 font-medium text-ink hover:bg-accent-wash aria-disabled:opacity-60"
+        className="rounded-lg border border-rule px-3.5 py-2 font-medium text-ink hover:bg-hover active:bg-press aria-disabled:opacity-60 pointer-coarse:min-h-11"
       >
         {pending ? "Adding" : "Add area"}
       </button>

@@ -59,7 +59,7 @@ export function SettingsView({
         <ul className="border-t border-rule">
           {PARTS.map((part) => (
             <li key={part.id} className="border-b border-rule-soft">
-              <a href={`#${part.id}`} className="block rounded-md px-2 py-2 font-medium text-ink-2 no-underline hover:bg-accent-wash hover:text-ink">
+              <a href={`#${part.id}`} className="block rounded-md px-2 py-2 font-medium text-ink-2 no-underline hover:bg-hover active:bg-press hover:text-ink">
                 {part.name}
               </a>
             </li>
@@ -92,7 +92,7 @@ export function SettingsView({
             <a
               href={EXPORT_PATH}
               download
-              className="mt-4 inline-block rounded-lg border border-rule px-3.5 py-2 font-medium text-ink no-underline hover:bg-accent-wash"
+              className="mt-4 inline-flex items-center rounded-lg border border-rule px-3.5 py-2 font-medium text-ink no-underline hover:bg-hover active:bg-press pointer-coarse:min-h-11"
             >
               Download export
             </a>

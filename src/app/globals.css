@@ -85,6 +85,19 @@
   --breakpoint-rail: 760px;
 }
 
+/* A text control inside a row: under a coarse pointer its hit area reaches 44px tall without moving the text. */
+@utility tap-y {
+  @media (pointer: coarse) {
+    position: relative;
+
+    &::after {
+      content: "";
+      position: absolute;
+      inset: -13px 0;
+    }
+  }
+}
+
 @layer base {
   html {
     background: var(--paper);
@@ -98,6 +111,31 @@
     line-height: 1.45;
     caret-color: var(--accent);
     -webkit-font-smoothing: antialiased;
+  }
+
+  /* Controls ease between rest, hover and press. Movement (beams, dialogs) keeps its own timing. */
+  a,
+  button,
+  [role="button"],
+  input,
+  select,
+  textarea {
+    transition-property: color, background-color, border-color, text-decoration-color, opacity;
+    transition-duration: 140ms;
+    transition-timing-function: var(--ease-axiis);
+  }
+
+  button:not(:disabled, [aria-disabled="true"]),
+  [role="button"],
+  summary {
+    cursor: pointer;
+  }
+
+  @media (pointer: coarse) {
+    input:not([type="checkbox"], [type="radio"], [type="range"], [type="hidden"]),
+    select {
+      min-height: 44px;
+    }
   }
 
   ::selection {

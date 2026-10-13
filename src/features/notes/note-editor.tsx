@@ -115,7 +115,7 @@ export function NoteEditor({ view, actions, basePath = "/notes" }: { view: NoteV
                 if (autosave.state().kind !== "failed") router.push(basePath);
               });
             }}
-            className="-ml-1.5 inline-flex items-center gap-1 rounded-md py-1 pr-2 pl-1 text-[13px] text-ink-2 hover:bg-accent-wash hover:text-ink"
+            className="-ml-1.5 inline-flex items-center gap-1 rounded-md py-1 pr-2 pl-1 text-[13px] text-ink-2 hover:bg-hover active:bg-press hover:text-ink"
           >
             <BackIcon />
             Notes

@@ -48,7 +48,7 @@ export function SearchView({ query, rows, basePath = "/search" }: { query: strin
           <ul className="mt-2 grid grid-cols-[minmax(0,1fr)] border-t border-rule">
             {rows.map((r) => (
               <li key={r.id} className="border-b border-rule-soft">
-                <Link href={r.href} className="block rounded-md px-2 py-3 hover:bg-accent-wash">
+                <Link href={r.href} className="block rounded-md px-2 py-3 hover:bg-hover active:bg-press">
                   <span className={`block truncate font-medium ${r.done ? "text-ink-3" : "text-ink"}`}>{r.title}</span>
                   {r.snippet && <span className="mt-0.5 line-clamp-2 block text-ink-2">{r.snippet}</span>}
                   <span className="mt-1 block text-[13px] text-ink-3">

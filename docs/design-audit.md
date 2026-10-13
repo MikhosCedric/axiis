@@ -63,7 +63,7 @@ axe reported **no violations on any of the 24 loads**, nor with the detail panel
    - **Where.** `hover:bg-accent-wash` appears 41 times in 25 files, among them `nav-rail.tsx`, `detail-sheet.tsx`, `subtasks.tsx`, `inbox-view.tsx`, `rich-text.tsx` and `palette.tsx`.
    - **Evidence.** The same 14% verdigris fill marks a selected row, a drop target under a drag, and every hovered link or icon button. A pointer resting anywhere puts verdigris on screen, which works against the Now Rule (verdigris means now, a drag target, or the focused or selected thing).
    - **Fix.** Add a neutral hover token, such as `--hover: rgba(28, 27, 34, 0.06)` and its dark twin, or reuse Rail Paper as the public header already does. Keep the wash for selection and drop targets. Suggested command `/impeccable quieter`.
-   - **Status. Deferred.** A new hover token, or reusing Rail Paper, adds a colour to `DESIGN.md`, which is a design call.
+   - **Status. Fixed later (`ui-refine-3`).** Hover is a neutral ink tint (`--hover`, 6% ink, 7% paper in dark) with a pressed step (`--press`), on all 46 controls that had the wash. The wash is left only on selected rows, drop targets and the active palette option. The rail's current Settings link and the "Changes apply to" segment moved from the wash to an Ink fill, as the Ink-for-Selection rule asks.
 
 7. **[P2, Responsive] Touch devices get keyboard instructions and no hint to press and hold.**
    - **Where.** The key help paragraph in `score-view.tsx:280-285`, the `C` key hint in `capture-field.tsx:70-75`, and the tray copy at `score-view.tsx:295-297`.
