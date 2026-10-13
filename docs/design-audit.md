@@ -86,7 +86,7 @@ axe reported **no violations on any of the 24 loads**, nor with the detail panel
 10. **[P3, Implementation integrity] The page-title style is copied as a literal 10 times.**
     - **Where.** `font-serif text-[clamp(28px,3vw,40px)] leading-[1.1] font-medium tracking-[-0.015em]` in `day-view`, `week-view`, `inbox-view`, `lists-view`, `notes-list`, `search-view`, `settings-view`, `tag-index-view`, `tagged-view` and the detail harness. `note-editor.tsx:148` has already drifted to `3.2vw` and `1.15`.
     - **Fix.** Add one `@utility headline` (and `title`) in `globals.css` matching the Headline token in `DESIGN.md`, then use it everywhere. Suggested command `/impeccable typeset`.
-    - **Status. Deferred.** Whether the note title's drifted `3.2vw` and `1.15` are kept or folded in is a type decision, and the sweep touches ten screens, so it belongs in its own change.
+    - **Status. Fixed later (`ui-refine-3`).** A `headline` utility in `globals.css` carries the Headline step and `text-wrap: balance`; all 13 page titles use it. The note title keeps its own values, since it is a growing text field.
 
 11. **[P3, Accessibility] Chip and outline-button edges are faint.**
     - **Where.** `.chip` in `score.module.css`, `quietAction` in `site-chrome.tsx`, and the outline buttons in Inbox and Settings, all bordered by Hairline.

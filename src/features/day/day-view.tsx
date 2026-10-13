@@ -193,7 +193,7 @@ export function DayView({
           {/* A server element can arrive late as a lazy chunk, which React then checks for a key among its siblings. */}
           <Fragment key="nav">{nav}</Fragment>
           <div className="min-w-0">
-            <h1 className="font-serif text-[clamp(28px,3vw,40px)] leading-[1.1] font-medium tracking-[-0.015em] text-balance">
+            <h1 className="headline">
               <time dateTime={date}>{formatDayHeading(date)}</time>
             </h1>
             <p className="mt-2.5 text-[15px] text-ink-2">{summaryLine(view, isToday)}</p>

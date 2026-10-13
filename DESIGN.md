@@ -245,7 +245,7 @@ A two-ink, one-pigment palette: warm paper, near-black ink in three strengths, a
 
 ### Hierarchy
 - **Display** (500, `clamp(2.6rem, 1.4rem + 5.2vw, 5.25rem)`, line-height 1, -0.025em, balanced, max 13ch): the landing page headline only.
-- **Headline** (500, `clamp(28px, 3vw, 40px)`, 1.1, -0.015em): every app page title (Today's date, Week, Inbox, Lists, Notes, Tags, Search, Settings). Landing section heads use a larger clamp (`1.6rem` to `2.25rem`).
+- **Headline** (500, `clamp(28px, 3vw, 40px)`, 1.1, -0.015em): every app page title (Today's date, Week, Inbox, Due, Lists, Notes, Tags, Search, Settings), always through the `headline` utility in `globals.css`, which also balances the lines. The note editor's title field is the one exception (3.2vw, 1.15), because it is a growing text field. Landing section heads use a larger clamp (`1.6rem` to `2.25rem`).
 - **Title** (Besley 500, 18px to 22px): section heads inside a page (Waiting, Subtasks, Linked notes, Due's Earlier, This week and Later at 18px), staff names (16px, 19px at rail width) and the wordmark (600, 20px to 22px, -0.01em).
 - **Body** (Hanken 400, 14px, 1.45): the default for the app. Page subtitles under an app headline and public body copy step up to 15px at 1.6 (Body Large), the landing lead paragraph to 17px to 18px, held to 34ch to 36rem. Note bodies are set for reading at 16px, 1.65, 68ch.
 - **Mono** (system monospace, 0.88em on Rail Paper with a soft hairline): inline code in notes only.
@@ -322,6 +322,7 @@ A 44 by 16px drawing of an item: a head and a beam, and the system's state langu
 ### Navigation
 - **Rail:** Rail Paper, wordmark in Besley 600 with the crossing-axes mark, links in Hanken 500 Ink Secondary with 18px icons. The current page, Settings included, is an Ink-filled pill with Paper text. Hover is Hover Tint. Areas list each open count as a 6px pill bar in Ink Quiet at 55% opacity, 8px plus 7px per open item, capped at 72px.
 - **Mobile:** the same links in a single horizontal scrolling row; utility actions keep icons and hide labels.
+- **Day and week steps:** Day/Week, then Previous and Next joined as one outlined pair (they never wrap apart), the date field, and Today or This week when away from it. All 36px tall, 44px under a coarse pointer.
 
 ### Note Toolbar
 A sticky bar over the note body, held to the body's 68ch measure, with a Hairline Soft rule beneath. Its 32px icon tools (44px on touch) sit in three named groups: Type (Heading, Subheading, Quote, Code), Style (Bold, Italic, Link) and Lists (Bulleted, Numbered), each name in 12px Ink Quiet from 640px and spoken only below. It stays on screen while the note is open, so the tools are found without focusing the body first. A pressed tool is filled with Ink.
