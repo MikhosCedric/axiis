@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { LocalDate } from "@/domain/item";
 import type { Rule } from "@/domain/recurrence";
 import { area, fakeRepo, makeItem } from "@/features/today/test-support";
+import { WAITING_LIMIT } from "@/lib/items/repo";
 import { loadDay } from "./load";
 
 const d = (s: string) => s as LocalDate;
@@ -31,6 +32,26 @@ describe("loadDay", () => {
     expect(day.areas).toEqual([work]);
     expect(day.view.scheduled.map((e) => e.item.title)).toEqual(["Standup"]);
     expect(day.view.waiting.map((e) => e.item.title)).toEqual(["Someday"]);
+    expect(day.waitingFull).toBe(false);
+  });
+
+  it("keeps every open waiting item however many were done before, and says when the tray hits its cap", async () => {
+    const created = (i: number) => new Date(Date.UTC(2026, 0, 1) + i * 60_000);
+    const doneLongAgo = Array.from({ length: 1500 }, (_, i) =>
+      makeItem({ title: `Old ${i}`, status: "done", completedAt: new Date("2025-01-01T00:00:00Z"), createdAt: created(i) }),
+    );
+    const open = makeItem({ title: "Still open", createdAt: new Date("2020-01-01T00:00:00Z") });
+    const { repo } = fakeRepo([...doneLongAgo, open]);
+
+    const day = await loadDay(repo, d("2026-10-08"), new Date("2026-10-08T06:00:00Z"), "UTC");
+    expect(day.view.waiting.map((e) => e.item.title)).toEqual(["Still open"]);
+    expect(day.waitingFull).toBe(false);
+
+    const many = Array.from({ length: WAITING_LIMIT + 1 }, (_, i) => makeItem({ title: `Open ${i}`, createdAt: created(i) }));
+    const full = await loadDay(fakeRepo(many).repo, d("2026-10-08"), new Date("2026-10-08T06:00:00Z"), "UTC");
+    expect(full.view.waiting).toHaveLength(WAITING_LIMIT);
+    expect(full.view.waiting[0].item.title).toBe(`Open ${WAITING_LIMIT}`);
+    expect(full.waitingFull).toBe(true);
   });
 
   it("names the tags on everything shown in one read, an occurrence wearing its series'", async () => {

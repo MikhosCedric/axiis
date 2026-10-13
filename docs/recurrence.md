@@ -35,6 +35,8 @@ Calendar behaviour follows RFC 5545:
 - A weekly rule whose weekdays leave out the first date's weekday does not land on that first date.
 - `COUNT` counts from the first occurrence, not from the start of the days shown.
 
+A daily or weekly rule starts at its last whole period on or before the first day shown rather than at the series' first date, and a `COUNT` is reduced by the occurrences that skips, so the cost of a read does not grow with the age of the series. `expand.property.test.ts` checks this against running the rule from its first date over generated rules, spans and time zones; `expand.bench.test.ts` times a page (`BENCH=1`). Monthly and yearly rules still run from the first date: they step once a period, and a month without the day makes skipping ahead irregular.
+
 One call never returns more than 400 occurrences and never looks past the end of the requested span. `listSeries` reads at most 200 live series.
 
 The user's current time zone is used for expansion. Changing time zone after a series was made is out of scope.

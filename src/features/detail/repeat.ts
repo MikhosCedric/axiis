@@ -1,4 +1,5 @@
-import { z } from "zod";
+// zod/mini: the panel's client code imports this module, and classic zod ships every locale with it.
+import * as z from "zod/mini";
 import { localDateSchema, type LocalDate } from "@/domain/item";
 import { MAX_COUNT, WEEKDAYS, type Rule, type RuleEnd, type Weekday } from "@/domain/recurrence";
 import { formatDayIn } from "@/features/today/format";
@@ -23,13 +24,14 @@ const WORKWEEK: Weekday[] = ["MO", "TU", "WE", "TH", "FR"];
 /** What the client may send to change how something repeats. Parsed here, never trusted further. */
 export const repeatSchema = z.object({
   preset: z.enum(REPEAT_PRESETS),
-  end: z
-    .discriminatedUnion("kind", [
+  end: z._default(
+    z.discriminatedUnion("kind", [
       z.object({ kind: z.literal("never") }),
       z.object({ kind: z.literal("until"), on: localDateSchema }),
-      z.object({ kind: z.literal("count"), count: z.number().int().min(1).max(MAX_COUNT) }),
-    ])
-    .default({ kind: "never" }),
+      z.object({ kind: z.literal("count"), count: z.int().check(z.minimum(1), z.maximum(MAX_COUNT)) }),
+    ]),
+    { kind: "never" },
+  ),
 });
 export type RepeatChoice = z.infer<typeof repeatSchema>;
 

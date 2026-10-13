@@ -16,7 +16,7 @@ const scheduleSchema = z.discriminatedUnion("kind", [
 
 const placementSchema = z.object({
   schedule: scheduleSchema,
-  areaId: idSchema.nullable().optional(),
+  areaId: z.nullable(idSchema).optional(),
 });
 
 export const PLACE_FAILED = "That change did not save, so it is back where it was. Try again.";
