@@ -116,7 +116,7 @@ function DueRowView({
           type="button"
           aria-pressed={selected}
           onClick={onSelect}
-          className={`cursor-pointer rounded text-left break-words hover:underline ${row.done ? `font-normal ${quiet}` : "font-medium text-ink"}`}
+          className={`cursor-pointer rounded text-left tap-y break-words hover:underline ${row.done ? `font-normal ${quiet}` : "font-medium text-ink"}`}
         >
           {row.title}
           {row.done && <span className="sr-only">, done</span>}

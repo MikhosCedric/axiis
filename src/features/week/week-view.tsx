@@ -324,7 +324,7 @@ function DayColumn({
         <Link
           href={dayHref(date, today, "score")}
           title={`Open ${formatDayHeading(date)}`}
-          className="group inline-flex items-baseline gap-1.5 rounded"
+          className="group inline-flex items-baseline gap-1.5 rounded tap-y"
         >
           <span className="text-[13px] font-medium text-ink-2">
             <span className="@min-[50rem]:hidden">{weekdayName(date, "long")}</span>
@@ -384,7 +384,7 @@ function ItemRow({
   const label = [item.title, spokenTime, area, STATE_WORD[state], repeats(item) && "repeats", tagged.spoken].filter(Boolean).join(", ");
   const shape =
     variant === "chip"
-      ? "inline-flex max-w-[34ch] items-center gap-2 rounded-md border border-rule bg-sheet px-2.5 py-1.5"
+      ? "inline-flex max-w-[34ch] items-center gap-2 rounded-md border border-rule bg-sheet px-2.5 py-1.5 pointer-coarse:min-h-11"
       : "grid grid-cols-[36px_minmax(0,1fr)] gap-x-2 rounded-md px-1.5 py-1.5";
   return (
     <div
@@ -396,7 +396,7 @@ function ItemRow({
       aria-describedby={KEYS_ID}
       onPointerDown={onPointerDown}
       onKeyDown={onKeyDown}
-      className={`${shape} cursor-grab touch-manipulation select-none [-webkit-touch-callout:none] hover:bg-accent-wash ${
+      className={`${shape} cursor-grab touch-manipulation select-none [-webkit-touch-callout:none] hover:bg-hover active:bg-press ${
         selected ? "bg-accent-wash ring-1 ring-accent" : ""
       } ${lifted ? "opacity-35" : ""}`}
     >

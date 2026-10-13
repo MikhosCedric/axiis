@@ -7,7 +7,7 @@ export function SpanSwitch({ current, dayHref, weekHref }: { current: "day" | "w
       href={href}
       aria-current={current === span ? "page" : undefined}
       className={`inline-flex h-full items-center px-3 font-medium ${
-        current === span ? "bg-ink text-paper" : "text-ink-2 hover:bg-accent-wash"
+        current === span ? "bg-ink text-paper" : "text-ink-2 hover:bg-hover active:bg-press"
       }`}
     >
       {label}

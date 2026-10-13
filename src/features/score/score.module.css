@@ -193,6 +193,12 @@
   transition: opacity 0.16s;
 }
 
+@media (pointer: coarse) {
+  .chip {
+    min-height: 44px;
+  }
+}
+
 .chip:hover {
   border-color: var(--field);
 }

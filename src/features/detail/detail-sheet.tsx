@@ -30,8 +30,8 @@ const EVENT_NEEDS_DAY = "An event needs a day and a time. Plan it under When.";
 
 const field =
   "-ml-2 max-w-full rounded-md border border-transparent bg-transparent py-1 pr-1 pl-1.5 text-ink hover:border-rule-soft focus:border-field focus:bg-sheet";
-const iconButton = "grid size-8 pointer-coarse:size-11 place-items-center rounded-md text-ink-2 hover:bg-accent-wash hover:text-ink";
-const textButton = "-ml-2 inline-flex items-center gap-2 rounded-md px-2 py-1 font-medium text-ink-2 hover:bg-accent-wash hover:text-ink";
+const iconButton = "grid size-8 pointer-coarse:size-11 place-items-center rounded-md text-ink-2 hover:bg-hover active:bg-press hover:text-ink";
+const textButton = "-ml-2 inline-flex items-center gap-2 rounded-md px-2 py-1 font-medium text-ink-2 hover:bg-hover active:bg-press hover:text-ink";
 
 /** Shown when the URL names an item that was deleted or never existed. */
 export function MissingItem() {
@@ -148,7 +148,7 @@ export function DetailSheet({
           (nesting.parent ? (
             <Link
               href={itemHref(nesting.parent.id)}
-              className="-ml-1.5 inline-flex min-w-0 items-center gap-1 rounded-md py-1 pr-2 pl-1 text-[13px] text-ink-2 hover:bg-accent-wash hover:text-ink"
+              className="-ml-1.5 inline-flex min-w-0 items-center gap-1 rounded-md py-1 pr-2 pl-1 text-[13px] text-ink-2 hover:bg-hover active:bg-press hover:text-ink"
             >
               <BackIcon />
               <span className="truncate">Part of {nesting.parent.title}</span>
@@ -203,7 +203,7 @@ export function DetailSheet({
               {(["one", "all"] as const).map((s) => (
                 <label
                   key={s}
-                  className="cursor-pointer rounded px-2.5 py-1 text-[13px] text-ink-2 has-checked:bg-accent-wash has-checked:font-medium has-checked:text-ink has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-accent"
+                  className="cursor-pointer rounded px-2.5 py-1 text-[13px] text-ink-2 has-checked:bg-ink has-checked:font-medium has-checked:text-paper has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-accent"
                 >
                   <input
                     type="radio"
@@ -418,7 +418,7 @@ export function DetailSheet({
       {item.type === "note" ? (
         <Link
           href={`/notes/${item.id}`}
-          className="-ml-2 inline-flex items-center gap-2 justify-self-start rounded-md px-2 py-1 font-medium text-ink-2 hover:bg-accent-wash hover:text-ink"
+          className="-ml-2 inline-flex items-center gap-2 justify-self-start rounded-md px-2 py-1 font-medium text-ink-2 hover:bg-hover active:bg-press hover:text-ink"
         >
           Open the note
         </Link>

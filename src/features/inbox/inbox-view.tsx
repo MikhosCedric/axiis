@@ -30,7 +30,7 @@ const INBOX_GUIDE: GuideTopic[] = ["capture"];
 type Change = { kind: "hide" | "reopen"; id: string };
 
 const choice =
-  "rounded-md border border-rule px-3 py-1.5 font-medium text-ink hover:bg-accent-wash disabled:cursor-default disabled:opacity-60";
+  "rounded-md border border-rule px-3 py-1.5 font-medium text-ink hover:bg-hover active:bg-press disabled:cursor-default disabled:opacity-60";
 
 export function InboxView({
   data,
@@ -242,7 +242,7 @@ function InboxRow({
         data-open={item.id}
         aria-pressed={selected}
         onClick={onSelect}
-        className={`min-w-0 cursor-pointer rounded text-left break-words hover:underline ${
+        className={`min-w-0 cursor-pointer rounded text-left tap-y break-words hover:underline ${
           done ? `font-normal ${quiet}` : "font-medium text-ink"
         }`}
       >
@@ -271,7 +271,7 @@ function InboxRow({
           aria-expanded={planning}
           aria-controls={panelId}
           onClick={() => onPlanning(!planning)}
-          className="rounded-md px-2.5 py-1.5 text-[13px] font-medium whitespace-nowrap text-ink-2 hover:bg-accent-wash"
+          className="rounded-md px-2.5 py-1.5 text-[13px] font-medium whitespace-nowrap text-ink-2 hover:bg-hover hover:text-ink active:bg-press pointer-coarse:min-h-11"
         >
           Plan for
         </button>

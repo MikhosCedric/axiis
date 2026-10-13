@@ -13,6 +13,8 @@ colors:
   field-stroke: "rgba(28, 27, 34, 0.55)"
   verdigris: "#0a675a"
   verdigris-wash: "rgba(10, 103, 90, 0.14)"
+  hover-tint: "rgba(28, 27, 34, 0.06)"
+  press-tint: "rgba(28, 27, 34, 0.11)"
   on-verdigris: "#f3eee1"
   scrim: "rgb(8 7 10 / 0.48)"
   night-paper: "#16151b"
@@ -26,6 +28,8 @@ colors:
   night-field-stroke: "rgba(236, 229, 211, 0.5)"
   night-verdigris: "#45c7b0"
   night-verdigris-wash: "rgba(69, 199, 176, 0.16)"
+  night-hover-tint: "rgba(236, 229, 211, 0.07)"
+  night-press-tint: "rgba(236, 229, 211, 0.12)"
   on-night-verdigris: "#10201d"
 typography:
   display:
@@ -210,7 +214,7 @@ A two-ink, one-pigment palette: warm paper, near-black ink in three strengths, a
 
 ### Primary
 - **Verdigris** (`verdigris`, dark `night-verdigris`): the colour of now. It fills the playhead line, the clock flag on the hour axis and the live beam. It also draws the drag ghost (dashed outline over its wash), the selected-label underline, the focus ring, the caret, text selection, and the landing page's Start with today button.
-- **Verdigris Wash** (`verdigris-wash`): a 14% tint (16% in dark) for a drop target under a drag, a selected row in Inbox and Lists, the active palette option, and the hover state of quiet controls.
+- **Verdigris Wash** (`verdigris-wash`): a 14% tint (16% in dark) for a drop target under a drag, a selected row in Inbox and Lists, and the active palette option. Never hover.
 
 ### Neutral
 - **Music Paper** (`music-paper` / `night-paper`): the page ground, also written into the browser theme colour and the manifest through `src/lib/theme-colors.ts`.
@@ -221,6 +225,8 @@ A two-ink, one-pigment palette: warm paper, near-black ink in three strengths, a
 - **Ink Quiet** (`ink-quiet`): metadata, hour numerals, placeholders, done items and their glyphs.
 - **Hairline** (`hairline`): staff borders, section rules, outlined buttons and chips at rest.
 - **Hairline Soft** (`hairline-soft`): the five staff lines, the faint hour gridlines inside a staff, and row separators.
+- **Hover Tint** (`hover-tint`, token `--hover`, utility `bg-hover`): 6% ink (7% paper in dark) under every quiet control a pointer rests on: rail links, outline and text buttons, icon buttons, rows that open. A resting pointer never puts verdigris on screen.
+- **Press Tint** (`press-tint`, `--press`, `active:bg-press`): 11% ink (12% paper in dark) while the same control is held down, so a press answers before the page does.
 - **Field Stroke** (`field-stroke`): input borders and the hover border of chips and quiet public buttons. It is the only stroke strong enough to mark a control boundary on its own.
 
 ### Named Rules
@@ -298,8 +304,11 @@ A 44 by 16px drawing of an item: a head and a beam, and the system's state langu
 - **Public primary:** Verdigris fill, On Verdigris text, 15px 600, 12px by 20px. Hover mixes 14% ink into the verdigris over 150ms. Used only for Start with today, the landing's way in (in the hero and again at the close). The header's Sign in is a plain text link for returning users.
 - **Public quiet:** hairline border, ink text, same size; hover strengthens the border to Field Stroke.
 - **Ink:** Engraving Ink fill, Paper text, 500. The in-app primary action (New note, Search, Delete account once confirmed). Hover drops opacity to 0.9.
-- **Outline:** hairline border, 6px by 12px, hover Verdigris Wash. Secondary in-app actions.
-- **Text and icon:** borderless, Ink Secondary, 32px square for icons; hover takes Verdigris Wash and Ink.
+- **Outline:** hairline border, 6px by 12px, hover Hover Tint, pressed Press Tint. Secondary in-app actions.
+- **Text and icon:** borderless, Ink Secondary, 32px square for icons; hover takes Hover Tint and Ink, pressed Press Tint.
+- **Segments:** the checked part of a segmented choice (Score/List, Day/Week, Theme, Density, Changes apply to one or all) is filled with Ink and Paper text.
+- **Easing between states:** links, buttons and fields ease colour, background, border and opacity over 140ms on the house curve (a base rule in `globals.css`). Movement keeps its own timing.
+- **Touch:** under a coarse pointer every control is at least 44px tall: nav links, the day and week steps and date field, every text field (a base rule), chips, Plan for, the leftover and Settings buttons. A text button inside a row (an item title) keeps its size and gains a 44px hit area through the `tap-y` utility.
 - **Focus:** a global 2px verdigris outline with 3px offset on every `:focus-visible`.
 
 ### Chips
@@ -311,7 +320,7 @@ A 44 by 16px drawing of an item: a head and a beam, and the system's state langu
 - **Focus:** the global verdigris ring; the caret is verdigris.
 
 ### Navigation
-- **Rail:** Rail Paper, wordmark in Besley 600 with the crossing-axes mark, links in Hanken 500 Ink Secondary with 18px icons. The current page is an Ink-filled pill with Paper text. Hover is Verdigris Wash. Areas list each open count as a 6px pill bar in Ink Quiet at 55% opacity, 8px plus 7px per open item, capped at 72px.
+- **Rail:** Rail Paper, wordmark in Besley 600 with the crossing-axes mark, links in Hanken 500 Ink Secondary with 18px icons. The current page, Settings included, is an Ink-filled pill with Paper text. Hover is Hover Tint. Areas list each open count as a 6px pill bar in Ink Quiet at 55% opacity, 8px plus 7px per open item, capped at 72px.
 - **Mobile:** the same links in a single horizontal scrolling row; utility actions keep icons and hide labels.
 
 ### Note Toolbar

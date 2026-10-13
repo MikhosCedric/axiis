@@ -187,7 +187,7 @@ export function DetailHarness({ itemId, timeZone }: { itemId: string | null; tim
               <Link
                 href={`?item=${f.id}`}
                 aria-current={f.id === itemId ? "true" : undefined}
-                className="block rounded-md px-2 py-2.5 hover:bg-accent-wash aria-[current]:font-semibold"
+                className="block rounded-md px-2 py-2.5 hover:bg-hover active:bg-press aria-[current]:font-semibold"
               >
                 {f.label}
               </Link>

@@ -132,7 +132,7 @@ function ListRowView({
           aria-pressed={selected}
           aria-describedby={metaId}
           onClick={onSelect}
-          className={`cursor-pointer rounded text-left break-words hover:underline ${row.done ? `font-normal ${quiet}` : "font-medium text-ink"}`}
+          className={`cursor-pointer rounded text-left tap-y break-words hover:underline ${row.done ? `font-normal ${quiet}` : "font-medium text-ink"}`}
         >
           {row.title}
           {row.repeats && (

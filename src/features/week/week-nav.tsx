@@ -10,7 +10,7 @@ import { anchorDay, formatWeekHeading, weekHref, weekNavTarget, weekOf } from ".
 import { SpanSwitch } from "./span-switch";
 
 const step =
-  "inline-flex h-9 flex-none items-center gap-1.5 rounded-md border border-rule px-3 font-medium text-ink hover:bg-paper-2";
+  "inline-flex h-9 pointer-coarse:h-11 flex-none items-center gap-1.5 rounded-md border border-rule px-3 font-medium text-ink hover:bg-hover active:bg-press";
 
 function Chevron({ back }: { back?: boolean }) {
   return (
@@ -115,7 +115,7 @@ function WeekPicker({ start, onPick }: { start: LocalDate; onPick: (date: LocalD
           if (typed.current) commit(e.currentTarget.value, e.currentTarget);
           typed.current = false;
         }}
-        className="h-9 rounded-md border border-rule bg-sheet px-2.5 text-ink tabular focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-accent"
+        className="h-9 pointer-coarse:h-11 rounded-md border border-rule bg-sheet px-2.5 text-ink tabular focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-accent"
       />
     </>
   );

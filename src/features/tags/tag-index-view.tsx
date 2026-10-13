@@ -18,7 +18,7 @@ export function TagIndexView({ tags, hrefFor = tagHref }: { tags: TagSummary[]; 
             <li key={t.id} className="border-b border-rule-soft">
               <Link
                 href={hrefFor(t.name)}
-                className="flex items-baseline justify-between gap-4 rounded-md px-2 py-2.5 hover:bg-accent-wash"
+                className="flex items-baseline justify-between gap-4 rounded-md px-2 py-2.5 hover:bg-hover pointer-coarse:min-h-11 pointer-coarse:items-center active:bg-press"
               >
                 <span className="min-w-0 font-medium break-words text-ink">
                   <span aria-hidden="true" className="text-ink-3">
