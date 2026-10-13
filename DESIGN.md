@@ -200,7 +200,7 @@ This is the incumbent system as shipped in `src/app/globals.css`, `src/features/
 **Key Characteristics:**
 - One hour axis shared by every area, read left to right.
 - State is drawn as line form; colour is reserved.
-- Verdigris appears only for now, a drag target, the focused or selected thing, and the one public Sign in action.
+- Verdigris appears only for now, a drag target, the focused or selected thing, and the one public call to start (Start with today).
 - Engraved hairlines and paper tones carry structure; shadows are rare and functional.
 - Serif for what you read, sans for what you operate, tabular figures for every time and count.
 
@@ -209,7 +209,7 @@ This is the incumbent system as shipped in `src/app/globals.css`, `src/features/
 A two-ink, one-pigment palette: warm paper, near-black ink in three strengths, and a single verdigris that is spent sparingly.
 
 ### Primary
-- **Verdigris** (`verdigris`, dark `night-verdigris`): the colour of now. It fills the playhead line, the clock flag on the hour axis and the live beam. It also draws the drag ghost (dashed outline over its wash), the selected-label underline, the focus ring, the caret, text selection, and the landing page's one Sign in button.
+- **Verdigris** (`verdigris`, dark `night-verdigris`): the colour of now. It fills the playhead line, the clock flag on the hour axis and the live beam. It also draws the drag ghost (dashed outline over its wash), the selected-label underline, the focus ring, the caret, text selection, and the landing page's Start with today button.
 - **Verdigris Wash** (`verdigris-wash`): a 14% tint (16% in dark) for a drop target under a drag, a selected row in Inbox and Lists, the active palette option, and the hover state of quiet controls.
 
 ### Neutral
@@ -294,7 +294,7 @@ A 44 by 16px drawing of an item: a head and a beam, and the system's state langu
 
 ### Buttons
 - **Shape:** gently rounded (6px); outlined variants 6px to 8px.
-- **Public primary:** Verdigris fill, On Verdigris text, 15px 600, 12px by 20px. Hover mixes 14% ink into the verdigris over 150ms. Used only for Sign in.
+- **Public primary:** Verdigris fill, On Verdigris text, 15px 600, 12px by 20px. Hover mixes 14% ink into the verdigris over 150ms. Used only for Start with today, the landing's way in (in the hero and again at the close). The header's Sign in is a plain text link for returning users.
 - **Public quiet:** hairline border, ink text, same size; hover strengthens the border to Field Stroke.
 - **Ink:** Engraving Ink fill, Paper text, 500. The in-app primary action (New note, Search, Delete account once confirmed). Hover drops opacity to 0.9.
 - **Outline:** hairline border, 6px by 12px, hover Verdigris Wash. Secondary in-app actions.
@@ -323,7 +323,7 @@ A native `<dialog>` in Sheet, 560px wide, 12px radius, Dialog lift shadow, risin
 
 ### Do:
 - **Do** show an item's state with its line form: dashed planned, solid live, hollow done.
-- **Do** reserve Verdigris (`#0a675a`, dark `#45c7b0`) for now, a drag target, focus or selection, and the public Sign in.
+- **Do** reserve Verdigris (`#0a675a`, dark `#45c7b0`) for now, a drag target, focus or selection, and the public Start with today.
 - **Do** fill the current navigation item with Engraving Ink, not verdigris.
 - **Do** draw structure with Hairline (28% ink) and Hairline Soft (12% ink), and close the end of a sequence with a `3px double` rule.
 - **Do** set every time, count and date numeral in tabular figures.

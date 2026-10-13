@@ -15,6 +15,9 @@ export const metadata: Metadata = {
   alternates: { canonical: "/" },
 };
 
+/** Said under every call to start, so nobody has to sign in to learn what signing in costs. */
+const TERMS = "Free. Email link or Google. No password.";
+
 const NOW = [
   "Today and any other day, one step or one date away",
   "Drag a task onto a line to give it a time; drag its end to change how long",
@@ -56,12 +59,13 @@ export default async function Home() {
             </p>
             <div className="mt-8 flex flex-wrap items-center gap-3">
               <Link href="/login" className={primaryAction}>
-                Sign in
+                Start with today
               </Link>
               <a href="#how" className={quietAction}>
                 How it works
               </a>
             </div>
+            <p className="mt-3 text-[13px] text-ink-3">{TERMS}</p>
           </div>
         </section>
 
@@ -148,11 +152,10 @@ export default async function Home() {
               </p>
             </div>
             <div className="flex flex-col items-start gap-3">
-              <p className="font-serif text-2xl leading-tight text-ink sm:text-[28px]">Start with today.</p>
               <Link href="/login" className={primaryAction}>
-                Sign in
+                Start with today
               </Link>
-              <p className="text-[13px] text-ink-3">With an email link or your Google account.</p>
+              <p className="text-[13px] text-ink-3">{TERMS}</p>
             </div>
           </div>
         </section>
