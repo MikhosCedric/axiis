@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { ItemId, LocalDate } from "@/domain/item";
 import type { TagName } from "@/domain/tag";
-import { capturedLine, dayOf, firstCapturedLine, parseCapture, previewWords, type CaptureText, type DayWord } from "./capture-syntax";
+import { CAPTURE_EXAMPLES, capturedLine, dayOf, firstCapturedLine, parseCapture, previewWords, type CaptureText, type DayWord } from "./capture-syntax";
 import type { Landed } from "./commands";
 
 const d = (s: string) => s as LocalDate;
@@ -170,6 +170,14 @@ describe("capturedLine", () => {
     );
     expect(capturedLine({ ...base, missed: tags("a") }, "field")).toMatch(/The tag #a did not save\.$/);
     expect(capturedLine({ ...base, type: "checklist" }, "field")).toBe("Captured. It is open, ready for its lines.");
+  });
+});
+
+describe("CAPTURE_EXAMPLES", () => {
+  it("are lines capture reads as written: two plans and one plain line", () => {
+    expect(CAPTURE_EXAMPLES.map((line) => previewWords(parseCapture(line)) !== null)).toEqual([true, true, false]);
+    expect(parseCapture(CAPTURE_EXAMPLES[0])).toMatchObject({ title: "dentist", time: { start: 540 }, tags: ["health"] });
+    expect(parseCapture(CAPTURE_EXAMPLES[1])).toMatchObject({ title: "call Sam", time: { start: 840, length: 30 } });
   });
 });
 

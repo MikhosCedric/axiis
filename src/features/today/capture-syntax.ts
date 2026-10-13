@@ -290,6 +290,12 @@ export function tagList(tags: readonly string[]): string {
 
 type Captured = Extract<CaptureResult, { ok: true }>;
 
+/** Lines the capture field's placeholder turns through on an account's first day, each one real capture syntax. */
+export const CAPTURE_EXAMPLES = ["dentist tomorrow 9:00 #health", "call Sam friday 14:00 for 30m", "buy milk"] as const;
+
+/** Above the capture field on an account's first day. */
+export const CAPTURE_LEAD = "Type one thing you have to do. Add a day or a time and it lands on its line.";
+
 /**
  * What a status line says once a capture has saved: in the capture field,
  * which sits above the tray, or in the palette, which can be opened anywhere.

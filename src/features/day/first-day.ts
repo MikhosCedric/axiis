@@ -26,11 +26,5 @@ export function exampleBeams(areas: readonly Area[]): ExampleBeam[] {
   });
 }
 
-/** Lines the capture field's placeholder turns through on the first day, each one real capture syntax. */
-export const CAPTURE_EXAMPLES = ["dentist tomorrow 9:00 #health", "call Sam friday 14:00 for 30m", "buy milk"] as const;
-
-/** Above the capture field on the first day. */
-export const CAPTURE_LEAD = "Type one thing you have to do. Add a day or a time and it lands on its line.";
-
 /** Under the Score on the first day, where the key and help usually sit. */
 export const EXAMPLES_NOTE = "The faint beams are examples. They go once you add your first item.";

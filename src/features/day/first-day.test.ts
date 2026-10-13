@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Area, AreaId } from "@/domain/item";
-import { parseCapture, previewWords } from "@/features/today/capture-syntax";
-import { CAPTURE_EXAMPLES, exampleBeams } from "./first-day";
+import { exampleBeams } from "./first-day";
 
 const areas = (...names: string[]): Area[] => names.map((name, position) => ({ id: `area-${name}` as AreaId, name, position }));
 const shown = (list: Area[]) => exampleBeams(list).map((b) => [b.areaId.slice(5), b.title, b.span.start, b.span.end]);
@@ -45,13 +44,5 @@ describe("exampleBeams", () => {
   it("returns spans a caller may change without changing the next call's", () => {
     exampleBeams(areas("Work"))[0].span.start = 0;
     expect(exampleBeams(areas("Work"))[0].span.start).toBe(600);
-  });
-});
-
-describe("CAPTURE_EXAMPLES", () => {
-  it("are lines capture reads as written: two plans and one plain line", () => {
-    expect(CAPTURE_EXAMPLES.map((line) => previewWords(parseCapture(line)) !== null)).toEqual([true, true, false]);
-    expect(parseCapture(CAPTURE_EXAMPLES[0])).toMatchObject({ title: "dentist", time: { start: 540 }, tags: ["health"] });
-    expect(parseCapture(CAPTURE_EXAMPLES[1])).toMatchObject({ title: "call Sam", time: { start: 840, length: 30 } });
   });
 });
