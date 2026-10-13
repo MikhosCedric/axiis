@@ -103,8 +103,19 @@ test.describe("first-day capture", () => {
     await page.emulateMedia({ reducedMotion: "reduce" });
     await page.goto("/dev/score?firstday");
     await expect(field(page)).toHaveAttribute("placeholder", FIRST_EXAMPLE);
-    await page.waitForTimeout(4_500);
-    await expect(field(page)).toHaveAttribute("placeholder", FIRST_EXAMPLE);
+    // The C shortcut is wired in the same commit as the turning, so once it focuses the field the turning would have begun.
+    await expect(async () => {
+      await page.locator("h1").click();
+      await page.keyboard.press("c");
+      await expect(field(page)).toBeFocused({ timeout: 500 });
+    }).toPass();
+    // Sampled, not retried: a retrying assertion would wait for the turning to come back round.
+    const seen = new Set<string | null>();
+    for (let i = 0; i < 9; i++) {
+      seen.add(await field(page).getAttribute("placeholder"));
+      await page.waitForTimeout(500);
+    }
+    expect([...seen]).toEqual([FIRST_EXAMPLE]);
   });
 
   test("the first capture says what it understood and links to its day; the examples go; the next capture reads as usual", async ({
