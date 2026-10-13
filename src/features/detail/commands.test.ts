@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { ItemId } from "@/domain/item";
 import type { ItemsRepo } from "@/lib/items/repo";
 import { area, fakeRepo, makeItem } from "@/features/today/test-support";
+import { RATE_MESSAGE } from "@/lib/quota";
 import { addSubtask, deleteItem, loadDetail, promoteSubtask, renameItem, setItemArea } from "./commands";
 
 const NOW = new Date("2026-10-06T12:00:00Z");
@@ -66,6 +67,15 @@ describe("addSubtask", () => {
       throw new Error("network");
     };
     expect(await addSubtask(repo, parent.id, "Try")).toEqual({ ok: false, error: "That change did not save. Try again." });
+  });
+
+  it("says to slow down when the database rate-limits the save", async () => {
+    const parent = makeItem();
+    const { repo } = fakeRepo([parent]);
+    repo.create = async () => {
+      throw new Error("items.create failed", { cause: { code: "54R01", message: "rate limited" } });
+    };
+    expect(await addSubtask(repo, parent.id, "Try")).toEqual({ ok: false, error: RATE_MESSAGE });
   });
 });
 
