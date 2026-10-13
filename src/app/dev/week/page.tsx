@@ -1,3 +1,4 @@
+import { devHarnessEnabled } from "@/lib/dev-harness";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { fakeRepo, tagByTitle } from "@/features/today/test-support";
@@ -10,7 +11,7 @@ export const metadata: Metadata = { title: "Week harness" };
 
 /** Dev-only page that renders the week from fixture data. `?date=` picks the week, `?tz=` the zone. */
 export default async function WeekHarnessPage({ searchParams }: PageProps<"/dev/week">) {
-  if (process.env.NODE_ENV === "production") notFound();
+  if (!devHarnessEnabled()) notFound();
   const params = await searchParams;
   const one = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v);
   const timeZone = resolveTimeZone(one(params.tz));

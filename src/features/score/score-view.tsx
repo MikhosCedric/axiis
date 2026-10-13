@@ -244,7 +244,13 @@ export function ScoreView({
         </div>
       </div>
 
-      <div ref={scroller} onScroll={syncAxis} className="overflow-x-auto overflow-y-hidden border-b border-rule">
+      <div
+        ref={scroller}
+        onScroll={syncAxis}
+        // Present once the axis has been fitted to the width it was measured at, after hydration.
+        data-axis-measured={measured > 0 ? "" : undefined}
+        className="overflow-x-auto overflow-y-hidden border-b border-rule"
+      >
         <div className="relative" style={{ width: `calc(var(--lw) + ${width}px)` }}>
           {staves.map((staff, i) => (
             <div key={staff.areaId ?? "none"} className="flex border-b border-rule last:border-b-0">

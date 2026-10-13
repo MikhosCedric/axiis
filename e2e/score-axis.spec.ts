@@ -20,6 +20,12 @@ async function axis(page: Page) {
   });
 }
 
+/** Opens the Score harness once hydrated and its axis has been fitted to the measured width, so nothing below reads the server-drawn default. */
+async function gotoScore(page: Page) {
+  await page.goto("/dev/score");
+  await expect(page.locator("[data-axis-measured]")).toBeAttached();
+}
+
 /** The staves reach the scroller's right edge, short of one hour, unless the whole day is already drawn. */
 function expectFilled(a: Awaited<ReturnType<typeof axis>>) {
   expect(a.scrolls).toBe(false);
@@ -34,10 +40,9 @@ test.describe("on a wide window", () => {
   test.use({ viewport: { width: 1920, height: 1080 } });
 
   test("the Score's hour axis runs past 19:00 and fills the width with no empty strip", async ({ page }) => {
-    await page.goto("/dev/score");
-    await expect(page.locator("[data-hour]").first()).toBeVisible();
-    await expect.poll(async () => (await axis(page)).last).toBeGreaterThan(19);
+    await gotoScore(page);
     const a = await axis(page);
+    expect(a.last).toBeGreaterThan(19);
     expect(a.first).toBeLessThanOrEqual(7);
     expectFilled(a);
   });
@@ -48,8 +53,7 @@ for (const width of [1920, 1280]) {
     test.use({ viewport: { width, height: 900 } });
 
     test("the axis refills when the detail panel opens and closes", async ({ page }) => {
-      await page.goto("/dev/score");
-      await expect(page.locator("[data-hour]").first()).toBeVisible();
+      await gotoScore(page);
       const closed = await axis(page);
       // At 1920 the fixture's day always fits with the panel shut; at 1280 it always scrolls.
       if (width === 1920) expectFilled(closed);
@@ -78,10 +82,10 @@ test.describe("while dragging", () => {
   test.use({ viewport: { width: 1920, height: 900 } });
 
   test("a resize mid-drag leaves the axis alone until the beam is let go", async ({ page }) => {
-    await page.goto("/dev/score");
+    await gotoScore(page);
     const beam = page.getByRole("button", { name: /^Design sync, / });
-    await expect.poll(async () => (await axis(page)).scrolls).toBe(false);
     const before = await axis(page);
+    expect(before.scrolls).toBe(false);
     const noon = () => page.locator('[data-hour="12"]').evaluate((el) => el.getBoundingClientRect().left);
     const x = await noon();
 
@@ -103,8 +107,7 @@ test.describe("on a phone", () => {
   test.use({ viewport: { width: 375, height: 812 } });
 
   test("the axis keeps its default hours and scrolls sideways", async ({ page }) => {
-    await page.goto("/dev/score");
-    await expect(page.locator("[data-hour]").first()).toBeAttached();
+    await gotoScore(page);
     const a = await axis(page);
     expect(a.scrolls).toBe(true);
     expect(a.first).toBeLessThanOrEqual(7);
