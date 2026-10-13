@@ -294,6 +294,32 @@ test("notes: at 1920px the notes pages start at the same left edge as the Inbox"
   expect(await leftOf("/dev/notes/00000000-0000-4000-8000-000000000020", page.getByRole("textbox", { name: "Title" }))).toBe(inbox);
 });
 
+test("notes: the toolbar keeps to the text measure, in named groups, every tool reached by Tab", async ({ page }) => {
+  await page.setViewportSize({ width: 1920, height: 1080 });
+  await page.goto("/dev/notes/00000000-0000-4000-8000-000000000020");
+  const bar = page.getByRole("group", { name: "Formatting" });
+  const body = page.getByRole("textbox", { name: "Garden through the winter" });
+  const barBox = (await bar.boundingBox())!;
+  const bodyBox = (await body.boundingBox())!;
+  expect(barBox.x + barBox.width).toBeLessThanOrEqual(bodyBox.x + bodyBox.width + 1);
+  expect(barBox.width).toBeLessThan(640);
+
+  const groups = { Type: ["Heading", "Subheading", "Quote", "Code"], Style: ["Bold", "Italic", "Link"], Lists: ["Bulleted list", "Numbered list"] };
+  for (const [name, tools] of Object.entries(groups)) {
+    const group = bar.getByRole("group", { name, exact: true });
+    await expect(group.getByText(name, { exact: true })).toBeVisible();
+    for (const tool of tools) await expect(group.getByRole("button", { name: tool, exact: true })).toBeVisible();
+  }
+
+  await page.getByRole("textbox", { name: "Title" }).focus();
+  const reached: string[] = [];
+  for (let i = 0; i < 9; i++) {
+    await page.keyboard.press("Tab");
+    reached.push((await page.evaluate(() => document.activeElement?.getAttribute("aria-label"))) ?? "");
+  }
+  expect(reached).toEqual(Object.values(groups).flat());
+});
+
 test("notes: typing in the editor saves", async ({ page }) => {
   await page.goto("/dev/notes/00000000-0000-4000-8000-000000000020");
   const body = page.getByRole("textbox", { name: "Garden through the winter" });
