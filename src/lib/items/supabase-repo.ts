@@ -87,6 +87,11 @@ export class SupabaseItemsRepo implements ItemsRepo {
     return unwrap("listAreas", result, (raw) => rowList.parse(raw).map(areaFromRow));
   }
 
+  async hasAnyItem(): Promise<boolean> {
+    const result = await this.db.from("items").select("id").limit(1);
+    return unwrap("hasAnyItem", result, (raw) => rowList.parse(raw).length > 0);
+  }
+
   /** Items that are not series. A series is drawn through its expanded occurrences instead. */
   private single() {
     return this.items().is("rrule", null);
