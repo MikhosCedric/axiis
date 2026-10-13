@@ -144,14 +144,14 @@ function scan(tokens: readonly Token[], withLength: boolean): Scan {
   const found: Scan["found"] = [];
   const taken = new Set<string>();
   const fits = (hit: Hit, afterDay: boolean) => {
-    if (hit.slot === "tag") return !taken.has(`#${tagKey(hit.name)}`);
+    if (hit.slot === "tag") return true;
     if (taken.has(hit.slot)) return false;
     if (hit.slot === "length") return withLength;
     return hit.slot !== "time" || !hit.bare || afterDay;
   };
   const take = (hit: Hit, at: number) => {
     found.push({ hit, at });
-    taken.add(hit.slot === "tag" ? `#${tagKey(hit.name)}` : hit.slot);
+    taken.add(hit.slot);
   };
 
   fromEnd: while (hi > lo) {
@@ -222,8 +222,15 @@ export function parseCapture(text: string): CaptureText {
     title: unescape(line.slice(tokens[read.lo].from, tokens[read.hi - 1].to)),
     day: day?.day ?? null,
     time: time ? { start: time.start, length: length?.minutes ?? null } : null,
-    tags: hits.flatMap((h) => (h.slot === "tag" ? [h.name] : [])),
+    tags: firstSpellings(hits.flatMap((h) => (h.slot === "tag" ? [h.name] : []))),
   };
+}
+
+/** Each tag once, as a tag's name is the same in any case, in its first spelling. */
+function firstSpellings(names: readonly TagName[]): TagName[] {
+  const byKey = new Map<string, TagName>();
+  for (const name of names) if (!byKey.has(tagKey(name))) byKey.set(tagKey(name), name);
+  return [...byKey.values()];
 }
 
 const weekdayOf = (date: LocalDate) => new Date(`${date}T00:00:00Z`).getUTCDay();

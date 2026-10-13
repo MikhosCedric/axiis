@@ -66,9 +66,14 @@ describe("parseCapture", () => {
     expect(parseCapture('""')).toEqual(plain('""'));
   });
 
-  it("takes each of day, time and length once, and a tag once in any case", () => {
+  it("takes each of day, time and length once", () => {
     expect(parseCapture("tomorrow friday")).toEqual({ ...plain("tomorrow"), day: { kind: "weekday", weekday: 5, next: false } });
-    expect(parseCapture("#health #Health walk")).toEqual({ ...plain("#Health walk"), tags: ["health" as TagName] });
+  });
+
+  it("takes every tag, once in any case, keeping its first spelling", () => {
+    expect(parseCapture("#health #Health walk")).toEqual({ ...plain("walk"), tags: ["health" as TagName] });
+    expect(parseCapture("dup #Errands #errands")).toEqual({ ...plain("dup"), tags: ["Errands" as TagName] });
+    expect(parseCapture("#a dup #B #A #b")).toEqual({ ...plain("dup"), tags: ["a", "B"] as TagName[] });
   });
 
   it("reads on, next, by, in and at as part of the phrase they open", () => {
