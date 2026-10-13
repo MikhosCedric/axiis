@@ -2,7 +2,6 @@ import { z } from "zod";
 import {
   ITEM_STATUSES,
   ITEM_TYPES,
-  idSchema,
   localDateSchema,
   type Area,
   type AreaId,
@@ -23,8 +22,9 @@ export const LIST_COLUMNS = ITEM_COLUMNS.replace("body,", "");
 export const AREA_COLUMNS = "id,name,position";
 
 const timestampSchema = z.iso.datetime({ offset: true }).transform((s) => new Date(s));
-const itemIdSchema = idSchema.transform((s) => s as ItemId);
-const areaIdSchema = idSchema.transform((s) => s as AreaId);
+const itemIdSchema = z.uuid().transform((s) => s as ItemId);
+const areaIdSchema = z.uuid().transform((s) => s as AreaId);
+const dateColumn = z.nullable(localDateSchema);
 
 const itemRowSchema = z.object({
   id: itemIdSchema,
@@ -38,11 +38,11 @@ const itemRowSchema = z.object({
   position: z.number(),
   start_at: timestampSchema.nullable(),
   end_at: timestampSchema.nullable(),
-  scheduled_on: localDateSchema.nullable(),
-  due_on: localDateSchema.nullable(),
+  scheduled_on: dateColumn,
+  due_on: dateColumn,
   rrule: z.string().nullable(),
   series_id: itemIdSchema.nullable(),
-  original_on: localDateSchema.nullable(),
+  original_on: dateColumn,
   completed_at: timestampSchema.nullable(),
   created_at: timestampSchema,
   updated_at: timestampSchema,

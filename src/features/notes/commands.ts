@@ -85,7 +85,7 @@ export async function linkedNotes(notes: NotesRepo, id: ItemId): Promise<Connect
 }
 
 export async function createNote(notes: NotesRepo, rawAreaId: unknown = null): Promise<Created> {
-  const areaId = idSchema.nullable().safeParse(rawAreaId);
+  const areaId = z.nullable(idSchema).safeParse(rawAreaId);
   if (!areaId.success) return { ok: false, error: "That area could not be found." };
   try {
     const note = await notes.createNote({ title: "", areaId: areaId.data as AreaId | null });
