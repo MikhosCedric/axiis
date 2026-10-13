@@ -59,7 +59,7 @@ for (const [path, title] of [
 }
 
 test("an unknown address shows the not-found page", async ({ page }) => {
-  // Signed out, an unknown app path is sent to sign in first; /dev is public in development, so it reaches not-found.
+  // Signed out, an unknown app path is sent to sign in first; /dev is public in the browser-test build, so it reaches not-found.
   const response = await page.goto("/dev/no-such-page");
   expect(response?.status()).toBe(404);
   await expect(page.getByRole("heading", { level: 1, name: "There is nothing at this address." })).toBeVisible();
@@ -101,10 +101,11 @@ test("pages carry the security headers", async ({ request }) => {
   const policies = response.headersArray().filter((h) => h.name.toLowerCase() === "content-security-policy");
   expect(policies).toHaveLength(1);
   expect(headers["x-powered-by"]).toBeUndefined();
+  expect(headers["strict-transport-security"]).toBe("max-age=63072000; includeSubDomains");
 });
 
 for (const path of ["/dev/score", "/dev/week", "/dev/inbox", "/dev/detail", "/dev/notes", "/dev/settings"]) {
-  test(`${path} is reachable in development`, async ({ page }) => {
+  test(`${path} is reachable in the browser-test build`, async ({ page }) => {
     const response = await page.goto(path);
     expect(response?.status()).toBe(200);
     await expect(page).toHaveURL(path);
@@ -121,6 +122,8 @@ test("every page carries a nonce policy, and the page runs under it without a vi
     const policy = response?.headers()["content-security-policy"] ?? "";
     expect(policy, path).toMatch(/script-src 'self' 'nonce-[A-Za-z0-9+/=]+' 'strict-dynamic'/);
     expect(policy, path).toContain("frame-ancestors 'none'");
+    expect(policy, path).toContain("upgrade-insecure-requests");
+    expect(policy, path).not.toContain("unsafe-eval");
   }
   // Hydration needs the framework's nonced scripts: the theme switch only works once it has run.
   await page.goto("/");
