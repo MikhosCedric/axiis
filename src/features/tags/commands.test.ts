@@ -37,7 +37,9 @@ describe("addTag", () => {
     await addTag(w.repo, w.note.id, "ERRANDS", TZ);
     expect(w.tags.map((t) => t.name)).toEqual(["Errands"]);
     expect(w.namesOn(w.note)).toEqual(["Errands"]);
-    expect(w.calls.addTag).toHaveLength(2);
+    expect(w.calls.addTags).toHaveLength(2);
+    // The limit checks read the item's tags and the tag names, never every tag's open count.
+    expect(w.calls.listTags).toBe(0);
   });
 
   it("puts a tag on the series when given an occurrence, and an override of it too", async () => {
@@ -66,7 +68,7 @@ describe("addTag", () => {
     expect((await addTag(w.repo, w.task.id, "x".repeat(33), TZ)).ok).toBe(false);
     expect(await addTag(w.repo, "00000000-0000-4000-8000-0000000fffff", "a", TZ)).toEqual({ ok: false, error: "That item is not here any more." });
     expect((await addTag(w.repo, w.key("2026-10-01"), "before it starts", TZ)).ok).toBe(false);
-    expect(w.calls.addTag).toEqual([]);
+    expect(w.calls.addTags).toEqual([]);
   });
 
   it("keeps an item to its limit, but an existing tag on it still counts as done", async () => {
@@ -77,7 +79,7 @@ describe("addTag", () => {
       error: `An item keeps up to ${TAGS_PER_ITEM} tags. Remove one to add another.`,
     });
     expect(await addTag(w.repo, w.task.id, "T3", TZ)).toEqual({ ok: true });
-    expect(w.calls.addTag).toEqual([]);
+    expect(w.calls.addTags).toEqual([]);
   });
 
   it("keeps a user to their limit of tags, while existing ones can still go on more items", async () => {
@@ -90,7 +92,7 @@ describe("addTag", () => {
 
   it("says so when the save fails", async () => {
     const w = world();
-    const repo = { ...w.repo, addTag: () => Promise.reject(new Error("down")) };
+    const repo = { ...w.repo, addTags: () => Promise.reject(new Error("down")) };
     expect(await addTag(repo, w.task.id, "x", TZ)).toEqual({ ok: false, error: "That change did not save. Try again." });
   });
 });
