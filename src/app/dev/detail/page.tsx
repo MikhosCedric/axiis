@@ -1,3 +1,4 @@
+import { devHarnessEnabled } from "@/lib/dev-harness";
 import type { Metadata } from "next";
 import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
@@ -10,7 +11,7 @@ export const metadata: Metadata = { title: "Detail panel harness" };
 
 /** Dev only: the detail sheet with fixture items and in-memory saves, for checking it without a session. */
 export default async function DetailHarnessPage({ searchParams }: PageProps<"/dev/detail">) {
-  if (process.env.NODE_ENV === "production") notFound();
+  if (!devHarnessEnabled()) notFound();
   const selected = (await searchParams)[SELECTED_ITEM_PARAM];
   const timeZone = resolveTimeZone((await cookies()).get(TZ_COOKIE)?.value);
   return <DetailHarness itemId={typeof selected === "string" ? selected : null} timeZone={timeZone} />;

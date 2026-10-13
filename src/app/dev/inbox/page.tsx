@@ -1,3 +1,4 @@
+import { devHarnessEnabled } from "@/lib/dev-harness";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { loadInbox } from "@/features/inbox/commands";
@@ -10,7 +11,7 @@ export const metadata: Metadata = { title: "Inbox harness" };
 
 /** Dev-only page that renders the inbox from fixture data. `?empty` starts with nothing waiting, `?tz=` picks the zone. */
 export default async function InboxHarnessPage({ searchParams }: PageProps<"/dev/inbox">) {
-  if (process.env.NODE_ENV === "production") notFound();
+  if (!devHarnessEnabled()) notFound();
   const params = await searchParams;
   const one = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v);
   const timeZone = resolveTimeZone(one(params.tz));
