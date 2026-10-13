@@ -164,6 +164,16 @@ describe("SupabaseItemsRepo bounded reads", () => {
     expect(q.get("limit")).toBe("200");
   });
 
+  it("asks whether any item was ever stored with one read of one id, soft-deleted rows included", async () => {
+    const { repo, requests } = stubbed();
+    expect(await repo.hasAnyItem()).toBe(false);
+    expect(requests).toHaveLength(1);
+    const q = requests[0];
+    expect(q.get("select")).toBe("id");
+    expect(q.get("limit")).toBe("1");
+    expect([...q.keys()].sort()).toEqual(["limit", "select"]);
+  });
+
   it("counts the nav rail's open items in one request that asks for area ids only", async () => {
     const { repo, requests } = stubbed();
     expect(
