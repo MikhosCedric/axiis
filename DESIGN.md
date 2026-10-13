@@ -274,7 +274,7 @@ The system is flat. Structure is drawn with hairlines and three paper tones (Rai
 
 ## Shapes
 
-Corners are small and quiet. Controls and links use 6px (`rounded-md`), inputs, chips and outlined buttons 8px, dialogs 12px, and `kbd` keys and the now flag 4px. Checklist glyph heads are 2px squares, task heads are circles, and area load bars are full pills. Staves, rules and the score itself have square corners: the page is ruled paper, not a stack of cards.
+Corners are small and quiet. Controls and links use 6px (`rounded-md`), inputs, chips and outlined buttons 8px, dialogs 12px, and `kbd` keys and the now flag 4px. Checklist glyph heads are 2px squares, task heads are circles, and area load bars are full pills. Staves, rules and the score itself have square corners: the page is ruled paper, not a stack of cards. A notice that sits on a page, such as Today's left-over strip, is a ruled section (a Hairline above and below, no fill, no corners), not a tinted box.
 
 ## Components
 
