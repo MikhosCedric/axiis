@@ -52,6 +52,14 @@ test("the export route answers a stranger with a redirect, not data", async ({ r
   expect(response.headers()["content-disposition"]).toBeUndefined();
 });
 
+test("sign in carries the brand back home and tells a newcomer the link makes the account", async ({ page }) => {
+  await page.goto("/login");
+  await expect(page.getByText("New here? The same link makes your account.")).toBeVisible();
+  await page.getByRole("link", { name: "Axiis" }).click();
+  await expect(page).toHaveURL("/");
+  await expect(page.getByRole("heading", { level: 1, name: "Your tasks and your time, on one page." })).toBeVisible();
+});
+
 test("sign in rejects an address that is not an email, accessibly", async ({ page }) => {
   await page.goto("/login");
   const email = page.getByLabel("Email address");
