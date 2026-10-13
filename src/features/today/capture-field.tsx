@@ -1,10 +1,12 @@
 "use client";
 
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState, useTransition, type FormEvent } from "react";
 import { HelpHint } from "@/components/help-hint";
 import { captureAction as serverCapture } from "./actions";
 import type { ActionResult, CaptureResult } from "./commands";
-import { capturedLine, parseCapture, previewWords } from "./capture-syntax";
+import { CAPTURE_EXAMPLES, CAPTURE_LEAD, capturedLine, firstCapturedLine, parseCapture, previewWords } from "./capture-syntax";
 import { TITLE_MAX } from "./model";
 
 /** How long a new item wears the accent ring once it shows up. */
@@ -41,11 +43,28 @@ function markWhenShown(id: string): () => void {
   };
 }
 
+/** How long each first-day example stays in the placeholder. */
+const EXAMPLE_MS = 3500;
+
+/** The first-day placeholder: each capture example in turn, or the first one only when motion is reduced. */
+function useExample(on: boolean): string {
+  const [at, setAt] = useState(0);
+  useEffect(() => {
+    if (!on || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const id = window.setInterval(() => setAt((i) => (i + 1) % CAPTURE_EXAMPLES.length), EXAMPLE_MS);
+    return () => window.clearInterval(id);
+  }, [on]);
+  return CAPTURE_EXAMPLES[on ? at : 0];
+}
+
+type Status = { text: string; error: boolean; link?: { href: string; label: string } };
+
 export function CaptureField({
   captureAction = serverCapture,
   label = "Capture anything",
   placeholder = "Capture anything, then place it later",
   plans = true,
+  firstDay = false,
 }: {
   // Some screens still type their capture as a plain ActionResult; the server sends the full CaptureResult.
   captureAction?: (title: string) => Promise<CaptureResult | ActionResult>;
@@ -53,13 +72,17 @@ export function CaptureField({
   placeholder?: string;
   /** False where the capture takes its words as a name and plans nothing, so no preview or syntax help shows. */
   plans?: boolean;
+  /** The account has never stored an item: lead with a line of help, show examples, and answer the first capture in full. */
+  firstDay?: boolean;
 }) {
   const input = useRef<HTMLInputElement>(null);
   const [value, setValue] = useState("");
-  const [status, setStatus] = useState<{ text: string; error: boolean } | null>(null);
+  const [status, setStatus] = useState<Status | null>(null);
   const [pending, startTransition] = useTransition();
   const unmark = useRef<() => void>(() => {});
   const preview = plans ? previewWords(parseCapture(value)) : null;
+  const example = useExample(firstDay);
+  const pathname = usePathname();
 
   useEffect(() => () => unmark.current(), []);
 
@@ -84,6 +107,8 @@ export function CaptureField({
     setValue("");
     setStatus(null);
     unmark.current();
+    // The answer lands after a refresh that ends the first day, so remember whether this was it.
+    const first = firstDay;
     startTransition(async () => {
       const result = await captureAction(title);
       if (!result.ok) {
@@ -92,7 +117,7 @@ export function CaptureField({
         return;
       }
       if ("id" in result) {
-        setStatus({ text: capturedLine(result, "field"), error: false });
+        setStatus(first ? { ...firstCapturedLine(result), error: false } : { text: capturedLine(result, "field"), error: false });
         unmark.current = markWhenShown(result.id);
       }
     });
@@ -103,6 +128,11 @@ export function CaptureField({
       <label htmlFor="capture" className="sr-only">
         {label}
       </label>
+      {firstDay && (
+        <p id="capture-lead" className="mb-2 text-[15px] text-ink-2">
+          {CAPTURE_LEAD}
+        </p>
+      )}
       <div className="relative">
         <input
           ref={input}
@@ -112,9 +142,9 @@ export function CaptureField({
           onChange={(e) => setValue(e.target.value)}
           onKeyDown={(e) => e.key === "Escape" && e.currentTarget.blur()}
           maxLength={TITLE_MAX}
-          placeholder={placeholder}
+          placeholder={firstDay ? example : placeholder}
           aria-keyshortcuts="c"
-          aria-describedby="capture-status capture-preview"
+          aria-describedby={`${firstDay ? "capture-lead " : ""}capture-status capture-preview`}
           className="w-full rounded-lg border border-field bg-sheet py-2.5 pr-10 pl-3.5 text-ink"
         />
         <kbd
@@ -138,6 +168,15 @@ export function CaptureField({
           {/* While the line reads as a plan, the preview takes the status line's place; the status stays for screen readers. */}
           <p id="capture-status" role="status" className={preview ? "sr-only" : status?.error ? "font-medium text-ink" : "text-ink-2"}>
             {pending ? "Saving" : status?.text}
+            {!pending && status?.link && status.link.href !== pathname && (
+              <>
+                {" "}
+                <Link href={status.link.href} className="font-medium text-ink underline decoration-rule underline-offset-2 hover:decoration-ink">
+                  {status.link.label}
+                </Link>
+                .
+              </>
+            )}
           </p>
           {preview && (
             <p id="capture-preview" className="text-ink-2">
