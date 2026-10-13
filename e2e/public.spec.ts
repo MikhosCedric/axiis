@@ -5,12 +5,32 @@ test("the landing page shows the pitch, the sample day and a way in", async ({ p
   await expect(page.getByRole("heading", { level: 1, name: "Your tasks and your time, on one page." })).toBeVisible();
   await expect(page.getByRole("figure", { name: /A sample day/ })).toBeVisible();
   await expect(page.getByRole("link", { name: "Sign in" }).first()).toHaveAttribute("href", "/login");
+
+  const hero = page.getByRole("region", { name: "Your tasks and your time, on one page." });
+  const start = hero.getByRole("link", { name: "Start with today" });
+  await expect(start).toHaveAttribute("href", "/login");
+  const terms = hero.getByText("Free. Email link or Google. No password.");
+  await expect(terms).toBeVisible();
+  expect((await terms.boundingBox())!.y).toBeGreaterThan((await start.boundingBox())!.y);
+  await expect(page.getByRole("link", { name: "Start with today" })).toHaveCount(2);
+  await expect(page.getByText(/!/)).toHaveCount(0);
 });
 
 test("the landing page lists shipped features as shipped, and nothing as coming", async ({ page }) => {
   await page.goto("/");
   const today = page.getByRole("region", { name: "What it does today" }).getByRole("listitem");
-  for (const shipped of [/repeat/, /inbox/, /Checklists/, /Tags/, /command palette/]) {
+  for (const shipped of [
+    /repeat/,
+    /inbox/,
+    /checklists/,
+    /Tags/,
+    /command palette/,
+    /Due dates/,
+    /dentist tomorrow 9:00/,
+    /earlier day/,
+    /compact density/,
+    /G then a letter/,
+  ]) {
     await expect(today.filter({ hasText: shipped })).toHaveCount(1);
   }
   await expect(page.getByRole("heading", { name: "Coming" })).toHaveCount(0);
@@ -30,6 +50,14 @@ test("the export route answers a stranger with a redirect, not data", async ({ r
   expect(response.status()).toBe(307);
   expect(response.headers()["location"]).toBe("/login?next=%2Fsettings%2Fexport");
   expect(response.headers()["content-disposition"]).toBeUndefined();
+});
+
+test("sign in carries the brand back home and tells a newcomer the link makes the account", async ({ page }) => {
+  await page.goto("/login");
+  await expect(page.getByText("New here? The same link makes your account.")).toBeVisible();
+  await page.getByRole("link", { name: "Axiis" }).click();
+  await expect(page).toHaveURL("/");
+  await expect(page.getByRole("heading", { level: 1, name: "Your tasks and your time, on one page." })).toBeVisible();
 });
 
 test("sign in rejects an address that is not an email, accessibly", async ({ page }) => {

@@ -1,3 +1,9 @@
+/* The toolbar and the body share one measure: 68ch of 16px reading text. */
+.measure {
+  max-width: 68ch;
+  font-size: 16px;
+}
+
 .prose {
   min-height: 12rem;
   margin-left: -14px;
