@@ -20,6 +20,7 @@ import { cadence } from "@/features/detail/repeat";
 import { displayTitle } from "@/features/notes/model";
 import type { ActionResult } from "@/features/today/commands";
 import type { TaggedRow } from "./model";
+import { saveFailure } from "@/lib/quota";
 
 const NAME_ERROR = `A tag needs 1 to ${TAG_NAME_MAX} characters.`;
 const MISSING_ITEM = "That item is not here any more.";
@@ -31,8 +32,8 @@ const USER_FULL = `Axiis keeps up to ${TAGS_PER_USER} tags. Delete one in Settin
 async function attempt(work: () => Promise<ActionResult | void>): Promise<ActionResult> {
   try {
     return (await work()) ?? { ok: true };
-  } catch {
-    return { ok: false, error: NOT_SAVED };
+  } catch (error) {
+    return { ok: false, error: saveFailure(error, NOT_SAVED) };
   }
 }
 
