@@ -282,6 +282,54 @@ test("detail: a new subtask can be renamed in place", async ({ page }) => {
   );
 });
 
+test("notes: at 1920px the notes pages start at the same left edge as the Inbox", async ({ page }) => {
+  await page.setViewportSize({ width: 1920, height: 1080 });
+  const leftOf = async (path: string, heading = page.locator("h1").first()) => {
+    await page.goto(path);
+    return (await heading.boundingBox())!.x;
+  };
+  const inbox = await leftOf("/dev/inbox");
+  expect(await leftOf("/dev/notes")).toBe(inbox);
+  expect(await leftOf("/dev/notes/search?q=bulbs")).toBe(inbox);
+  expect(await leftOf("/dev/notes/00000000-0000-4000-8000-000000000020", page.getByRole("textbox", { name: "Title" }))).toBe(inbox);
+});
+
+test("notes: the toolbar keeps to the text measure, in named groups, every tool reached by Tab", async ({ page }) => {
+  await page.setViewportSize({ width: 1920, height: 1080 });
+  await page.goto("/dev/notes/00000000-0000-4000-8000-000000000020");
+  const bar = page.getByRole("group", { name: "Formatting" });
+  const body = page.getByRole("textbox", { name: "Garden through the winter" });
+  const barBox = (await bar.boundingBox())!;
+  const bodyBox = (await body.boundingBox())!;
+  expect(barBox.x + barBox.width).toBeLessThanOrEqual(bodyBox.x + bodyBox.width + 1);
+  expect(barBox.width).toBeLessThan(640);
+
+  const groups = { Type: ["Heading", "Subheading", "Quote", "Code"], Style: ["Bold", "Italic", "Link"], Lists: ["Bulleted list", "Numbered list"] };
+  for (const [name, tools] of Object.entries(groups)) {
+    const group = bar.getByRole("group", { name, exact: true });
+    await expect(group.getByText(name, { exact: true })).toBeVisible();
+    for (const tool of tools) await expect(group.getByRole("button", { name: tool, exact: true })).toBeVisible();
+  }
+
+  await page.getByRole("textbox", { name: "Title" }).focus();
+  const reached: string[] = [];
+  for (let i = 0; i < 9; i++) {
+    await page.keyboard.press("Tab");
+    reached.push((await page.evaluate(() => document.activeElement?.getAttribute("aria-label"))) ?? "");
+  }
+  expect(reached).toEqual(Object.values(groups).flat());
+});
+
+test("notes: opening the list never rewrites the address; typing a search does", async ({ page }) => {
+  await page.goto("/dev/notes?q=garden&from=link");
+  await expect(page.getByRole("searchbox", { name: "Search notes" })).toHaveValue("garden");
+  await page.waitForTimeout(1000);
+  await expect(page).toHaveURL(/\/dev\/notes\?q=garden&from=link$/);
+
+  await page.getByRole("searchbox", { name: "Search notes" }).fill("bulbs");
+  await expect(page).toHaveURL(/\/dev\/notes\?q=bulbs$/);
+});
+
 test("notes: typing in the editor saves", async ({ page }) => {
   await page.goto("/dev/notes/00000000-0000-4000-8000-000000000020");
   const body = page.getByRole("textbox", { name: "Garden through the winter" });
@@ -329,6 +377,71 @@ test("settings: an area can be added and renamed", async ({ page }) => {
   await studio.press("Enter");
   await expect(areas.getByRole("textbox", { name: "Rename Garden", exact: true })).toHaveValue("Garden");
   await expect(areas.getByRole("listitem")).toHaveCount(5);
+});
+
+test.describe("settings layout", () => {
+  for (const width of [1280, 1920]) {
+    test(`at ${width}px a sticky index sits beside the sections`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 900 });
+      await page.goto("/dev/settings");
+      const index = page.getByRole("navigation", { name: "Settings sections" });
+      await expect(index.getByRole("link")).toHaveText(["Areas", "Tags", "Display", "Your data"]);
+
+      const nav = (await index.boundingBox())!;
+      const areas = (await page.getByRole("region", { name: "Areas" }).boundingBox())!;
+      expect(nav.x + nav.width).toBeLessThan(areas.x);
+      expect(Math.abs(nav.y - areas.y)).toBeLessThan(4);
+
+      await index.getByRole("link", { name: "Your data" }).click();
+      await expect(page).toHaveURL(/#your-data$/);
+      await expect(page.getByRole("heading", { name: "Export your data" })).toBeInViewport();
+      await expect(index).toBeInViewport();
+    });
+  }
+
+  test("at 375px the sections stack with no index and no sideways scroll", async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 812 });
+    await page.goto("/dev/settings");
+    await expect(page.getByRole("navigation", { name: "Settings sections" })).toBeHidden();
+    await expect(page.getByRole("region", { name: "Display" })).toBeAttached();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(375);
+  });
+});
+
+test("settings: Theme sits beside Density under Display, is kept on reload, and follows the rail's toggle", async ({ page }) => {
+  await page.goto("/dev/settings");
+  const display = page.getByRole("region", { name: "Display" });
+  const theme = display.getByRole("group", { name: "Theme" });
+  await expect(display.getByRole("group", { name: "Density" })).toBeVisible();
+  await expect(theme.getByRole("button", { name: "System" })).toHaveAttribute("aria-pressed", "true");
+
+  await theme.getByRole("button", { name: "Dark" }).click();
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+  await page.reload();
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+  await expect(theme.getByRole("button", { name: "Dark" })).toHaveAttribute("aria-pressed", "true");
+
+  // The rail's toggle writes the same attribute; Settings follows it without a reload.
+  await page.evaluate(() => (document.documentElement.dataset.theme = "light"));
+  await expect(theme.getByRole("button", { name: "Light" })).toHaveAttribute("aria-pressed", "true");
+
+  await theme.getByRole("button", { name: "System" }).click();
+  await expect(page.locator("html")).not.toHaveAttribute("data-theme");
+  await page.reload();
+  await expect(page.locator("html")).not.toHaveAttribute("data-theme");
+  await expect(theme.getByRole("button", { name: "System" })).toHaveAttribute("aria-pressed", "true");
+});
+
+test("settings: a long area name that does not fit ends in an ellipsis and keeps the whole name as its title", async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 812 });
+  await page.goto("/dev/settings");
+  const name = "A longer area name that runs to forty";
+  const field = page.getByRole("region", { name: "Areas" }).getByRole("textbox", { name: `Rename ${name}`, exact: true });
+
+  await expect(field).toHaveAttribute("title", name);
+  const drawn = await field.evaluate((el) => ({ cut: el.scrollWidth > el.clientWidth, overflow: getComputedStyle(el).textOverflow }));
+  expect(drawn).toEqual({ cut: true, overflow: "ellipsis" });
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(375);
 });
 
 test.describe("tags", () => {

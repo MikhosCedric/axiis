@@ -15,21 +15,27 @@ export const metadata: Metadata = {
   alternates: { canonical: "/" },
 };
 
+/** Said under every call to start, so nobody has to sign in to learn what signing in costs. */
+const TERMS = "Free. Email link or Google. No password.";
+
 const NOW = [
   "Today and any other day, one step or one date away",
+  "Capture that reads a day and a time typed in English, as in “dentist tomorrow 9:00”",
   "Drag a task onto a line to give it a time; drag its end to change how long",
   "The same moves from the keyboard",
   "Subtasks, counted on the beam they belong to",
   "Tasks that repeat daily, on weekdays, weekly, monthly or yearly",
+  "Due dates, kept apart from the day you plan to do the thing, listed soonest first",
+  "Anything still open from an earlier day, named on Today with a way to bring it over",
   "An inbox of everything captured and not yet planned",
-  "Checklists gathered in one place, each with how many lines are done",
+  "Lists: checklists gathered in one place, each with how many lines are done",
   "Tags on any item, with a page for each tag",
   "A list view of the same day",
   "A week view, with items dragged from one day to another",
   "Notes that link to tasks, and search across both",
-  "A command palette, on Ctrl or Cmd K, to find anything or go anywhere",
+  "A command palette, on Ctrl or Cmd K, to find anything or go anywhere, and G then a letter to jump to a page",
   "Export all your data, or delete your account, from settings",
-  "Light and dark",
+  "Light and dark, and a compact density for long lists",
 ];
 
 export default async function Home() {
@@ -56,12 +62,13 @@ export default async function Home() {
             </p>
             <div className="mt-8 flex flex-wrap items-center gap-3">
               <Link href="/login" className={primaryAction}>
-                Sign in
+                Start with today
               </Link>
               <a href="#how" className={quietAction}>
                 How it works
               </a>
             </div>
+            <p className="mt-3 text-[13px] text-ink-3">{TERMS}</p>
           </div>
         </section>
 
@@ -148,11 +155,10 @@ export default async function Home() {
               </p>
             </div>
             <div className="flex flex-col items-start gap-3">
-              <p className="font-serif text-2xl leading-tight text-ink sm:text-[28px]">Start with today.</p>
               <Link href="/login" className={primaryAction}>
-                Sign in
+                Start with today
               </Link>
-              <p className="text-[13px] text-ink-3">With an email link or your Google account.</p>
+              <p className="text-[13px] text-ink-3">{TERMS}</p>
             </div>
           </div>
         </section>

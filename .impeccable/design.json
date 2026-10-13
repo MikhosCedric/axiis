@@ -63,8 +63,8 @@
       "name": "Public Primary Button",
       "kind": "button",
       "refersTo": "button-primary-public",
-      "description": "Verdigris Sign in; the only accent-filled button.",
-      "html": "<button class=\"ds-btn-primary\">Sign in</button>",
+      "description": "Verdigris Start with today; the only accent-filled button.",
+      "html": "<button class=\"ds-btn-primary\">Start with today</button>",
       "css": ".ds-btn-primary { display: inline-flex; align-items: center; padding: 12px 20px; border: 0; border-radius: 6px; background: var(--accent, #0a675a); color: var(--on-accent, #f3eee1); font: 600 15px var(--font-sans, 'Hanken Grotesk', sans-serif); transition: background-color 150ms; cursor: pointer; } .ds-btn-primary:hover { background: color-mix(in oklab, var(--accent, #0a675a) 86%, var(--ink, #1c1b22)); } .ds-btn-primary:focus-visible { outline: 2px solid var(--accent, #0a675a); outline-offset: 3px; }"
     },
     {
@@ -122,7 +122,7 @@
     "keyCharacteristics": [
       "One hour axis shared by every area, read left to right.",
       "State is drawn as line form; colour is reserved.",
-      "Verdigris appears only for now, a drag target, the focused or selected thing, and the one public Sign in action.",
+      "Verdigris appears only for now, a drag target, the focused or selected thing, and the one public call to start (Start with today).",
       "Engraved hairlines and paper tones carry structure; shadows are rare and functional.",
       "Serif for what you read, sans for what you operate, tabular figures for every time and count."
     ],
@@ -136,7 +136,7 @@
     ],
     "dos": [
       "Do show an item's state with its line form: dashed planned, solid live, hollow done.",
-      "Do reserve Verdigris (#0a675a, dark #45c7b0) for now, a drag target, focus or selection, and the public Sign in.",
+      "Do reserve Verdigris (#0a675a, dark #45c7b0) for now, a drag target, focus or selection, and the public Start with today.",
       "Do fill the current navigation item with Engraving Ink, not verdigris.",
       "Do draw structure with Hairline (28% ink) and Hairline Soft (12% ink), and close the end of a sequence with a 3px double rule.",
       "Do set every time, count and date numeral in tabular figures.",
