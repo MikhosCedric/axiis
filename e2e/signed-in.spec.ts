@@ -85,6 +85,20 @@ signedIn.describe("signed in", () => {
     expect(errors).toEqual([]);
   });
 
+  for (const path of ["/search?q=%00", "/notes?q=%00", "/search?q=a%00b"]) {
+    signedIn(`${path} hydrates without errors`, async ({ page }) => {
+      const errors: string[] = [];
+      page.on("console", (m) => {
+        if (m.type() === "error") errors.push(m.text());
+      });
+      page.on("pageerror", (e) => errors.push(e.message));
+      await page.goto(path);
+      await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+      await page.waitForLoadState("networkidle");
+      expect(errors).toEqual([]);
+    });
+  }
+
   signedIn("the landing page and /login send the account to Today", async ({ page }) => {
     await page.goto("/");
     await expect(page).toHaveURL("/today");
