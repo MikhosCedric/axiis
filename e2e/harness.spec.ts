@@ -331,6 +331,18 @@ test("settings: an area can be added and renamed", async ({ page }) => {
   await expect(areas.getByRole("listitem")).toHaveCount(5);
 });
 
+test("settings: a long area name that does not fit ends in an ellipsis and keeps the whole name as its title", async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 812 });
+  await page.goto("/dev/settings");
+  const name = "A longer area name that runs to forty";
+  const field = page.getByRole("region", { name: "Areas" }).getByRole("textbox", { name: `Rename ${name}`, exact: true });
+
+  await expect(field).toHaveAttribute("title", name);
+  const drawn = await field.evaluate((el) => ({ cut: el.scrollWidth > el.clientWidth, overflow: getComputedStyle(el).textOverflow }));
+  expect(drawn).toEqual({ cut: true, overflow: "ellipsis" });
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(375);
+});
+
 test.describe("tags", () => {
   test("the index lists tags with open counts and opens a tag's page", async ({ page }) => {
     await page.goto("/dev/tags");
