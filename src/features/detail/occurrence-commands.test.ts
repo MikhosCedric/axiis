@@ -317,11 +317,21 @@ describe("setTime", () => {
     expect((await loadOccurrences(w.repo, span, ny)).occurrences[0].schedule).toEqual(timed("2026-03-09T13:00:00Z", "2026-03-09T13:30:00Z"));
   });
 
-  it("moves a time the clocks skip forward with them", async () => {
+  it("refuses a time the clocks skip on the series' own date", async () => {
     const w = world({ schedule: { kind: "day", on: d("2026-03-08") } });
-    expect(await setTime(w.repo, w.series.id, { start: 2 * 60 + 30, length: 60 }, "America/New_York", "all")).toEqual({ ok: true });
-    // 02:30 does not exist that night, so it starts at 03:30 EDT and still lasts an hour.
-    expect(w.series.schedule).toEqual(timed("2026-03-08T07:30:00Z", "2026-03-08T08:30:00Z"));
+    expect(await setTime(w.repo, w.series.id, { start: 2 * 60 + 30, length: 60 }, "America/New_York", "all")).toEqual({
+      ok: false,
+      error: "02:30 does not happen on Sunday 8 March, when the clocks go forward. Try 03:00.",
+    });
+    expect(w.series.schedule).toEqual({ kind: "day", on: "2026-03-08" });
+  });
+
+  it("keeps the typed length on every other day when the series starts on the day the clocks go back", async () => {
+    const ny = "America/New_York";
+    const w = world({ schedule: { kind: "day", on: d("2026-11-01") } });
+    expect(await setTime(w.repo, w.series.id, { start: 0, length: 4 * 60 }, ny, "all")).toEqual({ ok: true });
+    const span = { from: new Date(0), to: new Date(0), fromDate: d("2026-11-02"), toDate: d("2026-11-03") };
+    expect((await loadOccurrences(w.repo, span, ny)).occurrences[0].schedule).toEqual(timed("2026-11-02T05:00:00Z", "2026-11-02T09:00:00Z"));
   });
 
   it("refuses all of them for something that does not repeat, and writes nothing", async () => {

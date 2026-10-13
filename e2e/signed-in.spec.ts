@@ -1,5 +1,5 @@
 import AxeBuilder from "@axe-core/playwright";
-import { expect as defaultExpect, test } from "@playwright/test";
+import { expect as defaultExpect, test, type Locator, type Page } from "@playwright/test";
 import { SESSION_COOKIE, sessionHeader, signedIn } from "./session";
 
 // A client navigation waits on the server render of the next route; see the timeout note below.
@@ -115,6 +115,56 @@ signedIn.describe("signed in", () => {
     await page.goto("/week");
     await chip.last().click();
     await expectOccurrenceOpen();
+  });
+
+  signedIn.describe("in New York", () => {
+    signedIn.use({ timezoneId: "America/New_York" });
+    signedIn.beforeEach(async ({ context, baseURL }) => {
+      await context.addCookies([{ name: "tz", value: encodeURIComponent("America/New_York"), url: baseURL }]);
+    });
+
+    const details = (page: Page) => page.getByRole("complementary", { name: "Details" }).first();
+    const when = (page: Page) => details(page).locator("dt", { hasText: "When" }).locator("+ dd > span").first();
+
+    async function timeOnDay(page: Page, day: string, title: string) {
+      await page.goto("/today");
+      await page.getByLabel("Capture anything").fill(`${title} ${day}`);
+      await page.getByLabel("Capture anything").press("Enter");
+      await expect(page.locator("#capture-status")).toContainText("Planned for");
+      await page.goto(`/day/${day}`);
+      await page.getByRole("button", { name: new RegExp(`^${title}\\s*, `) }).click();
+      return details(page).getByRole("group", { name: "Time" });
+    }
+
+    async function typeTime(page: Page, time: Locator, start: string, end: string) {
+      await time.getByLabel("Starts at").fill(start);
+      await time.getByLabel("Ends at").fill(end);
+      await time.getByLabel("Ends at").press("Enter");
+    }
+
+    signedIn("a typed end reads back as typed on both days the clocks change", async ({ page }) => {
+      for (const [day, start, end] of [
+        ["2026-03-08", "01:30", "04:00"],
+        ["2026-11-01", "00:00", "23:59"],
+      ]) {
+        const time = await timeOnDay(page, day, `Night shift ${day} ${Date.now()}`);
+        await typeTime(page, time, start, end);
+        await expect(details(page).getByRole("status").filter({ hasText: `At ${start} now.` })).toBeVisible();
+        await expect(when(page)).toHaveText(new RegExp(`, ${start} to ${end}$`));
+        await page.reload();
+        await expect(when(page)).toHaveText(new RegExp(`, ${start} to ${end}$`));
+      }
+    });
+
+    signedIn("a start the clocks skip is refused, naming the first time that happens", async ({ page }) => {
+      const time = await timeOnDay(page, "2026-03-08", `Early train ${Date.now()}`);
+      await typeTime(page, time, "02:30", "03:30");
+      await expect(
+        details(page).getByRole("status").filter({ hasText: "02:30 does not happen on Sunday 8 March, when the clocks go forward. Try 03:00." }),
+      ).toBeVisible();
+      await page.reload();
+      await expect(when(page)).toHaveText("Sunday 8 March");
+    });
   });
 
   signedIn("Due groups dated items, and a tick marks one done", async ({ page }) => {
