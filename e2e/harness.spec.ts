@@ -1,11 +1,12 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
 
-async function dragTo(page: Page, from: Locator, to: { x: number; y: number }) {
+async function dragTo(page: Page, from: Locator, to: { x: number; y: number }, { escape = false } = {}) {
   const box = await from.boundingBox();
   if (!box) throw new Error("drag source is not on screen");
   await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
   await page.mouse.down();
   await page.mouse.move(to.x, to.y, { steps: 12 });
+  if (escape) await page.keyboard.press("Escape");
   await page.mouse.up();
 }
 
@@ -36,6 +37,19 @@ test.describe("score", () => {
     // The harness seeds from the real clock, so a drop that lands on the current half hour reads "happening now".
     await expect(score.getByRole("button", { name: /^Book the dentist, \d\d:\d\d to \d\d:\d\d, Home, (?:planned|happening now)$/ })).toBeVisible();
     await expect(chip).toHaveCount(0);
+  });
+
+  test("Escape during a drag puts the item back and opens nothing", async ({ page }) => {
+    const score = page.getByRole("region", { name: "Score" });
+    const chip = page.getByRole("region", { name: "Waiting" }).getByRole("button", { name: /^Book the dentist, waiting/ });
+    const home = await center(score.getByText("Home", { exact: true }));
+
+    await dragTo(page, chip, { x: home.box.x + home.box.width + 160, y: home.y }, { escape: true });
+
+    await expect(chip).toBeVisible();
+    await expect(score.getByRole("button", { name: /^Book the dentist, \d\d:\d\d/ })).toHaveCount(0);
+    await expect(page.locator("html")).not.toHaveAttribute("data-score-dragging");
+    await expect(page.getByRole("complementary", { name: "Details" })).toHaveCount(0);
   });
 
   test("arrow keys move a focused beam a quarter hour", async ({ page }) => {
@@ -232,6 +246,24 @@ test("week: dragging an item to another day plans it there", async ({ page }) =>
 
   await expect(target.getByRole("button", { name: /^Stretch, / })).toBeVisible();
   await expect(days.nth(from).getByRole("button", { name: /^Stretch, / })).toHaveCount(0);
+});
+
+test("week: Escape during a drag leaves the item on its day", async ({ page }) => {
+  await page.goto("/dev/week");
+  const days = page.getByRole("region", { name: "Days" }).getByRole("region");
+  await expect(days).toHaveCount(7);
+  const item = page.getByRole("button", { name: /^Stretch, / });
+  let from = -1;
+  for (let i = 0; i < 7; i++) if ((await days.nth(i).getByRole("button", { name: /^Stretch, / }).count()) > 0) from = i;
+  expect(from).toBeGreaterThanOrEqual(0);
+  const target = days.nth((from + 2) % 7);
+
+  await dragTo(page, item, await center(target.getByRole("heading")), { escape: true });
+
+  await expect(days.nth(from).getByRole("button", { name: /^Stretch, / })).toBeVisible();
+  await expect(target.getByRole("button", { name: /^Stretch, / })).toHaveCount(0);
+  await expect(page.locator("html")).not.toHaveAttribute("data-score-dragging");
+  await expect(page.getByRole("complementary", { name: "Details" })).toHaveCount(0);
 });
 
 test("detail: a new subtask can be renamed in place", async ({ page }) => {
