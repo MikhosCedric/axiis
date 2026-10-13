@@ -7,6 +7,16 @@ const expect = defaultExpect.configure({ timeout: 30_000 });
 
 // The real signed-in routes, as the in-memory account from src/lib/supabase/fake-account.ts. See docs/e2e-session.md.
 
+/** Tomorrow's date in the zone the app plans in: the tz cookie, or UTC without one. */
+async function tomorrowForApp(page: Page): Promise<string> {
+  const cookie = (await page.context().cookies()).find((c) => c.name === "tz");
+  const timeZone = cookie ? decodeURIComponent(cookie.value) : "UTC";
+  const today = new Intl.DateTimeFormat("en-CA", { timeZone }).format(new Date());
+  const next = new Date(`${today}T00:00:00Z`);
+  next.setUTCDate(next.getUTCDate() + 1);
+  return next.toISOString().slice(0, 10);
+}
+
 test("a wrong session cookie is sent to sign in like any stranger", async ({ context, page, baseURL }) => {
   await context.addCookies([{ name: SESSION_COOKIE, value: "0".repeat(64), url: baseURL }]);
   await page.goto("/today");
@@ -142,8 +152,7 @@ signedIn.describe("signed in", () => {
     // Fast Refresh rebuild that follows can reload the page and drop that message. The saved plan survives.
     await expect(list.getByRole("button", { name: `Plan for: ${title}` })).toHaveCount(0);
 
-    const tomorrow = new Date(Date.now() + 86_400_000).toISOString().slice(0, 10);
-    await page.goto(`/day/${tomorrow}`);
+    await page.goto(`/day/${await tomorrowForApp(page)}`);
     await expect(page.getByText(title).first()).toBeVisible();
   });
 
@@ -242,6 +251,10 @@ signedIn.describe("signed in", () => {
     await past.getByRole("checkbox", { name: "Done: File the tax form" }).focus();
     await page.keyboard.press("Space");
     await expect(page.getByRole("status")).toHaveText("File the tax form is done.");
+
+    await page.reload();
+    await expect(page.getByRole("checkbox", { name: "Done: File the tax form" })).toBeChecked();
+    await expect(page.getByText("Due Wednesday 15 January 2020")).toBeVisible();
   });
 
   signedIn("Today names what is left over from earlier days, and one can be moved to today", async ({ page }) => {
@@ -256,12 +269,19 @@ signedIn.describe("signed in", () => {
   });
 
   signedIn("Lists and Tags show the account's checklist and tag", async ({ page }) => {
+    const packing = page.getByRole("listitem").filter({ hasText: "Packing for Lisbon" });
     await page.goto("/lists");
-    await expect(page.getByText("Packing for Lisbon")).toBeVisible();
+    await expect(packing).toContainText("1 of 2 done");
+    await page.reload();
+    await expect(packing).toContainText("1 of 2 done");
+
     await page.goto("/tags");
     await page.getByRole("link", { name: /errands/ }).click();
     await expect(page).toHaveURL("/tags/errands");
-    await expect(page.getByText("Renew passport")).toBeVisible();
+    const passport = page.getByRole("checkbox", { name: "Done: Renew passport" });
+    await expect(passport).not.toBeChecked();
+    await page.reload();
+    await expect(passport).not.toBeChecked();
   });
 
   signedIn("Density tightens the rows of a list, and is kept on reload", async ({ page }) => {
