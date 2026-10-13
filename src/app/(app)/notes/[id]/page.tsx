@@ -23,7 +23,8 @@ export default async function NotePage({ params }: PageProps<"/notes/[id]">) {
   if (!view) {
     return (
       <div className="mx-auto max-w-[760px] px-4 pt-8 rail:px-9">
-        <p className="text-ink-2">That note is not here any more.</p>
+        <h1 className="font-serif text-[clamp(28px,3vw,40px)] leading-[1.1] font-medium tracking-[-0.015em]">Notes</h1>
+        <p className="mt-4 text-ink-2">That note is not here any more.</p>
         <Link href="/notes" className="mt-3 inline-block rounded-md font-medium underline decoration-accent underline-offset-3">
           Back to notes
         </Link>

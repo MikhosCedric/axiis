@@ -1,5 +1,6 @@
 import { z } from "zod";
-import { idSchema, localDateSchema, type AreaId, type Schedule } from "@/domain/item";
+import { idSchema, planDateSchema, type AreaId, type Schedule } from "@/domain/item";
+import { inRange } from "@/lib/dates";
 import { parseItemKey } from "@/domain/item-key";
 import { materialize } from "@/lib/items/occurrences";
 import type { ItemsRepo } from "@/lib/items/repo";
@@ -7,11 +8,12 @@ import type { ActionResult } from "@/features/today/commands";
 
 const scheduleSchema = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("unscheduled") }),
-  z.object({ kind: z.literal("day"), on: localDateSchema }),
+  z.object({ kind: z.literal("day"), on: planDateSchema }),
   z
     .object({ kind: z.literal("timed"), start: z.date(), end: z.date() })
     // A day is at most 25 hours, so nothing the Score draws is longer.
-    .refine((s) => s.end > s.start && s.end.getTime() - s.start.getTime() <= 25 * 3_600_000),
+    .refine((s) => s.end > s.start && s.end.getTime() - s.start.getTime() <= 25 * 3_600_000)
+    .refine((s) => inRange(s.start) && inRange(s.end)),
 ]);
 
 const placementSchema = z.object({

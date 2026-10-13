@@ -18,7 +18,12 @@ type Gesture = {
   timer: number | null;
   over: Destination | null;
   /** The listeners this gesture added, so the same functions come off again. */
-  listeners: { move: (e: PointerEvent) => void; up: (e: PointerEvent) => void; cancel: (e: PointerEvent) => void };
+  listeners: {
+    move: (e: PointerEvent) => void;
+    up: (e: PointerEvent) => void;
+    cancel: (e: PointerEvent) => void;
+    key: (e: KeyboardEvent) => void;
+  };
 };
 
 type Live = {
@@ -91,6 +96,7 @@ export function useWeekDrag(fly: RefObject<HTMLDivElement | null>, live: Live, s
     window.removeEventListener("pointermove", g.listeners.move);
     window.removeEventListener("pointerup", g.listeners.up);
     window.removeEventListener("pointercancel", g.listeners.cancel);
+    window.removeEventListener("keydown", g.listeners.key, true);
     if (g.timer !== null) window.clearTimeout(g.timer);
   }
 
@@ -135,6 +141,14 @@ export function useWeekDrag(fly: RefObject<HTMLDivElement | null>, live: Live, s
     if (gesture.current && e.pointerId === gesture.current.pointerId) finish(false);
   }
 
+  /** Escape drops a held item where it was. It is kept from closing a panel behind the drag. */
+  function onKey(e: KeyboardEvent) {
+    if (e.key !== "Escape" || !gesture.current) return;
+    e.preventDefault();
+    e.stopPropagation();
+    finish(false);
+  }
+
   useEffect(() => {
     // While an item is held by touch, stop the browser from turning the same finger into a scroll.
     const hold = (e: TouchEvent) => {
@@ -163,12 +177,13 @@ export function useWeekDrag(fly: RefObject<HTMLDivElement | null>, live: Live, s
       active: false,
       timer: null,
       over: null,
-      listeners: { move: onMove, up: onUp, cancel: onCancel },
+      listeners: { move: onMove, up: onUp, cancel: onCancel, key: onKey },
     };
     gesture.current = g;
     if (touch) g.timer = window.setTimeout(() => activate(g), LONG_PRESS_MS);
     window.addEventListener("pointermove", onMove);
     window.addEventListener("pointerup", onUp);
     window.addEventListener("pointercancel", onCancel);
+    window.addEventListener("keydown", onKey, true);
   };
 }

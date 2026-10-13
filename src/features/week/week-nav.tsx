@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, type ChangeEvent, type KeyboardEvent as ReactKeyboardEvent } from "react";
 import type { LocalDate } from "@/domain/item";
 import { dayHref, isTypingTarget, shortcutAction } from "@/features/day/nav";
-import { parseLocalDate } from "@/lib/dates";
+import { FIRST_DATE, LAST_DATE, parseLocalDate } from "@/lib/dates";
 import { anchorDay, formatWeekHeading, weekHref, weekNavTarget, weekOf } from "./model";
 import { SpanSwitch } from "./span-switch";
 
@@ -99,8 +99,8 @@ function WeekPicker({ start, onPick }: { start: LocalDate; onPick: (date: LocalD
         id="week-picker"
         type="date"
         required
-        min="1000-01-01"
-        max="9999-12-31"
+        min={FIRST_DATE}
+        max={LAST_DATE}
         value={value}
         onPointerDown={() => (typed.current = false)}
         onKeyDown={(e: ReactKeyboardEvent<HTMLInputElement>) => {
