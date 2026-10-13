@@ -17,7 +17,7 @@ export type AreaId = string & { readonly __brand: "AreaId" };
 /** A calendar date in the user's own time zone, `YYYY-MM-DD`. */
 export type LocalDate = string & { readonly __brand: "LocalDate" };
 export const localDateSchema = z.pipe(
-  z.string().check(z.regex(/^d{4}-d{2}-d{2}$/)),
+  z.string().check(z.regex(/^\d{4}-\d{2}-\d{2}$/)),
   z.transform((s: string) => s as LocalDate),
 );
 /** A date the client asks to plan on: a real calendar date inside the span Axiis plans on. Stored rows use `localDateSchema`. */
