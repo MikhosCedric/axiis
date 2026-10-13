@@ -101,7 +101,7 @@ export function NoteEditor({ view, actions, basePath = "/notes" }: { view: NoteV
   return (
     <article
       aria-labelledby={titleId}
-      className="mx-auto grid max-w-[1120px] gap-x-12 gap-y-8 px-4 pt-5 pb-16 rail:px-9 rail:pt-8 min-[1100px]:grid-cols-[minmax(0,1fr)_280px]"
+      className="grid max-w-[1120px] gap-x-12 gap-y-8 px-4 pt-5 pb-16 rail:px-9 rail:pt-8 min-[1100px]:grid-cols-[minmax(0,1fr)_280px]"
     >
       <div className="min-w-0">
         <div className="flex min-h-8 items-center justify-between gap-3">
