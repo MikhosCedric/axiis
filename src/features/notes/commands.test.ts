@@ -9,6 +9,7 @@ import {
   linkItems,
   listNoteRows,
   loadNote,
+  parseQuery,
   saveNote,
   searchItems,
   unlinkItems,
@@ -28,6 +29,15 @@ function world(items: Item[] = []) {
 }
 
 const doc = (text: string) => ({ type: "doc", content: [{ type: "paragraph", content: [{ type: "text", text }] }] });
+
+describe("parseQuery", () => {
+  it("drops control characters, which no title holds and HTML cannot carry", () => {
+    expect(parseQuery("\0")).toBeNull();
+    expect(parseQuery(" \u0000\u001f\u007f ")).toBeNull();
+    expect(parseQuery("bike\0 shop\u0007")).toBe("bike  shop");
+    expect(parseQuery("  garden  ")).toBe("garden");
+  });
+});
 
 describe("saveNote", () => {
   it("stores the title, the body and plain text worked out from the body", async () => {
