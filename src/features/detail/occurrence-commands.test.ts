@@ -212,6 +212,17 @@ describe("setRepeat", () => {
     });
   });
 
+  it("moves an item to its first occurrence when its own day is not one, keeping its time", async () => {
+    const item = makeItem({ schedule: { kind: "timed", start: new Date("2026-10-10T09:00:00Z"), end: new Date("2026-10-10T09:30:00Z") } });
+    const { repo } = fakeRepo([item]);
+    expect(await setRepeat(repo, item.id, { preset: "weekdays" }, NOW, TZ)).toEqual({ ok: true });
+    expect(item.schedule).toEqual({ kind: "timed", start: new Date("2026-10-12T09:00:00Z"), end: new Date("2026-10-12T09:30:00Z") });
+    const span = { from: new Date(0), to: new Date(0), fromDate: d("2026-10-10"), toDate: d("2026-10-13") };
+    expect((await loadOccurrences(repo, span, TZ)).occurrences.map((o) => o.recurrence.kind === "occurrence" && o.recurrence.originalOn)).toEqual([
+      "2026-10-12",
+    ]);
+  });
+
   it("starts an unscheduled item repeating from today", async () => {
     const item = makeItem();
     const { repo } = fakeRepo([item]);

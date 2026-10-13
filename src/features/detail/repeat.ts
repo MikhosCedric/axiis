@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { planDateSchema, type LocalDate } from "@/domain/item";
-import { utcMidnight } from "@/lib/dates";
+import { addDays, utcMidnight } from "@/lib/dates";
 import { MAX_COUNT, WEEKDAYS, type Rule, type RuleEnd, type Weekday } from "@/domain/recurrence";
 import { formatDayIn } from "@/features/today/format";
 import { dayWords } from "@/features/inbox/model";
@@ -97,14 +97,26 @@ export function cadence(rule: Rule, firstOn: LocalDate | null): string {
   return days.length > 0 ? `${every} on ${listDays(days)}` : every;
 }
 
+/** The first date on or after `from` that a rule repeats on: a weekday rule set on a Saturday starts on Monday. */
+export function firstOccurrence(rule: Rule, from: LocalDate): LocalDate {
+  if (rule.freq !== "weekly" || rule.byDay.length === 0) return from;
+  let on = from;
+  while (!rule.byDay.includes(weekdayOf(on))) on = addDays(on, 1);
+  return on;
+}
+
 /**
  * What the status line says when something starts repeating: "Repeats every day
- * from today". A waiting item starts today, as `setRepeat` puts it there.
+ * from today", or "Repeats every weekday, starting Monday 12 October" when its
+ * own day is not one. A waiting item starts today, as `setRepeat` puts it there.
  */
 export function startsRepeating(choice: RepeatChoice, day: LocalDate | null, today: LocalDate): string | null {
   if (choice.preset === "none") return null;
   const from = day ?? today;
-  return `Repeats ${cadence(ruleFor(choice.preset, choice.end), from)} from ${dayWords(from, today)}.`;
+  const rule = ruleFor(choice.preset, choice.end);
+  const first = firstOccurrence(rule, from);
+  const every = cadence(rule, from);
+  return first === from ? `Repeats ${every} from ${dayWords(from, today)}.` : `Repeats ${every}, starting ${dayWords(first, today)}.`;
 }
 
 /**
