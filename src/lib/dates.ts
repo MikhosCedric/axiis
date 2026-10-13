@@ -154,6 +154,16 @@ export function instantAt(date: LocalDate, minutes: number, timeZone: string): D
   return new Date(wall - offsetAt(candidates[0]));
 }
 
+/**
+ * The first wall-clock minute on `date`, at or after `minutes`, that the
+ * clocks show: `minutes` itself, unless the clocks skip it going forward.
+ */
+export function firstShownMinute(date: LocalDate, minutes: number, timeZone: string): number {
+  let m = minutes;
+  while (m < minutes + 1440 && localMinutes(instantAt(date, m, timeZone), date, timeZone) !== m) m++;
+  return m;
+}
+
 /** Parse an untrusted time zone name, falling back to UTC. */
 export function resolveTimeZone(raw: string | undefined): string {
   if (!raw || raw.length > 64) return "UTC";

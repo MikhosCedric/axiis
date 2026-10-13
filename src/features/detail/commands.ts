@@ -1,13 +1,14 @@
 import { z } from "zod";
 import { idSchema, repeats, type AreaId, type Item, type ItemId, type ItemPatch, type LocalDate, type Schedule } from "@/domain/item";
 import { parseItemKey, type ParsedItemKey } from "@/domain/item-key";
-import { addDays, DATE_RANGE_ERROR, instantAt, localMinutes, outOfRange, parseLocalDate, toLocalDate } from "@/lib/dates";
+import { addDays, DATE_RANGE_ERROR, firstShownMinute, instantAt, localMinutes, outOfRange, parseLocalDate, toLocalDate } from "@/lib/dates";
+import { formatDayHeading } from "@/features/today/format";
 import { materialize, resolveKey } from "@/lib/items/occurrences";
 import type { ItemsRepo } from "@/lib/items/repo";
 import type { ActionResult } from "@/features/today/commands";
 import { TITLE_MAX } from "@/features/today/model";
 import { DAY_MINUTES } from "@/features/score/layout";
-import { buildDetail, firstDay, retypable, subtaskPolicy, takesDue, TYPE_CHOICES, type DetailView, type Scope, type TimeOfDay } from "./model";
+import { buildDetail, clockOf, firstDay, retypable, subtaskPolicy, takesDue, TYPE_CHOICES, type DetailView, type Scope, type TimeOfDay } from "./model";
 import { repeatSchema, ruleFor } from "./repeat";
 import { byName } from "@/domain/tag";
 import { byUse } from "@/features/tags/model";
@@ -149,7 +150,7 @@ function scheduleOnOwnDay(
   rawKey: unknown,
   rawScope: unknown,
   timeZone: string,
-  build: (on: LocalDate) => Schedule,
+  build: (on: LocalDate, item: Item) => Schedule | { refused: string },
 ): Promise<ActionResult> {
   const key = parseItemKey(rawKey);
   const scope = scopeSchema.safeParse(rawScope);
@@ -161,7 +162,10 @@ function scheduleOnOwnDay(
     if (items.some((i) => i.type === "note" || dayOf(i, timeZone) === null)) {
       return { ok: false, error: "It needs a day before it can have a time." };
     }
-    for (const item of items) await repo.update(item.id, { schedule: build(dayOf(item, timeZone)!) });
+    const schedules = items.map((item) => build(dayOf(item, timeZone)!, item));
+    const refusal = schedules.find((s) => "refused" in s);
+    if (refusal) return { ok: false, error: refusal.refused };
+    for (const [i, item] of items.entries()) await repo.update(item.id, { schedule: schedules[i] as Schedule });
   });
 }
 
@@ -172,6 +176,24 @@ function scheduleOnOwnDay(
 function timedAt(on: LocalDate, start: number, lengthMs: number, timeZone: string): Schedule {
   const from = instantAt(on, start, timeZone);
   return { kind: "timed", start: from, end: new Date(from.getTime() + lengthMs) };
+}
+
+/**
+ * A timed schedule from a start and an end typed on the wall clock of `on`,
+ * so both read back as typed on a day the clocks change. A time the clocks
+ * skip is refused rather than quietly moved. A series keeps its length in
+ * real minutes instead, as expansion does, so its other days read as typed.
+ */
+function typedOn(on: LocalDate, { start, length }: TimeOfDay, timeZone: string, isSeries: boolean): Schedule | { refused: string } {
+  for (const m of isSeries ? [start] : [start, start + length]) {
+    const shown = firstShownMinute(on, m, timeZone);
+    if (shown !== m) {
+      const day = formatDayHeading(addDays(on, Math.floor(m / DAY_MINUTES)));
+      return { refused: `${clockOf(m)} does not happen on ${day}, when the clocks go forward. Try ${clockOf(shown)}.` };
+    }
+  }
+  if (isSeries) return timedAt(on, start, length * 60_000, timeZone);
+  return { kind: "timed", start: instantAt(on, start, timeZone), end: instantAt(on, start + length, timeZone) };
 }
 
 /**
@@ -188,8 +210,7 @@ export async function setTime(
 ): Promise<ActionResult> {
   const time = timeSchema.safeParse(rawTime);
   if (!time.success) return { ok: false, error: "That time is not one Axiis can use." };
-  const { start, length }: TimeOfDay = time.data;
-  return scheduleOnOwnDay(repo, rawKey, rawScope, timeZone, (on) => timedAt(on, start, length * 60_000, timeZone));
+  return scheduleOnOwnDay(repo, rawKey, rawScope, timeZone, (on, item) => typedOn(on, time.data, timeZone, item.recurrence.kind === "series"));
 }
 
 /** Takes the time away, leaving the item on its day at any time, for this one or all of them. */
