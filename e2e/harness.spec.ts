@@ -320,6 +320,16 @@ test("notes: the toolbar keeps to the text measure, in named groups, every tool 
   expect(reached).toEqual(Object.values(groups).flat());
 });
 
+test("notes: opening the list never rewrites the address; typing a search does", async ({ page }) => {
+  await page.goto("/dev/notes?q=garden&from=link");
+  await expect(page.getByRole("searchbox", { name: "Search notes" })).toHaveValue("garden");
+  await page.waitForTimeout(1000);
+  await expect(page).toHaveURL(/\/dev\/notes\?q=garden&from=link$/);
+
+  await page.getByRole("searchbox", { name: "Search notes" }).fill("bulbs");
+  await expect(page).toHaveURL(/\/dev\/notes\?q=bulbs$/);
+});
+
 test("notes: typing in the editor saves", async ({ page }) => {
   await page.goto("/dev/notes/00000000-0000-4000-8000-000000000020");
   const body = page.getByRole("textbox", { name: "Garden through the winter" });

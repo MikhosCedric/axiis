@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useRef, useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { PlusIcon, SearchIcon } from "./icons";
 import type { NoteRow, NotesActions } from "./model";
 
@@ -26,19 +26,15 @@ export function NotesList({
   const [error, setError] = useState<string | null>(null);
   const [creating, startCreate] = useTransition();
   const [filtering, startFilter] = useTransition();
-  const firstRender = useRef(true);
-
+  // Only a draft that differs from the address filters, so a mount (twice, under Strict Mode) never navigates.
   useEffect(() => {
-    if (firstRender.current) {
-      firstRender.current = false;
-      return;
-    }
+    const q = draft.trim();
+    if (q === query.trim()) return;
     const timer = setTimeout(() => {
-      const q = draft.trim();
       startFilter(() => router.replace(q ? `${pathname}?q=${encodeURIComponent(q)}` : pathname, { scroll: false }));
     }, FILTER_DELAY_MS);
     return () => clearTimeout(timer);
-  }, [draft, pathname, router]);
+  }, [draft, query, pathname, router]);
 
   function newNote() {
     setError(null);
