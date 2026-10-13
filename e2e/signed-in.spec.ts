@@ -241,7 +241,8 @@ signedIn.describe("signed in", () => {
 
   signedIn("Due groups dated items, and a tick marks one done", async ({ page }) => {
     await page.goto("/due");
-    const past = page.getByRole("region", { name: "Past due" });
+    const past = page.getByRole("region", { name: "Earlier" });
+    await expect(page.getByRole("heading", { level: 2, name: "Earlier" })).toHaveCSS("text-transform", "none");
     await expect(past.getByText("File the tax form")).toBeVisible();
     await expect(past.getByText("Was due Wednesday 15 January 2020")).toBeVisible();
     await expect(page.getByRole("region", { name: "Later" }).getByText("Renew the lease")).toBeVisible();
@@ -263,6 +264,12 @@ signedIn.describe("signed in", () => {
     const row = strip.getByRole("button", { name: "Return the library books", exact: true });
     await expect(row).toBeVisible();
     await expect(strip.getByText("Planned Monday 3 February 2020")).toBeVisible();
+    // A ruled section of the page, not a card: hairlines above and below, no fill, square corners.
+    const drawn = await strip.evaluate((el) => {
+      const s = getComputedStyle(el);
+      return { top: s.borderTopWidth, bottom: s.borderBottomWidth, left: s.borderLeftWidth, fill: s.backgroundColor, radius: s.borderTopLeftRadius };
+    });
+    expect(drawn).toEqual({ top: "1px", bottom: "1px", left: "0px", fill: "rgba(0, 0, 0, 0)", radius: "0px" });
     await strip.getByRole("button", { name: /^Move to today\s*: Return the library books$/ }).click();
     await expect(page.getByRole("status").filter({ hasText: "Return the library books is on today." })).toBeVisible();
     await expect(row).toHaveCount(0);
