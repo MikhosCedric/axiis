@@ -2,13 +2,9 @@ import type { Metadata } from "next";
 import { safeNextPath } from "@/lib/auth/next-path";
 import { signInWithGoogle } from "./actions";
 import { EmailForm } from "./email-form";
+import { loginError } from "./errors";
 
 export const metadata: Metadata = { title: "Sign in" };
-
-const ERRORS: Record<string, string> = {
-  link: "That sign-in link has expired or was already used. Ask for a new one below.",
-  google: "Google sign-in did not go through. Try again, or use your email.",
-};
 
 function first(value: string | string[] | undefined): string | undefined {
   return Array.isArray(value) ? value[0] : value;
@@ -17,7 +13,7 @@ function first(value: string | string[] | undefined): string | undefined {
 export default async function LoginPage({ searchParams }: PageProps<"/login">) {
   const params = await searchParams;
   const next = safeNextPath(first(params.next));
-  const error = ERRORS[first(params.error) ?? ""];
+  const error = loginError(first(params.error));
   const deleted = first(params.deleted) === "1";
 
   return (

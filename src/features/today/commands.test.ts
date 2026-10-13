@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { LocalDate } from "@/domain/item";
 import { TAGS_PER_ITEM, TAGS_PER_USER } from "@/domain/tag";
+import { QUOTA_MESSAGE } from "@/lib/quota";
 import { captureChecklist, captureTask, setDone } from "./commands";
 import { formatClock, formatDayHeading } from "./format";
 import { fakeRepo, makeItem } from "./test-support";
@@ -136,6 +137,15 @@ describe("captureTask", () => {
     const result = await captureTask(repo, "Call the landlord #home", NOW, LONDON);
     expect(result.ok).toBe(false);
     expect(calls.addTags).toEqual([]);
+  });
+
+  it("says the account is full when the database refuses on a quota", async () => {
+    const { repo } = fakeRepo();
+    repo.create = async () => {
+      throw new Error("items.create failed", { cause: { code: "54000", message: "quota exceeded" } });
+    };
+    expect(await captureTask(repo, "Call the landlord", NOW, LONDON)).toEqual({ ok: false, error: QUOTA_MESSAGE });
+    expect(await captureChecklist(repo, "Pack")).toEqual({ ok: false, error: QUOTA_MESSAGE });
   });
 });
 

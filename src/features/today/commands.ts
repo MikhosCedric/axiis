@@ -8,6 +8,7 @@ import { tagCaptured } from "@/features/tags/commands";
 import { instantAt, toLocalDate } from "@/lib/dates";
 import { materialize } from "@/lib/items/occurrences";
 import type { ItemsRepo } from "@/lib/items/repo";
+import { saveFailure } from "@/lib/quota";
 import { dayOf, parseCapture } from "./capture-syntax";
 import { formatClock } from "./format";
 import { TITLE_MAX } from "./model";
@@ -42,8 +43,8 @@ export async function captureChecklist(repo: ItemsRepo, raw: unknown): Promise<C
   try {
     const item = await repo.create({ type: "checklist", title: title.data, schedule: { kind: "unscheduled" } });
     return { ok: true, id: item.id, type: "checklist", title: title.data, plan: null, tags: [], missed: [] };
-  } catch {
-    return { ok: false, error: NOT_SAVED };
+  } catch (error) {
+    return { ok: false, error: saveFailure(error, NOT_SAVED) };
   }
 }
 
@@ -75,8 +76,8 @@ export async function captureTask(repo: ItemsRepo, raw: unknown, now: Date, time
   let id: ItemId;
   try {
     id = (await repo.create({ type: "task", title: said.title, schedule })).id;
-  } catch {
-    return { ok: false, error: NOT_SAVED };
+  } catch (error) {
+    return { ok: false, error: saveFailure(error, NOT_SAVED) };
   }
   const { tags, missed } = await tagCaptured(repo, id, said.tags);
   return { ok: true, id, type: "task", title: said.title, plan, tags, missed };

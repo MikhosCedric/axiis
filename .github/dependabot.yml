@@ -9,6 +9,17 @@ updates:
       # Patch and minor updates arrive as one PR a week; majors stay separate so they get read.
       minor-and-patch:
         update-types: [minor, patch]
+    # These majors fail `npm ci`: eslint-config-next and typescript-eslint do not yet
+    # list eslint 10 or typescript 6+ as peers (PRs #49 and #50). Revisit when a new
+    # eslint-config-next or typescript-eslint release widens its peer range.
+    # @types/node tracks the Node major CI runs (24, in ci.yml); move both together.
+    ignore:
+      - dependency-name: eslint
+        update-types: [version-update:semver-major]
+      - dependency-name: typescript
+        update-types: [version-update:semver-major]
+      - dependency-name: "@types/node"
+        update-types: [version-update:semver-major]
   - package-ecosystem: github-actions
     directory: /
     schedule:
