@@ -54,7 +54,7 @@ const PLACES: Place[] = [
   { label: "Tags", href: TAGS_PATH, also: ["labels"] },
   { label: "Search", href: "/search", also: ["find"] },
   { label: "Settings", href: "/settings", also: ["account", "areas", "export"] },
-  { label: "Keyboard shortcuts", href: null, also: ["help", "keys"] },
+  { label: "Guide", href: null, also: ["help", "keyboard shortcuts", "keys"] },
 ];
 
 /** The query search should run for this input, or null when it is too short to be worth it. */

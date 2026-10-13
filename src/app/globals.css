@@ -12,6 +12,9 @@
   --field: rgba(28, 27, 34, 0.55);
   --accent: #0a675a;
   --accent-wash: rgba(10, 103, 90, 0.14);
+  /* Neutral ink tints for hover and press, so verdigris stays for now, drag, focus and selection. */
+  --hover: rgba(28, 27, 34, 0.06);
+  --press: rgba(28, 27, 34, 0.11);
   --on-accent: #f3eee1;
   /* Vertical padding of a list row; the Density setting tightens it. */
   --row-y: 0.625rem;
@@ -35,6 +38,8 @@
   --field: rgba(236, 229, 211, 0.5);
   --accent: #45c7b0;
   --accent-wash: rgba(69, 199, 176, 0.16);
+  --hover: rgba(236, 229, 211, 0.07);
+  --press: rgba(236, 229, 211, 0.12);
   --on-accent: #10201d;
   color-scheme: dark;
 }
@@ -52,6 +57,8 @@
     --field: rgba(236, 229, 211, 0.5);
     --accent: #45c7b0;
     --accent-wash: rgba(69, 199, 176, 0.16);
+    --hover: rgba(236, 229, 211, 0.07);
+    --press: rgba(236, 229, 211, 0.12);
     --on-accent: #10201d;
     color-scheme: dark;
   }
@@ -69,6 +76,8 @@
   --color-field: var(--field);
   --color-accent: var(--accent);
   --color-accent-wash: var(--accent-wash);
+  --color-hover: var(--hover);
+  --color-press: var(--press);
   --color-on-accent: var(--on-accent);
   --font-serif: var(--font-besley), Georgia, serif;
   --font-sans: var(--font-hanken), system-ui, -apple-system, "Segoe UI", sans-serif;

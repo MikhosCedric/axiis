@@ -20,7 +20,6 @@ import { tagLine } from "@/features/tags/model";
 import { selectedIn, type ItemKey } from "@/domain/item-key";
 import { dayHref } from "@/features/day/nav";
 import { SELECTED_ITEM_PARAM } from "@/features/day/types";
-import { HelpHint } from "@/components/help-hint";
 import { DetailAside } from "@/features/detail/detail-aside";
 import { STATE_WORD } from "@/features/score/score-view";
 import { captureAction, setDoneAction } from "@/features/today/actions";
@@ -28,6 +27,7 @@ import { CaptureField } from "@/features/today/capture-field";
 import type { ActionResult } from "@/features/today/commands";
 import { formatClock, formatDayHeading } from "@/features/today/format";
 import { Glyph } from "@/features/today/glyph";
+import { GuideButton, type GuideTopic } from "@/features/palette/guide";
 import { LineLegend } from "@/features/today/line-legend";
 import { SameInInbox } from "@/features/inbox/same-in-inbox";
 import { buildToday, EMPTY_TRAY, stateOf, TRAY_FULL, WAITING, type TodayEntry } from "@/features/today/model";
@@ -59,6 +59,7 @@ const serverActions: WeekActions = { move: moveAction, setDone: setDoneAction, c
 type Patch = { id: ItemKey; changes: Partial<Pick<ShownItem, "schedule" | "status" | "completedAt">> };
 
 const KEYS_ID = "week-keys";
+const WEEK_GUIDE: GuideTopic[] = ["capture", "week"];
 
 function useNow(nowIso: string, ticking: boolean) {
   const [now, setNow] = useState(() => new Date(nowIso));
@@ -213,8 +214,11 @@ export function WeekView({
           </div>
         </header>
 
-        <div className="mt-6 max-w-[440px]">
-          <CaptureField captureAction={actions.capture} />
+        <div className="mt-6 flex flex-wrap items-start gap-x-3 gap-y-1">
+          <div className="min-w-0 flex-[1_1_280px] rail:max-w-[440px]">
+            <CaptureField captureAction={actions.capture} />
+          </div>
+          <GuideButton topics={WEEK_GUIDE} className="ml-auto" />
         </div>
 
         <p role="status" className={`mb-2 min-h-5 text-[13px] ${status?.error ? "font-medium text-ink" : "text-ink-2"}`}>
@@ -237,15 +241,13 @@ export function WeekView({
           {data.weekFull && <p className="mt-2 text-[13px] text-ink-3">{WEEK_FULL}</p>}
         </section>
 
-        <div className="flex flex-wrap items-center gap-x-6">
-          <HelpHint id={KEYS_ID} label="Keyboard help">
-            Drag an item to another day, or down to the tray to clear its day. With an item focused, <Kbd>←</Kbd>{" "}
-            <Kbd>→</Kbd> move it a day, <Kbd>Backspace</Kbd> sends it to the tray, <Kbd>Space</Kbd> marks it done and{" "}
-            <Kbd>Enter</Kbd> opens it. On a waiting item, <Kbd>↑</Kbd> gives it a day. <Kbd>[</Kbd> <Kbd>]</Kbd> change
-            the week and <Kbd>T</Kbd> comes back to this one.
-          </HelpHint>
-          <LineLegend now={false} />
-        </div>
+        {/* Every item's description. Seen in the Guide; here only for screen readers. */}
+        <p id={KEYS_ID} className="sr-only">
+          Drag an item to another day, or down to the tray to clear its day. With an item focused, Left and Right move it
+          a day, Backspace sends it to the tray, Space marks it done and Enter opens it. On a waiting item, Up gives it a
+          day. The bracket keys change the week and T comes back to this one.
+        </p>
+        <LineLegend now={false} />
 
         <section
           data-drop="tray"
@@ -293,10 +295,6 @@ export function WeekView({
       {selectedParam && <DetailAside pending={selectedId !== selectedParam}>{detail}</DetailAside>}
     </div>
   );
-}
-
-function Kbd({ children }: { children: string }) {
-  return <kbd className="rounded border border-rule px-1 font-sans text-xs font-semibold text-ink-2">{children}</kbd>;
 }
 
 function DayColumn({
