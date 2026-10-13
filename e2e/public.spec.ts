@@ -5,6 +5,15 @@ test("the landing page shows the pitch, the sample day and a way in", async ({ p
   await expect(page.getByRole("heading", { level: 1, name: "Your tasks and your time, on one page." })).toBeVisible();
   await expect(page.getByRole("figure", { name: /A sample day/ })).toBeVisible();
   await expect(page.getByRole("link", { name: "Sign in" }).first()).toHaveAttribute("href", "/login");
+
+  const hero = page.getByRole("region", { name: "Your tasks and your time, on one page." });
+  const start = hero.getByRole("link", { name: "Start with today" });
+  await expect(start).toHaveAttribute("href", "/login");
+  const terms = hero.getByText("Free. Email link or Google. No password.");
+  await expect(terms).toBeVisible();
+  expect((await terms.boundingBox())!.y).toBeGreaterThan((await start.boundingBox())!.y);
+  await expect(page.getByRole("link", { name: "Start with today" })).toHaveCount(2);
+  await expect(page.getByText(/!/)).toHaveCount(0);
 });
 
 test("the landing page lists shipped features as shipped, and nothing as coming", async ({ page }) => {
