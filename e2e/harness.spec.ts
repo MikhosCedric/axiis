@@ -282,6 +282,18 @@ test("detail: a new subtask can be renamed in place", async ({ page }) => {
   );
 });
 
+test("notes: at 1920px the notes pages start at the same left edge as the Inbox", async ({ page }) => {
+  await page.setViewportSize({ width: 1920, height: 1080 });
+  const leftOf = async (path: string, heading = page.locator("h1").first()) => {
+    await page.goto(path);
+    return (await heading.boundingBox())!.x;
+  };
+  const inbox = await leftOf("/dev/inbox");
+  expect(await leftOf("/dev/notes")).toBe(inbox);
+  expect(await leftOf("/dev/notes/search?q=bulbs")).toBe(inbox);
+  expect(await leftOf("/dev/notes/00000000-0000-4000-8000-000000000020", page.getByRole("textbox", { name: "Title" }))).toBe(inbox);
+});
+
 test("notes: typing in the editor saves", async ({ page }) => {
   await page.goto("/dev/notes/00000000-0000-4000-8000-000000000020");
   const body = page.getByRole("textbox", { name: "Garden through the winter" });
