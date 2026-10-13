@@ -102,7 +102,7 @@ Updated: see the log at the bottom. Phases:
 - `gh` must be installed and logged in for PRs and CI checks. On Windows it may not be on the Bash PATH.
 - To see signed-in screens without Supabase: `AXIIS_E2E_BUILD=1 NEXT_PUBLIC_SUPABASE_URL=http://localhost:54321 NEXT_PUBLIC_SUPABASE_ANON_KEY=dummy E2E_FAKE_SESSION=1 E2E_FAKE_SESSION_SECRET=<32+ chars> npx next dev --webpack -p 3800`, then set the cookie `axiis-e2e-session` to that secret (`docs/e2e-session.md`). Use `http://127.0.0.1:3800/` to see the signed-out landing page.
 - `npm run typecheck` fails with stale `.next/dev/types` errors while a `next dev` server runs or after switching branches under one: stop it and `rm -rf .next/dev`.
-- The full Playwright suite takes 10 to 20 minutes; run single tests with `-g`. On CI it flakes under load (`ERR_CONNECTION_RESET`, the sign-out test, a drag test in `score-axis.spec.ts`): re-run a red job before assuming the PR broke it. Tests that read the real clock break on certain dates or hours; keep test dates far from today.
+- The full Playwright suite builds and runs in about 2 minutes on the Windows dev machine (238 tests, 4 workers, 2026-10-14); run single specs or `-g` while working. The old `next dev` server dropped connections under load (`ERR_CONNECTION_RESET`); a red e2e job on the production build is a real failure to root-cause, not one to re-run. Tests that read the real clock break on certain dates or hours; keep test dates far from today.
 
 ## In flight
 - Recurrence merged (#13). Migration 0004 applied to the hosted project; `get_advisors` then failed with an FGA auth error, so re-run the security advisor and do a non-DDL check of the new columns.
