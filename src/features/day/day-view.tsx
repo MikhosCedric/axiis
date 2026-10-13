@@ -7,6 +7,7 @@ import { selectedIn, type ItemKey } from "@/domain/item-key";
 import { setTimeAction } from "@/features/detail/actions";
 import { DetailAside } from "@/features/detail/detail-aside";
 import type { TimeOfDay } from "@/features/detail/model";
+import { GuideButton, type GuideTopic } from "@/features/palette/guide";
 import { placeAction } from "@/features/score/actions";
 import type { Placement } from "@/features/score/drop";
 import { ListView } from "@/features/score/list-view";
@@ -41,6 +42,8 @@ const serverActions: DayActions = {
 type Status = { text: string; error: boolean; offer?: SeriesTimeOffer };
 
 type Patch = { id: ItemKey; changes: Partial<Pick<ShownItem, "schedule" | "areaId" | "status" | "completedAt">> };
+
+const DAY_GUIDE: GuideTopic[] = ["capture", "score"];
 
 const MODES: { mode: DayViewMode; label: string }[] = [
   { mode: "score", label: "Score" },
@@ -214,6 +217,7 @@ export function DayView({
               </button>
             ))}
           </div>
+          <GuideButton topics={DAY_GUIDE} className="ml-auto" />
         </div>
 
         <p

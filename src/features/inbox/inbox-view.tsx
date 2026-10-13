@@ -6,6 +6,7 @@ import type { Item, LocalDate } from "@/domain/item";
 import { SELECTED_ITEM_PARAM } from "@/features/day/types";
 import { DetailAside } from "@/features/detail/detail-aside";
 import { captureAction, setDoneAction } from "@/features/today/actions";
+import { GuideButton, type GuideTopic } from "@/features/palette/guide";
 import { CaptureField } from "@/features/today/capture-field";
 import type { ActionResult } from "@/features/today/commands";
 import { DoneToggle } from "@/features/today/done-toggle";
@@ -23,6 +24,7 @@ export type InboxActions = {
 };
 
 const serverActions: InboxActions = { setDone: setDoneAction, plan: planAction, capture: captureAction };
+const INBOX_GUIDE: GuideTopic[] = ["capture"];
 
 /** Optimistic changes while a save is in flight: a planned item leaves, a reopened one reads as open. */
 type Change = { kind: "hide" | "reopen"; id: string };
@@ -131,8 +133,11 @@ export function InboxView({
           <p className="mt-2.5 text-[15px] text-ink-2">{inboxSummary(shown)}</p>
         </header>
 
-        <div className="mt-6 max-w-[440px]">
-          <CaptureField captureAction={actions.capture} />
+        <div className="mt-6 flex flex-wrap items-start gap-x-3 gap-y-1">
+          <div className="min-w-0 flex-[1_1_280px] rail:max-w-[440px]">
+            <CaptureField captureAction={actions.capture} />
+          </div>
+          <GuideButton topics={INBOX_GUIDE} className="ml-auto" />
         </div>
 
         <p role="status" className={`mb-2 min-h-5 text-[13px] ${status?.error ? "font-medium text-ink" : "text-ink-2"}`}>

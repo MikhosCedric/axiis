@@ -320,6 +320,12 @@ A sticky bar over the note body, held to the body's 68ch measure, with a Hairlin
 ### Command Palette
 A native `<dialog>` in Sheet, 560px wide, 12px radius, Dialog lift shadow, rising 8px with a 0.985 scale-in over 200ms. Options are 40px tall; the active option takes Verdigris Wash.
 
+### Guide
+All help lives in one place. The Guide is the palette's dialog (same Sheet, width, radius, lift and rise), titled Guide in Besley 20px. It opens on the screen's own topics, each a section under a Hairline Soft rule with a 17px Besley head (Capture words, Moving beams, Moving between days), then every keyboard shortcut. Capture words are a two-column definition list from 480px: the term in 13px Ink 500, the words in 13px Ink Secondary, with one specimen line set in a Hairline box on Paper.
+- **Way in:** one Guide button per screen that has topics (Today and any day, Week, Inbox), always the last control of the tool row under the page header (capture field, then any view switch), pushed to the row's right edge. Outline, 8px radius, a 16px circled question mark and the word Guide; 38px tall like the Score/List switch, 44px under a coarse pointer. `?` opens the same dialog on any screen, and the palette lists it as Guide. Screens without topics show no button; there `?` opens the shortcuts alone.
+- **Never beside content:** nothing floats over the Score, a panel or a drag handle. The Score's and Week's keyboard paragraph stays in the page only as an `sr-only` description of every beam and chip.
+- **Dismissal:** Escape, Close, or a click on the backdrop; focus returns to the button.
+
 ## Do's and Don'ts
 
 ### Do:

@@ -7,7 +7,8 @@ import type { LocalDate } from "@/domain/item";
 import { DUE_PATH } from "@/features/due/model";
 import { LISTS_PATH } from "@/features/lists/model";
 import { PaletteIcon } from "@/features/palette/icons";
-import { useIsMac, useOpenPalette } from "@/features/palette/palette";
+import { useOpenPalette } from "@/features/palette/palette";
+import { useIsMac } from "@/features/palette/use-is-mac";
 import {
   BrandMark,
   DueIcon,
