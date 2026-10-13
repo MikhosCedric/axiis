@@ -90,7 +90,7 @@ export async function linkedNotes(notes: NotesRepo, id: ItemId): Promise<Connect
 }
 
 export async function createNote(notes: NotesRepo, rawAreaId: unknown = null): Promise<Created> {
-  const areaId = idSchema.nullable().safeParse(rawAreaId);
+  const areaId = z.nullable(idSchema).safeParse(rawAreaId);
   if (!areaId.success) return { ok: false, error: "That area could not be found." };
   try {
     const note = await notes.createNote({ title: "", areaId: areaId.data as AreaId | null });
@@ -118,7 +118,7 @@ export async function saveNote(notes: NotesRepo, rawId: unknown, rawTitle: unkno
 
 /** The live items carrying every one of the tags, or none when a tag does not exist. */
 async function carryingAll(items: ItemsRepo, names: readonly TagName[]): Promise<Item[]> {
-  const all = await items.listTags();
+  const all = await items.listTagNames();
   const tags = names.map((n) => all.find((t) => sameTag(t.name, n)));
   if (tags.some((t) => !t)) return [];
   const lists = await Promise.all(tags.map((t) => items.listTagged(t!.id)));

@@ -171,6 +171,7 @@ export function DayView({
 
   const shared = {
     view,
+    waitingFull: data.waitingFull,
     areas,
     timeZone,
     childCounts,

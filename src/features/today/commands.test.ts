@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { LocalDate } from "@/domain/item";
+import { TAGS_PER_ITEM, TAGS_PER_USER } from "@/domain/tag";
 import { QUOTA_MESSAGE } from "@/lib/quota";
 import { captureChecklist, captureTask, setDone } from "./commands";
 import { formatClock, formatDayHeading } from "./format";
@@ -70,11 +71,33 @@ describe("captureTask", () => {
 
   it("keeps the item when a tag does not save, and says which", async () => {
     const { repo, calls } = fakeRepo();
-    repo.addTag = async () => {
+    repo.addTags = async () => {
       throw new Error("network");
     };
     expect(await captureTask(repo, "walk #health", NOW, LONDON)).toMatchObject({ ok: true, tags: [], missed: ["health"] });
     expect(calls.create).toHaveLength(1);
+  });
+
+  it("puts every tag of the line on in one write, without reading every tag's open count", async () => {
+    const { repo, calls, items, itemTags } = fakeRepo();
+    expect(await captureTask(repo, "walk #health #outside", NOW, LONDON)).toMatchObject({
+      ok: true,
+      tags: ["health", "outside"],
+      missed: [],
+    });
+    expect(calls.addTags).toEqual([[items[0].id, ["health", "outside"]]]);
+    expect(itemTags).toHaveLength(2);
+    expect(calls.listTags).toBe(0);
+  });
+
+  it("misses the tags past the item's limit and new ones past the user's", async () => {
+    const full = fakeRepo([makeItem()]);
+    full.tag(full.items[0].id, ...Array.from({ length: TAGS_PER_USER - 1 }, (_, i) => `t${i}`));
+    const many = Array.from({ length: TAGS_PER_ITEM + 1 }, (_, i) => `#n${i}`).join(" ");
+    const result = await captureTask(full.repo, `walk #t0 ${many}`, NOW, LONDON);
+    // t0 exists, n0 takes the one free slot, and the item's limit stops the rest.
+    expect(result).toMatchObject({ ok: true, tags: ["t0", "n0"] });
+    expect(result.ok && result.missed).toHaveLength(TAGS_PER_ITEM);
   });
 
   it("captures a checklist under its name as typed, unplanned, naming the new one", async () => {
@@ -113,7 +136,7 @@ describe("captureTask", () => {
     };
     const result = await captureTask(repo, "Call the landlord #home", NOW, LONDON);
     expect(result.ok).toBe(false);
-    expect(calls.addTag).toEqual([]);
+    expect(calls.addTags).toEqual([]);
   });
 
   it("says the account is full when the database refuses on a quota", async () => {

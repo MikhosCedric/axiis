@@ -25,6 +25,8 @@ const NAME_ERROR = `A tag needs 1 to ${TAG_NAME_MAX} characters.`;
 const MISSING_ITEM = "That item is not here any more.";
 const MISSING_TAG = "That tag is not here any more.";
 const NOT_SAVED = "That change did not save. Try again.";
+const ITEM_FULL = `An item keeps up to ${TAGS_PER_ITEM} tags. Remove one to add another.`;
+const USER_FULL = `Axiis keeps up to ${TAGS_PER_USER} tags. Delete one in Settings to make room.`;
 
 async function attempt(work: () => Promise<ActionResult | void>): Promise<ActionResult> {
   try {
@@ -59,15 +61,44 @@ export async function addTag(repo: ItemsRepo, rawKey: unknown, rawName: unknown,
   return attempt(async () => {
     const owner = await ownerOf(repo, key, timeZone);
     if (!owner) return { ok: false, error: MISSING_ITEM };
-    const [onItem, all] = await Promise.all([repo.tagsForItems([owner]), repo.listTags()]);
+    const [onItem, all] = await Promise.all([repo.tagsForItems([owner]), repo.listTagNames()]);
     const mine = onItem[owner] ?? [];
     if (mine.some((t) => sameTag(t.name, name))) return;
-    if (mine.length >= TAGS_PER_ITEM) return { ok: false, error: `An item keeps up to ${TAGS_PER_ITEM} tags. Remove one to add another.` };
-    if (!all.some((t) => sameTag(t.name, name)) && all.length >= TAGS_PER_USER) {
-      return { ok: false, error: `Axiis keeps up to ${TAGS_PER_USER} tags. Delete one in Settings to make room.` };
-    }
-    await repo.addTag(owner, name);
+    if (mine.length >= TAGS_PER_ITEM) return { ok: false, error: ITEM_FULL };
+    if (!all.some((t) => sameTag(t.name, name)) && all.length >= TAGS_PER_USER) return { ok: false, error: USER_FULL };
+    await repo.addTags(owner, [name]);
   });
+}
+
+/**
+ * Puts the tags read from a captured line on the new item, in one write
+ * however many there are. Names past the item's or the user's limit, and all
+ * of them if the write fails, come back as missed.
+ */
+export async function tagCaptured(
+  repo: ItemsRepo,
+  itemId: ItemId,
+  names: readonly TagName[],
+): Promise<{ tags: TagName[]; missed: TagName[] }> {
+  if (names.length === 0) return { tags: [], missed: [] };
+  const tags: TagName[] = [];
+  const missed: TagName[] = [];
+  try {
+    const known = await repo.listTagNames();
+    let room = TAGS_PER_USER - known.length;
+    for (const name of names) {
+      const fresh = !known.some((t) => sameTag(t.name, name));
+      if (tags.length >= TAGS_PER_ITEM || (fresh && room <= 0)) missed.push(name);
+      else {
+        tags.push(name);
+        if (fresh) room -= 1;
+      }
+    }
+    if (tags.length) await repo.addTags(itemId, tags);
+    return { tags, missed };
+  } catch {
+    return { tags: [], missed: [...tags, ...missed] };
+  }
 }
 
 /** Takes a tag off an item, named the way it is shown. A tag that is not on it counts as taken off. */
@@ -90,7 +121,7 @@ export async function renameTag(repo: ItemsRepo, rawId: unknown, rawName: unknow
   const name = parseTagName(rawName);
   if (!name) return { ok: false, error: NAME_ERROR };
   return attempt(async () => {
-    const tags = await repo.listTags();
+    const tags = await repo.listTagNames();
     const self = tags.find((t) => t.id === id);
     if (!self) return { ok: false, error: MISSING_TAG };
     if (self.name === name) return;
@@ -156,7 +187,7 @@ export function whenOf(item: Item, timeZone: string): string | null {
 export async function loadTagged(repo: ItemsRepo, rawName: unknown, timeZone: string): Promise<TaggedData | null> {
   const name = parseTagName(rawName);
   if (!name) return null;
-  const tag = (await repo.listTags()).find((t) => sameTag(t.name, name));
+  const tag = (await repo.listTagNames()).find((t) => sameTag(t.name, name));
   if (!tag) return null;
   const [items, areas] = await Promise.all([repo.listTagged(tag.id), repo.listAreas()]);
   const tags = await repo.tagsForItems(items.map((i) => i.id));

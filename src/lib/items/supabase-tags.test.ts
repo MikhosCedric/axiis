@@ -11,7 +11,7 @@ const HOME = "00000000-0000-4000-b000-000000000002" as TagId;
 const name = (s: string) => s as TagName;
 
 type Request = { method: string; table: string; params: URLSearchParams; body: unknown };
-type Reply = { status?: number; body: unknown };
+type Reply = { status?: number; body: unknown; headers?: Record<string, string> };
 
 /** A repo whose PostgREST requests are recorded and answered by `answer`. */
 function stubbed(answer: (r: Request, nth: number) => Reply = () => ({ body: [] })) {
@@ -28,7 +28,10 @@ function stubbed(answer: (r: Request, nth: number) => Reply = () => ({ body: [] 
         };
         requests.push(request);
         const reply = answer(request, requests.filter((r) => r.table === request.table && r.method === request.method).length);
-        return new Response(JSON.stringify(reply.body), { status: reply.status ?? 200, headers: { "content-type": "application/json" } });
+        return new Response(JSON.stringify(reply.body), {
+          status: reply.status ?? 200,
+          headers: { "content-type": "application/json", ...reply.headers },
+        });
       },
     },
   });
@@ -36,11 +39,13 @@ function stubbed(answer: (r: Request, nth: number) => Reply = () => ({ body: [] 
 }
 
 describe("SupabaseItemsRepo tags", () => {
-  it("counts only open, live items per tag, reading every page until one comes back empty", async () => {
+  it("counts only open, live items per tag, reading past the server's row cap", async () => {
     const page = (n: number, tag: string) => Array.from({ length: n }, () => ({ tag_id: tag, items: { id: ITEM } }));
     const { repo, requests } = stubbed((r, nth) => {
       if (r.table === "tags") return { body: [{ id: DEEP, name: "Deep" }, { id: HOME, name: "home" }] };
-      return { body: nth === 1 ? page(1000, DEEP) : nth === 2 ? [...page(3, DEEP), ...page(2, HOME)] : [] };
+      return nth === 1
+        ? { body: page(1000, DEEP), headers: { "content-range": "0-999/1005" } }
+        : { body: [...page(3, DEEP), ...page(2, HOME)], headers: { "content-range": "1000-1004/1005" } };
     });
 
     expect(await repo.listTags()).toEqual([
@@ -49,14 +54,12 @@ describe("SupabaseItemsRepo tags", () => {
     ]);
 
     const counts = requests.filter((r) => r.table === "item_tags");
-    expect(counts).toHaveLength(3);
     expect(counts[0].params.get("select")).toBe("tag_id,items!inner(id)");
     expect(counts[0].params.get("items.status")).toBe("eq.open");
     expect(counts[0].params.get("items.deleted_at")).toBe("is.null");
     expect(counts.map((r) => [r.params.get("offset"), r.params.get("limit")])).toEqual([
       ["0", "1000"],
       ["1000", "1000"],
-      ["1005", "1000"],
     ]);
   });
 
@@ -97,27 +100,61 @@ describe("SupabaseItemsRepo tags", () => {
   it("puts an existing tag on an item without making another, matching the name without case", async () => {
     const { repo, requests } = stubbed((r) => ({ body: r.table === "tags" ? [{ id: DEEP, name: "Deep" }] : null }));
 
-    expect(await repo.addTag(ITEM, name("deep"))).toEqual({ id: DEEP, name: "Deep" });
+    expect(await repo.addTags(ITEM, [name("deep")])).toEqual([{ id: DEEP, name: "Deep" }]);
 
     expect(requests.filter((r) => r.method === "POST" && r.table === "tags")).toEqual([]);
     const link = requests.find((r) => r.table === "item_tags")!;
     expect(link.method).toBe("POST");
-    expect(link.body).toEqual({ item_id: ITEM, tag_id: DEEP });
+    expect(link.body).toEqual([{ item_id: ITEM, tag_id: DEEP }]);
     expect(link.params.get("on_conflict")).toBe("item_id,tag_id");
   });
 
-  it("makes a missing tag, and uses the other one when a request at the same moment made it first", async () => {
-    const made = stubbed((r) => ({ body: r.table === "tags" && r.method === "POST" ? { id: HOME, name: "Home" } : r.table === "tags" ? [] : null }));
-    expect(await made.repo.addTag(ITEM, name("Home"))).toEqual({ id: HOME, name: "Home" });
-    expect(made.requests.find((r) => r.method === "POST" && r.table === "tags")!.body).toEqual({ name: "Home" });
+  it("makes every missing tag in one insert and links them all in one more request", async () => {
+    const { repo, requests } = stubbed((r) => ({
+      body:
+        r.table === "tags" && r.method === "POST"
+          ? [
+              { id: HOME, name: "Home" },
+              { id: DEEP, name: "Deep" },
+            ]
+          : r.table === "tags"
+            ? []
+            : null,
+    }));
+    expect(await repo.addTags(ITEM, [name("Home"), name("home"), name("Deep")])).toEqual([
+      { id: HOME, name: "Home" },
+      { id: DEEP, name: "Deep" },
+    ]);
+    expect(requests.map((r) => [r.method, r.table])).toEqual([
+      ["GET", "tags"],
+      ["POST", "tags"],
+      ["POST", "item_tags"],
+    ]);
+    expect(requests[1].body).toEqual([{ name: "Home" }, { name: "Deep" }]);
+    expect(requests[2].body).toEqual([
+      { item_id: ITEM, tag_id: HOME },
+      { item_id: ITEM, tag_id: DEEP },
+    ]);
+  });
 
+  it("uses the other tag when a request at the same moment made it first, and still makes the rest", async () => {
     const raced = stubbed((r, nth) => {
-      if (r.table === "tags" && r.method === "POST") return { status: 409, body: { code: "23505", message: "duplicate key" } };
+      if (r.table === "tags" && r.method === "POST") {
+        return nth === 1 ? { status: 409, body: { code: "23505", message: "duplicate key" } } : { body: [{ id: DEEP, name: "Deep" }] };
+      }
       if (r.table === "tags") return { body: nth === 1 ? [] : [{ id: HOME, name: "home" }] };
       return { body: null };
     });
-    expect(await raced.repo.addTag(ITEM, name("Home"))).toEqual({ id: HOME, name: "home" });
-    expect(raced.requests.find((r) => r.table === "item_tags")!.body).toEqual({ item_id: ITEM, tag_id: HOME });
+    expect(await raced.repo.addTags(ITEM, [name("Home"), name("Deep")])).toEqual([
+      { id: HOME, name: "home" },
+      { id: DEEP, name: "Deep" },
+    ]);
+    const inserts = raced.requests.filter((r) => r.method === "POST" && r.table === "tags");
+    expect(inserts.map((r) => r.body)).toEqual([[{ name: "Home" }, { name: "Deep" }], [{ name: "Deep" }]]);
+    expect(raced.requests.find((r) => r.table === "item_tags")!.body).toEqual([
+      { item_id: ITEM, tag_id: HOME },
+      { item_id: ITEM, tag_id: DEEP },
+    ]);
   });
 
   it("renames one tag by id and reads back what was stored", async () => {

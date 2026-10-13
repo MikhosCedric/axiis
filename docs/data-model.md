@@ -87,6 +87,12 @@ Signup is open and PostgREST takes writes straight from the browser's session, s
 
 A day is a half-open UTC range `[from, to)` computed by the client from the user's time zone. Items on that day are: timed items with `start_at` in range, plus day-only items with `scheduled_on` equal to the local date, leaving out series. Each live series is then expanded into its occurrences for the day, minus the dates a live override stands for. The database never stores a time zone or a "today".
 
+The waiting items (top level, no schedule, not notes) are filtered in the query: open ones, plus ones completed inside the day's range, newest first, at most 200. The tray says so when it shows 200.
+
+## Bounded reads
+
+PostgREST answers at most `max-rows` rows (1000 on Supabase) and says nothing when it stops. So every read either has an explicit limit below that and a visible "showing the newest N" line when it is reached (the Inbox, the waiting tray, a week's planned items at 500, Lists, Due, a tag's page), or must be complete and is read in pages sized by an exact count (`readAll` in `supabase-repo.ts`: overrides, child counts, tags of items, open counts per tag).
+
 ## Lists query
 
 The Lists page reads live top-level checklists that are not dropped and are not overrides, with or without a schedule (`listChecklists`). A repeating checklist comes once, as its series. Open ones come first, then done, newest first, at most 200. Line progress comes from one `childCounts` read for all of them.

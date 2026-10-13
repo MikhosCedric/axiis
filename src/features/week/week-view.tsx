@@ -30,7 +30,7 @@ import { formatClock, formatDayHeading } from "@/features/today/format";
 import { Glyph } from "@/features/today/glyph";
 import { LineLegend } from "@/features/today/line-legend";
 import { SameInInbox } from "@/features/inbox/same-in-inbox";
-import { buildToday, EMPTY_TRAY, stateOf, WAITING, type TodayEntry } from "@/features/today/model";
+import { buildToday, EMPTY_TRAY, stateOf, TRAY_FULL, WAITING, type TodayEntry } from "@/features/today/model";
 import { dayRangeFor } from "@/lib/dates";
 import { moveAction } from "./actions";
 import type { WeekData } from "./load";
@@ -42,6 +42,7 @@ import {
   moveTo,
   weekdayName,
   weekSummary,
+  WEEK_FULL,
   type Destination,
 } from "./model";
 import { useWeekDrag, type WeekDragPreview } from "./use-week-drag";
@@ -233,6 +234,7 @@ export function WeekView({
               </DayColumn>
             ))}
           </div>
+          {data.weekFull && <p className="mt-2 text-[13px] text-ink-3">{WEEK_FULL}</p>}
         </section>
 
         <div className="flex flex-wrap items-center gap-x-6">
@@ -270,6 +272,7 @@ export function WeekView({
           ) : (
             <p className="text-[13px] text-ink-3">{EMPTY_TRAY}</p>
           )}
+          {data.waitingFull && <p className="mt-3 text-[13px] text-ink-3">{TRAY_FULL}</p>}
         </section>
 
         <div
