@@ -3,6 +3,7 @@ import { idSchema, type AreaId, type Item, type ItemId } from "@/domain/item";
 import { sameTag, type TagName } from "@/domain/tag";
 import type { ItemsRepo } from "@/lib/items/repo";
 import type { LinkId, NotesRepo } from "@/lib/notes/repo";
+import { saveFailure } from "@/lib/quota";
 import { parseItemId } from "@/features/detail/commands";
 import { splitTagTerms } from "@/features/tags/model";
 import type { ActionResult } from "@/features/today/commands";
@@ -94,8 +95,8 @@ export async function createNote(notes: NotesRepo, rawAreaId: unknown = null): P
   try {
     const note = await notes.createNote({ title: "", areaId: areaId.data as AreaId | null });
     return { ok: true, id: note.id };
-  } catch {
-    return { ok: false, error: "A new note could not be made. Try again." };
+  } catch (error) {
+    return { ok: false, error: saveFailure(error, "A new note could not be made. Try again.") };
   }
 }
 
@@ -163,8 +164,8 @@ export async function linkItems(notes: NotesRepo, rawFrom: unknown, rawTo: unkno
     const existing = await notes.linksFor(from);
     if (!existing.some((l) => l.item.id === to)) await notes.link(from, to);
     return { ok: true };
-  } catch {
-    return { ok: false, error: "That link did not save. Try again." };
+  } catch (error) {
+    return { ok: false, error: saveFailure(error, "That link did not save. Try again.") };
   }
 }
 
@@ -189,7 +190,7 @@ export async function createLinkedNote(notes: NotesRepo, items: ItemsRepo, rawIt
     const note = await notes.createNote({ title: "", areaId: item.areaId });
     await notes.link(note.id, item.id);
     return { ok: true, id: note.id };
-  } catch {
-    return { ok: false, error: "A new note could not be made. Try again." };
+  } catch (error) {
+    return { ok: false, error: saveFailure(error, "A new note could not be made. Try again.") };
   }
 }

@@ -50,4 +50,13 @@ describe("proxy and the Content-Security-Policy", () => {
     expect(nonceOf(redirect)).toBeTruthy();
     expect(nonceOf(pass)).not.toBe(nonceOf(redirect));
   });
+
+  it("is the only source of the policy: next.config adds none of its own", async () => {
+    const { default: config } = await import("../next.config");
+    const rules = (await config.headers?.()) ?? [];
+    const keys = rules.flatMap((rule) => rule.headers.map((h) => h.key.toLowerCase()));
+    expect(keys).toContain("x-frame-options");
+    expect(keys).not.toContain("content-security-policy");
+    expect(keys).not.toContain("content-security-policy-report-only");
+  });
 });
