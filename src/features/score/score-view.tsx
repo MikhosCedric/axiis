@@ -37,6 +37,7 @@ import {
 } from "./layout";
 import styles from "./score.module.css";
 import { useScoreDrag, type DragPreview } from "./use-score-drag";
+import { exampleBeams, EXAMPLES_NOTE, type ExampleBeam } from "@/features/day/first-day";
 
 export type ScoreHandlers = {
   onSelect: (id: string | null) => void;
@@ -59,11 +60,14 @@ export function ScoreView({
   tags,
   selectedId,
   justDone,
+  firstDay = false,
   onSelect,
   onPlace,
   onToggleDone,
 }: {
   view: TodayView;
+  /** The account has never stored an item: draw example beams and leave out what only explains items. */
+  firstDay?: boolean;
   waitingFull: boolean;
   areas: Area[];
   date: LocalDate;
@@ -119,6 +123,7 @@ export function ScoreView({
     return layoutScore({ view, areas, date, timeZone, now: nowMinutes, pending, room });
   }, [view, areas, date, timeZone, nowMinutes, preview, landing, room]);
   const { axis, staves } = score;
+  const examples = useMemo(() => (firstDay ? exampleBeams(areas) : []), [firstDay, areas]);
   const ctx: DropContext = { date, timeZone, axis, now: nowMinutes };
   const start = useScoreDrag(
     { scroller, layer, tray, anyTime: strip, fly },
@@ -145,8 +150,10 @@ export function ScoreView({
     if (!el) return;
     const label = root.current?.querySelector<HTMLElement>("[data-staff-label]")?.offsetWidth ?? 0;
     const visible = el.clientWidth - label;
-    const first = Math.min(...staves.flatMap((s) => s.beams.map((b) => b.span.start)));
-    const focus = nowMinutes !== null ? xAt(axis, nowMinutes) - 0.3 * visible : Number.isFinite(first) ? xAt(axis, first) - 24 : 0;
+    const first = Math.min(...staves.flatMap((s) => s.beams.map((b) => b.span.start)), ...examples.map((e) => e.span.start));
+    // An empty first day opens on its examples, which show what the Score is for better than the time does.
+    const focus =
+      nowMinutes !== null && !examples.length ? xAt(axis, nowMinutes) - 0.3 * visible : Number.isFinite(first) ? xAt(axis, first) - 24 : 0;
     el.scrollLeft = Math.max(0, focus);
     syncAxis();
     // Only on first paint: later renders keep wherever the person scrolled to.
@@ -188,35 +195,37 @@ export function ScoreView({
         Score
       </h2>
 
-      <div
-        ref={strip}
-        className={`mb-3 flex items-start border-y border-rule ${target?.kind === "anytime" ? "bg-accent-wash" : ""}`}
-      >
-        <h3 className="w-[var(--lw)] flex-none border-r border-rule px-2 py-3 font-serif text-base leading-tight font-medium rail:px-3">
-          Any time
-        </h3>
-        {score.anyTime.length ? (
-          <ul className="flex min-w-0 flex-wrap gap-2.5 p-2.5" aria-label="Any time today">
-            {score.anyTime.map((entry) => (
-              <li key={entry.item.id} className="min-w-0">
-                <Chip
-                  entry={entry}
-                  count={childCounts[entry.item.id]}
-                  tags={tags[entry.item.id]}
-                  selected={selectedId === entry.item.id}
-                  justDone={justDone === entry.item.id}
-                  lifted={preview?.item.id === entry.item.id && preview.kind !== "resize"}
-                  where="any time"
-                  onPointerDown={(e) => start(e, "place", entry.item)}
-                  onKeyDown={(e) => keyDown(e, entry.item)}
-                />
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p className="px-3 py-3 text-[13px] text-ink-3">For things that belong to the day but not to an hour.</p>
-        )}
-      </div>
+      {!firstDay && (
+        <div
+          ref={strip}
+          className={`mb-3 flex items-start border-y border-rule ${target?.kind === "anytime" ? "bg-accent-wash" : ""}`}
+        >
+          <h3 className="w-[var(--lw)] flex-none border-r border-rule px-2 py-3 font-serif text-base leading-tight font-medium rail:px-3">
+            Any time
+          </h3>
+          {score.anyTime.length ? (
+            <ul className="flex min-w-0 flex-wrap gap-2.5 p-2.5" aria-label="Any time today">
+              {score.anyTime.map((entry) => (
+                <li key={entry.item.id} className="min-w-0">
+                  <Chip
+                    entry={entry}
+                    count={childCounts[entry.item.id]}
+                    tags={tags[entry.item.id]}
+                    selected={selectedId === entry.item.id}
+                    justDone={justDone === entry.item.id}
+                    lifted={preview?.item.id === entry.item.id && preview.kind !== "resize"}
+                    where="any time"
+                    onPointerDown={(e) => start(e, "place", entry.item)}
+                    onKeyDown={(e) => keyDown(e, entry.item)}
+                  />
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="px-3 py-3 text-[13px] text-ink-3">For things that belong to the day but not to an hour.</p>
+          )}
+        </div>
+      )}
 
       <div className="sticky top-0 z-10 flex h-[34px] border-y border-rule bg-paper" aria-hidden="true">
         <div className="w-[var(--lw)] flex-none border-r border-rule" />
@@ -255,7 +264,7 @@ export function ScoreView({
                 <span className="block font-serif text-base leading-tight font-medium [overflow-wrap:anywhere] rail:text-[19px]">
                   {staff.name}
                 </span>
-                <span className="mt-1 block text-xs text-ink-3">{staff.open} open</span>
+                {!firstDay && <span className="mt-1 block text-xs text-ink-3">{staff.open} open</span>}
               </div>
               <div
                 className={`${styles.staffBody} ${target?.kind === "staff" && target.staff === i ? styles.over : ""}`}
@@ -286,6 +295,10 @@ export function ScoreView({
                 />
               )),
             )}
+            {examples.map((e) => {
+              const staff = staves.find((s) => s.areaId === e.areaId);
+              return staff && <Example key={e.areaId} example={e} top={staff.top + beamTop(0)} ctx={ctx} />;
+            })}
             {score.ghost && landing && (
               <Ghost top={staves[score.ghost.staff].top + beamTop(score.ghost.row)} placement={landing} ctx={ctx} />
             )}
@@ -300,58 +313,64 @@ export function ScoreView({
         </div>
       </div>
 
-      <p aria-hidden="true" className="mt-3 hidden text-[13px] leading-relaxed text-ink-3 pointer-coarse:block">
-        Press and hold a beam, then drag it to move it, or hold and drag its right end to change its length.
-      </p>
-      <div className="flex flex-wrap items-center gap-x-6">
-        <HelpHint id={KEYS_ID} label="Keyboard help">
-          Drag a beam to move it, or its right end to change its length. With a beam focused, <Kbd>←</Kbd> <Kbd>→</Kbd>{" "}
-          move it a quarter hour, <Kbd>Shift</Kbd> with <Kbd>←</Kbd> <Kbd>→</Kbd> changes its length, <Kbd>↑</Kbd>{" "}
-          <Kbd>↓</Kbd> change its area, <Kbd>Space</Kbd> marks it done, <Kbd>Enter</Kbd> opens it and{" "}
-          <Kbd>Backspace</Kbd> sends it back to waiting. On a waiting item, <Kbd>↑</Kbd> or <Kbd>↓</Kbd> gives it a time.
-        </HelpHint>
-        <LineLegend now />
-      </div>
+      {firstDay ? (
+        <p className="mt-3 text-[13px] text-ink-3">{EXAMPLES_NOTE}</p>
+      ) : (
+        <>
+          <p aria-hidden="true" className="mt-3 hidden text-[13px] leading-relaxed text-ink-3 pointer-coarse:block">
+            Press and hold a beam, then drag it to move it, or hold and drag its right end to change its length.
+          </p>
+          <div className="flex flex-wrap items-center gap-x-6">
+            <HelpHint id={KEYS_ID} label="Keyboard help">
+              Drag a beam to move it, or its right end to change its length. With a beam focused, <Kbd>←</Kbd> <Kbd>→</Kbd>{" "}
+              move it a quarter hour, <Kbd>Shift</Kbd> with <Kbd>←</Kbd> <Kbd>→</Kbd> changes its length, <Kbd>↑</Kbd>{" "}
+              <Kbd>↓</Kbd> change its area, <Kbd>Space</Kbd> marks it done, <Kbd>Enter</Kbd> opens it and{" "}
+              <Kbd>Backspace</Kbd> sends it back to waiting. On a waiting item, <Kbd>↑</Kbd> or <Kbd>↓</Kbd> gives it a time.
+            </HelpHint>
+            <LineLegend now />
+          </div>
 
-      <section
-        ref={tray}
-        aria-labelledby="tray-h"
-        className={`mt-7 pt-2 ${target?.kind === "tray" ? styles.dropZone : ""}`}
-      >
-        <h3 id="tray-h" className="font-serif text-lg leading-tight font-medium">
-          {WAITING}
-        </h3>
-        <p className="mt-1 mb-3.5 text-[13px] text-ink-3">
-          No day yet.{" "}
-          <span className="pointer-coarse:hidden">Drag one onto an area to plan it for a time today.</span>
-          <span className="hidden pointer-coarse:inline">
-            Press and hold one, then drag it onto an area to plan it for a time today.
-          </span>{" "}
-          Drag a beam back here to clear its day. <SameInInbox />
-        </p>
-        {score.waiting.length ? (
-          <ul className="flex flex-wrap gap-2.5">
-            {score.waiting.map((entry) => (
-              <li key={entry.item.id} className="min-w-0">
-                <Chip
-                  entry={entry}
-                  count={childCounts[entry.item.id]}
-                  tags={tags[entry.item.id]}
-                  selected={selectedId === entry.item.id}
-                  justDone={justDone === entry.item.id}
-                  lifted={preview?.item.id === entry.item.id && preview.kind !== "resize"}
-                  where={entry.item.areaId ? `waiting, ${areaName(entry.item)}` : "waiting"}
-                  onPointerDown={(e) => start(e, "place", entry.item)}
-                  onKeyDown={(e) => keyDown(e, entry.item)}
-                />
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p className="text-[13px] text-ink-3">{EMPTY_TRAY}</p>
-        )}
-        {waitingFull && <p className="mt-3 text-[13px] text-ink-3">{TRAY_FULL}</p>}
-      </section>
+          <section
+            ref={tray}
+            aria-labelledby="tray-h"
+            className={`mt-7 pt-2 ${target?.kind === "tray" ? styles.dropZone : ""}`}
+          >
+            <h3 id="tray-h" className="font-serif text-lg leading-tight font-medium">
+              {WAITING}
+            </h3>
+            <p className="mt-1 mb-3.5 text-[13px] text-ink-3">
+              No day yet.{" "}
+              <span className="pointer-coarse:hidden">Drag one onto an area to plan it for a time today.</span>
+              <span className="hidden pointer-coarse:inline">
+                Press and hold one, then drag it onto an area to plan it for a time today.
+              </span>{" "}
+              Drag a beam back here to clear its day. <SameInInbox />
+            </p>
+            {score.waiting.length ? (
+              <ul className="flex flex-wrap gap-2.5">
+                {score.waiting.map((entry) => (
+                  <li key={entry.item.id} className="min-w-0">
+                    <Chip
+                      entry={entry}
+                      count={childCounts[entry.item.id]}
+                      tags={tags[entry.item.id]}
+                      selected={selectedId === entry.item.id}
+                      justDone={justDone === entry.item.id}
+                      lifted={preview?.item.id === entry.item.id && preview.kind !== "resize"}
+                      where={entry.item.areaId ? `waiting, ${areaName(entry.item)}` : "waiting"}
+                      onPointerDown={(e) => start(e, "place", entry.item)}
+                      onKeyDown={(e) => keyDown(e, entry.item)}
+                    />
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-[13px] text-ink-3">{EMPTY_TRAY}</p>
+            )}
+            {waitingFull && <p className="mt-3 text-[13px] text-ink-3">{TRAY_FULL}</p>}
+          </section>
+        </>
+      )}
 
       <div ref={fly} hidden={!showFly} className={`${styles.chip} ${styles.fly}`} aria-hidden="true">
         {preview && (
@@ -462,6 +481,24 @@ function Ghost({ top, placement, ctx }: { top: number; placement: Placement; ctx
     >
       <span className={`${styles.tip} tabular`}>
         {formatClock(s.start, ctx.timeZone)} to {formatClock(s.end, ctx.timeZone)}
+      </span>
+    </div>
+  );
+}
+
+/** A first-day example: drawn like a planned beam in Hairline, hidden from assistive tech, never a target. EXAMPLES_NOTE says what it is. */
+function Example({ example, top, ctx }: { example: ExampleBeam; top: number; ctx: DropContext }) {
+  const { span } = example;
+  return (
+    <div
+      aria-hidden="true"
+      data-example
+      className={styles.example}
+      style={{ left: xAt(ctx.axis, span.start), width: (span.end - span.start) * PX_PER_MINUTE, top }}
+    >
+      <span className={styles.label}>
+        {example.title}
+        <span className={styles.clock}>{formatClock(minutesToDate(ctx, span.start), ctx.timeZone)}</span>
       </span>
     </div>
   );
