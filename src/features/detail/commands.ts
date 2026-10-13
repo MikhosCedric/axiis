@@ -9,7 +9,7 @@ import type { ActionResult } from "@/features/today/commands";
 import { TITLE_MAX } from "@/features/today/model";
 import { DAY_MINUTES } from "@/features/score/layout";
 import { buildDetail, clockOf, firstDay, retypable, subtaskPolicy, takesDue, TYPE_CHOICES, type DetailView, type Scope, type TimeOfDay } from "./model";
-import { repeatSchema, ruleFor } from "./repeat";
+import { firstOccurrence, repeatSchema, ruleFor } from "./repeat";
 import { byName } from "@/domain/tag";
 import { byUse } from "@/features/tags/model";
 
@@ -286,14 +286,15 @@ export async function setFirstDay(repo: ItemsRepo, rawKey: unknown, rawDate: unk
     if (series.recurrence.kind !== "series") return { ok: false, error: NOT_A_SERIES };
     const { end } = series.recurrence.rule;
     if (end.kind === "until" && end.on < on) return { ok: false, error: AFTER_END };
-    const s = series.schedule;
-    if (s.kind === "unscheduled") return { ok: false, error: MISSING };
-    const schedule: Schedule =
-      s.kind === "day"
-        ? { kind: "day", on }
-        : timedAt(on, localMinutes(s.start, toLocalDate(s.start, timeZone), timeZone), s.end.getTime() - s.start.getTime(), timeZone);
-    await repo.update(series.id, { schedule });
+    if (series.schedule.kind === "unscheduled") return { ok: false, error: MISSING };
+    await repo.update(series.id, { schedule: movedTo(series.schedule, on, timeZone) });
   });
+}
+
+/** A day or timed schedule on another date, at the same wall-clock time and for the same real minutes. */
+function movedTo(s: Exclude<Schedule, { kind: "unscheduled" }>, on: LocalDate, timeZone: string): Schedule {
+  if (s.kind === "day") return { kind: "day", on };
+  return timedAt(on, localMinutes(s.start, toLocalDate(s.start, timeZone), timeZone), s.end.getTime() - s.start.getTime(), timeZone);
 }
 
 export async function addSubtask(repo: ItemsRepo, rawParentId: unknown, rawTitle: unknown): Promise<ActionResult> {
@@ -379,7 +380,9 @@ const NOT_REPEATABLE ="Only a task, event or checklist with no subtasks can repe
 
 /**
  * Sets how an item repeats, or stops it. On an occurrence this changes the whole
- * series. An item waiting for a time starts repeating from today. Turning
+ * series. An item waiting for a time starts repeating from today. An item
+ * whose day the rule skips, such as every weekday set on a Saturday, moves to
+ * its first occurrence, so it is never left on a day nothing shows. Turning
  * repetition off keeps the overrides as ordinary items and leaves the series as
  * a single item on its first date.
  */
@@ -415,12 +418,14 @@ export async function setRepeat(
     if (item.type === "note" || item.parentId !== null || (await repo.listChildren(item.id)).length > 0) {
       return { ok: false, error: NOT_REPEATABLE };
     }
-    const today = toLocalDate(now, timeZone);
-    const firstOn = firstDay(item.schedule, timeZone) ?? today;
+    const rule = ruleFor(preset, end);
+    const schedule = item.schedule.kind === "unscheduled" ? { kind: "day" as const, on: toLocalDate(now, timeZone) } : item.schedule;
+    const ownDay = firstDay(schedule, timeZone)!;
+    const firstOn = firstOccurrence(rule, ownDay);
     if (end.kind === "until" && end.on < firstOn) return { ok: false, error: AFTER_END };
     await repo.update(item.id, {
-      recurrence: { kind: "series", rule: ruleFor(preset, end) },
-      ...(item.schedule.kind === "unscheduled" && { schedule: { kind: "day", on: today } }),
+      recurrence: { kind: "series", rule },
+      ...(firstOn !== ownDay || item.schedule.kind === "unscheduled" ? { schedule: movedTo(schedule, firstOn, timeZone) } : {}),
     });
   });
 }

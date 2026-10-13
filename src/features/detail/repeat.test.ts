@@ -57,6 +57,14 @@ describe("startsRepeating", () => {
     expect(startsRepeating({ preset: "weekdays", end: never }, d("2026-10-07"), today)).toBe("Repeats every weekday from tomorrow.");
   });
 
+  it("names the first occurrence when its own day is not one", () => {
+    const saturday = d("2026-10-10");
+    expect(startsRepeating({ preset: "weekdays", end: never }, saturday, saturday)).toBe(
+      "Repeats every weekday, starting Monday 12 October.",
+    );
+    expect(startsRepeating({ preset: "weekdays", end: never }, null, d("2026-10-11"))).toBe("Repeats every weekday, starting tomorrow.");
+  });
+
   it("says nothing when it stops repeating", () => {
     expect(startsRepeating({ preset: "none", end: never }, null, today)).toBeNull();
   });
