@@ -64,6 +64,25 @@ How the app uses them (`src/domain/tag.ts`, `src/features/tags/`):
 - Open counts count live items whose status is `open`. A tag's page lists live items that are not dropped, open first, then newest, at most 200.
 - Search reads `#name` words as a filter: words narrow the text hits to items carrying every named tag, or an override whose series carries them; tags alone list every item carrying them.
 
+## Quotas (migration 0006, not yet applied to the hosted project)
+
+Signup is open and PostgREST takes writes straight from the browser's session, so the database caps how much one account can hold. Where the app has its own limit, the cap sits well above it, so only a script writing to PostgREST directly reaches it. Items and links have no app limit: 20,000 items is about 11 years at five a day, subtasks and moved occurrences included.
+
+| Table | Cap | The app's own limit |
+|---|---|---|
+| `items` | 20,000 per user | none |
+| `links` | 50,000 per user | none |
+| `tags` | 500 per user | 200 (`TAGS_PER_USER`) |
+| `areas` | 100 per user | 12 live (`AREA_LIMIT`) |
+| `item_tags` | 20 per item | 10 (`TAGS_PER_ITEM`) |
+
+- Soft-deleted rows count. They keep their storage, and leaving them out would let an insert-then-delete loop run forever. Nothing purges them yet; a purge of old soft-deleted rows is the remedy if a real account nears a cap.
+- An `after insert` statement trigger checks the users (or items) in the inserted rows, counting at most cap + 1 rows through an index that leads with `user_id` (`item_id` for `item_tags`). A bulk insert that crosses the cap is refused whole. Two concurrent inserts can each see room and both land, so a cap can be overshot by a few rows.
+- The functions are `security invoker` with `set search_path = ''`. Row Level Security shows a user all of their own rows, soft-deleted ones included, so the count is complete; signup's `handle_new_user` runs as the table owner and is not limited by RLS.
+- A refusal is SQLSTATE `54000` (`program_limit_exceeded`). `src/lib/quota.ts` turns it into "This account has reached its size limit" for capture, new notes, links and areas. Other saves (tags, subtasks, occurrence overrides) still show their own "did not save" sentence.
+- Only inserts are checked. Updates, soft deletes, and account deletion with its cascades are untouched. The migration adds `items (user_id, parent_id) where parent_id is not null`, so deleting an account with 20,000 items no longer scans the table once per item for the parent foreign key.
+- The note body cap drops from 2 MB to 512 KB of jsonb (`items_body_size`). The editor refuses more than 200 KB of JSON (`BODY_MAX_BYTES`), which measured at most 1.5 times larger as jsonb.
+
 ## Day query
 
 A day is a half-open UTC range `[from, to)` computed by the client from the user's time zone. Items on that day are: timed items with `start_at` in range, plus day-only items with `scheduled_on` equal to the local date, leaving out series. Each live series is then expanded into its occurrences for the day, minus the dates a live override stands for. The database never stores a time zone or a "today".
