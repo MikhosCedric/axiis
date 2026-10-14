@@ -18,34 +18,36 @@ type Capped = {
   addOne(tx: Tx): Promise<unknown>;
 };
 
+// Filled rows are a day old, so they count toward the cap but not the 0007 rate limit.
 const bulk = (sql: string) => async (userId: string, n: number) => {
-  await db.admin.query(sql, [userId, n]);
+  await db.seed(sql, [userId, n]);
 };
 
 const CAPPED: Record<"items" | "links" | "tags" | "areas", Capped> = {
   items: {
     cap: 20000,
-    fill: bulk("insert into items (user_id, type, title) select $1, 'task', 'x' from generate_series(1, $2)"),
+    fill: bulk("insert into items (user_id, type, title, created_at) select $1, 'task', 'x', now() - interval '1 day' from generate_series(1, $2)"),
     addOne: (tx) => tx.query("insert into items (type) values ('task')"),
   },
   tags: {
     cap: 500,
-    fill: bulk("insert into tags (user_id, name) select $1, 'f' || g from generate_series(1, $2) g"),
+    fill: bulk("insert into tags (user_id, name, created_at) select $1, 'f' || g, now() - interval '1 day' from generate_series(1, $2) g"),
     addOne: (tx) => tx.query("insert into tags (name) values (left('extra' || gen_random_uuid(), 32))"),
   },
   areas: {
     cap: 100,
     // Signup already seeded three areas.
-    fill: (userId, n) => bulk("insert into areas (user_id, name) select $1, 'f' || g from generate_series(1, $2 - 3) g")(userId, n),
+    fill: (userId, n) =>
+      bulk("insert into areas (user_id, name, created_at) select $1, 'f' || g, now() - interval '1 day' from generate_series(1, $2 - 3) g")(userId, n),
     addOne: (tx) => tx.query("insert into areas (name) values (left('extra' || gen_random_uuid(), 40))"),
   },
   links: {
     cap: 50000,
     async fill(userId, n) {
-      await db.admin.query("insert into items (user_id, type) select $1, 'note' from generate_series(1, 250)", [userId]);
-      await db.admin.query(
-        `insert into links (user_id, from_id, to_id)
-         select $1, a.id, b.id from items a join items b on b.user_id = a.user_id and b.id <> a.id
+      await db.seed("insert into items (user_id, type, created_at) select $1, 'note', now() - interval '1 day' from generate_series(1, 250)", [userId]);
+      await db.seed(
+        `insert into links (user_id, from_id, to_id, created_at)
+         select $1, a.id, b.id, now() - interval '1 day' from items a join items b on b.user_id = a.user_id and b.id <> a.id
          where a.user_id = $1 limit $2`,
         [userId, n],
       );

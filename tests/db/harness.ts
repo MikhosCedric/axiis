@@ -38,6 +38,11 @@ export type Tx = Transaction;
 export type TestDb = {
   /** Superuser connection: bypasses RLS, like the Supabase SQL editor. */
   admin: PGlite;
+  /**
+   * Runs one statement as the superuser with user triggers off, so it can backdate
+   * created_at and add rows faster than the 0007 rate limits allow.
+   */
+  seed(sql: string, params?: unknown[]): Promise<void>;
   /** Signs up a user the way Supabase Auth does, as supabase_auth_admin. */
   createUser(): Promise<string>;
   /** Runs `fn` in one transaction as the `authenticated` role with `sub = userId`. */
@@ -69,6 +74,12 @@ export async function createTestDb(): Promise<TestDb> {
 
   return {
     admin,
+    async seed(sql, params) {
+      await admin.transaction(async (tx) => {
+        await tx.exec("set local session_replication_role = replica");
+        await tx.query(sql, params);
+      });
+    },
     async createUser() {
       return admin.transaction(async (tx) => {
         await tx.exec("set local role supabase_auth_admin");

@@ -1,10 +1,11 @@
 "use server";
 
-import { headers } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { safeNextPath } from "@/lib/auth/next-path";
 import { createClient } from "@/lib/supabase/server";
+import { EMAIL_WAIT_COOKIE, secondsToWait, startWait, waitMessage } from "./cooldown";
 
 export type EmailSignInState =
   | { status: "idle" }
@@ -26,6 +27,10 @@ export async function signInWithEmail(_prev: EmailSignInState, formData: FormDat
   const parsed = emailSchema.safeParse(submitted);
   if (!parsed.success) return { status: "error", message: "Enter an email address like name@example.com.", email: submitted };
 
+  const jar = await cookies();
+  const wait = secondsToWait(jar.get(EMAIL_WAIT_COOKIE)?.value, new Date());
+  if (wait > 0) return { status: "error", message: waitMessage(wait), email: parsed.data };
+
   const supabase = await createClient();
   const { error } = await supabase.auth.signInWithOtp({
     email: parsed.data,
@@ -41,6 +46,7 @@ export async function signInWithEmail(_prev: EmailSignInState, formData: FormDat
       email: parsed.data,
     };
   }
+  jar.set(startWait(new Date()));
   return { status: "sent", email: parsed.data };
 }
 
