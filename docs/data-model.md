@@ -79,9 +79,26 @@ Signup is open and PostgREST takes writes straight from the browser's session, s
 - Soft-deleted rows count. They keep their storage, and leaving them out would let an insert-then-delete loop run forever. Nothing purges them yet; a purge of old soft-deleted rows is the remedy if a real account nears a cap.
 - An `after insert` statement trigger checks the users (or items) in the inserted rows, counting at most cap + 1 rows through an index that leads with `user_id` (`item_id` for `item_tags`). A bulk insert that crosses the cap is refused whole. Two concurrent inserts can each see room and both land, so a cap can be overshot by a few rows.
 - The functions are `security invoker` with `set search_path = ''`. Row Level Security shows a user all of their own rows, soft-deleted ones included, so the count is complete; signup's `handle_new_user` runs as the table owner and is not limited by RLS.
-- A refusal is SQLSTATE `54000` (`program_limit_exceeded`). `src/lib/quota.ts` turns it into "This account has reached its size limit" for capture, new notes, links and areas. Other saves (tags, subtasks, occurrence overrides) still show their own "did not save" sentence.
+- A refusal is SQLSTATE `54000` (`program_limit_exceeded`). `src/lib/quota.ts` turns it into "This account has reached its size limit" for capture, new notes, links, areas, tags, subtasks and occurrence overrides.
 - Only inserts are checked. Updates, soft deletes, and account deletion with its cascades are untouched. The migration adds `items (user_id, parent_id) where parent_id is not null`, so deleting an account with 20,000 items no longer scans the table once per item for the parent foreign key.
 - The note body cap drops from 2 MB to 512 KB of jsonb (`items_body_size`). The editor refuses more than 200 KB of JSON (`BODY_MAX_BYTES`), which measured at most 1.5 times larger as jsonb.
+
+## Rate limits (migration 0007, not yet applied to the hosted project)
+
+The quotas bound how much an account holds, not how fast it adds rows. Every server action can be bypassed by calling PostgREST with the same session, so the throttle is in the database.
+
+| Table | Rows added per account in any 60 seconds | What the app adds at once |
+|---|---|---|
+| `items` | 120 | one per capture, subtask, note or moved occurrence |
+| `links` | 120 | one per link |
+| `tags` | 60 | at most 10 new tags in one capture |
+| `areas` | 30 | three at signup, one per "Add area" |
+
+- `item_tags` has no rate limit: the quota holds it to 20 per item, and items are rate-limited.
+- An `after insert` statement trigger counts the account's rows with `created_at` in the last 60 seconds, at most limit + 1 of them, through a new `(user_id, created_at)` index on each table. The statement's own rows count, so one bulk insert over the limit is refused whole.
+- `created_at` is the database's clock: a `before insert or update` row trigger stamps `now()` on insert and keeps the old value on update. Without it a client could backdate its rows out of the window. Test and support scripts that need old rows run with `session_replication_role = replica` (`seed` in `tests/db/harness.ts`).
+- A refusal is SQLSTATE `54R01`, our own code in the program-limit class, so it reads differently from a quota refusal: "You're going a little fast, so this was not saved. Try again in a moment." (`src/lib/quota.ts`).
+- Updates and deletes are not limited. They do not grow an account, and the Vercel firewall rules in `docs/launch-checklist.md` bound request volume.
 
 ## Day query
 
