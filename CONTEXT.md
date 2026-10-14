@@ -40,6 +40,8 @@ A solo productivity web app. One connected set of items, shown through many view
 
 **Capture**: adding an item from one line of text. A plain line lands unscheduled in the tray. On Today, Week, the Inbox and the palette, a day, a time, a length and tags at the line's start or end plan and tag the new task ("dentist tomorrow 9:00 #health"); a checklist captured on Lists keeps its name as typed. Must take under two seconds.
 
+**First day**: the state of an account that has never stored an item of any type or status, deleted ones included. The day screen draws example beams and leaves out what only explains items, until the first capture. An account that once had items never returns to it.
+
 **Soft delete**: setting `deleted_at` instead of removing the row. The app never hard-deletes items; deleting a whole account cascades.
 
 ## Rules that are easy to get wrong

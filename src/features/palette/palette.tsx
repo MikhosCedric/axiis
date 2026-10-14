@@ -3,12 +3,13 @@
 import { useRouter } from "next/navigation";
 import {
   createContext,
+  useCallback,
   useContext,
   useEffect,
   useId,
+  useMemo,
   useRef,
   useState,
-  useSyncExternalStore,
   type KeyboardEvent as ReactKeyboardEvent,
   type ReactNode,
 } from "react";
@@ -35,8 +36,10 @@ import {
   type Find,
   type Target,
 } from "./model";
+import { GuideBody, GuideContext, Kbd, type GuideTopic } from "./guide";
 import styles from "./palette.module.css";
-import { chordCaps, chordSpoken, globalShortcut, goShortcut, GO_WINDOW_MS, SHORTCUTS, type Chord } from "./shortcuts";
+import { globalShortcut, goShortcut, GO_WINDOW_MS } from "./shortcuts";
+
 
 /** The writes and reads the palette makes. Server actions in the app, in-memory fakes in the dev harness. */
 export type PaletteActions = {
@@ -68,16 +71,7 @@ export function useOpenPalette(): () => void {
   return useContext(OpenPalette);
 }
 
-const subscribeNothing = () => () => {};
-
-/** True on Apple platforms, where the shortcut is Cmd. False while rendering on the server. */
-export function useIsMac(): boolean {
-  return useSyncExternalStore(
-    subscribeNothing,
-    () => /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent),
-    () => false,
-  );
-}
+const NO_TOPICS: readonly GuideTopic[] = [];
 
 export function PaletteProvider({
   today,
@@ -89,7 +83,13 @@ export function PaletteProvider({
   children: ReactNode;
 }) {
   const [open, setOpen] = useState<Open>(null);
+  const [topics, setTopics] = useState(NO_TOPICS);
   const router = useRouter();
+  const show = useCallback((next: readonly GuideTopic[]) => {
+    setTopics(next);
+    return () => setTopics((current) => (current === next ? NO_TOPICS : current));
+  }, []);
+  const guide = useMemo(() => ({ open: () => setOpen("help"), show }), [show]);
 
   useEffect(() => {
     let goTimer: ReturnType<typeof setTimeout> | undefined;
@@ -131,7 +131,7 @@ export function PaletteProvider({
 
   return (
     <OpenPalette.Provider value={() => setOpen("palette")}>
-      {children}
+      <GuideContext.Provider value={guide}>{children}</GuideContext.Provider>
       <Modal open={open === "palette"} onClose={() => setOpen(null)} label="Search and commands">
         <PaletteBody
           today={today}
@@ -140,8 +140,8 @@ export function PaletteProvider({
           onHelp={() => setOpen("help")}
         />
       </Modal>
-      <Modal open={open === "help"} onClose={() => setOpen(null)} label="Keyboard shortcuts" keepKeys>
-        <ShortcutsBody onClose={() => setOpen(null)} />
+      <Modal open={open === "help"} onClose={() => setOpen(null)} label="Guide" keepKeys>
+        <GuideBody topics={topics} onClose={() => setOpen(null)} />
       </Modal>
     </OpenPalette.Provider>
   );
@@ -496,73 +496,6 @@ function CommandLine({ command }: { command: Command }) {
         {TYPE_WORD[type]}
         {done && ", done"}
       </span>
-    </>
-  );
-}
-
-function Kbd({ children }: { children: ReactNode }) {
-  return <kbd className="rounded border border-rule px-1.5 font-sans text-xs font-semibold text-ink-2">{children}</kbd>;
-}
-
-function ChordKeys({ chord, mac }: { chord: Chord; mac: boolean }) {
-  return (
-    <span className="inline-flex items-center gap-1">
-      {chordCaps(chord, mac).map((cap) => (
-        <Kbd key={cap}>{cap}</Kbd>
-      ))}
-    </span>
-  );
-}
-
-function ShortcutsBody({ onClose }: { onClose: () => void }) {
-  const mac = useIsMac();
-  const id = useId();
-  return (
-    <>
-      <div className="flex items-center gap-3 border-b border-rule-soft px-5 py-3.5">
-        <h2 id={`${id}-h`} className="font-serif text-lg font-semibold">
-          Keyboard shortcuts
-        </h2>
-        <button
-          type="button"
-          autoFocus
-          onClick={onClose}
-          className="ml-auto rounded-md px-2 py-1 font-medium text-ink-2 hover:bg-accent-wash hover:text-ink"
-        >
-          Close
-        </button>
-      </div>
-      <div className={`${styles.scroll} px-5 pt-2 pb-5`}>
-        {SHORTCUTS.map((group) => (
-          <section key={group.where} aria-labelledby={`${id}-${group.where}`} className="mt-4">
-            <h3 id={`${id}-${group.where}`} className="mb-1.5 text-xs font-semibold text-ink-3">
-              {group.where}
-            </h3>
-            <dl className="grid grid-cols-1 gap-x-4 min-[480px]:grid-cols-[11.5rem_minmax(0,1fr)] min-[480px]:gap-y-2">
-              {group.shortcuts.map((s) => (
-                <div key={`${s.handler}-${s.does}`} className="contents">
-                  <dt className="mb-1 flex flex-wrap items-center gap-x-1.5 gap-y-1 min-[480px]:mb-0">
-                    <span className="sr-only">{s.chords.map((c) => chordSpoken(c, mac, s.then)).join(" or ")}</span>
-                    {s.chords.map((chord, i) => (
-                      <span key={i} aria-hidden="true" className="inline-flex items-center gap-1.5">
-                        {i > 0 && <span className="text-ink-3">or</span>}
-                        <ChordKeys chord={chord} mac={mac} />
-                        {s.then && (
-                          <>
-                            <span className="text-ink-3">then</span>
-                            <ChordKeys chord={s.then} mac={mac} />
-                          </>
-                        )}
-                      </span>
-                    ))}
-                  </dt>
-                  <dd className="mb-2.5 text-ink-2 min-[480px]:mb-0">{s.does}</dd>
-                </div>
-              ))}
-            </dl>
-          </section>
-        ))}
-      </div>
     </>
   );
 }

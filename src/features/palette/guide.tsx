@@ -1,0 +1,192 @@
+"use client";
+
+import { createContext, useContext, useEffect, useId, type ReactNode } from "react";
+import styles from "./palette.module.css";
+import { chordCaps, chordSpoken, HELP_KEY, SHORTCUTS, type Chord } from "./shortcuts";
+import { useIsMac } from "./use-is-mac";
+
+/** A part of the Guide that explains one screen's own words and gestures. */
+export type GuideTopic = "capture" | "score" | "week";
+
+type GuideControls = {
+  open: () => void;
+  /** Puts these topics at the head of the Guide while the screen that shows them is up. Returns the undo. */
+  show: (topics: readonly GuideTopic[]) => () => void;
+};
+
+export const GuideContext = createContext<GuideControls>({ open: () => {}, show: () => () => {} });
+
+/**
+ * The one way into the Guide on a screen, at the end of its tool row. It also
+ * tells the Guide which topics this screen has, so ? opens on the same ones.
+ */
+export function GuideButton({ topics, className = "" }: { topics: readonly GuideTopic[]; className?: string }) {
+  const { open, show } = useContext(GuideContext);
+  const key = topics.join(" ");
+  useEffect(() => show(key.split(" ") as GuideTopic[]), [show, key]);
+  return (
+    <button
+      type="button"
+      onClick={open}
+      aria-haspopup="dialog"
+      aria-keyshortcuts={HELP_KEY}
+      title="Guide ( ? )"
+      className={`inline-flex flex-none items-center gap-1.5 rounded-lg border border-rule px-3 py-2 font-medium text-ink-2 hover:bg-hover hover:text-ink active:bg-press pointer-coarse:py-3 ${className}`}
+    >
+      <svg viewBox="0 0 16 16" width={16} height={16} aria-hidden="true" fill="none" stroke="currentColor" strokeWidth={1.4} strokeLinecap="round">
+        <circle cx="8" cy="8" r="6.4" />
+        <path d="M6.3 6.4a1.75 1.75 0 1 1 2.4 1.62c-.42.18-.7.55-.7 1v.38" />
+        <circle cx="8" cy="11.35" r=".2" fill="currentColor" strokeWidth={1.2} />
+      </svg>
+      Guide
+    </button>
+  );
+}
+
+export function Kbd({ children }: { children: ReactNode }) {
+  return <kbd className="rounded border border-rule px-1.5 font-sans text-xs font-semibold text-ink-2">{children}</kbd>;
+}
+
+function ChordKeys({ chord, mac }: { chord: Chord; mac: boolean }) {
+  return (
+    <span className="inline-flex items-center gap-1">
+      {chordCaps(chord, mac).map((cap) => (
+        <Kbd key={cap}>{cap}</Kbd>
+      ))}
+    </span>
+  );
+}
+
+function Topic({ id, title, children }: { id: string; title: string; children: ReactNode }) {
+  return (
+    <section aria-labelledby={id} className="border-b border-rule-soft py-5 first:pt-4">
+      <h3 id={id} className="font-serif text-[17px] leading-tight font-medium">
+        {title}
+      </h3>
+      <div className="mt-2 space-y-2 leading-relaxed text-ink-2">{children}</div>
+    </section>
+  );
+}
+
+const CAPTURE_WORDS: [string, string][] = [
+  ["Days", "today, tomorrow, a weekday, on friday, by friday, next friday, in 3 days, 2026-12-24"],
+  ["Times", "9:00, 14:30, 9am, 2:30pm, at 9, or 9 and 0930 right after a day"],
+  ["Length", "after a time, for 45m or for 1h 30m; otherwise 30 minutes"],
+  [
+    "Kept as typed",
+    "everything else, a day after a word like for or until (“groceries for sunday”), a word after a backslash (\\friday), and a whole line in quotes",
+  ],
+];
+
+function CaptureTopic({ id }: { id: string }) {
+  return (
+    <Topic id={id} title="Capture words">
+      <p>
+        Put a day, a time or tags at the start or end of a capture, as in{" "}
+        <span className="rounded border border-rule bg-paper px-1.5 py-px whitespace-nowrap text-ink">dentist tomorrow 9:00 #health</span>.
+      </p>
+      <dl className="grid gap-x-4 gap-y-1.5 pt-1 min-[480px]:grid-cols-[7.5rem_minmax(0,1fr)]">
+        {CAPTURE_WORDS.map(([term, words]) => (
+          <div key={term} className="contents">
+            <dt className="text-[13px] font-medium text-ink">{term}</dt>
+            <dd className="mb-1.5 text-[13px] min-[480px]:mb-0">{words}</dd>
+          </div>
+        ))}
+      </dl>
+    </Topic>
+  );
+}
+
+function ScoreTopic({ id }: { id: string }) {
+  return (
+    <Topic id={id} title="Moving beams">
+      <p>
+        Drag a beam along its staff to move it, or its right end to change its length. Drag it down to Waiting to clear
+        its day, or a waiting one up onto an area to give it a time.
+      </p>
+      <p>On a touch screen, press and hold first, then drag. With a beam focused, the arrow keys do the same; see below.</p>
+    </Topic>
+  );
+}
+
+function WeekTopic({ id }: { id: string }) {
+  return (
+    <Topic id={id} title="Moving between days">
+      <p>
+        Drag an item to another day, or down to Waiting to clear its day. With an item focused, the arrow keys do the
+        same; see below.
+      </p>
+    </Topic>
+  );
+}
+
+/** In the order the Guide shows them. */
+const TOPICS: Record<GuideTopic, (props: { id: string }) => ReactNode> = {
+  capture: CaptureTopic,
+  score: ScoreTopic,
+  week: WeekTopic,
+};
+
+/** What the Guide shows: the screen's own topics first, then every keyboard shortcut. */
+export function GuideBody({ topics, onClose }: { topics: readonly GuideTopic[]; onClose: () => void }) {
+  const mac = useIsMac();
+  const id = useId();
+  const shown = (Object.keys(TOPICS) as GuideTopic[]).filter((t) => topics.includes(t));
+  return (
+    <>
+      <div className="flex items-center gap-3 border-b border-rule-soft px-5 py-3.5">
+        <h2 id={`${id}-h`} className="font-serif text-xl leading-tight font-medium">
+          Guide
+        </h2>
+        <button
+          type="button"
+          autoFocus
+          onClick={onClose}
+          className="ml-auto rounded-md px-2.5 py-1.5 font-medium text-ink-2 hover:bg-hover hover:text-ink active:bg-press pointer-coarse:min-h-11"
+        >
+          Close
+        </button>
+      </div>
+      <div className={`${styles.scroll} px-5 pb-5`}>
+        {shown.map((t) => {
+          const Body = TOPICS[t];
+          return <Body key={t} id={`${id}-${t}`} />;
+        })}
+        <section aria-labelledby={`${id}-keys`} className="pt-5 first:pt-4">
+          <h3 id={`${id}-keys`} className="font-serif text-[17px] leading-tight font-medium">
+            Keyboard shortcuts
+          </h3>
+          {SHORTCUTS.map((group) => (
+            <section key={group.where} aria-labelledby={`${id}-${group.where}`} className="mt-4">
+              <h4 id={`${id}-${group.where}`} className="mb-1.5 text-xs font-semibold text-ink-3">
+                {group.where}
+              </h4>
+              <dl className="grid grid-cols-1 gap-x-4 min-[480px]:grid-cols-[11.5rem_minmax(0,1fr)] min-[480px]:gap-y-2">
+                {group.shortcuts.map((s) => (
+                  <div key={`${s.handler}-${s.does}`} className="contents">
+                    <dt className="mb-1 flex flex-wrap items-center gap-x-1.5 gap-y-1 min-[480px]:mb-0">
+                      <span className="sr-only">{s.chords.map((c) => chordSpoken(c, mac, s.then)).join(" or ")}</span>
+                      {s.chords.map((chord, i) => (
+                        <span key={i} aria-hidden="true" className="inline-flex items-center gap-1.5">
+                          {i > 0 && <span className="text-ink-3">or</span>}
+                          <ChordKeys chord={chord} mac={mac} />
+                          {s.then && (
+                            <>
+                              <span className="text-ink-3">then</span>
+                              <ChordKeys chord={s.then} mac={mac} />
+                            </>
+                          )}
+                        </span>
+                      ))}
+                    </dt>
+                    <dd className="mb-2.5 text-ink-2 min-[480px]:mb-0">{s.does}</dd>
+                  </div>
+                ))}
+              </dl>
+            </section>
+          ))}
+        </section>
+      </div>
+    </>
+  );
+}

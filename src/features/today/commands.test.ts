@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { LocalDate } from "@/domain/item";
+import { TAGS_PER_ITEM, TAGS_PER_USER } from "@/domain/tag";
 import { QUOTA_MESSAGE } from "@/lib/quota";
 import { captureChecklist, captureTask, setDone } from "./commands";
 import { formatClock, formatDayHeading } from "./format";
@@ -17,7 +18,7 @@ describe("captureTask", () => {
       id: items[0].id,
       type: "task",
       title: "Renew passport",
-      plan: null,
+      landed: null,
       tags: [],
       missed: [],
     });
@@ -27,7 +28,7 @@ describe("captureTask", () => {
   it("plans a timed slot at the default length and tags it, from the words alone", async () => {
     const { repo, calls, items, itemTags, tags } = fakeRepo();
     const result = await captureTask(repo, "dentist tomorrow 9:00 #health", NOW, LONDON);
-    expect(result).toEqual({ ok: true, id: items[0].id, type: "task", title: "dentist", plan: "tomorrow, 09:00", tags: ["health"], missed: [] });
+    expect(result).toEqual({ ok: true, id: items[0].id, type: "task", title: "dentist", landed: { on: "2026-10-08", day: "tomorrow", time: { start: "09:00", end: null } }, tags: ["health"], missed: [] });
     expect(calls.create).toEqual([
       {
         type: "task",
@@ -41,7 +42,7 @@ describe("captureTask", () => {
 
   it("plans a day without a time, counting days from the user's own today", async () => {
     const { repo, calls } = fakeRepo();
-    expect(await captureTask(repo, "call bank tomorrow", NOW, "Asia/Tokyo")).toMatchObject({ plan: "tomorrow" });
+    expect(await captureTask(repo, "call bank tomorrow", NOW, "Asia/Tokyo")).toMatchObject({ landed: { on: "2026-10-09", day: "tomorrow", time: null } });
     expect(calls.create[0].schedule).toEqual({ kind: "day", on: "2026-10-09" });
     await captureTask(repo, "call bank tomorrow", NOW, LONDON);
     expect(calls.create[1].schedule).toEqual({ kind: "day", on: "2026-10-08" });
@@ -49,7 +50,7 @@ describe("captureTask", () => {
 
   it("puts a time with no day on today, and names a typed length's end", async () => {
     const { repo, calls } = fakeRepo();
-    expect(await captureTask(repo, "gym 22:00 for 45m", NOW, LONDON)).toMatchObject({ plan: "today, 22:00 to 22:45" });
+    expect(await captureTask(repo, "gym 22:00 for 45m", NOW, LONDON)).toMatchObject({ landed: { on: "2026-10-07", day: "today", time: { start: "22:00", end: "22:45" } } });
     expect(calls.create[0].schedule).toEqual({
       kind: "timed",
       start: new Date("2026-10-07T21:00:00Z"),
@@ -70,11 +71,33 @@ describe("captureTask", () => {
 
   it("keeps the item when a tag does not save, and says which", async () => {
     const { repo, calls } = fakeRepo();
-    repo.addTag = async () => {
+    repo.addTags = async () => {
       throw new Error("network");
     };
     expect(await captureTask(repo, "walk #health", NOW, LONDON)).toMatchObject({ ok: true, tags: [], missed: ["health"] });
     expect(calls.create).toHaveLength(1);
+  });
+
+  it("puts every tag of the line on in one write, without reading every tag's open count", async () => {
+    const { repo, calls, items, itemTags } = fakeRepo();
+    expect(await captureTask(repo, "walk #health #outside", NOW, LONDON)).toMatchObject({
+      ok: true,
+      tags: ["health", "outside"],
+      missed: [],
+    });
+    expect(calls.addTags).toEqual([[items[0].id, ["health", "outside"]]]);
+    expect(itemTags).toHaveLength(2);
+    expect(calls.listTags).toBe(0);
+  });
+
+  it("misses the tags past the item's limit and new ones past the user's", async () => {
+    const full = fakeRepo([makeItem()]);
+    full.tag(full.items[0].id, ...Array.from({ length: TAGS_PER_USER - 1 }, (_, i) => `t${i}`));
+    const many = Array.from({ length: TAGS_PER_ITEM + 1 }, (_, i) => `#n${i}`).join(" ");
+    const result = await captureTask(full.repo, `walk #t0 ${many}`, NOW, LONDON);
+    // t0 exists, n0 takes the one free slot, and the item's limit stops the rest.
+    expect(result).toMatchObject({ ok: true, tags: ["t0", "n0"] });
+    expect(result.ok && result.missed).toHaveLength(TAGS_PER_ITEM);
   });
 
   it("captures a checklist under its name as typed, unplanned, naming the new one", async () => {
@@ -85,7 +108,7 @@ describe("captureTask", () => {
       id: items[1].id,
       type: "checklist",
       title: "Groceries for Sunday 9:00 #home",
-      plan: null,
+      landed: null,
       tags: [],
       missed: [],
     });
@@ -113,7 +136,7 @@ describe("captureTask", () => {
     };
     const result = await captureTask(repo, "Call the landlord #home", NOW, LONDON);
     expect(result.ok).toBe(false);
-    expect(calls.addTag).toEqual([]);
+    expect(calls.addTags).toEqual([]);
   });
 
   it("says the account is full when the database refuses on a quota", async () => {

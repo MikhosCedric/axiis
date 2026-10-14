@@ -25,7 +25,7 @@ const PLACEHOLDER = "Write what is worth keeping. Headings, lists and links are 
 const isAllowed = (url: string) => safeHref(url) !== null;
 
 const tool =
-  "grid size-8 pointer-coarse:size-11 flex-none place-items-center rounded-md text-ink-2 hover:bg-accent-wash hover:text-ink aria-pressed:bg-ink aria-pressed:text-paper";
+  "grid size-8 pointer-coarse:size-11 flex-none place-items-center rounded-md text-ink-2 hover:bg-hover active:bg-press hover:text-ink aria-pressed:bg-ink aria-pressed:text-paper";
 
 function Tool({ label, keys, pressed, onClick, children }: { label: string; keys?: string; pressed: boolean; onClick: () => void; children: ReactNode }) {
   return (
@@ -42,6 +42,19 @@ function Tool({ label, keys, pressed, onClick, children }: { label: string; keys
     >
       {children}
     </button>
+  );
+}
+
+/** A named run of tools. The name is printed from 640px; below that it is spoken only, to keep the bar on one line. */
+function ToolGroup({ name, children }: { name: string; children: ReactNode }) {
+  const id = useId();
+  return (
+    <div role="group" aria-labelledby={id} className="flex flex-none items-center gap-0.5">
+      <span id={id} className="mr-1 text-xs text-ink-3 max-sm:sr-only">
+        {name}
+      </span>
+      {children}
+    </div>
   );
 }
 
@@ -114,7 +127,7 @@ function LinkField({ editor, initial, onClose }: { editor: Editor; initial: stri
         aria-describedby={`${id}-hint`}
         className="min-w-0 flex-1 basis-48 rounded-md border border-field bg-sheet px-2 py-1 text-ink"
       />
-      <button type="button" onClick={apply} className="rounded-md px-2 py-1 font-medium text-ink hover:bg-accent-wash">
+      <button type="button" onClick={apply} className="rounded-md px-2 py-1 font-medium text-ink hover:bg-hover active:bg-press">
         {value.trim() ? "Apply" : "Remove link"}
       </button>
       <p id={`${id}-hint`} className="w-full text-[13px] text-ink-2">
@@ -180,47 +193,53 @@ export function RichText({
   const chain = (e: Editor) => e.chain().focus();
 
   return (
-    <div>
-      <div className="sticky top-0 z-10 -mx-1 border-b border-rule-soft bg-paper px-1 py-1">
+    <div className={styles.measure}>
+      <div className="sticky top-0 z-10 -mx-1 border-b border-rule-soft bg-paper px-1 py-1 text-[14px]">
         {linking && editor ? (
           <LinkField editor={editor} initial={marks?.href ?? ""} onClose={() => setLinking(false)} />
         ) : (
-          <div role="group" aria-label="Formatting" className="flex items-center gap-0.5 overflow-x-auto">
-            <Tool label="Heading" pressed={!!marks?.h2} onClick={run((e) => chain(e).toggleHeading({ level: 2 }).run())}>
-              <HeadingIcon />
-            </Tool>
-            <Tool label="Subheading" pressed={!!marks?.h3} onClick={run((e) => chain(e).toggleHeading({ level: 3 }).run())}>
-              <SubheadingIcon />
-            </Tool>
+          <div role="group" aria-label="Formatting" className="flex items-center gap-x-1 overflow-x-auto">
+            <ToolGroup name="Type">
+              <Tool label="Heading" pressed={!!marks?.h2} onClick={run((e) => chain(e).toggleHeading({ level: 2 }).run())}>
+                <HeadingIcon />
+              </Tool>
+              <Tool label="Subheading" pressed={!!marks?.h3} onClick={run((e) => chain(e).toggleHeading({ level: 3 }).run())}>
+                <SubheadingIcon />
+              </Tool>
+              <Tool label="Quote" pressed={!!marks?.quote} onClick={run((e) => chain(e).toggleBlockquote().run())}>
+                <QuoteIcon />
+              </Tool>
+              <Tool label="Code" pressed={!!marks?.code} onClick={run((e) => chain(e).toggleCodeBlock().run())}>
+                <CodeIcon />
+              </Tool>
+            </ToolGroup>
             <span aria-hidden="true" className="mx-1 h-4 w-px flex-none bg-rule-soft" />
-            <Tool label="Bold" keys="Control+B" pressed={!!marks?.bold} onClick={run((e) => chain(e).toggleBold().run())}>
-              <BoldIcon />
-            </Tool>
-            <Tool label="Italic" keys="Control+I" pressed={!!marks?.italic} onClick={run((e) => chain(e).toggleItalic().run())}>
-              <ItalicIcon />
-            </Tool>
-            <Tool label="Link" keys="Control+K" pressed={!!marks?.href} onClick={() => setLinking(true)}>
-              <LinkIcon />
-            </Tool>
+            <ToolGroup name="Style">
+              <Tool label="Bold" keys="Control+B" pressed={!!marks?.bold} onClick={run((e) => chain(e).toggleBold().run())}>
+                <BoldIcon />
+              </Tool>
+              <Tool label="Italic" keys="Control+I" pressed={!!marks?.italic} onClick={run((e) => chain(e).toggleItalic().run())}>
+                <ItalicIcon />
+              </Tool>
+              <Tool label="Link" keys="Control+K" pressed={!!marks?.href} onClick={() => setLinking(true)}>
+                <LinkIcon />
+              </Tool>
+            </ToolGroup>
             <span aria-hidden="true" className="mx-1 h-4 w-px flex-none bg-rule-soft" />
-            <Tool label="Bulleted list" pressed={!!marks?.bullet} onClick={run((e) => chain(e).toggleBulletList().run())}>
-              <BulletListIcon />
-            </Tool>
-            <Tool label="Numbered list" pressed={!!marks?.ordered} onClick={run((e) => chain(e).toggleOrderedList().run())}>
-              <NumberedListIcon />
-            </Tool>
-            <Tool label="Quote" pressed={!!marks?.quote} onClick={run((e) => chain(e).toggleBlockquote().run())}>
-              <QuoteIcon />
-            </Tool>
-            <Tool label="Code" pressed={!!marks?.code} onClick={run((e) => chain(e).toggleCodeBlock().run())}>
-              <CodeIcon />
-            </Tool>
+            <ToolGroup name="Lists">
+              <Tool label="Bulleted list" pressed={!!marks?.bullet} onClick={run((e) => chain(e).toggleBulletList().run())}>
+                <BulletListIcon />
+              </Tool>
+              <Tool label="Numbered list" pressed={!!marks?.ordered} onClick={run((e) => chain(e).toggleOrderedList().run())}>
+                <NumberedListIcon />
+              </Tool>
+            </ToolGroup>
             {marks?.href && safeHref(marks.href) && (
               <a
                 href={safeHref(marks.href) ?? undefined}
                 target="_blank"
                 rel={LINK_REL}
-                className="ml-1 inline-flex min-w-0 flex-none items-center gap-1.5 rounded-md px-2 py-1 text-[13px] text-ink-2 hover:bg-accent-wash hover:text-ink"
+                className="ml-1 inline-flex min-w-0 flex-none items-center gap-1.5 rounded-md px-2 py-1 text-[13px] text-ink-2 hover:bg-hover active:bg-press hover:text-ink"
               >
                 <OpenIcon />
                 Open link

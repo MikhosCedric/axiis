@@ -141,6 +141,29 @@
   background: var(--accent-wash);
 }
 
+/* A first-day example: a planned beam's dashed line in Hairline, labelled in Ink 3. */
+.example {
+  position: absolute;
+  height: 25px;
+  pointer-events: none;
+}
+
+.example::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 8px;
+  height: 9px;
+  border: 1.5px dashed var(--rule);
+  border-radius: 4px;
+}
+
+.example .label {
+  color: var(--ink-3);
+  font-weight: 400;
+}
+
 .tip {
   position: absolute;
   left: 0;
@@ -168,6 +191,12 @@
   -webkit-user-select: none;
   -webkit-touch-callout: none;
   transition: opacity 0.16s;
+}
+
+@media (pointer: coarse) {
+  .chip {
+    min-height: 44px;
+  }
 }
 
 .chip:hover {

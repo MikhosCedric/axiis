@@ -57,6 +57,16 @@ test("detail: another day is picked from the date field", async ({ page }) => {
   await expect(row(page, "When")).toContainText("Friday 25 December");
 });
 
+test("detail: a day past 2200 is refused and the task keeps waiting", async ({ page }) => {
+  await page.goto(WAITING_TASK);
+  await details(page).getByRole("button", { name: "Plan for" }).click();
+  const another = details(page).getByLabel("Another day");
+  await another.fill("9999-12-31");
+  await details(page).getByRole("button", { name: "Plan", exact: true }).click();
+  expect(await another.evaluate((el: HTMLInputElement) => el.validity.rangeOverflow)).toBe(true);
+  await expect(row(page, "When")).toContainText("Waiting for a time");
+});
+
 test("detail: a failed plan says so and leaves it waiting", async ({ page }) => {
   await page.goto(WAITING_TASK);
   await page.getByLabel("Make every save fail").check();

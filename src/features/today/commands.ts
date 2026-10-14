@@ -1,10 +1,10 @@
 import { z } from "zod";
-import type { ItemId, Schedule } from "@/domain/item";
+import type { ItemId, LocalDate, Schedule } from "@/domain/item";
 import { parseItemKey } from "@/domain/item-key";
 import type { TagName } from "@/domain/tag";
 import { dayWords } from "@/features/inbox/model";
 import { DEFAULT_MINUTES } from "@/features/score/drop";
-import { addTag } from "@/features/tags/commands";
+import { tagCaptured } from "@/features/tags/commands";
 import { instantAt, toLocalDate } from "@/lib/dates";
 import { materialize } from "@/lib/items/occurrences";
 import type { ItemsRepo } from "@/lib/items/repo";
@@ -22,13 +22,18 @@ const titleSchema = z.string().trim().min(1).max(TITLE_MAX);
 
 /**
  * A capture's result. On success it names the new item, so a screen can open
- * it, and says what capture understood: the title it kept, where it was
- * planned in words ("tomorrow, 09:00") or null, the tags that saved and the
- * ones that did not.
+ * it, and says what capture understood: the title it kept, where it landed or
+ * null, the tags that saved and the ones that did not.
  */
 export type CaptureResult =
-  | { ok: true; id: ItemId; type: "task" | "checklist"; title: string; plan: string | null; tags: TagName[]; missed: TagName[] }
+  | { ok: true; id: ItemId; type: "task" | "checklist"; title: string; landed: Landed | null; tags: TagName[]; missed: TagName[] }
   | { ok: false; error: string };
+
+/**
+ * Where a capture was planned: its date, that date in words ("tomorrow"), and
+ * its clock times or null. `end` is set only when a length was typed.
+ */
+export type Landed = { on: LocalDate; day: string; time: { start: string; end: string | null } | null };
 
 const TOO_LONG = `Titles can be up to ${TITLE_MAX} characters. Put the rest in a note later.`;
 
@@ -42,7 +47,7 @@ export async function captureChecklist(repo: ItemsRepo, raw: unknown): Promise<C
   if (!title.success) return { ok: false, error: TOO_LONG };
   try {
     const item = await repo.create({ type: "checklist", title: title.data, schedule: { kind: "unscheduled" } });
-    return { ok: true, id: item.id, type: "checklist", title: title.data, plan: null, tags: [], missed: [] };
+    return { ok: true, id: item.id, type: "checklist", title: title.data, landed: null, tags: [], missed: [] };
   } catch (error) {
     return { ok: false, error: saveFailure(error, NOT_SAVED) };
   }
@@ -61,16 +66,16 @@ export async function captureTask(repo: ItemsRepo, raw: unknown, now: Date, time
   const on = said.day ? dayOf(said.day, today) : said.time ? today : null;
 
   let schedule: Schedule = { kind: "unscheduled" };
-  let plan: string | null = null;
+  let landed: Landed | null = null;
   if (on && said.time) {
     const start = instantAt(on, said.time.start, timeZone);
     const end = instantAt(on, said.time.start + (said.time.length ?? DEFAULT_MINUTES), timeZone);
     schedule = { kind: "timed", start, end };
-    const clock = formatClock(start, timeZone);
-    plan = `${dayWords(on, today)}, ${said.time.length === null ? clock : `${clock} to ${formatClock(end, timeZone)}`}`;
+    const time = { start: formatClock(start, timeZone), end: said.time.length === null ? null : formatClock(end, timeZone) };
+    landed = { on, day: dayWords(on, today), time };
   } else if (on) {
     schedule = { kind: "day", on };
-    plan = dayWords(on, today);
+    landed = { on, day: dayWords(on, today), time: null };
   }
 
   let id: ItemId;
@@ -79,12 +84,8 @@ export async function captureTask(repo: ItemsRepo, raw: unknown, now: Date, time
   } catch (error) {
     return { ok: false, error: saveFailure(error, NOT_SAVED) };
   }
-  const tags: TagName[] = [];
-  const missed: TagName[] = [];
-  for (const name of said.tags) {
-    ((await addTag(repo, id, name, timeZone)).ok ? tags : missed).push(name);
-  }
-  return { ok: true, id, type: "task", title: said.title, plan, tags, missed };
+  const { tags, missed } = await tagCaptured(repo, id, said.tags);
+  return { ok: true, id, type: "task", title: said.title, landed, tags, missed };
 }
 
 /** Marks an item, or one occurrence of a series, done or open again. */

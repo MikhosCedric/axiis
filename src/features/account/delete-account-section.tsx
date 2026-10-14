@@ -59,7 +59,7 @@ export function DeleteAccountSection({ action }: { action: DeleteAccountAction }
         <button
           type="submit"
           aria-disabled={!ready || pending || undefined}
-          className={`mt-3 rounded-lg border px-3.5 py-2 font-medium ${
+          className={`mt-3 rounded-lg border px-3.5 py-2 font-medium pointer-coarse:min-h-11 ${
             ready ? "border-ink bg-ink text-paper hover:bg-ink-2" : "border-rule text-ink-2 aria-disabled:cursor-default"
           }`}
         >

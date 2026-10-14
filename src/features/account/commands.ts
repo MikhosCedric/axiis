@@ -1,4 +1,5 @@
-import { z } from "zod";
+// zod/mini: the settings sections import this module's constants, and classic zod ships every locale with it.
+import * as z from "zod/mini";
 import { idSchema, type AreaId } from "@/domain/item";
 import type { AreasRepo } from "@/lib/areas/repo";
 import { saveFailure } from "@/lib/quota";
@@ -17,9 +18,9 @@ export type AccountPort = {
   signOut(): Promise<void>;
 };
 
-const nameSchema = z.string().trim().min(1).max(AREA_NAME_MAX);
+const nameSchema = z.string().check(z.trim(), z.minLength(1), z.maxLength(AREA_NAME_MAX));
 const directionSchema = z.enum(["up", "down"]);
-const phraseSchema = z.string().trim().refine((s) => s === DELETE_PHRASE);
+const phraseSchema = z.string().check(z.trim(), z.refine((s) => s === DELETE_PHRASE));
 
 const NAME_ERROR = `An area name needs 1 to ${AREA_NAME_MAX} characters.`;
 const MISSING = "That area is not here any more.";

@@ -3,6 +3,7 @@ import type { ItemId, LocalDate, NewItem, Schedule } from "@/domain/item";
 import type { Rule } from "@/domain/recurrence";
 import {
   InvalidScheduleError,
+  LIST_COLUMNS,
   areaFromRow,
   itemFromRow,
   newItemToInsert,
@@ -157,6 +158,12 @@ describe("itemFromRow rejects illegal rows", () => {
   it("reads the valid baseline row", () => {
     expect(itemFromRow(validRow).schedule).toEqual({ kind: "unscheduled" });
     expect(itemFromRow(validRow).recurrence).toEqual({ kind: "none" });
+  });
+
+  it("reads a list row, which has no body column, as an item with no body", () => {
+    const listRow = Object.fromEntries(LIST_COLUMNS.split(",").map((c) => [c, validRow[c as keyof typeof validRow]]));
+    expect("body" in listRow).toBe(false);
+    expect(itemFromRow(listRow).body).toBeNull();
   });
 });
 

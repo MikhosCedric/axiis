@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { LocalDate } from "@/domain/item";
-import { daysBetween, dueGroup, dueSummary, dueWords } from "./model";
+import { daysBetween, dueGroup, dueSummary, dueWords, GROUP_LABEL } from "./model";
 
 const d = (s: string) => s as LocalDate;
 const today = d("2026-10-08");
@@ -25,6 +25,11 @@ describe("dueGroup", () => {
     expect(dueGroup(d("2026-10-08"), today)).toBe("week");
     expect(dueGroup(d("2026-10-14"), today)).toBe("week");
     expect(dueGroup(d("2026-10-15"), today)).toBe("later");
+  });
+
+  it("labels the groups without dating a debt", () => {
+    expect(Object.values(GROUP_LABEL)).toEqual(["Earlier", "This week", "Later"]);
+    for (const label of Object.values(GROUP_LABEL)) expect(label).not.toMatch(/\b(due|late|overdue|missed|past)\b/i);
   });
 });
 
