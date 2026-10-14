@@ -39,6 +39,8 @@ The guard's tests are mutation-checked: removing or weakening any condition abov
 
 The pages under `src/app/dev/` render fixtures without a session. `devHarnessEnabled()` in `src/lib/dev-harness.ts` turns them on in `next dev` and in the browser-test build. In a normal production build every one calls `notFound()`, and the proxy sends a signed-out visitor on `/dev/...` to sign in like any other app path.
 
+A second cookie, `axiis-e2e-account=empty`, picks a second in-memory account that has the three seeded areas and no items, so a test can see the first-day state without emptying the account every other spec shares. The reset route resets whichever account the cookie picks. The cookie does nothing without the session cookie, and `check:no-fake-session` searches the build for its name too.
+
 ## Why production cannot reach it
 
 Every function body in `fake-session.ts` sits inside `if (process.env.AXIIS_E2E_BUILD === "1")`. A normal build inlines `""` there, so the bundler drops the branch, the cookie name, the env names and the dynamic import of `fake-account.ts`.

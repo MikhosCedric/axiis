@@ -58,6 +58,9 @@ export function fakeRepo(items: Item[] = [], areas: Area[] = []) {
     async listAreas() {
       return areas;
     },
+    async hasAnyItem() {
+      return items.length > 0 || deleted > 0;
+    },
     async listForDay(range) {
       calls.listForDay.push(range);
       return {
@@ -197,7 +200,10 @@ export function fakeRepo(items: Item[] = [], areas: Area[] = []) {
     },
     async softDelete(id) {
       const at = items.findIndex((i) => i.id === id);
-      if (at !== -1) items.splice(at, 1);
+      if (at !== -1) {
+        items.splice(at, 1);
+        deleted += 1;
+      }
     },
     async listTags() {
       calls.listTags += 1;
@@ -246,6 +252,8 @@ export function fakeRepo(items: Item[] = [], areas: Area[] = []) {
     },
   };
   const single = () => items.filter((i) => i.recurrence.kind !== "series");
+  // Soft-deleted rows leave `items`, but the database keeps them.
+  let deleted = 0;
   const tags: Tag[] = [];
   const itemTags: { itemId: ItemId; tagId: TagId }[] = [];
   function link(itemId: ItemId, name: TagName): Tag {

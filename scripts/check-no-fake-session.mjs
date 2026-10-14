@@ -11,7 +11,7 @@ import { join } from "node:path";
 
 // The guard's own strings, including the env names of the switch and its secret. Server source maps embed
 // fake-session.ts as original source text, which never runs, so these are searched in every file except .map files.
-const GUARD_MARKERS = ["E2E_FAKE_SESSION", "axiis-e2e-session"];
+const GUARD_MARKERS = ["E2E_FAKE_SESSION", "axiis-e2e-session", "axiis-e2e-account"];
 // The fake account, searched in every built file including source maps: the module must not be bundled at all.
 const ACCOUNT_MARKERS = ["e2e@axiis.invalid", "e2e00000-0000-4000", "axiisE2EAccount"];
 // Text that a correct production build does contain, so an empty or missing output cannot pass.

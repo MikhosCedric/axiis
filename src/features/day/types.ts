@@ -27,4 +27,6 @@ export type DayData = {
   tags: Record<string, TagName[]>;
   /** How often each live series repeats ("every day"), by series id. */
   cadences: Record<string, string>;
+  /** The account has never stored an item, deleted or not, so the day shows examples instead of its empty furniture. */
+  firstDay: boolean;
 };
