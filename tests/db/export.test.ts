@@ -1,5 +1,5 @@
 import { beforeAll, describe, expect, it } from "vitest";
-import { EXPORT_TABLE_NAMES, EXPORT_TABLES, serializeExport, type ExportTable } from "@/features/account/export";
+import { EXPORT_TABLES, exportChunks, type AxiisExport, type ExportTable, type PageReader } from "@/features/account/export";
 import { createTestDb, type TestDb } from "./harness";
 import { seedWorld, type World } from "./fixtures";
 
@@ -20,19 +20,23 @@ beforeAll(async () => {
   });
 });
 
-/** Reads a table the way the export route does, as JSON rows the way PostgREST sends them, under the user's RLS. */
-async function readAs(userId: string, table: ExportTable): Promise<unknown[]> {
-  const { columns, orderBy } = EXPORT_TABLES[table];
-  return db.asUser(userId, async (tx) => {
-    const sql = `select to_jsonb(r) as row from (select ${columns} from ${table} order by ${orderBy.join(", ")}) r`;
-    return (await tx.query<{ row: unknown }>(sql)).rows.map((r) => r.row);
-  });
+/** Reads a page the way the export route does, as JSON rows the way PostgREST sends them, under the user's RLS. */
+function readerFor(userId: string): PageReader {
+  return (table: ExportTable, from: number, to: number) => {
+    const { columns, orderBy } = EXPORT_TABLES[table];
+    return db.asUser(userId, async (tx) => {
+      const sql = `select to_jsonb(r) as row from (select ${columns} from ${table} order by ${orderBy.join(", ")} limit $1 offset $2) r`;
+      return (await tx.query<{ row: unknown }>(sql, [to - from + 1, from])).rows.map((r) => r.row);
+    });
+  };
 }
 
 describe("export against the schema", () => {
   it("reads every column it asks for and carries the user's tags and what they are on, nobody else's", async () => {
-    const rows = Object.fromEntries(await Promise.all(EXPORT_TABLE_NAMES.map(async (t) => [t, await readAs(a.userId, t)] as const)));
-    const doc = serializeExport({ userId: a.userId, exportedAt: new Date(), rows: rows as Record<ExportTable, unknown[]> });
+    let text = "";
+    const user = { id: a.userId, email: null, createdAt: null };
+    for await (const chunk of exportChunks(readerFor(a.userId), { user, exportedAt: new Date() }, 1)) text += chunk;
+    const doc: AxiisExport = JSON.parse(text);
 
     expect(doc.tags.map((t) => t.name).sort()).toEqual(["Errands", "tag"]);
     expect(doc.tags.map((t) => t.id)).not.toContain(b.tagId);

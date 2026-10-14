@@ -5,12 +5,32 @@ test("the landing page shows the pitch, the sample day and a way in", async ({ p
   await expect(page.getByRole("heading", { level: 1, name: "Your tasks and your time, on one page." })).toBeVisible();
   await expect(page.getByRole("figure", { name: /A sample day/ })).toBeVisible();
   await expect(page.getByRole("link", { name: "Sign in" }).first()).toHaveAttribute("href", "/login");
+
+  const hero = page.getByRole("region", { name: "Your tasks and your time, on one page." });
+  const start = hero.getByRole("link", { name: "Start with today" });
+  await expect(start).toHaveAttribute("href", "/login");
+  const terms = hero.getByText("Free. Email link or Google. No password.");
+  await expect(terms).toBeVisible();
+  expect((await terms.boundingBox())!.y).toBeGreaterThan((await start.boundingBox())!.y);
+  await expect(page.getByRole("link", { name: "Start with today" })).toHaveCount(2);
+  await expect(page.getByText(/!/)).toHaveCount(0);
 });
 
 test("the landing page lists shipped features as shipped, and nothing as coming", async ({ page }) => {
   await page.goto("/");
   const today = page.getByRole("region", { name: "What it does today" }).getByRole("listitem");
-  for (const shipped of [/repeat/, /inbox/, /Checklists/, /Tags/, /command palette/]) {
+  for (const shipped of [
+    /repeat/,
+    /inbox/,
+    /checklists/,
+    /Tags/,
+    /command palette/,
+    /Due dates/,
+    /dentist tomorrow 9:00/,
+    /earlier day/,
+    /compact density/,
+    /G then a letter/,
+  ]) {
     await expect(today.filter({ hasText: shipped })).toHaveCount(1);
   }
   await expect(page.getByRole("heading", { name: "Coming" })).toHaveCount(0);
@@ -30,6 +50,14 @@ test("the export route answers a stranger with a redirect, not data", async ({ r
   expect(response.status()).toBe(307);
   expect(response.headers()["location"]).toBe("/login?next=%2Fsettings%2Fexport");
   expect(response.headers()["content-disposition"]).toBeUndefined();
+});
+
+test("sign in carries the brand back home and tells a newcomer the link makes the account", async ({ page }) => {
+  await page.goto("/login");
+  await expect(page.getByText("New here? The same link makes your account.")).toBeVisible();
+  await page.getByRole("link", { name: "Axiis" }).click();
+  await expect(page).toHaveURL("/");
+  await expect(page.getByRole("heading", { level: 1, name: "Your tasks and your time, on one page." })).toBeVisible();
 });
 
 test("sign in rejects an address that is not an email, accessibly", async ({ page }) => {
@@ -59,7 +87,7 @@ for (const [path, title] of [
 }
 
 test("an unknown address shows the not-found page", async ({ page }) => {
-  // Signed out, an unknown app path is sent to sign in first; /dev is public in development, so it reaches not-found.
+  // Signed out, an unknown app path is sent to sign in first; /dev is public in the browser-test build, so it reaches not-found.
   const response = await page.goto("/dev/no-such-page");
   expect(response?.status()).toBe(404);
   await expect(page.getByRole("heading", { level: 1, name: "There is nothing at this address." })).toBeVisible();
@@ -101,10 +129,11 @@ test("pages carry the security headers", async ({ request }) => {
   const policies = response.headersArray().filter((h) => h.name.toLowerCase() === "content-security-policy");
   expect(policies).toHaveLength(1);
   expect(headers["x-powered-by"]).toBeUndefined();
+  expect(headers["strict-transport-security"]).toBe("max-age=63072000; includeSubDomains");
 });
 
 for (const path of ["/dev/score", "/dev/week", "/dev/inbox", "/dev/detail", "/dev/notes", "/dev/settings"]) {
-  test(`${path} is reachable in development`, async ({ page }) => {
+  test(`${path} is reachable in the browser-test build`, async ({ page }) => {
     const response = await page.goto(path);
     expect(response?.status()).toBe(200);
     await expect(page).toHaveURL(path);
@@ -121,6 +150,8 @@ test("every page carries a nonce policy, and the page runs under it without a vi
     const policy = response?.headers()["content-security-policy"] ?? "";
     expect(policy, path).toMatch(/script-src 'self' 'nonce-[A-Za-z0-9+/=]+' 'strict-dynamic'/);
     expect(policy, path).toContain("frame-ancestors 'none'");
+    expect(policy, path).toContain("upgrade-insecure-requests");
+    expect(policy, path).not.toContain("unsafe-eval");
   }
   // Hydration needs the framework's nonced scripts: the theme switch only works once it has run.
   await page.goto("/");

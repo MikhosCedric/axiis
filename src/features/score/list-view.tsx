@@ -7,7 +7,7 @@ import { RowTags } from "@/features/tags/row-tags";
 import { formatClock } from "@/features/today/format";
 import { Glyph } from "@/features/today/glyph";
 import { SameInInbox } from "@/features/inbox/same-in-inbox";
-import { EMPTY_TRAY, WAITING, type BeamState, type TodayEntry, type TodayView } from "@/features/today/model";
+import { EMPTY_TRAY, TRAY_FULL, WAITING,type BeamState, type TodayEntry, type TodayView } from "@/features/today/model";
 import type { ChildCount } from "@/lib/items/repo";
 
 const TITLE_WEIGHT: Record<BeamState, string> = {
@@ -18,6 +18,7 @@ const TITLE_WEIGHT: Record<BeamState, string> = {
 
 export function ListView({
   view,
+  waitingFull,
   areas,
   timeZone,
   childCounts,
@@ -28,6 +29,7 @@ export function ListView({
   onToggleDone,
 }: {
   view: TodayView;
+  waitingFull: boolean;
   areas: Area[];
   timeZone: string;
   childCounts: Record<string, ChildCount>;
@@ -65,7 +67,7 @@ export function ListView({
             <span className={quiet}>{s.kind === "day" ? "Any time" : WAITING}</span>
           )}
         </span>
-        <label className="relative grid h-8 w-12 cursor-pointer place-items-center rounded-md hover:bg-accent-wash has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-accent">
+        <label className="relative grid h-8 w-12 cursor-pointer place-items-center rounded-md hover:bg-hover active:bg-press has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-accent">
           <input
             type="checkbox"
             className="sr-only"
@@ -131,6 +133,7 @@ export function ListView({
       ) : (
         <p className="py-3 text-ink-2">{EMPTY_TRAY}</p>
       )}
+      {waitingFull && <p className="mt-3 text-[13px] text-ink-3">{TRAY_FULL}</p>}
     </section>
   );
 }

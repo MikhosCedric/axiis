@@ -7,6 +7,7 @@ import { setDone } from "@/features/today/commands";
 import { area, fakeRepo, makeItem } from "@/features/today/test-support";
 import { moveItem } from "@/features/week/commands";
 import { loadOccurrences } from "@/lib/items/occurrences";
+import { DATE_RANGE_ERROR } from "@/lib/dates";
 import { clearTime, deleteItem, loadDetail, renameItem, restoreOccurrence, setFirstDay, setItemArea, setRepeat, setTime, stopRepeating } from "./commands";
 
 const d = (s: string) => s as LocalDate;
@@ -211,6 +212,17 @@ describe("setRepeat", () => {
     });
   });
 
+  it("moves an item to its first occurrence when its own day is not one, keeping its time", async () => {
+    const item = makeItem({ schedule: { kind: "timed", start: new Date("2026-10-10T09:00:00Z"), end: new Date("2026-10-10T09:30:00Z") } });
+    const { repo } = fakeRepo([item]);
+    expect(await setRepeat(repo, item.id, { preset: "weekdays" }, NOW, TZ)).toEqual({ ok: true });
+    expect(item.schedule).toEqual({ kind: "timed", start: new Date("2026-10-12T09:00:00Z"), end: new Date("2026-10-12T09:30:00Z") });
+    const span = { from: new Date(0), to: new Date(0), fromDate: d("2026-10-10"), toDate: d("2026-10-13") };
+    expect((await loadOccurrences(repo, span, TZ)).occurrences.map((o) => o.recurrence.kind === "occurrence" && o.recurrence.originalOn)).toEqual([
+      "2026-10-12",
+    ]);
+  });
+
   it("starts an unscheduled item repeating from today", async () => {
     const item = makeItem();
     const { repo } = fakeRepo([item]);
@@ -237,6 +249,10 @@ describe("setRepeat", () => {
       expect((await setRepeat(repo, item.id, bad, new Date(), TZ)).ok).toBe(false);
     }
     expect((await setRepeat(repo, item.id, { preset: "daily", end: { kind: "until", on: "2026-10-05" } }, new Date(), TZ)).ok).toBe(false);
+    expect(await setRepeat(repo, item.id, { preset: "daily", end: { kind: "until", on: "9999-12-31" } }, new Date(), TZ)).toEqual({
+      ok: false,
+      error: DATE_RANGE_ERROR,
+    });
     expect(calls.update).toEqual([]);
   });
 
@@ -312,11 +328,21 @@ describe("setTime", () => {
     expect((await loadOccurrences(w.repo, span, ny)).occurrences[0].schedule).toEqual(timed("2026-03-09T13:00:00Z", "2026-03-09T13:30:00Z"));
   });
 
-  it("moves a time the clocks skip forward with them", async () => {
+  it("refuses a time the clocks skip on the series' own date", async () => {
     const w = world({ schedule: { kind: "day", on: d("2026-03-08") } });
-    expect(await setTime(w.repo, w.series.id, { start: 2 * 60 + 30, length: 60 }, "America/New_York", "all")).toEqual({ ok: true });
-    // 02:30 does not exist that night, so it starts at 03:30 EDT and still lasts an hour.
-    expect(w.series.schedule).toEqual(timed("2026-03-08T07:30:00Z", "2026-03-08T08:30:00Z"));
+    expect(await setTime(w.repo, w.series.id, { start: 2 * 60 + 30, length: 60 }, "America/New_York", "all")).toEqual({
+      ok: false,
+      error: "02:30 does not happen on Sunday 8 March, when the clocks go forward. Try 03:00.",
+    });
+    expect(w.series.schedule).toEqual({ kind: "day", on: "2026-03-08" });
+  });
+
+  it("keeps the typed length on every other day when the series starts on the day the clocks go back", async () => {
+    const ny = "America/New_York";
+    const w = world({ schedule: { kind: "day", on: d("2026-11-01") } });
+    expect(await setTime(w.repo, w.series.id, { start: 0, length: 4 * 60 }, ny, "all")).toEqual({ ok: true });
+    const span = { from: new Date(0), to: new Date(0), fromDate: d("2026-11-02"), toDate: d("2026-11-03") };
+    expect((await loadOccurrences(w.repo, span, ny)).occurrences[0].schedule).toEqual(timed("2026-11-02T05:00:00Z", "2026-11-02T09:00:00Z"));
   });
 
   it("refuses all of them for something that does not repeat, and writes nothing", async () => {
@@ -426,6 +452,7 @@ describe("setFirstDay", () => {
     for (const bad of ["2026-02-30", "2026-10-11T00:00:00Z", new Date("2026-10-11"), null]) {
       expect((await setFirstDay(w.repo, w.series.id, bad, TZ)).ok).toBe(false);
     }
+    expect(await setFirstDay(w.repo, w.series.id, "1969-12-31", TZ)).toEqual({ ok: false, error: DATE_RANGE_ERROR });
     const plain = makeItem({ schedule: { kind: "day", on: d("2026-10-06") } });
     w.items.push(plain);
     expect(await setFirstDay(w.repo, plain.id, "2026-10-07", TZ)).toEqual({ ok: false, error: "That does not repeat." });

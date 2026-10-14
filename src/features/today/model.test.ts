@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import type { AreaId, LocalDate } from "@/domain/item";
+import type { LocalDate } from "@/domain/item";
 import { dayRangeFor } from "@/lib/dates";
-import { buildToday, openByArea, stateOf, summaryLine } from "./model";
+import { buildToday, stateOf, summaryLine } from "./model";
 import { makeItem } from "./test-support";
 
 const range = dayRangeFor("2026-10-06" as LocalDate, "UTC");
@@ -132,30 +132,5 @@ describe("summaryLine", () => {
 
   it("mentions waiting items when nothing has a time", () => {
     expect(summaryLine(view([], [makeItem(), makeItem()]))).toBe("Nothing has a time today. 2 waiting.");
-  });
-});
-
-describe("openByArea", () => {
-  it("counts open items per area across both lists", () => {
-    const work = "a0000000-0000-4000-8000-000000000001" as AreaId;
-    const home = "a0000000-0000-4000-8000-000000000002" as AreaId;
-    const v = buildToday(
-      {
-        scheduled: [
-          timed("a", at(8), at(9), { areaId: work }),
-          timed("b", at(12), at(13), { areaId: work, status: "done" }),
-          timed("c", at(14), at(15), { areaId: home }),
-        ],
-        unscheduled: [makeItem({ areaId: work }), makeItem()],
-      },
-      range,
-      now,
-    );
-    expect(openByArea(v)).toEqual(
-      new Map([
-        [work, 2],
-        [home, 1],
-      ]),
-    );
   });
 });

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { LocalDate } from "@/domain/item";
 import type { Rule } from "@/domain/recurrence";
 import { area, fakeRepo, makeItem } from "@/features/today/test-support";
+import { WAITING_LIMIT } from "@/lib/items/repo";
 import { loadDay } from "./load";
 
 const d = (s: string) => s as LocalDate;
@@ -31,6 +32,26 @@ describe("loadDay", () => {
     expect(day.areas).toEqual([work]);
     expect(day.view.scheduled.map((e) => e.item.title)).toEqual(["Standup"]);
     expect(day.view.waiting.map((e) => e.item.title)).toEqual(["Someday"]);
+    expect(day.waitingFull).toBe(false);
+  });
+
+  it("keeps every open waiting item however many were done before, and says when the tray hits its cap", async () => {
+    const created = (i: number) => new Date(Date.UTC(2026, 0, 1) + i * 60_000);
+    const doneLongAgo = Array.from({ length: 1500 }, (_, i) =>
+      makeItem({ title: `Old ${i}`, status: "done", completedAt: new Date("2025-01-01T00:00:00Z"), createdAt: created(i) }),
+    );
+    const open = makeItem({ title: "Still open", createdAt: new Date("2020-01-01T00:00:00Z") });
+    const { repo } = fakeRepo([...doneLongAgo, open]);
+
+    const day = await loadDay(repo, d("2026-10-08"), new Date("2026-10-08T06:00:00Z"), "UTC");
+    expect(day.view.waiting.map((e) => e.item.title)).toEqual(["Still open"]);
+    expect(day.waitingFull).toBe(false);
+
+    const many = Array.from({ length: WAITING_LIMIT + 1 }, (_, i) => makeItem({ title: `Open ${i}`, createdAt: created(i) }));
+    const full = await loadDay(fakeRepo(many).repo, d("2026-10-08"), new Date("2026-10-08T06:00:00Z"), "UTC");
+    expect(full.view.waiting).toHaveLength(WAITING_LIMIT);
+    expect(full.view.waiting[0].item.title).toBe(`Open ${WAITING_LIMIT}`);
+    expect(full.waitingFull).toBe(true);
   });
 
   it("names the tags on everything shown in one read, an occurrence wearing its series'", async () => {
@@ -146,5 +167,48 @@ describe("loadDay with repeating items", () => {
     repo.childCounts = async (ids) => (asked.push(ids), {});
     await loadDay(repo, d("2026-10-06"), new Date("2026-10-06T08:00:00Z"), "UTC");
     expect(asked).toEqual([[plain.id]]);
+  });
+});
+
+describe("loadDay and the first day", () => {
+  const now = new Date("2026-10-06T08:00:00Z");
+  const load = (fake: ReturnType<typeof fakeRepo>) => loadDay(fake.repo, d("2026-10-06"), now, "UTC");
+
+  it("is the first day for an account that has never stored an item", async () => {
+    expect((await load(fakeRepo([], [area("Work")]))).firstDay).toBe(true);
+  });
+
+  it("is not once anything was ever stored, though this day shows none of it", async () => {
+    const elsewhere = {
+      "a task on another day": makeItem({ schedule: { kind: "day", on: d("2026-11-01") } }),
+      "a task done long ago": makeItem({ status: "done", completedAt: new Date("2026-01-01T00:00:00Z") }),
+      "a dropped task": makeItem({ status: "dropped" }),
+      "a note": makeItem({ type: "note" }),
+    };
+    for (const [what, item] of Object.entries(elsewhere)) {
+      const day = await load(fakeRepo([item]));
+      expect(day.view.scheduled.length + day.view.waiting.length, what).toBe(0);
+      expect(day.firstDay, what).toBe(false);
+    }
+  });
+
+  it("is not once the only item was deleted", async () => {
+    const fake = fakeRepo([makeItem()]);
+    await fake.repo.softDelete(fake.items[0].id);
+    expect((await load(fake)).firstDay).toBe(false);
+  });
+
+  it("does not ask the repo when the day already shows an item or a series", async () => {
+    const series = makeItem({
+      schedule: { kind: "day", on: d("2026-11-01") },
+      recurrence: { kind: "series", rule: { freq: "daily", interval: 1, end: { kind: "never" } } },
+    });
+    for (const items of [[makeItem()], [series]]) {
+      const fake = fakeRepo(items);
+      let asked = 0;
+      fake.repo.hasAnyItem = async () => (asked++, false);
+      expect((await load(fake)).firstDay).toBe(false);
+      expect(asked).toBe(0);
+    }
   });
 });
