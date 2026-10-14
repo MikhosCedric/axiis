@@ -9,3 +9,12 @@ export type Density = (typeof DENSITIES)[number];
 export function readDensity(value: string | undefined): Density {
   return value === "compact" ? "compact" : "spacious";
 }
+
+/** "system" is no cookie at all: the page follows the device's light or dark setting. */
+export const THEMES = ["system", "light", "dark"] as const;
+export type Theme = (typeof THEMES)[number];
+
+/** The saved theme, or system for a missing or unknown value. */
+export function readTheme(value: string | undefined): Theme {
+  return value === "light" || value === "dark" ? value : "system";
+}

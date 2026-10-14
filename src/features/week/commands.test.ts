@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { Item, LocalDate } from "@/domain/item";
 import { fakeRepo, makeItem } from "@/features/today/test-support";
+import { DATE_RANGE_ERROR } from "@/lib/dates";
 import { moveItem, MOVE_FAILED } from "./commands";
 
 function setup(items: Item[]) {
@@ -57,6 +58,15 @@ describe("moveItem", () => {
     ];
     for (const [id, to] of bad) expect((await moveItem(repo, id, to, "UTC")).ok).toBe(false);
     expect(gets).toEqual([]);
+    expect(calls.update).toEqual([]);
+  });
+
+  it("refuses a day outside the span Axiis plans on, and says which span", async () => {
+    const item = makeItem();
+    const { repo, calls } = setup([item]);
+    for (const to of ["9999-12-31", "2201-01-01", "1969-12-31"]) {
+      expect(await moveItem(repo, item.id, to, "UTC")).toEqual({ ok: false, error: DATE_RANGE_ERROR });
+    }
     expect(calls.update).toEqual([]);
   });
 

@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { namesNoDay } from "@/features/day/nav";
 import { resolveAuthRedirect } from "@/lib/auth/redirect";
 import { contentSecurityPolicy, newNonce } from "@/lib/csp";
 import { requestHasFakeSession } from "@/lib/supabase/fake-session";
@@ -16,6 +17,13 @@ export async function proxy(request: NextRequest) {
     pathname: request.nextUrl.pathname,
     isAuthenticated: isAuthenticated || requestHasFakeSession(request),
   });
+  if (target === null && namesNoDay(request.nextUrl.pathname)) {
+    // No route answers this path, so Next renders not-found.tsx with a 404 before anything streams.
+    const missing = NextResponse.rewrite(new URL("/_no-such-day", request.url), { request });
+    for (const cookie of response.cookies.getAll()) missing.cookies.set(cookie);
+    missing.headers.set("Content-Security-Policy", policy);
+    return missing;
+  }
   if (target === null) {
     response.headers.set("Content-Security-Policy", policy);
     return response;

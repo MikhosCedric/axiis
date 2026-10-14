@@ -101,7 +101,7 @@ export function NoteEditor({ view, actions, basePath = "/notes" }: { view: NoteV
   return (
     <article
       aria-labelledby={titleId}
-      className="mx-auto grid max-w-[1120px] gap-x-12 gap-y-8 px-4 pt-5 pb-16 rail:px-9 rail:pt-8 min-[1100px]:grid-cols-[minmax(0,1fr)_280px]"
+      className="grid max-w-[1120px] gap-x-12 gap-y-8 px-4 pt-5 pb-16 rail:px-9 rail:pt-8 min-[1100px]:grid-cols-[minmax(0,1fr)_280px]"
     >
       <div className="min-w-0">
         <div className="flex min-h-8 items-center justify-between gap-3">
@@ -115,7 +115,7 @@ export function NoteEditor({ view, actions, basePath = "/notes" }: { view: NoteV
                 if (autosave.state().kind !== "failed") router.push(basePath);
               });
             }}
-            className="-ml-1.5 inline-flex items-center gap-1 rounded-md py-1 pr-2 pl-1 text-[13px] text-ink-2 hover:bg-accent-wash hover:text-ink"
+            className="-ml-1.5 inline-flex items-center gap-1 rounded-md py-1 pr-2 pl-1 text-[13px] text-ink-2 hover:bg-hover active:bg-press hover:text-ink"
           >
             <BackIcon />
             Notes

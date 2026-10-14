@@ -12,6 +12,9 @@
   --field: rgba(28, 27, 34, 0.55);
   --accent: #0a675a;
   --accent-wash: rgba(10, 103, 90, 0.14);
+  /* Neutral ink tints for hover and press, so verdigris stays for now, drag, focus and selection. */
+  --hover: rgba(28, 27, 34, 0.06);
+  --press: rgba(28, 27, 34, 0.11);
   --on-accent: #f3eee1;
   /* Vertical padding of a list row; the Density setting tightens it. */
   --row-y: 0.625rem;
@@ -35,6 +38,8 @@
   --field: rgba(236, 229, 211, 0.5);
   --accent: #45c7b0;
   --accent-wash: rgba(69, 199, 176, 0.16);
+  --hover: rgba(236, 229, 211, 0.07);
+  --press: rgba(236, 229, 211, 0.12);
   --on-accent: #10201d;
   color-scheme: dark;
 }
@@ -52,6 +57,8 @@
     --field: rgba(236, 229, 211, 0.5);
     --accent: #45c7b0;
     --accent-wash: rgba(69, 199, 176, 0.16);
+    --hover: rgba(236, 229, 211, 0.07);
+    --press: rgba(236, 229, 211, 0.12);
     --on-accent: #10201d;
     color-scheme: dark;
   }
@@ -69,11 +76,36 @@
   --color-field: var(--field);
   --color-accent: var(--accent);
   --color-accent-wash: var(--accent-wash);
+  --color-hover: var(--hover);
+  --color-press: var(--press);
   --color-on-accent: var(--on-accent);
   --font-serif: var(--font-besley), Georgia, serif;
   --font-sans: var(--font-hanken), system-ui, -apple-system, "Segoe UI", sans-serif;
   --ease-axiis: cubic-bezier(0.16, 1, 0.3, 1);
   --breakpoint-rail: 760px;
+}
+
+/* The Headline type step: every app page title. */
+@utility headline {
+  font-family: var(--font-serif);
+  font-size: clamp(28px, 3vw, 40px);
+  font-weight: 500;
+  line-height: 1.1;
+  letter-spacing: -0.015em;
+  text-wrap: balance;
+}
+
+/* A text control inside a row: under a coarse pointer its hit area reaches 44px tall without moving the text. */
+@utility tap-y {
+  @media (pointer: coarse) {
+    position: relative;
+
+    &::after {
+      content: "";
+      position: absolute;
+      inset: -13px 0;
+    }
+  }
 }
 
 @layer base {
@@ -89,6 +121,31 @@
     line-height: 1.45;
     caret-color: var(--accent);
     -webkit-font-smoothing: antialiased;
+  }
+
+  /* Controls ease between rest, hover and press. Movement (beams, dialogs) keeps its own timing. */
+  a,
+  button,
+  [role="button"],
+  input,
+  select,
+  textarea {
+    transition-property: color, background-color, border-color, text-decoration-color, opacity;
+    transition-duration: 140ms;
+    transition-timing-function: var(--ease-axiis);
+  }
+
+  button:not(:disabled, [aria-disabled="true"]),
+  [role="button"],
+  summary {
+    cursor: pointer;
+  }
+
+  @media (pointer: coarse) {
+    input:not([type="checkbox"], [type="radio"], [type="range"], [type="hidden"]),
+    select {
+      min-height: 44px;
+    }
   }
 
   ::selection {

@@ -7,7 +7,8 @@ import type { LocalDate } from "@/domain/item";
 import { DUE_PATH } from "@/features/due/model";
 import { LISTS_PATH } from "@/features/lists/model";
 import { PaletteIcon } from "@/features/palette/icons";
-import { useIsMac, useOpenPalette } from "@/features/palette/palette";
+import { useOpenPalette } from "@/features/palette/palette";
+import { useIsMac } from "@/features/palette/use-is-mac";
 import {
   BrandMark,
   DueIcon,
@@ -25,21 +26,20 @@ import { ThemeToggle } from "./theme-toggle";
 
 export type NavArea = { id: string; name: string; open: number };
 
-const quiet =
-  "flex items-center gap-2.5 rounded-md p-2 font-medium text-ink-2 hover:bg-accent-wash max-rail:p-1.5";
-const tool = `${quiet} max-rail:size-11 max-rail:justify-center rail:w-full`;
+const base = "flex items-center gap-2.5 rounded-md p-2 font-medium max-rail:p-1.5";
+const quiet = `${base} text-ink-2 hover:bg-hover hover:text-ink active:bg-press`;
+/** The current place, in ink: the Ink-for-Selection rule. */
+const current = `${base} bg-ink text-paper`;
+const toolShape = "max-rail:size-11 max-rail:justify-center rail:w-full";
+const tool = `${quiet} ${toolShape}`;
 
-function NavLink({ href, current, icon, label }: { href: string; current: boolean; icon: ReactNode; label: string }) {
+function NavLink({ href, current: here, icon, label }: { href: string; current: boolean; icon: ReactNode; label: string }) {
   return (
     <li>
       <Link
         href={href}
-        aria-current={current ? "page" : undefined}
-        className={
-          current
-            ? "flex items-center gap-2.5 rounded-md bg-ink p-2 font-medium text-paper max-rail:px-2.5 max-rail:py-1.5"
-            : `${quiet} max-rail:px-2.5`
-        }
+        aria-current={here ? "page" : undefined}
+        className={`${here ? current : quiet} max-rail:px-2.5 pointer-coarse:min-h-11`}
       >
         {icon}
         {label}
@@ -123,7 +123,7 @@ export function NavRail({ today, areas }: { today: LocalDate; areas: NavArea[] }
         <Link
           href="/settings"
           aria-current={onSettings ? "page" : undefined}
-          className={`${tool} ${onSettings ? "bg-accent-wash text-ink" : ""}`}
+          className={onSettings ? `${current} ${toolShape}` : tool}
         >
           <SettingsIcon />
           <span className="max-rail:sr-only">Settings</span>

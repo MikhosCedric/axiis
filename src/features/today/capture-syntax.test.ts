@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import type { ItemId, LocalDate } from "@/domain/item";
 import type { TagName } from "@/domain/tag";
-import { capturedLine, dayOf, parseCapture, previewWords, type CaptureText, type DayWord } from "./capture-syntax";
+import { CAPTURE_EXAMPLES, capturedLine, dayOf, firstCapturedLine, parseCapture, previewWords, type CaptureText, type DayWord } from "./capture-syntax";
+import type { Landed } from "./commands";
 
 const d = (s: string) => s as LocalDate;
 const plain = (title: string): CaptureText => ({ title, day: null, time: null, tags: [] });
@@ -66,9 +67,14 @@ describe("parseCapture", () => {
     expect(parseCapture('""')).toEqual(plain('""'));
   });
 
-  it("takes each of day, time and length once, and a tag once in any case", () => {
+  it("takes each of day, time and length once", () => {
     expect(parseCapture("tomorrow friday")).toEqual({ ...plain("tomorrow"), day: { kind: "weekday", weekday: 5, next: false } });
-    expect(parseCapture("#health #Health walk")).toEqual({ ...plain("#Health walk"), tags: ["health" as TagName] });
+  });
+
+  it("takes every tag, once in any case, keeping its first spelling", () => {
+    expect(parseCapture("#health #Health walk")).toEqual({ ...plain("walk"), tags: ["health" as TagName] });
+    expect(parseCapture("dup #Errands #errands")).toEqual({ ...plain("dup"), tags: ["Errands" as TagName] });
+    expect(parseCapture("#a dup #B #A #b")).toEqual({ ...plain("dup"), tags: ["a", "B"] as TagName[] });
   });
 
   it("reads on, next, by, in and at as part of the phrase they open", () => {
@@ -136,17 +142,23 @@ describe("previewWords", () => {
   });
 });
 
-describe("capturedLine", () => {
-  const base = { ok: true as const, id: "x" as ItemId, type: "task" as const, title: "dentist", plan: null, tags: [], missed: [] };
-  const tags = (...names: string[]) => names as TagName[];
+const base = { ok: true as const, id: "x" as ItemId, type: "task" as const, title: "dentist", landed: null, tags: [], missed: [] };
+const tags = (...names: string[]) => names as TagName[];
+const landed = (day: string, start?: string, end?: string): Landed => ({
+  on: d("2026-10-19"),
+  day,
+  time: start ? { start, end: end ?? null } : null,
+});
 
+describe("capturedLine", () => {
   it("says where the item went, in the field and in the palette", () => {
     expect(capturedLine(base, "field")).toBe("Captured. It is waiting for a time, below.");
     expect(capturedLine(base, "palette")).toBe("Captured “dentist”. It is waiting for a time on Today.");
-    const planned = { ...base, plan: "tomorrow, 09:00", tags: tags("health") };
+    const planned = { ...base, landed: landed("tomorrow", "09:00"), tags: tags("health") };
     expect(capturedLine(planned, "field")).toBe("Planned for tomorrow, 09:00, with #health.");
     expect(capturedLine(planned, "palette")).toBe("Captured “dentist”. Planned for tomorrow, 09:00, with #health.");
-    expect(capturedLine({ ...base, plan: "today" }, "field")).toBe("Planned for today.");
+    expect(capturedLine({ ...base, landed: landed("today", "22:00", "22:45") }, "field")).toBe("Planned for today, 22:00 to 22:45.");
+    expect(capturedLine({ ...base, landed: landed("today") }, "field")).toBe("Planned for today.");
     expect(capturedLine({ ...base, tags: tags("a", "b", "c") }, "field")).toBe(
       "Captured with #a, #b and #c. It is waiting for a time, below.",
     );
@@ -158,5 +170,39 @@ describe("capturedLine", () => {
     );
     expect(capturedLine({ ...base, missed: tags("a") }, "field")).toMatch(/The tag #a did not save\.$/);
     expect(capturedLine({ ...base, type: "checklist" }, "field")).toBe("Captured. It is open, ready for its lines.");
+  });
+});
+
+describe("CAPTURE_EXAMPLES", () => {
+  it("are lines capture reads as written: two plans and one plain line", () => {
+    expect(CAPTURE_EXAMPLES.map((line) => previewWords(parseCapture(line)) !== null)).toEqual([true, true, false]);
+    expect(parseCapture(CAPTURE_EXAMPLES[0])).toMatchObject({ title: "dentist", time: { start: 540 }, tags: ["health"] });
+    expect(parseCapture(CAPTURE_EXAMPLES[1])).toMatchObject({ title: "call Sam", time: { start: 840, length: 30 } });
+  });
+});
+
+describe("firstCapturedLine", () => {
+  it("says the day and time in a sentence and links to that day", () => {
+    expect(firstCapturedLine({ ...base, landed: landed("Monday 19 October", "09:00"), tags: tags("health") })).toEqual({
+      text: "Dentist is on Monday 19 October at 09:00, tagged #health.",
+      link: { href: "/day/2026-10-19", label: "See Monday 19 October" },
+    });
+  });
+
+  it("names a typed length's end, a day with no time, and today and tomorrow without 'on'", () => {
+    const call = { ...base, title: "call Sam" };
+    expect(firstCapturedLine({ ...call, landed: landed("tomorrow", "14:00", "14:30") }).text).toBe("Call Sam is tomorrow from 14:00 to 14:30.");
+    expect(firstCapturedLine({ ...call, landed: landed("Friday 16 October") }).text).toBe("Call Sam is on Friday 16 October, at any time.");
+    expect(firstCapturedLine({ ...call, landed: landed("today", "09:00") })).toEqual({
+      text: "Call Sam is today at 09:00.",
+      link: { href: "/today", label: "See today" },
+    });
+  });
+
+  it("sends an item with no day to the Inbox, and names tags that did not save", () => {
+    expect(firstCapturedLine({ ...base, title: "buy milk", missed: tags("shop") })).toEqual({
+      text: "Buy milk is waiting, with no day yet. The tag #shop did not save.",
+      link: { href: "/inbox", label: "See the Inbox" },
+    });
   });
 });
