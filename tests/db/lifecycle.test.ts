@@ -24,7 +24,7 @@ describe.each(TABLES)("updated_at on %s", (table) => {
     const userId = await db.createUser();
     await seedWorld(db, userId);
     const past = "2000-01-01T00:00:00Z";
-    await db.admin.query(`update ${table} set created_at = $1, updated_at = $1 where user_id = $2`, [past, userId]);
+    await db.seed(`update ${table} set created_at = $1, updated_at = $1 where user_id = $2`, [past, userId]);
 
     await db.asUser(userId, (tx) => tx.query(`update ${table} set user_id = user_id`));
 
