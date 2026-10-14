@@ -67,7 +67,7 @@ export function ListView({
             <span className={quiet}>{s.kind === "day" ? "Any time" : WAITING}</span>
           )}
         </span>
-        <label className="relative grid h-8 w-12 cursor-pointer place-items-center rounded-md hover:bg-accent-wash has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-accent">
+        <label className="relative grid h-8 w-12 cursor-pointer place-items-center rounded-md hover:bg-hover active:bg-press has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-accent">
           <input
             type="checkbox"
             className="sr-only"

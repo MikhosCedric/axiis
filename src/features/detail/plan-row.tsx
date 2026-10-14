@@ -6,7 +6,7 @@ import { planDate, type PlanFor } from "@/features/inbox/model";
 import { FIRST_DATE, LAST_DATE, parseLocalDate } from "@/lib/dates";
 
 const choice =
-  "rounded-md border border-rule px-3 py-1.5 pointer-coarse:min-h-11 text-[13px] font-medium text-ink hover:bg-accent-wash aria-pressed:bg-accent-wash disabled:cursor-default disabled:opacity-60";
+  "rounded-md border border-rule px-3 py-1.5 pointer-coarse:min-h-11 text-[13px] font-medium text-ink hover:bg-hover active:bg-press aria-pressed:bg-accent-wash disabled:cursor-default disabled:opacity-60";
 
 /**
  * The When row: where the item sits in time, and when `days` is on, a way to
@@ -76,7 +76,7 @@ export function PlanRow({
             aria-expanded={open}
             aria-controls={panelId}
             onClick={() => setOpen(!open)}
-            className="rounded-md px-1.5 py-1 pointer-coarse:min-h-11 text-[13px] font-medium text-ink-2 hover:bg-accent-wash hover:text-ink"
+            className="rounded-md px-1.5 py-1 pointer-coarse:min-h-11 text-[13px] font-medium text-ink-2 hover:bg-hover active:bg-press hover:text-ink"
           >
             {verb}
           </button>

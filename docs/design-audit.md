@@ -63,7 +63,7 @@ axe reported **no violations on any of the 24 loads**, nor with the detail panel
    - **Where.** `hover:bg-accent-wash` appears 41 times in 25 files, among them `nav-rail.tsx`, `detail-sheet.tsx`, `subtasks.tsx`, `inbox-view.tsx`, `rich-text.tsx` and `palette.tsx`.
    - **Evidence.** The same 14% verdigris fill marks a selected row, a drop target under a drag, and every hovered link or icon button. A pointer resting anywhere puts verdigris on screen, which works against the Now Rule (verdigris means now, a drag target, or the focused or selected thing).
    - **Fix.** Add a neutral hover token, such as `--hover: rgba(28, 27, 34, 0.06)` and its dark twin, or reuse Rail Paper as the public header already does. Keep the wash for selection and drop targets. Suggested command `/impeccable quieter`.
-   - **Status. Deferred.** A new hover token, or reusing Rail Paper, adds a colour to `DESIGN.md`, which is a design call.
+   - **Status. Fixed later (`ui-refine-3`).** Hover is a neutral ink tint (`--hover`, 6% ink, 7% paper in dark) with a pressed step (`--press`), on all 46 controls that had the wash. The wash is left only on selected rows, drop targets and the active palette option. The rail's current Settings link and the "Changes apply to" segment moved from the wash to an Ink fill, as the Ink-for-Selection rule asks.
 
 7. **[P2, Responsive] Touch devices get keyboard instructions and no hint to press and hold.**
    - **Where.** The key help paragraph in `score-view.tsx:280-285`, the `C` key hint in `capture-field.tsx:70-75`, and the tray copy at `score-view.tsx:295-297`.
@@ -86,7 +86,7 @@ axe reported **no violations on any of the 24 loads**, nor with the detail panel
 10. **[P3, Implementation integrity] The page-title style is copied as a literal 10 times.**
     - **Where.** `font-serif text-[clamp(28px,3vw,40px)] leading-[1.1] font-medium tracking-[-0.015em]` in `day-view`, `week-view`, `inbox-view`, `lists-view`, `notes-list`, `search-view`, `settings-view`, `tag-index-view`, `tagged-view` and the detail harness. `note-editor.tsx:148` has already drifted to `3.2vw` and `1.15`.
     - **Fix.** Add one `@utility headline` (and `title`) in `globals.css` matching the Headline token in `DESIGN.md`, then use it everywhere. Suggested command `/impeccable typeset`.
-    - **Status. Deferred.** Whether the note title's drifted `3.2vw` and `1.15` are kept or folded in is a type decision, and the sweep touches ten screens, so it belongs in its own change.
+    - **Status. Fixed later (`ui-refine-3`).** A `headline` utility in `globals.css` carries the Headline step and `text-wrap: balance`; all 13 page titles use it. The note title keeps its own values, since it is a growing text field.
 
 11. **[P3, Accessibility] Chip and outline-button edges are faint.**
     - **Where.** `.chip` in `score.module.css`, `quietAction` in `site-chrome.tsx`, and the outline buttons in Inbox and Settings, all bordered by Hairline.

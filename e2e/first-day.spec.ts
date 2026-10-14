@@ -84,7 +84,8 @@ for (const viewport of WIDTHS) {
         await expect(page.getByRole("heading", { name: "Any time" })).toHaveCount(0);
         await expect(page.getByRole("heading", { name: "Waiting" })).toHaveCount(0);
         await expect(page.getByText(/^\d+ open$/)).toHaveCount(0);
-        await expect(page.getByRole("button", { name: "Keyboard help" })).toHaveCount(0);
+        await expect(page.locator("#score-keys")).toHaveCount(0);
+        await expect(page.getByRole("button", { name: "Guide" })).toBeVisible();
         await expect(page.getByRole("list", { name: "Key" })).toHaveCount(0);
 
         const { violations } = await new AxeBuilder({ page }).analyze();

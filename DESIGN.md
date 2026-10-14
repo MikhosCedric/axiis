@@ -13,6 +13,8 @@ colors:
   field-stroke: "rgba(28, 27, 34, 0.55)"
   verdigris: "#0a675a"
   verdigris-wash: "rgba(10, 103, 90, 0.14)"
+  hover-tint: "rgba(28, 27, 34, 0.06)"
+  press-tint: "rgba(28, 27, 34, 0.11)"
   on-verdigris: "#f3eee1"
   scrim: "rgb(8 7 10 / 0.48)"
   night-paper: "#16151b"
@@ -26,6 +28,8 @@ colors:
   night-field-stroke: "rgba(236, 229, 211, 0.5)"
   night-verdigris: "#45c7b0"
   night-verdigris-wash: "rgba(69, 199, 176, 0.16)"
+  night-hover-tint: "rgba(236, 229, 211, 0.07)"
+  night-press-tint: "rgba(236, 229, 211, 0.12)"
   on-night-verdigris: "#10201d"
 typography:
   display:
@@ -210,7 +214,7 @@ A two-ink, one-pigment palette: warm paper, near-black ink in three strengths, a
 
 ### Primary
 - **Verdigris** (`verdigris`, dark `night-verdigris`): the colour of now. It fills the playhead line, the clock flag on the hour axis and the live beam. It also draws the drag ghost (dashed outline over its wash), the selected-label underline, the focus ring, the caret, text selection, and the landing page's Start with today button.
-- **Verdigris Wash** (`verdigris-wash`): a 14% tint (16% in dark) for a drop target under a drag, a selected row in Inbox and Lists, the active palette option, and the hover state of quiet controls.
+- **Verdigris Wash** (`verdigris-wash`): a 14% tint (16% in dark) for a drop target under a drag, a selected row in Inbox and Lists, and the active palette option. Never hover.
 
 ### Neutral
 - **Music Paper** (`music-paper` / `night-paper`): the page ground, also written into the browser theme colour and the manifest through `src/lib/theme-colors.ts`.
@@ -221,6 +225,8 @@ A two-ink, one-pigment palette: warm paper, near-black ink in three strengths, a
 - **Ink Quiet** (`ink-quiet`): metadata, hour numerals, placeholders, done items and their glyphs.
 - **Hairline** (`hairline`): staff borders, section rules, outlined buttons and chips at rest.
 - **Hairline Soft** (`hairline-soft`): the five staff lines, the faint hour gridlines inside a staff, and row separators.
+- **Hover Tint** (`hover-tint`, token `--hover`, utility `bg-hover`): 6% ink (7% paper in dark) under every quiet control a pointer rests on: rail links, outline and text buttons, icon buttons, rows that open. A resting pointer never puts verdigris on screen.
+- **Press Tint** (`press-tint`, `--press`, `active:bg-press`): 11% ink (12% paper in dark) while the same control is held down, so a press answers before the page does.
 - **Field Stroke** (`field-stroke`): input borders and the hover border of chips and quiet public buttons. It is the only stroke strong enough to mark a control boundary on its own.
 
 ### Named Rules
@@ -239,7 +245,7 @@ A two-ink, one-pigment palette: warm paper, near-black ink in three strengths, a
 
 ### Hierarchy
 - **Display** (500, `clamp(2.6rem, 1.4rem + 5.2vw, 5.25rem)`, line-height 1, -0.025em, balanced, max 13ch): the landing page headline only.
-- **Headline** (500, `clamp(28px, 3vw, 40px)`, 1.1, -0.015em): every app page title (Today's date, Week, Inbox, Lists, Notes, Tags, Search, Settings). Landing section heads use a larger clamp (`1.6rem` to `2.25rem`).
+- **Headline** (500, `clamp(28px, 3vw, 40px)`, 1.1, -0.015em): every app page title (Today's date, Week, Inbox, Due, Lists, Notes, Tags, Search, Settings), always through the `headline` utility in `globals.css`, which also balances the lines. The note editor's title field is the one exception (3.2vw, 1.15), because it is a growing text field. Landing section heads use a larger clamp (`1.6rem` to `2.25rem`).
 - **Title** (Besley 500, 18px to 22px): section heads inside a page (Waiting, Subtasks, Linked notes, Due's Earlier, This week and Later at 18px), staff names (16px, 19px at rail width) and the wordmark (600, 20px to 22px, -0.01em).
 - **Body** (Hanken 400, 14px, 1.45): the default for the app. Page subtitles under an app headline and public body copy step up to 15px at 1.6 (Body Large), the landing lead paragraph to 17px to 18px, held to 34ch to 36rem. Note bodies are set for reading at 16px, 1.65, 68ch.
 - **Mono** (system monospace, 0.88em on Rail Paper with a soft hairline): inline code in notes only.
@@ -298,8 +304,11 @@ A 44 by 16px drawing of an item: a head and a beam, and the system's state langu
 - **Public primary:** Verdigris fill, On Verdigris text, 15px 600, 12px by 20px. Hover mixes 14% ink into the verdigris over 150ms. Used only for Start with today, the landing's way in (in the hero and again at the close). The header's Sign in is a plain text link for returning users.
 - **Public quiet:** hairline border, ink text, same size; hover strengthens the border to Field Stroke.
 - **Ink:** Engraving Ink fill, Paper text, 500. The in-app primary action (New note, Search, Delete account once confirmed). Hover drops opacity to 0.9.
-- **Outline:** hairline border, 6px by 12px, hover Verdigris Wash. Secondary in-app actions.
-- **Text and icon:** borderless, Ink Secondary, 32px square for icons; hover takes Verdigris Wash and Ink.
+- **Outline:** hairline border, 6px by 12px, hover Hover Tint, pressed Press Tint. Secondary in-app actions.
+- **Text and icon:** borderless, Ink Secondary, 32px square for icons; hover takes Hover Tint and Ink, pressed Press Tint.
+- **Segments:** the checked part of a segmented choice (Score/List, Day/Week, Theme, Density, Changes apply to one or all) is filled with Ink and Paper text.
+- **Easing between states:** links, buttons and fields ease colour, background, border and opacity over 140ms on the house curve (a base rule in `globals.css`). Movement keeps its own timing.
+- **Touch:** under a coarse pointer every control is at least 44px tall: nav links, the day and week steps and date field, every text field (a base rule), chips, Plan for, the leftover and Settings buttons. A text button inside a row (an item title) keeps its size and gains a 44px hit area through the `tap-y` utility.
 - **Focus:** a global 2px verdigris outline with 3px offset on every `:focus-visible`.
 
 ### Chips
@@ -311,14 +320,21 @@ A 44 by 16px drawing of an item: a head and a beam, and the system's state langu
 - **Focus:** the global verdigris ring; the caret is verdigris.
 
 ### Navigation
-- **Rail:** Rail Paper, wordmark in Besley 600 with the crossing-axes mark, links in Hanken 500 Ink Secondary with 18px icons. The current page is an Ink-filled pill with Paper text. Hover is Verdigris Wash. Areas list each open count as a 6px pill bar in Ink Quiet at 55% opacity, 8px plus 7px per open item, capped at 72px.
+- **Rail:** Rail Paper, wordmark in Besley 600 with the crossing-axes mark, links in Hanken 500 Ink Secondary with 18px icons. The current page, Settings included, is an Ink-filled pill with Paper text. Hover is Hover Tint. Areas list each open count as a 6px pill bar in Ink Quiet at 55% opacity, 8px plus 7px per open item, capped at 72px.
 - **Mobile:** the same links in a single horizontal scrolling row; utility actions keep icons and hide labels.
+- **Day and week steps:** Day/Week, then Previous and Next joined as one outlined pair (they never wrap apart), the date field, and Today or This week when away from it. All 36px tall, 44px under a coarse pointer.
 
 ### Note Toolbar
 A sticky bar over the note body, held to the body's 68ch measure, with a Hairline Soft rule beneath. Its 32px icon tools (44px on touch) sit in three named groups: Type (Heading, Subheading, Quote, Code), Style (Bold, Italic, Link) and Lists (Bulleted, Numbered), each name in 12px Ink Quiet from 640px and spoken only below. It stays on screen while the note is open, so the tools are found without focusing the body first. A pressed tool is filled with Ink.
 
 ### Command Palette
 A native `<dialog>` in Sheet, 560px wide, 12px radius, Dialog lift shadow, rising 8px with a 0.985 scale-in over 200ms. Options are 40px tall; the active option takes Verdigris Wash.
+
+### Guide
+All help lives in one place. The Guide is the palette's dialog (same Sheet, width, radius, lift and rise), titled Guide in Besley 20px. It opens on the screen's own topics, each a section under a Hairline Soft rule with a 17px Besley head (Capture words, Moving beams, Moving between days), then every keyboard shortcut. Capture words are a two-column definition list from 480px: the term in 13px Ink 500, the words in 13px Ink Secondary, with one specimen line set in a Hairline box on Paper.
+- **Way in:** one Guide button per screen that has topics (Today and any day, Week, Inbox), always the last control of the tool row under the page header (capture field, then any view switch), pushed to the row's right edge. Outline, 8px radius, a 16px circled question mark and the word Guide; 38px tall like the Score/List switch, 44px under a coarse pointer. `?` opens the same dialog on any screen, and the palette lists it as Guide. Screens without topics show no button; there `?` opens the shortcuts alone.
+- **Never beside content:** nothing floats over the Score, a panel or a drag handle. The Score's and Week's keyboard paragraph stays in the page only as an `sr-only` description of every beam and chip.
+- **Dismissal:** Escape, Close, or a click on the backdrop; focus returns to the button.
 
 ## Do's and Don'ts
 

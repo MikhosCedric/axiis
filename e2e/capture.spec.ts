@@ -49,14 +49,16 @@ test.describe("capture field", () => {
     await expect(page.locator("[data-captured]")).toContainText("call friday");
   });
 
-  test("the ? beside the field explains the words, and Escape lets go of it", async ({ page }) => {
+  test("the Guide explains the words, and Escape closes it back onto its button", async ({ page }) => {
     await page.goto("/dev/score");
-    const help = page.getByRole("button", { name: "How capture reads days, times and tags" });
-    await help.focus();
-    await expect(page.locator("#capture-help")).toBeVisible();
-    await expect(page.locator("#capture-help")).toContainText("dentist tomorrow 9:00 #health");
-    await help.press("Escape");
-    await expect(page.locator("#capture-help")).toBeHidden();
+    const button = page.getByRole("button", { name: "Guide" });
+    await button.click();
+    const guide = page.getByRole("dialog", { name: "Guide" });
+    await expect(guide.getByRole("heading", { name: "Capture words" })).toBeVisible();
+    await expect(guide).toContainText("dentist tomorrow 9:00 #health");
+    await page.keyboard.press("Escape");
+    await expect(guide).toBeHidden();
+    await expect(button).toBeFocused();
   });
 
   test("Week: a capture rings its chip in the tray", async ({ page }) => {
@@ -76,7 +78,7 @@ test.describe("capture field", () => {
     await page.goto("/dev/lists?empty");
     await field(page).fill("Pack for the city tomorrow #trip");
     await expect(page.locator("#capture-preview")).toHaveCount(0);
-    await expect(page.getByRole("button", { name: "How capture reads days, times and tags" })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "Guide" })).toHaveCount(0);
     await field(page).press("Enter");
     await expect(status(page)).toHaveText("Captured. It is open, ready for its lines.");
     const details = page.getByRole("complementary", { name: "Details" });

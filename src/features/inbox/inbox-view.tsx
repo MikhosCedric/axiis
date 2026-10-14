@@ -6,6 +6,7 @@ import type { Item, LocalDate } from "@/domain/item";
 import { SELECTED_ITEM_PARAM } from "@/features/day/types";
 import { DetailAside } from "@/features/detail/detail-aside";
 import { captureAction, setDoneAction } from "@/features/today/actions";
+import { GuideButton, type GuideTopic } from "@/features/palette/guide";
 import { CaptureField } from "@/features/today/capture-field";
 import type { ActionResult } from "@/features/today/commands";
 import { DoneToggle } from "@/features/today/done-toggle";
@@ -23,12 +24,13 @@ export type InboxActions = {
 };
 
 const serverActions: InboxActions = { setDone: setDoneAction, plan: planAction, capture: captureAction };
+const INBOX_GUIDE: GuideTopic[] = ["capture"];
 
 /** Optimistic changes while a save is in flight: a planned item leaves, a reopened one reads as open. */
 type Change = { kind: "hide" | "reopen"; id: string };
 
 const choice =
-  "rounded-md border border-rule px-3 py-1.5 font-medium text-ink hover:bg-accent-wash disabled:cursor-default disabled:opacity-60";
+  "rounded-md border border-rule px-3 py-1.5 font-medium text-ink hover:bg-hover active:bg-press disabled:cursor-default disabled:opacity-60";
 
 export function InboxView({
   data,
@@ -124,15 +126,18 @@ export function InboxView({
           <h1
             ref={heading}
             tabIndex={-1}
-            className="font-serif text-[clamp(28px,3vw,40px)] leading-[1.1] font-medium tracking-[-0.015em] outline-none"
+            className="headline outline-none"
           >
             Inbox
           </h1>
           <p className="mt-2.5 text-[15px] text-ink-2">{inboxSummary(shown)}</p>
         </header>
 
-        <div className="mt-6 max-w-[440px]">
-          <CaptureField captureAction={actions.capture} />
+        <div className="mt-6 flex flex-wrap items-start gap-x-3 gap-y-1">
+          <div className="min-w-0 flex-[1_1_280px] rail:max-w-[440px]">
+            <CaptureField captureAction={actions.capture} />
+          </div>
+          <GuideButton topics={INBOX_GUIDE} className="ml-auto" />
         </div>
 
         <p role="status" className={`mb-2 min-h-5 text-[13px] ${status?.error ? "font-medium text-ink" : "text-ink-2"}`}>
@@ -237,7 +242,7 @@ function InboxRow({
         data-open={item.id}
         aria-pressed={selected}
         onClick={onSelect}
-        className={`min-w-0 cursor-pointer rounded text-left break-words hover:underline ${
+        className={`min-w-0 cursor-pointer rounded text-left tap-y break-words hover:underline ${
           done ? `font-normal ${quiet}` : "font-medium text-ink"
         }`}
       >
@@ -266,7 +271,7 @@ function InboxRow({
           aria-expanded={planning}
           aria-controls={panelId}
           onClick={() => onPlanning(!planning)}
-          className="rounded-md px-2.5 py-1.5 text-[13px] font-medium whitespace-nowrap text-ink-2 hover:bg-accent-wash"
+          className="rounded-md px-2.5 py-1.5 text-[13px] font-medium whitespace-nowrap text-ink-2 hover:bg-hover hover:text-ink active:bg-press pointer-coarse:min-h-11"
         >
           Plan for
         </button>

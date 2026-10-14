@@ -43,7 +43,7 @@ export function DueView({
   return (
     <div className={selectedParam ? "min-[1180px]:grid min-[1180px]:grid-cols-[minmax(0,1fr)_328px]" : ""}>
       <div className="min-w-0 px-4 pt-6 pb-14 rail:px-9 rail:pt-8">
-        <h1 className="font-serif text-[clamp(28px,3vw,40px)] leading-[1.1] font-medium tracking-[-0.015em]">Due</h1>
+        <h1 className="headline">Due</h1>
         <p className="mt-2.5 text-[15px] text-ink-2">{dueSummary(rows)}</p>
         <p role="status" className={`mt-4 min-h-5 text-[13px] ${ticks.status?.error ? "font-medium text-ink" : "text-ink-2"}`}>
           {ticks.status?.text}
@@ -116,7 +116,7 @@ function DueRowView({
           type="button"
           aria-pressed={selected}
           onClick={onSelect}
-          className={`cursor-pointer rounded text-left break-words hover:underline ${row.done ? `font-normal ${quiet}` : "font-medium text-ink"}`}
+          className={`cursor-pointer rounded text-left tap-y break-words hover:underline ${row.done ? `font-normal ${quiet}` : "font-medium text-ink"}`}
         >
           {row.title}
           {row.done && <span className="sr-only">, done</span>}
