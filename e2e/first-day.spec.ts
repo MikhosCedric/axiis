@@ -63,6 +63,8 @@ for (const viewport of WIDTHS) {
       test("draws one example per area, hides the empty furniture, and passes axe", async ({ page }) => {
         await page.goto("/dev/score?firstday");
         await expect(examples(page)).toHaveCount(3);
+        // The axis is fitted to the window after hydration; measuring before that reads the server's default.
+        await expect(page.locator("[data-axis-measured]")).toBeAttached();
         const d = await drawn(page);
         expect(d.beams).toEqual([
           { text: "Write the plan10:00", staff: "Work", hidden: "true", events: "none" },
@@ -70,8 +72,9 @@ for (const viewport of WIDTHS) {
           { text: "Walk12:30", staff: "Health", hidden: "true", events: "none" },
         ]);
         expect(d.pageScrolls).toBe(false);
-        if (viewport.width >= 1280) {
-          expect(d.axisScrolls).toBe(false);
+        // The axis spans the examples and now, so late in the day at 1280 it may need to scroll; what it must never do is leave a gap.
+        if (viewport.width >= 1920) expect(d.axisScrolls).toBe(false);
+        if (viewport.width >= 1280 && !d.axisScrolls) {
           expect(d.bodyWidth).toBe(d.hourCount * HOUR_PX);
           if (d.hourCount < 24) expect(d.gap).toBeLessThan(HOUR_PX);
         }

@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { QUOTA_MESSAGE } from "@/lib/quota";
 import type { Item, LocalDate } from "@/domain/item";
 import { occurrenceKey } from "@/domain/item-key";
 import { TAGS_PER_ITEM, TAGS_PER_USER } from "@/domain/tag";
@@ -94,6 +95,12 @@ describe("addTag", () => {
     const w = world();
     const repo = { ...w.repo, addTags: () => Promise.reject(new Error("down")) };
     expect(await addTag(repo, w.task.id, "x", TZ)).toEqual({ ok: false, error: "That change did not save. Try again." });
+  });
+
+  it("says the account is full when the database refuses on its quota", async () => {
+    const w = world();
+    const repo = { ...w.repo, addTags: () => Promise.reject(new Error("tags", { cause: { code: "54000", message: "quota exceeded" } })) };
+    expect(await addTag(repo, w.task.id, "x", TZ)).toEqual({ ok: false, error: QUOTA_MESSAGE });
   });
 });
 
