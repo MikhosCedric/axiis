@@ -166,6 +166,7 @@ function AreaName({
     <input
       value={draft ?? area.name}
       aria-label={`Rename ${area.name}`}
+      title={area.name}
       maxLength={AREA_NAME_MAX}
       spellCheck={draft !== null}
       autoComplete="off"
@@ -180,7 +181,7 @@ function AreaName({
           onError(null);
         }
       }}
-      className="w-full min-w-0 rounded-md border border-transparent bg-transparent px-2 py-1.5 text-[15px] text-ink hover:border-rule-soft focus:border-field focus:bg-sheet"
+      className="w-full min-w-0 truncate rounded-md border border-transparent bg-transparent px-2 py-1.5 text-[15px] text-ink hover:border-rule-soft focus:border-field focus:bg-sheet"
     />
   );
 }

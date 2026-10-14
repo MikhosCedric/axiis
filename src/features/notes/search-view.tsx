@@ -6,7 +6,7 @@ import { TYPE_WORD, type SearchRow } from "./model";
 /** Results across every item type. A plain GET form, so it works before any script loads. */
 export function SearchView({ query, rows, basePath = "/search" }: { query: string; rows: SearchRow[]; basePath?: string }) {
   return (
-    <div className="mx-auto max-w-[760px] px-4 pt-6 pb-16 rail:px-9 rail:pt-8">
+    <div className="max-w-[760px] px-4 pt-6 pb-16 rail:px-9 rail:pt-8">
       <h1 className="font-serif text-[clamp(28px,3vw,40px)] leading-[1.1] font-medium tracking-[-0.015em]">Search</h1>
       <form role="search" action={basePath} className="mt-6 flex gap-2">
         <label htmlFor="search-q" className="sr-only">
