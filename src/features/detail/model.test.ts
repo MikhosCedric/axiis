@@ -131,6 +131,15 @@ describe("describeWhen", () => {
     };
     expect(describeWhen(schedule, "UTC")).toBe("Tuesday 6 October, 22:00 to Wednesday 7 October, 01:00");
   });
+
+  it("does not throw on a stored plan that runs into a five-digit year", () => {
+    const schedule = {
+      kind: "timed" as const,
+      start: new Date("9999-12-31T23:30:00Z"),
+      end: new Date(Date.UTC(10000, 0, 1, 0, 30)),
+    };
+    expect(describeWhen(schedule, "UTC")).toBe("Friday 31 December, 23:30 to Saturday 1 January, 00:30");
+    expect(describeWhen({ kind: "day", on: "10000-01-01" as LocalDate }, "UTC")).toBe("Saturday 1 January");  });
 });
 
 describe("due", () => {

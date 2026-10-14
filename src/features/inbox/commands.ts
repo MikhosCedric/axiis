@@ -1,4 +1,4 @@
-import { toLocalDate } from "@/lib/dates";
+import { DATE_RANGE_ERROR, outOfRange, toLocalDate } from "@/lib/dates";
 import { INBOX_LIMIT, type ItemsRepo } from "@/lib/items/repo";
 import type { ActionResult } from "@/features/today/commands";
 import { moveItem, MOVE_FAILED } from "@/features/week/commands";
@@ -27,6 +27,6 @@ export async function loadInbox(repo: ItemsRepo, now: Date, timeZone: string): P
  */
 export async function planItem(repo: ItemsRepo, rawKey: unknown, rawWhen: unknown, now: Date, timeZone: string): Promise<ActionResult> {
   const when = parsePlanFor(rawWhen);
-  if (!when) return { ok: false, error: MOVE_FAILED };
+  if (!when) return { ok: false, error: outOfRange(rawWhen) ? DATE_RANGE_ERROR : MOVE_FAILED };
   return moveItem(repo, rawKey, planDate(when, toLocalDate(now, timeZone)), timeZone);
 }

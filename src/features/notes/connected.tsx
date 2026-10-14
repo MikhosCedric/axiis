@@ -148,7 +148,7 @@ export function Connected({ noteId, rows, actions }: { noteId: string; rows: Con
         <ul className="grid grid-cols-[minmax(0,1fr)] border-t border-rule-soft">
           {shown.map((r) => (
             <li key={r.linkId} className="flex items-center gap-2 border-b border-rule-soft py-1.5">
-              <Link href={r.href} className="min-w-0 flex-1 rounded-md px-1 py-0.5 hover:bg-accent-wash">
+              <Link href={r.href} className="min-w-0 flex-1 rounded-md px-1 py-0.5 hover:bg-hover active:bg-press">
                 <span className={`block truncate ${r.done ? "text-ink-3" : ""}`}>{r.title}</span>
                 <span className="block text-[13px] text-ink-3">{rowMeta(r)}</span>
               </Link>
@@ -157,7 +157,7 @@ export function Connected({ noteId, rows, actions }: { noteId: string; rows: Con
                 aria-label={`Unlink ${r.title}`}
                 title="Unlink"
                 onClick={() => write({ kind: "remove", linkId: r.linkId }, () => actions.unlink(r.linkId), "Unlinked.")}
-                className="grid size-8 pointer-coarse:size-11 flex-none place-items-center rounded-md text-ink-3 hover:bg-accent-wash hover:text-ink"
+                className="grid size-8 pointer-coarse:size-11 flex-none place-items-center rounded-md text-ink-3 hover:bg-hover active:bg-press hover:text-ink"
               >
                 <UnlinkIcon />
               </button>
@@ -184,7 +184,7 @@ export function Connected({ noteId, rows, actions }: { noteId: string; rows: Con
           ref={trigger}
           type="button"
           onClick={() => setPicking(true)}
-          className="-ml-2 inline-flex items-center gap-2 justify-self-start rounded-md px-2 py-1 font-medium text-ink-2 hover:bg-accent-wash hover:text-ink"
+          className="-ml-2 inline-flex items-center gap-2 justify-self-start rounded-md px-2 py-1 font-medium text-ink-2 hover:bg-hover active:bg-press hover:text-ink"
         >
           <LinkIcon />
           Link a task or note

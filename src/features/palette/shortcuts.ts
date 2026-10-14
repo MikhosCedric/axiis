@@ -49,7 +49,7 @@ export const SHORTCUTS: ShortcutGroup[] = [
     where: "Anywhere",
     shortcuts: [
       { chords: [k(PALETTE_KEY, { mod: true })], does: "Search, jump to a page or date, or capture", handler: "global" },
-      { chords: [k(HELP_KEY)], does: "Show these shortcuts", handler: "global" },
+      { chords: [k(HELP_KEY)], does: "Open the Guide: this page, then every shortcut", handler: "global" },
       { chords: [k("Escape")], does: "Close search or this list", handler: "dialog" },
     ],
   },

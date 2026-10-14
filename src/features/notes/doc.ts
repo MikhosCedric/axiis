@@ -1,4 +1,5 @@
-import { z } from "zod";
+// zod/mini: the note editor imports this module, and classic zod ships every locale with it.
+import * as z from "zod/mini";
 import { safeHref } from "./safe-href";
 
 /** Tiptap's JSON document shape, limited to the nodes and marks the note editor makes. */
@@ -24,15 +25,15 @@ export const MARK_TYPES = ["bold", "italic", "code", "link", "strike", "underlin
 export const BODY_MAX_BYTES = 200 * 1024;
 export const NOTE_TITLE_MAX = 500;
 
-const attrs = z.record(z.string(), z.unknown()).optional();
+const attrs = z.optional(z.record(z.string(), z.unknown()));
 const mark = z.object({ type: z.enum(MARK_TYPES), attrs });
-const node: z.ZodType<DocNode> = z.object({
+const node: z.ZodMiniType<DocNode> = z.object({
   type: z.enum(NODE_TYPES),
   attrs,
-  text: z.string().optional(),
-  marks: z.array(mark).optional(),
+  text: z.optional(z.string()),
+  marks: z.optional(z.array(mark)),
   get content() {
-    return z.array(node).optional();
+    return z.optional(z.array(node));
   },
 });
 

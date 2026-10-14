@@ -1,5 +1,6 @@
 "use client";
 
+import { PaletteProvider } from "@/features/palette/palette";
 import { useSearchParams } from "next/navigation";
 import { startTransition, useState } from "react";
 import type { Area, Item } from "@/domain/item";
@@ -56,7 +57,8 @@ export function ScoreHarness({
   const item = shown.find((i) => i.id === selectedIn(shown, selected));
 
   return (
-    <>
+    // The provider gives the Guide button its dialog, as the app layout does.
+    <PaletteProvider today={data.date}>
       <div className="flex flex-wrap items-center gap-4 border-b border-rule bg-paper-2 px-4 py-2 text-[13px] text-ink-2">
         <span>Score harness with fixture data. Saves stay in this tab.</span>
         <label className="flex items-center gap-2">
@@ -81,6 +83,6 @@ export function ScoreHarness({
           ) : null
         }
       />
-    </>
+    </PaletteProvider>
   );
 }

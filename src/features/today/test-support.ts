@@ -1,6 +1,16 @@
 import type { Area, AreaId, DayRange, Item, ItemId, ItemPatch, NewItem } from "@/domain/item";
 import { sameTag, type Tag, type TagId, type TagName } from "@/domain/tag";
-import { BEHIND_LIMIT, DUE_LIMIT, INBOX_LIMIT, LISTS_LIMIT, MAX_SERIES, TAGGED_LIMIT, type ItemsRepo } from "@/lib/items/repo";
+import {
+  BEHIND_LIMIT,
+  DUE_LIMIT,
+  INBOX_LIMIT,
+  LISTS_LIMIT,
+  MAX_SERIES,
+  RANGE_LIMIT,
+  TAGGED_LIMIT,
+  WAITING_LIMIT,
+  type ItemsRepo,
+} from "@/lib/items/repo";
 
 let seq = 0;
 /** Status order where open comes first, as the database's enum declares it. */
@@ -30,15 +40,26 @@ export function makeItem(over: Partial<Item> = {}): Item {
 
 /** In-memory ItemsRepo that records calls and applies the day query from docs/data-model.md. */
 export function fakeRepo(items: Item[] = [], areas: Area[] = []) {
-  const calls: { listForDay: DayRange[]; create: NewItem[]; update: [ItemId, ItemPatch][]; addTag: [ItemId, TagName][] } = {
+  const calls: {
+    listForDay: DayRange[];
+    create: NewItem[];
+    update: [ItemId, ItemPatch][];
+    addTags: [ItemId, TagName[]][];
+    /** Reads of every tag with its open count, which grow with the account. */
+    listTags: number;
+  } = {
     listForDay: [],
     create: [],
     update: [],
-    addTag: [],
+    addTags: [],
+    listTags: 0,
   };
   const repo: ItemsRepo = {
     async listAreas() {
       return areas;
+    },
+    async hasAnyItem() {
+      return items.length > 0 || deleted > 0;
     },
     async listForDay(range) {
       calls.listForDay.push(range);
@@ -48,15 +69,39 @@ export function fakeRepo(items: Item[] = [], areas: Area[] = []) {
             (i.schedule.kind === "timed" && range.from <= i.schedule.start && i.schedule.start < range.to) ||
             (i.schedule.kind === "day" && i.schedule.on === range.date),
         ),
-        unscheduled: single().filter((i) => i.schedule.kind === "unscheduled" && i.parentId === null),
+        unscheduled: single()
+          .filter(
+            (i) =>
+              i.schedule.kind === "unscheduled" &&
+              i.parentId === null &&
+              i.type !== "note" &&
+              (i.status === "open" ||
+                (i.status === "done" && i.completedAt !== null && range.from <= i.completedAt && i.completedAt < range.to)),
+          )
+          .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+          .slice(0, WAITING_LIMIT),
       };
     },
+    async openCountByArea(range) {
+      const counts: Record<string, number> = {};
+      for (const i of single()) {
+        const s = i.schedule;
+        const onDay =
+          (s.kind === "timed" && range.from <= s.start && s.start < range.to) ||
+          (s.kind === "day" && s.on === range.date) ||
+          (s.kind === "unscheduled" && i.parentId === null);
+        if (onDay && i.status === "open" && i.type !== "note" && i.areaId !== null) counts[i.areaId] = (counts[i.areaId] ?? 0) + 1;
+      }
+      return counts;
+    },
     async listRange(range) {
-      return single().filter(
-        (i) =>
-          (i.schedule.kind === "timed" && range.from <= i.schedule.start && i.schedule.start < range.to) ||
-          (i.schedule.kind === "day" && range.fromDate <= i.schedule.on && i.schedule.on < range.toDate),
-      );
+      return single()
+        .filter(
+          (i) =>
+            (i.schedule.kind === "timed" && range.from <= i.schedule.start && i.schedule.start < range.to) ||
+            (i.schedule.kind === "day" && range.fromDate <= i.schedule.on && i.schedule.on < range.toDate),
+        )
+        .slice(0, RANGE_LIMIT);
     },
     async listSeries() {
       return items.filter((i) => i.recurrence.kind === "series").slice(0, MAX_SERIES);
@@ -155,9 +200,13 @@ export function fakeRepo(items: Item[] = [], areas: Area[] = []) {
     },
     async softDelete(id) {
       const at = items.findIndex((i) => i.id === id);
-      if (at !== -1) items.splice(at, 1);
+      if (at !== -1) {
+        items.splice(at, 1);
+        deleted += 1;
+      }
     },
     async listTags() {
+      calls.listTags += 1;
       return tags.map((t) => ({
         ...t,
         open: itemTags.filter((l) => l.tagId === t.id && items.some((i) => i.id === l.itemId && i.status === "open")).length,
@@ -177,9 +226,13 @@ export function fakeRepo(items: Item[] = [], areas: Area[] = []) {
         .sort((a, b) => RANK[a.status] - RANK[b.status] || b.createdAt.getTime() - a.createdAt.getTime())
         .slice(0, TAGGED_LIMIT);
     },
-    async addTag(itemId, name) {
-      calls.addTag.push([itemId, name]);
-      return link(itemId, name);
+    async listTagNames() {
+      return tags.map((t) => ({ ...t }));
+    },
+    async addTags(itemId, names) {
+      calls.addTags.push([itemId, [...names]]);
+      const distinct = names.filter((n, i) => names.findIndex((m) => sameTag(m, n)) === i);
+      return distinct.map((name) => link(itemId, name));
     },
     async removeTag(itemId, id) {
       drop(itemTags, (l) => l.itemId === itemId && l.tagId === id);
@@ -199,6 +252,8 @@ export function fakeRepo(items: Item[] = [], areas: Area[] = []) {
     },
   };
   const single = () => items.filter((i) => i.recurrence.kind !== "series");
+  // Soft-deleted rows leave `items`, but the database keeps them.
+  let deleted = 0;
   const tags: Tag[] = [];
   const itemTags: { itemId: ItemId; tagId: TagId }[] = [];
   function link(itemId: ItemId, name: TagName): Tag {

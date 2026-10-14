@@ -144,14 +144,14 @@ function scan(tokens: readonly Token[], withLength: boolean): Scan {
   const found: Scan["found"] = [];
   const taken = new Set<string>();
   const fits = (hit: Hit, afterDay: boolean) => {
-    if (hit.slot === "tag") return !taken.has(`#${tagKey(hit.name)}`);
+    if (hit.slot === "tag") return true;
     if (taken.has(hit.slot)) return false;
     if (hit.slot === "length") return withLength;
     return hit.slot !== "time" || !hit.bare || afterDay;
   };
   const take = (hit: Hit, at: number) => {
     found.push({ hit, at });
-    taken.add(hit.slot === "tag" ? `#${tagKey(hit.name)}` : hit.slot);
+    taken.add(hit.slot);
   };
 
   fromEnd: while (hi > lo) {
@@ -222,8 +222,15 @@ export function parseCapture(text: string): CaptureText {
     title: unescape(line.slice(tokens[read.lo].from, tokens[read.hi - 1].to)),
     day: day?.day ?? null,
     time: time ? { start: time.start, length: length?.minutes ?? null } : null,
-    tags: hits.flatMap((h) => (h.slot === "tag" ? [h.name] : [])),
+    tags: firstSpellings(hits.flatMap((h) => (h.slot === "tag" ? [h.name] : []))),
   };
+}
+
+/** Each tag once, as a tag's name is the same in any case, in its first spelling. */
+function firstSpellings(names: readonly TagName[]): TagName[] {
+  const byKey = new Map<string, TagName>();
+  for (const name of names) if (!byKey.has(tagKey(name))) byKey.set(tagKey(name), name);
+  return [...byKey.values()];
 }
 
 const weekdayOf = (date: LocalDate) => new Date(`${date}T00:00:00Z`).getUTCDay();
@@ -283,6 +290,12 @@ export function tagList(tags: readonly string[]): string {
 
 type Captured = Extract<CaptureResult, { ok: true }>;
 
+/** Lines the capture field's placeholder turns through on an account's first day, each one real capture syntax. */
+export const CAPTURE_EXAMPLES = ["dentist tomorrow 9:00 #health", "call Sam friday 14:00 for 30m", "buy milk"] as const;
+
+/** Above the capture field on an account's first day. */
+export const CAPTURE_LEAD = "Type one thing you have to do. Add a day or a time and it lands on its line.";
+
 /**
  * What a status line says once a capture has saved: in the capture field,
  * which sits above the tray, or in the palette, which can be opened anywhere.
@@ -291,9 +304,32 @@ export function capturedLine(result: Captured, where: "field" | "palette"): stri
   if (result.type === "checklist") return "Captured. It is open, ready for its lines.";
   const tags = result.tags.length ? ` with ${tagList(result.tags)}` : "";
   const what = where === "palette" ? `Captured “${result.title}”` : "Captured";
-  const line = result.plan
-    ? `${where === "palette" ? `${what}. ` : ""}Planned for ${result.plan}${tags ? `,${tags}` : ""}.`
+  const { landed } = result;
+  const plan = landed && (landed.time ? `${landed.day}, ${landed.time.start}${landed.time.end ? ` to ${landed.time.end}` : ""}` : landed.day);
+  const line = plan
+    ? `${where === "palette" ? `${what}. ` : ""}Planned for ${plan}${tags ? `,${tags}` : ""}.`
     : `${what}${tags}. It is waiting for a time${where === "palette" ? " on Today" : ", below"}.`;
-  if (!result.missed.length) return line;
-  return `${line} ${result.missed.length === 1 ? "The tag" : "The tags"} ${tagList(result.missed)} did not save.`;
+  return line + missedLine(result);
+}
+
+function missedLine({ missed }: Captured): string {
+  return missed.length ? ` ${missed.length === 1 ? "The tag" : "The tags"} ${tagList(missed)} did not save.` : "";
+}
+
+/**
+ * The status line after an account's first capture ever: what capture
+ * understood, as a sentence, and a link to where the item went. A day's link
+ * names that day; a capture with no day goes to the Inbox.
+ */
+export function firstCapturedLine(result: Captured): { text: string; link: { href: string; label: string } } {
+  const { landed } = result;
+  const title = result.title.charAt(0).toUpperCase() + result.title.slice(1);
+  const tags = result.tags.length ? `, tagged ${tagList(result.tags)}` : "";
+  if (!landed) return { text: `${title} is waiting, with no day yet${tags}.${missedLine(result)}`, link: { href: "/inbox", label: "See the Inbox" } };
+  const day = landed.day === "today" || landed.day === "tomorrow" ? landed.day : `on ${landed.day}`;
+  const time = !landed.time ? ", at any time" : landed.time.end ? ` from ${landed.time.start} to ${landed.time.end}` : ` at ${landed.time.start}`;
+  return {
+    text: `${title} is ${day}${time}${tags}.${missedLine(result)}`,
+    link: { href: landed.day === "today" ? "/today" : `/day/${landed.on}`, label: `See ${landed.day}` },
+  };
 }

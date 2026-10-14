@@ -44,7 +44,8 @@ export function dueGroup(dueOn: LocalDate, today: LocalDate): DueGroup {
   return days < WEEK_DAYS ? "week" : "later";
 }
 
-export const GROUP_LABEL: Record<DueGroup, string> = { past: "Past due", week: "This week", later: "Later" };
+/** No label dates a debt: what is behind us is "Earlier", never "Past due" or "Overdue". */
+export const GROUP_LABEL: Record<DueGroup, string> = { past: "Earlier", week: "This week", later: "Later" };
 
 /** The due date in words. An open item behind us says "Was due", never more than that: no counting of days late. */
 export function dueWords(dueOn: LocalDate, today: LocalDate, done: boolean): string {

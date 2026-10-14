@@ -83,6 +83,12 @@ describe("resolveAuthRedirect", () => {
       expect(signedOut(pathname)).toBe(expected);
     });
 
+    it("lets a signed-out visitor reach them in the browser-test build, which runs as production", () => {
+      vi.stubEnv("NODE_ENV", "production");
+      vi.stubEnv("AXIIS_E2E_BUILD", "1");
+      expect(signedOut("/dev/score")).toBeNull();
+    });
+
     it("keeps the public pages public in production", () => {
       vi.stubEnv("NODE_ENV", "production");
       expect(signedOut("/")).toBeNull();

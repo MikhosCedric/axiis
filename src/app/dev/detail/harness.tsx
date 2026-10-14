@@ -175,7 +175,7 @@ export function DetailHarness({ itemId, timeZone }: { itemId: string | null; tim
   return (
     <div className="min-h-dvh rail:grid rail:grid-cols-[minmax(0,1fr)_minmax(340px,420px)]">
       <main className="px-4 pt-6 pb-10 rail:px-9 rail:pt-8">
-        <h1 className="font-serif text-[clamp(28px,3vw,40px)] leading-[1.1] font-medium tracking-[-0.015em]">
+        <h1 className="headline">
           Detail panel
         </h1>
         <p className="mt-2.5 max-w-[60ch] text-[15px] text-ink-2">
@@ -187,7 +187,7 @@ export function DetailHarness({ itemId, timeZone }: { itemId: string | null; tim
               <Link
                 href={`?item=${f.id}`}
                 aria-current={f.id === itemId ? "true" : undefined}
-                className="block rounded-md px-2 py-2.5 hover:bg-accent-wash aria-[current]:font-semibold"
+                className="block rounded-md px-2 py-2.5 hover:bg-hover active:bg-press aria-[current]:font-semibold"
               >
                 {f.label}
               </Link>
@@ -200,7 +200,7 @@ export function DetailHarness({ itemId, timeZone }: { itemId: string | null; tim
         </label>
       </main>
       {current && (
-        <div className="border-t border-rule px-4 pt-5 pb-10 rail:border-t-0 rail:border-l rail:px-6 rail:pt-8">
+        <aside aria-label="Details" className="border-t border-rule px-4 pt-5 pb-10 rail:border-t-0 rail:border-l rail:px-6 rail:pt-8">
           {current.view ? (
             <DetailSheet
               key={current.key}
@@ -211,7 +211,7 @@ export function DetailHarness({ itemId, timeZone }: { itemId: string | null; tim
           ) : (
             <MissingItem />
           )}
-        </div>
+        </aside>
       )}
     </div>
   );

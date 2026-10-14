@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
+  Fragment,
   useEffect,
   useMemo,
   useOptimistic,
@@ -19,7 +20,6 @@ import { tagLine } from "@/features/tags/model";
 import { selectedIn, type ItemKey } from "@/domain/item-key";
 import { dayHref } from "@/features/day/nav";
 import { SELECTED_ITEM_PARAM } from "@/features/day/types";
-import { HelpHint } from "@/components/help-hint";
 import { DetailAside } from "@/features/detail/detail-aside";
 import { STATE_WORD } from "@/features/score/score-view";
 import { captureAction, setDoneAction } from "@/features/today/actions";
@@ -27,9 +27,10 @@ import { CaptureField } from "@/features/today/capture-field";
 import type { ActionResult } from "@/features/today/commands";
 import { formatClock, formatDayHeading } from "@/features/today/format";
 import { Glyph } from "@/features/today/glyph";
+import { GuideButton, type GuideTopic } from "@/features/palette/guide";
 import { LineLegend } from "@/features/today/line-legend";
 import { SameInInbox } from "@/features/inbox/same-in-inbox";
-import { buildToday, EMPTY_TRAY, stateOf, WAITING, type TodayEntry } from "@/features/today/model";
+import { buildToday, EMPTY_TRAY, stateOf, TRAY_FULL, WAITING, type TodayEntry } from "@/features/today/model";
 import { dayRangeFor } from "@/lib/dates";
 import { moveAction } from "./actions";
 import type { WeekData } from "./load";
@@ -41,6 +42,7 @@ import {
   moveTo,
   weekdayName,
   weekSummary,
+  WEEK_FULL,
   type Destination,
 } from "./model";
 import { useWeekDrag, type WeekDragPreview } from "./use-week-drag";
@@ -57,6 +59,7 @@ const serverActions: WeekActions = { move: moveAction, setDone: setDoneAction, c
 type Patch = { id: ItemKey; changes: Partial<Pick<ShownItem, "schedule" | "status" | "completedAt">> };
 
 const KEYS_ID = "week-keys";
+const WEEK_GUIDE: GuideTopic[] = ["capture", "week"];
 
 function useNow(nowIso: string, ticking: boolean) {
   const [now, setNow] = useState(() => new Date(nowIso));
@@ -201,17 +204,21 @@ export function WeekView({
     <div className={selectedParam ? "min-[1180px]:grid min-[1180px]:grid-cols-[minmax(0,1fr)_328px]" : ""}>
       <div className="min-w-0 px-4 pt-6 pb-14 rail:px-9 rail:pt-8">
         <header className="flex flex-col-reverse gap-3 rail:flex-row-reverse rail:items-start rail:justify-between rail:gap-6">
-          {nav}
+          {/* A server element can arrive late as a lazy chunk, which React then checks for a key among its siblings. */}
+          <Fragment key="nav">{nav}</Fragment>
           <div className="min-w-0">
-            <h1 className="font-serif text-[clamp(28px,3vw,40px)] leading-[1.1] font-medium tracking-[-0.015em] text-balance">
+            <h1 className="headline">
               {formatWeekHeading(days)}
             </h1>
             <p className="mt-2.5 text-[15px] text-ink-2">{weekSummary(week, waiting)}</p>
           </div>
         </header>
 
-        <div className="mt-6 max-w-[440px]">
-          <CaptureField captureAction={actions.capture} />
+        <div className="mt-6 flex flex-wrap items-start gap-x-3 gap-y-1">
+          <div className="min-w-0 flex-[1_1_280px] rail:max-w-[440px]">
+            <CaptureField captureAction={actions.capture} />
+          </div>
+          <GuideButton topics={WEEK_GUIDE} className="ml-auto" />
         </div>
 
         <p role="status" className={`mb-2 min-h-5 text-[13px] ${status?.error ? "font-medium text-ink" : "text-ink-2"}`}>
@@ -231,17 +238,16 @@ export function WeekView({
               </DayColumn>
             ))}
           </div>
+          {data.weekFull && <p className="mt-2 text-[13px] text-ink-3">{WEEK_FULL}</p>}
         </section>
 
-        <div className="flex flex-wrap items-center gap-x-6">
-          <HelpHint id={KEYS_ID} label="Keyboard help">
-            Drag an item to another day, or down to the tray to clear its day. With an item focused, <Kbd>←</Kbd>{" "}
-            <Kbd>→</Kbd> move it a day, <Kbd>Backspace</Kbd> sends it to the tray, <Kbd>Space</Kbd> marks it done and{" "}
-            <Kbd>Enter</Kbd> opens it. On a waiting item, <Kbd>↑</Kbd> gives it a day. <Kbd>[</Kbd> <Kbd>]</Kbd> change
-            the week and <Kbd>T</Kbd> comes back to this one.
-          </HelpHint>
-          <LineLegend now={false} />
-        </div>
+        {/* Every item's description. Seen in the Guide; here only for screen readers. */}
+        <p id={KEYS_ID} className="sr-only">
+          Drag an item to another day, or down to the tray to clear its day. With an item focused, Left and Right move it
+          a day, Backspace sends it to the tray, Space marks it done and Enter opens it. On a waiting item, Up gives it a
+          day. The bracket keys change the week and T comes back to this one.
+        </p>
+        <LineLegend now={false} />
 
         <section
           data-drop="tray"
@@ -268,6 +274,7 @@ export function WeekView({
           ) : (
             <p className="text-[13px] text-ink-3">{EMPTY_TRAY}</p>
           )}
+          {data.waitingFull && <p className="mt-3 text-[13px] text-ink-3">{TRAY_FULL}</p>}
         </section>
 
         <div
@@ -288,10 +295,6 @@ export function WeekView({
       {selectedParam && <DetailAside pending={selectedId !== selectedParam}>{detail}</DetailAside>}
     </div>
   );
-}
-
-function Kbd({ children }: { children: string }) {
-  return <kbd className="rounded border border-rule px-1 font-sans text-xs font-semibold text-ink-2">{children}</kbd>;
 }
 
 function DayColumn({
@@ -321,7 +324,7 @@ function DayColumn({
         <Link
           href={dayHref(date, today, "score")}
           title={`Open ${formatDayHeading(date)}`}
-          className="group inline-flex items-baseline gap-1.5 rounded"
+          className="group inline-flex items-baseline gap-1.5 rounded tap-y"
         >
           <span className="text-[13px] font-medium text-ink-2">
             <span className="@min-[50rem]:hidden">{weekdayName(date, "long")}</span>
@@ -381,7 +384,7 @@ function ItemRow({
   const label = [item.title, spokenTime, area, STATE_WORD[state], repeats(item) && "repeats", tagged.spoken].filter(Boolean).join(", ");
   const shape =
     variant === "chip"
-      ? "inline-flex max-w-[34ch] items-center gap-2 rounded-md border border-rule bg-sheet px-2.5 py-1.5"
+      ? "inline-flex max-w-[34ch] items-center gap-2 rounded-md border border-rule bg-sheet px-2.5 py-1.5 pointer-coarse:min-h-11"
       : "grid grid-cols-[36px_minmax(0,1fr)] gap-x-2 rounded-md px-1.5 py-1.5";
   return (
     <div
@@ -393,7 +396,7 @@ function ItemRow({
       aria-describedby={KEYS_ID}
       onPointerDown={onPointerDown}
       onKeyDown={onKeyDown}
-      className={`${shape} cursor-grab touch-manipulation select-none [-webkit-touch-callout:none] hover:bg-accent-wash ${
+      className={`${shape} cursor-grab touch-manipulation select-none [-webkit-touch-callout:none] hover:bg-hover active:bg-press ${
         selected ? "bg-accent-wash ring-1 ring-accent" : ""
       } ${lifted ? "opacity-35" : ""}`}
     >
