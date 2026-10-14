@@ -1,3 +1,5 @@
+import { devHarnessEnabled } from "@/lib/dev-harness";
+
 export const LOGIN_PATH = "/login";
 
 /** Exact paths a stranger or a crawler may reach without a session. */
@@ -22,8 +24,8 @@ function isPublicPath(pathname: string): boolean {
     pathname === "/auth" ||
     pathname.startsWith("/pwa-icon/") ||
     pathname.startsWith("/auth/") ||
-    // Dev harness pages render fixtures only, and never exist in a production build.
-    (process.env.NODE_ENV !== "production" && (pathname === "/dev" || pathname.startsWith("/dev/")))
+    // Dev harness pages render fixtures only, and never exist in a normal production build.
+    (devHarnessEnabled() && (pathname === "/dev" || pathname.startsWith("/dev/")))
   );
 }
 
