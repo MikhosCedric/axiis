@@ -1,19 +1,13 @@
 import { z } from "zod";
-import type { LocalDate } from "@/domain/item";
+import { planDateSchema } from "@/domain/item";
 import { parseItemKey } from "@/domain/item-key";
 import { materialize } from "@/lib/items/occurrences";
 import type { ActionResult } from "@/features/today/commands";
-import { parseLocalDate } from "@/lib/dates";
+import { DATE_RANGE_ERROR, outOfRange } from "@/lib/dates";
 import type { ItemsRepo } from "@/lib/items/repo";
 import { moveTo } from "./model";
 
-const destinationSchema = z.union([
-  z.literal("tray"),
-  z
-    .string()
-    .refine((raw) => parseLocalDate(raw) !== null)
-    .transform((raw) => raw as LocalDate),
-]);
+const destinationSchema = z.union([z.literal("tray"), planDateSchema]);
 
 export const MOVE_FAILED = "That move did not save, so it is back where it was. Try again.";
 const NOT_FOUND = "That item could not be found.";
@@ -27,7 +21,7 @@ export async function moveItem(repo: ItemsRepo, rawKey: unknown, rawTo: unknown,
   const key = parseItemKey(rawKey);
   if (!key) return { ok: false, error: NOT_FOUND };
   const to = destinationSchema.safeParse(rawTo);
-  if (!to.success) return { ok: false, error: MOVE_FAILED };
+  if (!to.success) return { ok: false, error: outOfRange(rawTo) ? DATE_RANGE_ERROR : MOVE_FAILED };
   try {
     const item = key.kind === "item" ? await repo.get(key.id) : await materialize(repo, key, timeZone);
     if (!item || item.type === "note") return { ok: false, error: NOT_FOUND };

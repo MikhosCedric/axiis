@@ -1,11 +1,12 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
 
-async function dragTo(page: Page, from: Locator, to: { x: number; y: number }) {
+async function dragTo(page: Page, from: Locator, to: { x: number; y: number }, { escape = false } = {}) {
   const box = await from.boundingBox();
   if (!box) throw new Error("drag source is not on screen");
   await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
   await page.mouse.down();
   await page.mouse.move(to.x, to.y, { steps: 12 });
+  if (escape) await page.keyboard.press("Escape");
   await page.mouse.up();
 }
 
@@ -36,6 +37,19 @@ test.describe("score", () => {
     // The harness seeds from the real clock, so a drop that lands on the current half hour reads "happening now".
     await expect(score.getByRole("button", { name: /^Book the dentist, \d\d:\d\d to \d\d:\d\d, Home, (?:planned|happening now)$/ })).toBeVisible();
     await expect(chip).toHaveCount(0);
+  });
+
+  test("Escape during a drag puts the item back and opens nothing", async ({ page }) => {
+    const score = page.getByRole("region", { name: "Score" });
+    const chip = page.getByRole("region", { name: "Waiting" }).getByRole("button", { name: /^Book the dentist, waiting/ });
+    const home = await center(score.getByText("Home", { exact: true }));
+
+    await dragTo(page, chip, { x: home.box.x + home.box.width + 160, y: home.y }, { escape: true });
+
+    await expect(chip).toBeVisible();
+    await expect(score.getByRole("button", { name: /^Book the dentist, \d\d:\d\d/ })).toHaveCount(0);
+    await expect(page.locator("html")).not.toHaveAttribute("data-score-dragging");
+    await expect(page.getByRole("complementary", { name: "Details" })).toHaveCount(0);
   });
 
   test("arrow keys move a focused beam a quarter hour", async ({ page }) => {
@@ -234,6 +248,24 @@ test("week: dragging an item to another day plans it there", async ({ page }) =>
   await expect(days.nth(from).getByRole("button", { name: /^Stretch, / })).toHaveCount(0);
 });
 
+test("week: Escape during a drag leaves the item on its day", async ({ page }) => {
+  await page.goto("/dev/week");
+  const days = page.getByRole("region", { name: "Days" }).getByRole("region");
+  await expect(days).toHaveCount(7);
+  const item = page.getByRole("button", { name: /^Stretch, / });
+  let from = -1;
+  for (let i = 0; i < 7; i++) if ((await days.nth(i).getByRole("button", { name: /^Stretch, / }).count()) > 0) from = i;
+  expect(from).toBeGreaterThanOrEqual(0);
+  const target = days.nth((from + 2) % 7);
+
+  await dragTo(page, item, await center(target.getByRole("heading")), { escape: true });
+
+  await expect(days.nth(from).getByRole("button", { name: /^Stretch, / })).toBeVisible();
+  await expect(target.getByRole("button", { name: /^Stretch, / })).toHaveCount(0);
+  await expect(page.locator("html")).not.toHaveAttribute("data-score-dragging");
+  await expect(page.getByRole("complementary", { name: "Details" })).toHaveCount(0);
+});
+
 test("detail: a new subtask can be renamed in place", async ({ page }) => {
   await page.goto("/dev/detail?item=00000000-0000-4000-8000-000000000050");
   const subtasks = page.getByRole("region", { name: "Subtasks" });
@@ -248,6 +280,54 @@ test("detail: a new subtask can be renamed in place", async ({ page }) => {
   await expect(subtasks.getByRole("textbox", { name: "Subtask: Buy stamps and envelopes", exact: true })).toHaveValue(
     "Buy stamps and envelopes",
   );
+});
+
+test("notes: at 1920px the notes pages start at the same left edge as the Inbox", async ({ page }) => {
+  await page.setViewportSize({ width: 1920, height: 1080 });
+  const leftOf = async (path: string, heading = page.locator("h1").first()) => {
+    await page.goto(path);
+    return (await heading.boundingBox())!.x;
+  };
+  const inbox = await leftOf("/dev/inbox");
+  expect(await leftOf("/dev/notes")).toBe(inbox);
+  expect(await leftOf("/dev/notes/search?q=bulbs")).toBe(inbox);
+  expect(await leftOf("/dev/notes/00000000-0000-4000-8000-000000000020", page.getByRole("textbox", { name: "Title" }))).toBe(inbox);
+});
+
+test("notes: the toolbar keeps to the text measure, in named groups, every tool reached by Tab", async ({ page }) => {
+  await page.setViewportSize({ width: 1920, height: 1080 });
+  await page.goto("/dev/notes/00000000-0000-4000-8000-000000000020");
+  const bar = page.getByRole("group", { name: "Formatting" });
+  const body = page.getByRole("textbox", { name: "Garden through the winter" });
+  const barBox = (await bar.boundingBox())!;
+  const bodyBox = (await body.boundingBox())!;
+  expect(barBox.x + barBox.width).toBeLessThanOrEqual(bodyBox.x + bodyBox.width + 1);
+  expect(barBox.width).toBeLessThan(640);
+
+  const groups = { Type: ["Heading", "Subheading", "Quote", "Code"], Style: ["Bold", "Italic", "Link"], Lists: ["Bulleted list", "Numbered list"] };
+  for (const [name, tools] of Object.entries(groups)) {
+    const group = bar.getByRole("group", { name, exact: true });
+    await expect(group.getByText(name, { exact: true })).toBeVisible();
+    for (const tool of tools) await expect(group.getByRole("button", { name: tool, exact: true })).toBeVisible();
+  }
+
+  await page.getByRole("textbox", { name: "Title" }).focus();
+  const reached: string[] = [];
+  for (let i = 0; i < 9; i++) {
+    await page.keyboard.press("Tab");
+    reached.push((await page.evaluate(() => document.activeElement?.getAttribute("aria-label"))) ?? "");
+  }
+  expect(reached).toEqual(Object.values(groups).flat());
+});
+
+test("notes: opening the list never rewrites the address; typing a search does", async ({ page }) => {
+  await page.goto("/dev/notes?q=garden&from=link");
+  await expect(page.getByRole("searchbox", { name: "Search notes" })).toHaveValue("garden");
+  await page.waitForTimeout(1000);
+  await expect(page).toHaveURL(/\/dev\/notes\?q=garden&from=link$/);
+
+  await page.getByRole("searchbox", { name: "Search notes" }).fill("bulbs");
+  await expect(page).toHaveURL(/\/dev\/notes\?q=bulbs$/);
 });
 
 test("notes: typing in the editor saves", async ({ page }) => {
@@ -297,6 +377,71 @@ test("settings: an area can be added and renamed", async ({ page }) => {
   await studio.press("Enter");
   await expect(areas.getByRole("textbox", { name: "Rename Garden", exact: true })).toHaveValue("Garden");
   await expect(areas.getByRole("listitem")).toHaveCount(5);
+});
+
+test.describe("settings layout", () => {
+  for (const width of [1280, 1920]) {
+    test(`at ${width}px a sticky index sits beside the sections`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 900 });
+      await page.goto("/dev/settings");
+      const index = page.getByRole("navigation", { name: "Settings sections" });
+      await expect(index.getByRole("link")).toHaveText(["Areas", "Tags", "Display", "Your data"]);
+
+      const nav = (await index.boundingBox())!;
+      const areas = (await page.getByRole("region", { name: "Areas" }).boundingBox())!;
+      expect(nav.x + nav.width).toBeLessThan(areas.x);
+      expect(Math.abs(nav.y - areas.y)).toBeLessThan(4);
+
+      await index.getByRole("link", { name: "Your data" }).click();
+      await expect(page).toHaveURL(/#your-data$/);
+      await expect(page.getByRole("heading", { name: "Export your data" })).toBeInViewport();
+      await expect(index).toBeInViewport();
+    });
+  }
+
+  test("at 375px the sections stack with no index and no sideways scroll", async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 812 });
+    await page.goto("/dev/settings");
+    await expect(page.getByRole("navigation", { name: "Settings sections" })).toBeHidden();
+    await expect(page.getByRole("region", { name: "Display" })).toBeAttached();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(375);
+  });
+});
+
+test("settings: Theme sits beside Density under Display, is kept on reload, and follows the rail's toggle", async ({ page }) => {
+  await page.goto("/dev/settings");
+  const display = page.getByRole("region", { name: "Display" });
+  const theme = display.getByRole("group", { name: "Theme" });
+  await expect(display.getByRole("group", { name: "Density" })).toBeVisible();
+  await expect(theme.getByRole("button", { name: "System" })).toHaveAttribute("aria-pressed", "true");
+
+  await theme.getByRole("button", { name: "Dark" }).click();
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+  await page.reload();
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+  await expect(theme.getByRole("button", { name: "Dark" })).toHaveAttribute("aria-pressed", "true");
+
+  // The rail's toggle writes the same attribute; Settings follows it without a reload.
+  await page.evaluate(() => (document.documentElement.dataset.theme = "light"));
+  await expect(theme.getByRole("button", { name: "Light" })).toHaveAttribute("aria-pressed", "true");
+
+  await theme.getByRole("button", { name: "System" }).click();
+  await expect(page.locator("html")).not.toHaveAttribute("data-theme");
+  await page.reload();
+  await expect(page.locator("html")).not.toHaveAttribute("data-theme");
+  await expect(theme.getByRole("button", { name: "System" })).toHaveAttribute("aria-pressed", "true");
+});
+
+test("settings: a long area name that does not fit ends in an ellipsis and keeps the whole name as its title", async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 812 });
+  await page.goto("/dev/settings");
+  const name = "A longer area name that runs to forty";
+  const field = page.getByRole("region", { name: "Areas" }).getByRole("textbox", { name: `Rename ${name}`, exact: true });
+
+  await expect(field).toHaveAttribute("title", name);
+  const drawn = await field.evaluate((el) => ({ cut: el.scrollWidth > el.clientWidth, overflow: getComputedStyle(el).textOverflow }));
+  expect(drawn).toEqual({ cut: true, overflow: "ellipsis" });
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(375);
 });
 
 test.describe("tags", () => {
@@ -561,21 +706,17 @@ test.describe("on a phone", () => {
   });
 });
 
-test("with a mouse, the Score keeps its keyboard help behind a ? and shows no press-and-hold hint", async ({ page }) => {
+test("with a mouse, the Score's help lives in the Guide and shows no press-and-hold hint", async ({ page }) => {
   await page.goto("/dev/score");
-  const keys = page.getByText(/^Drag a beam to move it/);
-  await expect(keys).toBeHidden();
-  const help = page.getByRole("button", { name: "Keyboard help" });
-  await help.hover();
-  await expect(keys).toBeVisible();
-  expect(await keys.evaluate((el) => el.getBoundingClientRect().width)).toBeGreaterThan(100);
-  await page.mouse.move(0, 0);
-  await expect(keys).toBeHidden();
-  await help.focus();
-  await expect(keys).toBeVisible();
+  // Only a description now: clipped to a pixel, so nothing prints beside the Score.
+  expect((await page.getByText(/^Drag a beam to move it/).boundingBox())!.width).toBeLessThanOrEqual(1);
+  await expect(page.getByRole("button", { name: /^Design sync, / })).toHaveAccessibleDescription(/Space marks it done/);
+  await page.keyboard.press("?");
+  const guide = page.getByRole("dialog", { name: "Guide" });
+  await expect(guide.getByRole("heading", { name: "Moving beams" })).toBeVisible();
+  await expect(guide.getByRole("heading", { name: "Keyboard shortcuts" })).toBeVisible();
   await page.keyboard.press("Escape");
-  await expect(keys).toBeHidden();
-  await expect(page.getByRole("button", { name: "Keyboard help" })).toHaveAttribute("aria-expanded", "false");
+  await expect(guide).toBeHidden();
   await expect(page.getByText(/^Drag one onto an area/)).toBeVisible();
   await expect(page.locator("kbd", { hasText: /^C$/ })).toBeVisible();
   await expect(page.getByText(/Press and hold/)).toHaveCount(2);
@@ -594,13 +735,24 @@ test.describe("on a touch phone", () => {
     await expect(page.getByText(/^Drag one onto an area/)).toBeHidden();
     await expect(page.locator("kbd", { hasText: /^C$/ })).toBeHidden();
 
-    const keys = page.getByText(/^Drag a beam to move it/);
-    await expect(keys).toBeHidden();
-    await page.getByRole("button", { name: "Keyboard help" }).tap();
-    await expect(keys).toBeVisible();
+    expect((await page.getByText(/^Drag a beam to move it/).boundingBox())!.width).toBeLessThanOrEqual(1);
     await expect(page.getByRole("button", { name: /^Design sync, / })).toHaveAccessibleDescription(
       /Space marks it done/,
     );
+    const button = page.getByRole("button", { name: "Guide" });
+    const box = await button.boundingBox();
+    expect(box!.height).toBeGreaterThanOrEqual(44);
+    await button.tap();
+    const guide = page.getByRole("dialog", { name: "Guide" });
+    await expect(guide.getByRole("heading", { name: "Moving beams" })).toBeInViewport();
+    const edges = await guide.evaluate((el) => {
+      const r = el.getBoundingClientRect();
+      return { left: r.left, right: r.right, width: window.innerWidth };
+    });
+    expect(edges.left).toBeGreaterThanOrEqual(0);
+    expect(edges.right).toBeLessThanOrEqual(edges.width);
+    await guide.getByRole("button", { name: "Close" }).tap();
+    await expect(guide).toBeHidden();
   });
 
   test("the detail panel's icon buttons are 44px touch targets, and a tag's remove button at least 24px", async ({

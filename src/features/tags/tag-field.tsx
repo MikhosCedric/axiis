@@ -108,7 +108,7 @@ export function TagField({
                 aria-label={`Remove tag ${name}`}
                 title="Remove"
                 onClick={() => save({ kind: "remove", name }, `Took ${name} off.`)}
-                className="grid size-6 place-items-center rounded-full text-ink-3 hover:bg-accent-wash hover:text-ink"
+                className="grid size-6 place-items-center rounded-full text-ink-3 hover:bg-hover active:bg-press hover:text-ink"
               >
                 <CloseIcon />
               </button>
@@ -162,7 +162,7 @@ export function TagField({
               // Keeps focus in the field, so the list does not close before the click lands.
               onMouseDown={(e) => e.preventDefault()}
               onClick={() => addTyped(name)}
-              className="cursor-pointer px-3 py-1.5 text-ink-2 hover:bg-accent-wash hover:text-ink aria-selected:bg-accent-wash aria-selected:text-ink"
+              className="cursor-pointer px-3 py-1.5 text-ink-2 hover:bg-hover active:bg-press hover:text-ink aria-selected:bg-accent-wash aria-selected:text-ink"
             >
               #{name}
             </li>

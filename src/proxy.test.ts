@@ -12,7 +12,7 @@ const withCookie = (value: string) =>
   new NextRequest("http://localhost:3600/today", { headers: { cookie: `axiis-e2e-session=${value}` } });
 
 beforeEach(() => {
-  vi.stubEnv("NODE_ENV", "development");
+  vi.stubEnv("AXIIS_E2E_BUILD", "1");
   vi.stubEnv("E2E_FAKE_SESSION", "1");
   vi.stubEnv("E2E_FAKE_SESSION_SECRET", SECRET);
   vi.stubEnv("VERCEL", undefined);
@@ -32,6 +32,12 @@ describe("proxy with the browser-test cookie", () => {
     vi.stubEnv("E2E_FAKE_SESSION", undefined);
     const response = await proxy(withCookie(SECRET));
     expect(response.status).toBe(307);
+    expect(response.headers.get("location")).toBe("http://localhost:3600/login?next=%2Ftoday");
+  });
+
+  it("sends the request to /login in a build without AXIIS_E2E_BUILD, whatever the runtime env says", async () => {
+    vi.stubEnv("AXIIS_E2E_BUILD", "");
+    const response = await proxy(withCookie(SECRET));
     expect(response.headers.get("location")).toBe("http://localhost:3600/login?next=%2Ftoday");
   });
 

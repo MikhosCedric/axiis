@@ -35,6 +35,11 @@ export type ChildCount = { total: number; done: number };
 export interface ItemsRepo {
   listAreas(): Promise<Area[]>;
   /**
+   * Whether the account has ever stored an item of any type or status, soft-deleted
+   * ones included. One row is read at most.
+   */
+  hasAnyItem(): Promise<boolean>;
+  /**
    * Items on a day (timed in range, or day-only on the date) plus the waiting
    * ones: top-level items with no schedule, notes excepted, that are open or
    * were done inside the range. Waiting ones come newest first, at most

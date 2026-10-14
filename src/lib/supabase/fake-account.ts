@@ -31,12 +31,15 @@ function fixtures(): Item[] {
   ];
 }
 
-function createAccount() {
+/** Which in-memory account a request uses: the fixtures, or one that has never stored an item. */
+export type FakeAccountKind = "fixtures" | "empty";
+
+function createAccount(kind: FakeAccountKind) {
   const areas = fakeAreasRepo(["Work", "Home", "Health"]);
-  const items = fixtures();
+  const items = kind === "fixtures" ? fixtures() : [];
   const fake = fakeRepo(items);
   fake.repo.listAreas = () => areas.repo.list();
-  fake.tag(id(1), "errands");
+  if (kind === "fixtures") fake.tag(id(1), "errands");
   const notesStore: NotesStore = { items, bodyText: new Map(), links: [] };
   for (const i of items) if (i.type === "note") notesStore.bodyText.set(i.id, bodyText(i.body as DocNode | null));
 
@@ -83,15 +86,18 @@ function createAccount() {
 
 export type FakeAccount = ReturnType<typeof createAccount> & { reset(): void };
 
-// On globalThis so every route bundle in the one `next dev` process shares a single account.
-const holder = globalThis as typeof globalThis & { axiisE2EAccount?: ReturnType<typeof createAccount> };
+// On globalThis so every route bundle in the one `next dev` process shares one account of each kind.
+const holder = globalThis as typeof globalThis & {
+  axiisE2EAccounts?: Partial<Record<FakeAccountKind, ReturnType<typeof createAccount>>>;
+};
 
-export function fakeAccount(): FakeAccount {
-  holder.axiisE2EAccount ??= createAccount();
+export function fakeAccount(kind: FakeAccountKind = "fixtures"): FakeAccount {
+  const accounts = (holder.axiisE2EAccounts ??= {});
+  const account = (accounts[kind] ??= createAccount(kind));
   return {
-    ...holder.axiisE2EAccount,
+    ...account,
     reset() {
-      holder.axiisE2EAccount = createAccount();
+      accounts[kind] = createAccount(kind);
     },
   };
 }

@@ -66,7 +66,7 @@ export function TagsSection({
               />
               <Link
                 href={hrefFor(tag.name)}
-                className="rounded-md px-2 py-1.5 text-[13px] whitespace-nowrap text-ink-3 tabular hover:bg-accent-wash hover:text-ink"
+                className="inline-flex items-center rounded-md px-2 py-1.5 text-[13px] whitespace-nowrap text-ink-3 tabular hover:bg-hover active:bg-press hover:text-ink pointer-coarse:min-h-11"
               >
                 {openCount(tag.open)}
                 <span className="sr-only"> with #{tag.name}</span>
@@ -121,6 +121,7 @@ function TagName({
     <input
       value={draft ?? tag.name}
       aria-label={`Rename #${tag.name}`}
+      title={tag.name}
       maxLength={TAG_NAME_MAX}
       spellCheck={draft !== null}
       autoComplete="off"
@@ -135,7 +136,7 @@ function TagName({
           onError(null);
         }
       }}
-      className="w-full min-w-0 rounded-md border border-transparent bg-transparent px-2 py-1.5 text-[15px] text-ink hover:border-rule-soft focus:border-field focus:bg-sheet"
+      className="w-full min-w-0 truncate rounded-md border border-transparent bg-transparent px-2 py-1.5 text-[15px] text-ink hover:border-rule-soft focus:border-field focus:bg-sheet"
     />
   );
 }

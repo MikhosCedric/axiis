@@ -137,7 +137,7 @@ export function Subtasks({
                     aria-label={`Make ${row.title} a task`}
                     title="Make it a task"
                     onClick={() => lift(row.id)}
-                    className="grid size-8 pointer-coarse:size-11 place-items-center rounded-md text-ink-3 group-has-[[role=group]]/actions:hidden hover:bg-accent-wash hover:text-ink"
+                    className="grid size-8 pointer-coarse:size-11 place-items-center rounded-md text-ink-3 group-has-[[role=group]]/actions:hidden hover:bg-hover active:bg-press hover:text-ink"
                   >
                     <LiftIcon />
                   </button>
@@ -160,7 +160,7 @@ export function Subtasks({
                 addField.current?.focus();
                 onMarkParentDone();
               }}
-              className="rounded-md px-2 py-1 font-medium text-ink underline decoration-rule underline-offset-3 hover:bg-accent-wash"
+              className="rounded-md px-2 py-1 font-medium text-ink underline decoration-rule underline-offset-3 hover:bg-hover active:bg-press"
             >
               Mark this done too
             </button>
@@ -170,7 +170,7 @@ export function Subtasks({
                 setOffer(false);
                 addField.current?.focus();
               }}
-              className="rounded-md px-2 py-1 font-medium hover:bg-accent-wash"
+              className="rounded-md px-2 py-1 font-medium hover:bg-hover active:bg-press"
             >
               Not yet
             </button>

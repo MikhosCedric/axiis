@@ -20,7 +20,7 @@ export function SkippedDates({ skipped, restore }: { skipped: SkippedDate[]; res
               type="button"
               aria-label={`Restore ${date.on}`}
               onClick={() => restore(date)}
-              className="rounded-md px-2 py-1 text-[13px] font-medium text-ink-2 hover:bg-accent-wash hover:text-ink"
+              className="rounded-md px-2 py-1 text-[13px] font-medium text-ink-2 hover:bg-hover active:bg-press hover:text-ink"
             >
               Restore
             </button>

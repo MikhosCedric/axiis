@@ -4,7 +4,9 @@ import { occurrenceKey } from "@/domain/item-key";
 import { planItem } from "@/features/inbox/commands";
 import { fakeRepo, makeItem } from "@/features/today/test-support";
 import { moveItem } from "@/features/week/commands";
-import { clearTime, setDue, setTime, setType } from "./commands";
+import { DATE_RANGE_ERROR } from "@/lib/dates";
+import { clearTime, loadDetail, setDue, setTime, setType } from "./commands";
+import { describeWhen } from "./model";
 
 describe("setDue", () => {
   it("sets a due date from a local date and clears it, writing once when nothing changes", async () => {
@@ -33,6 +35,10 @@ describe("setDue", () => {
 
     for (const bad of ["2026-02-30", "2026-10-12T00:00:00Z", "", 20261012, undefined]) {
       expect(await setDue(repo, task.id, bad)).toEqual({ ok: false, error: "That date is not one Axiis can use." });
+    }
+    for (const far of ["9999-12-31", "1969-12-31"]) {
+      expect(await setDue(repo, task.id, far)).toEqual({ ok: false, error: DATE_RANGE_ERROR });
+      expect(await planItem(repo, task.id, far, new Date("2026-10-06T12:00:00Z"), "UTC")).toEqual({ ok: false, error: DATE_RANGE_ERROR });
     }
     const refused = { ok: false, error: "Only a task or checklist that does not repeat has a due date." };
     for (const id of [note.id, event.id, series.id]) expect(await setDue(repo, id, "2026-10-12")).toEqual(refused);
@@ -135,6 +141,34 @@ describe("planning a one-off item from the panel", () => {
 
     expect(await clearTime(repo, task.id, NY)).toEqual({ ok: true });
     expect(task.schedule).toEqual({ kind: "day", on: d("2026-03-09") });
+  });
+
+  it("keeps a typed end on the wall clock on the night the clocks go forward", async () => {
+    const task = makeItem({ schedule: { kind: "day", on: d("2026-03-08") } });
+    const { repo } = fakeRepo([task]);
+    expect(await setTime(repo, task.id, { start: 90, length: 150 }, NY)).toEqual({ ok: true });
+    // 01:30 EST to 04:00 EDT is 90 real minutes.
+    expect(task.schedule).toEqual(timed("2026-03-08T06:30:00Z", "2026-03-08T08:00:00Z"));
+    expect(describeWhen(task.schedule, NY)).toBe("Sunday 8 March, 01:30 to 04:00");
+    expect((await loadDetail(repo, { kind: "item", id: task.id }, new Date("2026-03-07T15:00:00Z"), NY))?.time).toEqual({ start: 90, length: 150 });
+  });
+
+  it("keeps a typed end on the wall clock on the day the clocks go back", async () => {
+    const task = makeItem({ schedule: { kind: "day", on: d("2026-11-01") } });
+    const { repo } = fakeRepo([task]);
+    expect(await setTime(repo, task.id, { start: 0, length: 23 * 60 + 59 }, NY)).toEqual({ ok: true });
+    // 00:00 EDT to 23:59 EST is 25 hours less a minute.
+    expect(task.schedule).toEqual(timed("2026-11-01T04:00:00Z", "2026-11-02T04:59:00Z"));
+    expect(describeWhen(task.schedule, NY)).toBe("Sunday 1 November, 00:00 to 23:59");
+  });
+
+  it("refuses a start or an end the clocks skip, naming the first time that happens, and writes nothing", async () => {
+    const task = makeItem({ schedule: { kind: "day", on: d("2026-03-08") } });
+    const { repo, calls } = fakeRepo([task]);
+    const skipped = { ok: false, error: "02:30 does not happen on Sunday 8 March, when the clocks go forward. Try 03:00." };
+    expect(await setTime(repo, task.id, { start: 150, length: 60 }, NY)).toEqual(skipped);
+    expect(await setTime(repo, task.id, { start: 60, length: 90 }, NY)).toEqual(skipped);
+    expect(calls.update).toEqual([]);
   });
 
   it("takes a planned task off its day", async () => {

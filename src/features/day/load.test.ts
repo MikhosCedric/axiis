@@ -169,3 +169,46 @@ describe("loadDay with repeating items", () => {
     expect(asked).toEqual([[plain.id]]);
   });
 });
+
+describe("loadDay and the first day", () => {
+  const now = new Date("2026-10-06T08:00:00Z");
+  const load = (fake: ReturnType<typeof fakeRepo>) => loadDay(fake.repo, d("2026-10-06"), now, "UTC");
+
+  it("is the first day for an account that has never stored an item", async () => {
+    expect((await load(fakeRepo([], [area("Work")]))).firstDay).toBe(true);
+  });
+
+  it("is not once anything was ever stored, though this day shows none of it", async () => {
+    const elsewhere = {
+      "a task on another day": makeItem({ schedule: { kind: "day", on: d("2026-11-01") } }),
+      "a task done long ago": makeItem({ status: "done", completedAt: new Date("2026-01-01T00:00:00Z") }),
+      "a dropped task": makeItem({ status: "dropped" }),
+      "a note": makeItem({ type: "note" }),
+    };
+    for (const [what, item] of Object.entries(elsewhere)) {
+      const day = await load(fakeRepo([item]));
+      expect(day.view.scheduled.length + day.view.waiting.length, what).toBe(0);
+      expect(day.firstDay, what).toBe(false);
+    }
+  });
+
+  it("is not once the only item was deleted", async () => {
+    const fake = fakeRepo([makeItem()]);
+    await fake.repo.softDelete(fake.items[0].id);
+    expect((await load(fake)).firstDay).toBe(false);
+  });
+
+  it("does not ask the repo when the day already shows an item or a series", async () => {
+    const series = makeItem({
+      schedule: { kind: "day", on: d("2026-11-01") },
+      recurrence: { kind: "series", rule: { freq: "daily", interval: 1, end: { kind: "never" } } },
+    });
+    for (const items of [[makeItem()], [series]]) {
+      const fake = fakeRepo(items);
+      let asked = 0;
+      fake.repo.hasAnyItem = async () => (asked++, false);
+      expect((await load(fake)).firstDay).toBe(false);
+      expect(asked).toBe(0);
+    }
+  });
+});

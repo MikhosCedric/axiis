@@ -18,7 +18,7 @@ describe("captureTask", () => {
       id: items[0].id,
       type: "task",
       title: "Renew passport",
-      plan: null,
+      landed: null,
       tags: [],
       missed: [],
     });
@@ -28,7 +28,7 @@ describe("captureTask", () => {
   it("plans a timed slot at the default length and tags it, from the words alone", async () => {
     const { repo, calls, items, itemTags, tags } = fakeRepo();
     const result = await captureTask(repo, "dentist tomorrow 9:00 #health", NOW, LONDON);
-    expect(result).toEqual({ ok: true, id: items[0].id, type: "task", title: "dentist", plan: "tomorrow, 09:00", tags: ["health"], missed: [] });
+    expect(result).toEqual({ ok: true, id: items[0].id, type: "task", title: "dentist", landed: { on: "2026-10-08", day: "tomorrow", time: { start: "09:00", end: null } }, tags: ["health"], missed: [] });
     expect(calls.create).toEqual([
       {
         type: "task",
@@ -42,7 +42,7 @@ describe("captureTask", () => {
 
   it("plans a day without a time, counting days from the user's own today", async () => {
     const { repo, calls } = fakeRepo();
-    expect(await captureTask(repo, "call bank tomorrow", NOW, "Asia/Tokyo")).toMatchObject({ plan: "tomorrow" });
+    expect(await captureTask(repo, "call bank tomorrow", NOW, "Asia/Tokyo")).toMatchObject({ landed: { on: "2026-10-09", day: "tomorrow", time: null } });
     expect(calls.create[0].schedule).toEqual({ kind: "day", on: "2026-10-09" });
     await captureTask(repo, "call bank tomorrow", NOW, LONDON);
     expect(calls.create[1].schedule).toEqual({ kind: "day", on: "2026-10-08" });
@@ -50,7 +50,7 @@ describe("captureTask", () => {
 
   it("puts a time with no day on today, and names a typed length's end", async () => {
     const { repo, calls } = fakeRepo();
-    expect(await captureTask(repo, "gym 22:00 for 45m", NOW, LONDON)).toMatchObject({ plan: "today, 22:00 to 22:45" });
+    expect(await captureTask(repo, "gym 22:00 for 45m", NOW, LONDON)).toMatchObject({ landed: { on: "2026-10-07", day: "today", time: { start: "22:00", end: "22:45" } } });
     expect(calls.create[0].schedule).toEqual({
       kind: "timed",
       start: new Date("2026-10-07T21:00:00Z"),
@@ -108,7 +108,7 @@ describe("captureTask", () => {
       id: items[1].id,
       type: "checklist",
       title: "Groceries for Sunday 9:00 #home",
-      plan: null,
+      landed: null,
       tags: [],
       missed: [],
     });

@@ -2,7 +2,7 @@
 
 import { useId, useState, type FocusEvent, type RefObject } from "react";
 import type { LocalDate } from "@/domain/item";
-import { parseLocalDate } from "@/lib/dates";
+import { DATE_RANGE_ERROR, FIRST_DATE, LAST_DATE, outOfRange, parseLocalDate } from "@/lib/dates";
 import { clockOf, timeFrom, type TimeOfDay } from "./model";
 
 const field =
@@ -95,7 +95,7 @@ export function TimeRow({
           <button
             type="button"
             onClick={anyTime}
-            className="rounded-md px-1.5 py-1 text-[13px] text-ink-2 hover:bg-accent-wash hover:text-ink"
+            className="rounded-md px-1.5 py-1 text-[13px] text-ink-2 hover:bg-hover active:bg-press hover:text-ink"
           >
             Any time
           </button>
@@ -127,11 +127,14 @@ export function DateRow({
   clear?: { label: string; run: () => void };
 }) {
   const id = useId();
+  const hintId = useId();
   const [value, setValue] = useState<string>(initial ?? "");
   const [saved, setSaved] = useState(initial);
+  const [far, setFar] = useState(false);
 
   function commit() {
     const on = parseLocalDate(value);
+    setFar(outOfRange(value));
     if (!on) return setValue(saved ?? "");
     if (on === saved) return;
     setSaved(on);
@@ -153,6 +156,9 @@ export function DateRow({
         <input
           id={id}
           type="date"
+          min={FIRST_DATE}
+          max={LAST_DATE}
+          aria-describedby={hintId}
           value={value}
           onChange={(e) => setValue(e.target.value)}
           onBlur={commit}
@@ -165,11 +171,14 @@ export function DateRow({
           <button
             type="button"
             onClick={remove}
-            className="rounded-md px-1.5 py-1 pointer-coarse:min-h-11 text-[13px] text-ink-2 hover:bg-accent-wash hover:text-ink"
+            className="rounded-md px-1.5 py-1 pointer-coarse:min-h-11 text-[13px] text-ink-2 hover:bg-hover active:bg-press hover:text-ink"
           >
             {clear.label}
           </button>
         )}
+        <p id={hintId} aria-live="polite" className={far ? "basis-full text-[13px] font-medium text-ink" : "sr-only"}>
+          {far ? DATE_RANGE_ERROR : ""}
+        </p>
       </dd>
     </>
   );
