@@ -40,6 +40,24 @@ const VARIANTS = [
   { name: "phone", colorScheme: "light", viewport: { width: 390, height: 844 } },
 ] as const;
 
+// Pages whose layout changes at a wide window, checked again at 1920 in both themes.
+const WIDE_PAGES = ["/", "/login", "/dev/settings", "/dev/notes", "/dev/notes/00000000-0000-4000-8000-000000000020"];
+
+for (const colorScheme of ["light", "dark"] as const) {
+  test.describe(`wide ${colorScheme}`, () => {
+    test.use({ colorScheme, viewport: { width: 1920, height: 1080 } });
+
+    for (const path of WIDE_PAGES) {
+      test(`${path} has no serious or critical axe violations`, async ({ page }) => {
+        await page.goto(path);
+        await expect(page.locator("h1").first()).toBeVisible();
+        const { violations } = await new AxeBuilder({ page }).analyze();
+        expect(violations.filter((v) => v.impact === "serious" || v.impact === "critical").map((v) => v.id)).toEqual([]);
+      });
+    }
+  });
+}
+
 for (const variant of VARIANTS) {
   test.describe(variant.name, () => {
     test.use({ colorScheme: variant.colorScheme, viewport: variant.viewport });

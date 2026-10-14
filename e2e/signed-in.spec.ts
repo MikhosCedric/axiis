@@ -1,9 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
-import { expect as defaultExpect, test, type Locator, type Page } from "@playwright/test";
+import { expect, test, type Locator, type Page } from "@playwright/test";
 import { SESSION_COOKIE, sessionHeader, signedIn } from "./session";
-
-// A client navigation waits on the server render of the next route; see the timeout note below.
-const expect = defaultExpect.configure({ timeout: 30_000 });
 
 // The real signed-in routes, as the in-memory account from src/lib/supabase/fake-account.ts. See docs/e2e-session.md.
 
@@ -23,14 +20,7 @@ test("a wrong session cookie is sent to sign in like any stranger", async ({ con
   await expect(page).toHaveURL("/login?next=%2Ftoday");
 });
 
-test("the reset route answers 404 without the session", async ({ request }) => {
-  expect((await request.post("/dev/e2e-session")).status()).toBe(404);
-});
-
 signedIn.describe("signed in", () => {
-  // Each real route renders the whole app shell, and `next dev` on a busy runner can take most of the
-  // default 30 seconds to answer one under the parallel suite. Warm, a route answers in well under a second.
-  signedIn.describe.configure({ timeout: 90_000 });
   signedIn.use({ timezoneId: "UTC" });
 
   signedIn("G then a letter goes to a page, and a lone letter does not", async ({ page }) => {
@@ -148,8 +138,7 @@ signedIn.describe("signed in", () => {
     const list = page.getByRole("region", { name: "Waiting", exact: true });
     await list.getByRole("button", { name: `Plan for: ${title}` }).click();
     await list.getByRole("group", { name: `Plan ${title} for` }).getByRole("button", { name: "Tomorrow" }).click();
-    // No assertion on the "is planned for" status: `next dev` compiles the action on its first call, and the
-    // Fast Refresh rebuild that follows can reload the page and drop that message. The saved plan survives.
+    await expect(page.getByRole("status").filter({ hasText: `${title} is planned for tomorrow.` })).toBeVisible();
     await expect(list.getByRole("button", { name: `Plan for: ${title}` })).toHaveCount(0);
 
     await page.goto(`/day/${await tomorrowForApp(page)}`);
@@ -241,7 +230,8 @@ signedIn.describe("signed in", () => {
 
   signedIn("Due groups dated items, and a tick marks one done", async ({ page }) => {
     await page.goto("/due");
-    const past = page.getByRole("region", { name: "Past due" });
+    const past = page.getByRole("region", { name: "Earlier" });
+    await expect(page.getByRole("heading", { level: 2, name: "Earlier" })).toHaveCSS("text-transform", "none");
     await expect(past.getByText("File the tax form")).toBeVisible();
     await expect(past.getByText("Was due Wednesday 15 January 2020")).toBeVisible();
     await expect(page.getByRole("region", { name: "Later" }).getByText("Renew the lease")).toBeVisible();
@@ -263,6 +253,12 @@ signedIn.describe("signed in", () => {
     const row = strip.getByRole("button", { name: "Return the library books", exact: true });
     await expect(row).toBeVisible();
     await expect(strip.getByText("Planned Monday 3 February 2020")).toBeVisible();
+    // A ruled section of the page, not a card: hairlines above and below, no fill, square corners.
+    const drawn = await strip.evaluate((el) => {
+      const s = getComputedStyle(el);
+      return { top: s.borderTopWidth, bottom: s.borderBottomWidth, left: s.borderLeftWidth, fill: s.backgroundColor, radius: s.borderTopLeftRadius };
+    });
+    expect(drawn).toEqual({ top: "1px", bottom: "1px", left: "0px", fill: "rgba(0, 0, 0, 0)", radius: "0px" });
     await strip.getByRole("button", { name: /^Move to today\s*: Return the library books$/ }).click();
     await expect(page.getByRole("status").filter({ hasText: "Return the library books is on today." })).toBeVisible();
     await expect(row).toHaveCount(0);

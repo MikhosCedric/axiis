@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { cookies } from "next/headers";
-import { DENSITY_COOKIE, readDensity } from "@/components/shell/cookies";
+import { DENSITY_COOKIE, readDensity, readTheme, THEME_COOKIE } from "@/components/shell/cookies";
 import {
   addAreaAction,
   deleteAccountAction,
@@ -27,6 +27,7 @@ async function signedInEmail(): Promise<string | null> {
 }
 
 export default async function SettingsPage() {
+  const saved = await cookies();
   const [email, areas, tags] = await Promise.all([
     signedInEmail(),
     getAreasRepo().then((repo) => repo.list()),
@@ -41,7 +42,8 @@ export default async function SettingsPage() {
       tags={tags}
       tagActions={{ rename: renameTagAction, remove: deleteTagAction }}
       deleteAccount={deleteAccountAction}
-      density={readDensity((await cookies()).get(DENSITY_COOKIE)?.value)}
+      theme={readTheme(saved.get(THEME_COOKIE)?.value)}
+      density={readDensity(saved.get(DENSITY_COOKIE)?.value)}
     />
   );
 }
