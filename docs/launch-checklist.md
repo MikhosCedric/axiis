@@ -22,6 +22,7 @@ What the owner must do before Axiis is public. Each item is done when its check 
 - [ ] Add the redirect URL `https://<domain>/auth/callback`. See "Supabase Auth hardening" for what else the allowlist may hold.
 - [ ] Authentication, Emails: set the sender name, and configure custom SMTP (see "Supabase Auth hardening").
 - [ ] Apply `supabase/migrations/0006_quotas.sql` (and any later file) to the production project with `apply_migration`, after review. First check that no note body breaks the new 512 KB cap: `select id from items where pg_column_size(body) > 524288` must return no rows. Then check that no account already sits over a cap, since its next save would be refused: `select user_id, count(*) from items group by 1 order by 2 desc limit 1` (and the same for `links`, `tags`, `areas`).
+- [ ] Apply `supabase/migrations/0007_rate_limits.sql` after 0006, after review. It needs no data check: it adds four `(user_id, created_at)` indexes, a trigger that stamps `created_at` on insert and keeps it on update, and the per-minute limits. Check after: `select tgname from pg_trigger where tgname like '%\_rate' or tgname like '%pin_created_at'` lists eight triggers, and capturing one item in the app still works. A support script that must insert many rows for one account, or set `created_at`, runs with `set local session_replication_role = replica` in its transaction.
 - [ ] Run `get_advisors` (security and performance) on the production project and clear every warning.
 - [ ] Check: a magic link sent from the production site signs in and lands on `/today`.
 
@@ -33,8 +34,24 @@ Signup is open, so anyone can make Supabase send email and write rows. The datab
 - [ ] JWT signing keys (Project Settings, JWT Keys): migrate to asymmetric keys (ES256 or RS256), then revoke the legacy shared secret once nothing uses it.
 - [ ] PostgREST max rows (Project Settings, Data API): keep Max Rows at 1000 (the default) or lower, so one request cannot pull an unbounded reply. The export and the tag counts page until an empty page, so a lower cap does not cut them short.
 - [ ] Backups: move to Supabase Pro (daily backups, point-in-time recovery as an add-on) before the first real user. Check on the Database, Backups page that a backup is listed and restorable, since the free plan does not offer one.
-- [ ] Rate limits: add Vercel WAF rate-limit rules (Project, Firewall) on `POST /login` and `/auth/*`, for example 10 requests a minute per IP. The app has no rate limiting of its own, and an in-process counter would not work: Vercel runs many short-lived function instances that share no memory, so each would count separately and forget on a cold start. If a limit must live in code (per account rather than per IP), keep the counter in a shared store such as Upstash Redis (`@upstash/ratelimit`).
+- [ ] Rate limits. See "Rate limits" below.
 - [ ] Check: `curl -sI https://<domain>/login | grep -ci '^content-security-policy:'` prints `1`. Two headers would mean a second source (a Vercel header rule or `next.config.ts`) is back; `src/proxy.ts` must be the only one.
+
+## Rate limits
+What the code already bounds: migration `0007_rate_limits` caps how fast an account adds rows (120 items, 120 links, 60 tags, 30 areas a minute), `0006_quotas` caps how many it holds, and the login form waits 30 seconds between sign-in emails from one browser (a cookie, so a script can skip it). Nothing in the code limits requests per IP. An in-process counter would not work: Vercel runs many short-lived function instances that share no memory. Per-IP limits belong in the Vercel firewall and in Supabase Auth.
+
+- [ ] Vercel Firewall (Project, Firewall, Configure, New Rule, action "Rate Limit", key "IP Address", over the limit "Deny" with 429). Check that the plan includes rate-limit rules and the window lengths it allows; if it allows fewer rules than this, keep 1 and 2.
+  1. Sign-in. If Request Path equals `/login` and Method equals `POST`: 10 requests per 60 seconds. The email and Google buttons are server actions that POST to `/login`.
+  2. Auth routes. If Request Path starts with `/auth/`: 30 requests per 60 seconds. Covers the magic-link and Google callback and sign-out.
+  3. Export. If Request Path equals `/settings/export`: 5 requests per 10 minutes. One export reads every row the account has in pages of 1,000: a few for a typical account, a few hundred at the quotas (item_tags alone can reach 400,000 rows).
+  4. Every server action. If Header `next-action` exists: 300 requests per 60 seconds. Edits that only update rows (rename, move, tick done, note saves) have no database rate limit, so this is their bound.
+- [ ] Check: `for i in $(seq 1 12); do curl -s -o /dev/null -w '%{http_code}\n' -X POST https://<domain>/login; done` ends in `429`s.
+- [ ] Supabase Auth limits (Authentication, Rate Limits). The values to set:
+  - Emails sent per hour, for the whole project: 30 at launch with custom SMTP, raised as signups grow. This is the bound on what the email sender can be made to send.
+  - Sign-ups and sign-ins per 5 minutes per IP: 150. Token verifications per 5 minutes per IP: 150. Token refreshes per 5 minutes per IP: 600.
+  - Why higher than the defaults: Axiis calls Supabase Auth from Vercel functions (`signInWithOtp`, `exchangeCodeForSession`, and session refresh in `src/proxy.ts`), not from the browser. Supabase then probably counts every user against the few Vercel addresses in `hnd1`, so a per-IP limit is shared by everyone. This is inferred, not measured. After launch, look in Authentication, Logs for `429` or `over_request_rate_limit` and raise these if real users hit them. The per-IP limits that matter are the Vercel rules above.
+  - Authentication, Emails (or Providers, Email): keep the minimum interval between emails to one address at 60 seconds. The login form already turns Supabase's `429` into "Too many sign-in emails in a short time".
+- [ ] Turnstile CAPTCHA (see "Supabase Auth hardening") is the bound on signups from many IPs. Turn it on if the email count climbs with no matching sign-ins.
 
 ## Google sign-in
 - [ ] In Google Cloud Console create an OAuth client (Web application). Authorised redirect URI: `https://<project-ref>.supabase.co/auth/v1/callback`. Authorised JavaScript origin: the production origin.

@@ -12,6 +12,7 @@ import { buildDetail, clockOf, firstDay, retypable, subtaskPolicy, takesDue, TYP
 import { firstOccurrence, repeatSchema, ruleFor } from "./repeat";
 import { byName } from "@/domain/tag";
 import { byUse } from "@/features/tags/model";
+import { saveFailure } from "@/lib/quota";
 
 const titleSchema = z.string().trim().min(1).max(TITLE_MAX);
 const areaSchema = z.nullable(idSchema);
@@ -37,8 +38,8 @@ export function parseItemId(raw: unknown): ItemId | null {
 async function attempt(work: () => Promise<ActionResult | void>): Promise<ActionResult> {
   try {
     return (await work()) ?? { ok: true };
-  } catch {
-    return { ok: false, error: NOT_SAVED };
+  } catch (error) {
+    return { ok: false, error: saveFailure(error, NOT_SAVED) };
   }
 }
 
