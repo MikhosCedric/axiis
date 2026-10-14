@@ -25,7 +25,7 @@ const PLACEHOLDER = "Write what is worth keeping. Headings, lists and links are 
 const isAllowed = (url: string) => safeHref(url) !== null;
 
 const tool =
-  "grid size-8 pointer-coarse:size-11 flex-none place-items-center rounded-md text-ink-2 hover:bg-accent-wash hover:text-ink aria-pressed:bg-ink aria-pressed:text-paper";
+  "grid size-8 pointer-coarse:size-11 flex-none place-items-center rounded-md text-ink-2 hover:bg-hover active:bg-press hover:text-ink aria-pressed:bg-ink aria-pressed:text-paper";
 
 function Tool({ label, keys, pressed, onClick, children }: { label: string; keys?: string; pressed: boolean; onClick: () => void; children: ReactNode }) {
   return (
@@ -127,7 +127,7 @@ function LinkField({ editor, initial, onClose }: { editor: Editor; initial: stri
         aria-describedby={`${id}-hint`}
         className="min-w-0 flex-1 basis-48 rounded-md border border-field bg-sheet px-2 py-1 text-ink"
       />
-      <button type="button" onClick={apply} className="rounded-md px-2 py-1 font-medium text-ink hover:bg-accent-wash">
+      <button type="button" onClick={apply} className="rounded-md px-2 py-1 font-medium text-ink hover:bg-hover active:bg-press">
         {value.trim() ? "Apply" : "Remove link"}
       </button>
       <p id={`${id}-hint`} className="w-full text-[13px] text-ink-2">
@@ -239,7 +239,7 @@ export function RichText({
                 href={safeHref(marks.href) ?? undefined}
                 target="_blank"
                 rel={LINK_REL}
-                className="ml-1 inline-flex min-w-0 flex-none items-center gap-1.5 rounded-md px-2 py-1 text-[13px] text-ink-2 hover:bg-accent-wash hover:text-ink"
+                className="ml-1 inline-flex min-w-0 flex-none items-center gap-1.5 rounded-md px-2 py-1 text-[13px] text-ink-2 hover:bg-hover active:bg-press hover:text-ink"
               >
                 <OpenIcon />
                 Open link

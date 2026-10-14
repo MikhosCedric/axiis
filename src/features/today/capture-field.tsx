@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState, useTransition, type FormEvent } from "react";
-import { HelpHint } from "@/components/help-hint";
 import { captureAction as serverCapture } from "./actions";
 import type { ActionResult, CaptureResult } from "./commands";
 import { CAPTURE_EXAMPLES, CAPTURE_LEAD, capturedLine, firstCapturedLine, parseCapture, previewWords } from "./capture-syntax";
@@ -70,7 +69,7 @@ export function CaptureField({
   captureAction?: (title: string) => Promise<CaptureResult | ActionResult>;
   label?: string;
   placeholder?: string;
-  /** False where the capture takes its words as a name and plans nothing, so no preview or syntax help shows. */
+  /** False where the capture takes its words as a name and plans nothing, so no preview shows. */
   plans?: boolean;
   /** The account has never stored an item: lead with a line of help, show examples, and answer the first capture in full. */
   firstDay?: boolean;
@@ -154,17 +153,8 @@ export function CaptureField({
           C
         </kbd>
       </div>
-      <div className="mt-1.5 flex items-start gap-2.5">
-        {plans && (
-          <HelpHint id="capture-help" label="How capture reads days, times and tags" className="flex-none">
-            Put a day, a time or tags at the start or end, as in “dentist tomorrow 9:00 #health”. Days: today, tomorrow, a
-            weekday, on friday, by friday, next friday, in 3 days, 2026-12-24. Times: 9:00, 14:30, 9am, 2:30pm, at 9, or 9
-            and 0930 right after a day. A length after a time, for 45m or for 1h 30m; otherwise 30 minutes. Anything else
-            stays in the title, and so does a day after a word like for or until (“groceries for sunday”). A backslash
-            keeps a word as typed (\friday), and so do quotes around the whole line.
-          </HelpHint>
-        )}
-        <div className="min-h-6 min-w-0 flex-1 pt-0.5 text-[13px]">
+      <div className="mt-1.5">
+        <div className="min-h-6 min-w-0 pt-0.5 text-[13px]">
           {/* While the line reads as a plan, the preview takes the status line's place; the status stays for screen readers. */}
           <p id="capture-status" role="status" className={preview ? "sr-only" : status?.error ? "font-medium text-ink" : "text-ink-2"}>
             {pending ? "Saving" : status?.text}

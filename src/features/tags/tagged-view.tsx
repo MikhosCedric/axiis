@@ -45,10 +45,10 @@ export function TaggedView({
   return (
     <div className={selectedParam ? "min-[1180px]:grid min-[1180px]:grid-cols-[minmax(0,1fr)_328px]" : ""}>
       <div className="min-w-0 px-4 pt-6 pb-14 rail:px-9 rail:pt-8">
-        <Link href={indexHref} className="-ml-2 rounded-md px-2 py-1 text-[13px] text-ink-2 hover:bg-accent-wash hover:text-ink">
+        <Link href={indexHref} className="-ml-2 rounded-md px-2 py-1 text-[13px] text-ink-2 hover:bg-hover active:bg-press hover:text-ink">
           All tags
         </Link>
-        <h1 className="mt-2 font-serif text-[clamp(28px,3vw,40px)] leading-[1.1] font-medium tracking-[-0.015em] break-words">
+        <h1 className="mt-2 headline break-words">
           <span aria-hidden="true" className="text-ink-3">
             #
           </span>
@@ -94,7 +94,7 @@ export function TaggedView({
                       type="button"
                       aria-pressed={selected}
                       onClick={() => select(row.id)}
-                      className={`cursor-pointer rounded text-left break-words hover:underline ${
+                      className={`cursor-pointer rounded text-left tap-y break-words hover:underline ${
                         done ? "font-normal text-ink-3" : "font-medium text-ink"
                       }`}
                     >

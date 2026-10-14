@@ -42,7 +42,7 @@ function Choice<T extends string>({
             type="button"
             aria-pressed={value === option}
             onClick={() => onChoose(option)}
-            className={`px-3.5 py-2 font-medium pointer-coarse:py-3 ${value === option ? "bg-ink text-paper" : "text-ink-2 hover:bg-accent-wash"}`}
+            className={`px-3.5 py-2 font-medium pointer-coarse:py-3 ${value === option ? "bg-ink text-paper" : "text-ink-2 hover:bg-hover active:bg-press"}`}
           >
             {names[option].name}
           </button>

@@ -706,21 +706,17 @@ test.describe("on a phone", () => {
   });
 });
 
-test("with a mouse, the Score keeps its keyboard help behind a ? and shows no press-and-hold hint", async ({ page }) => {
+test("with a mouse, the Score's help lives in the Guide and shows no press-and-hold hint", async ({ page }) => {
   await page.goto("/dev/score");
-  const keys = page.getByText(/^Drag a beam to move it/);
-  await expect(keys).toBeHidden();
-  const help = page.getByRole("button", { name: "Keyboard help" });
-  await help.hover();
-  await expect(keys).toBeVisible();
-  expect(await keys.evaluate((el) => el.getBoundingClientRect().width)).toBeGreaterThan(100);
-  await page.mouse.move(0, 0);
-  await expect(keys).toBeHidden();
-  await help.focus();
-  await expect(keys).toBeVisible();
+  // Only a description now: clipped to a pixel, so nothing prints beside the Score.
+  expect((await page.getByText(/^Drag a beam to move it/).boundingBox())!.width).toBeLessThanOrEqual(1);
+  await expect(page.getByRole("button", { name: /^Design sync, / })).toHaveAccessibleDescription(/Space marks it done/);
+  await page.keyboard.press("?");
+  const guide = page.getByRole("dialog", { name: "Guide" });
+  await expect(guide.getByRole("heading", { name: "Moving beams" })).toBeVisible();
+  await expect(guide.getByRole("heading", { name: "Keyboard shortcuts" })).toBeVisible();
   await page.keyboard.press("Escape");
-  await expect(keys).toBeHidden();
-  await expect(page.getByRole("button", { name: "Keyboard help" })).toHaveAttribute("aria-expanded", "false");
+  await expect(guide).toBeHidden();
   await expect(page.getByText(/^Drag one onto an area/)).toBeVisible();
   await expect(page.locator("kbd", { hasText: /^C$/ })).toBeVisible();
   await expect(page.getByText(/Press and hold/)).toHaveCount(2);
@@ -739,13 +735,24 @@ test.describe("on a touch phone", () => {
     await expect(page.getByText(/^Drag one onto an area/)).toBeHidden();
     await expect(page.locator("kbd", { hasText: /^C$/ })).toBeHidden();
 
-    const keys = page.getByText(/^Drag a beam to move it/);
-    await expect(keys).toBeHidden();
-    await page.getByRole("button", { name: "Keyboard help" }).tap();
-    await expect(keys).toBeVisible();
+    expect((await page.getByText(/^Drag a beam to move it/).boundingBox())!.width).toBeLessThanOrEqual(1);
     await expect(page.getByRole("button", { name: /^Design sync, / })).toHaveAccessibleDescription(
       /Space marks it done/,
     );
+    const button = page.getByRole("button", { name: "Guide" });
+    const box = await button.boundingBox();
+    expect(box!.height).toBeGreaterThanOrEqual(44);
+    await button.tap();
+    const guide = page.getByRole("dialog", { name: "Guide" });
+    await expect(guide.getByRole("heading", { name: "Moving beams" })).toBeInViewport();
+    const edges = await guide.evaluate((el) => {
+      const r = el.getBoundingClientRect();
+      return { left: r.left, right: r.right, width: window.innerWidth };
+    });
+    expect(edges.left).toBeGreaterThanOrEqual(0);
+    expect(edges.right).toBeLessThanOrEqual(edges.width);
+    await guide.getByRole("button", { name: "Close" }).tap();
+    await expect(guide).toBeHidden();
   });
 
   test("the detail panel's icon buttons are 44px touch targets, and a tag's remove button at least 24px", async ({

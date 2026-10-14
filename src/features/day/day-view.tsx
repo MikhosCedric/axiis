@@ -7,6 +7,7 @@ import { selectedIn, type ItemKey } from "@/domain/item-key";
 import { setTimeAction } from "@/features/detail/actions";
 import { DetailAside } from "@/features/detail/detail-aside";
 import type { TimeOfDay } from "@/features/detail/model";
+import { GuideButton, type GuideTopic } from "@/features/palette/guide";
 import { placeAction } from "@/features/score/actions";
 import type { Placement } from "@/features/score/drop";
 import { ListView } from "@/features/score/list-view";
@@ -41,6 +42,8 @@ const serverActions: DayActions = {
 type Status = { text: string; error: boolean; offer?: SeriesTimeOffer };
 
 type Patch = { id: ItemKey; changes: Partial<Pick<ShownItem, "schedule" | "areaId" | "status" | "completedAt">> };
+
+const DAY_GUIDE: GuideTopic[] = ["capture", "score"];
 
 const MODES: { mode: DayViewMode; label: string }[] = [
   { mode: "score", label: "Score" },
@@ -190,7 +193,7 @@ export function DayView({
           {/* A server element can arrive late as a lazy chunk, which React then checks for a key among its siblings. */}
           <Fragment key="nav">{nav}</Fragment>
           <div className="min-w-0">
-            <h1 className="font-serif text-[clamp(28px,3vw,40px)] leading-[1.1] font-medium tracking-[-0.015em] text-balance">
+            <h1 className="headline">
               <time dateTime={date}>{formatDayHeading(date)}</time>
             </h1>
             <p className="mt-2.5 text-[15px] text-ink-2">{summaryLine(view, isToday)}</p>
@@ -208,12 +211,13 @@ export function DayView({
                 type="button"
                 aria-pressed={shownMode === m}
                 onClick={() => switchMode(m)}
-                className={`px-3.5 py-2 font-medium pointer-coarse:py-3 ${shownMode === m ? "bg-ink text-paper" : "text-ink-2 hover:bg-accent-wash"}`}
+                className={`px-3.5 py-2 font-medium pointer-coarse:py-3 ${shownMode === m ? "bg-ink text-paper" : "text-ink-2 hover:bg-hover active:bg-press"}`}
               >
                 {label}
               </button>
             ))}
           </div>
+          <GuideButton topics={DAY_GUIDE} className="ml-auto" />
         </div>
 
         <p
@@ -226,7 +230,7 @@ export function DayView({
             <button
               type="button"
               onClick={() => timeSeries(status.offer!)}
-              className="-mx-1 rounded px-1 font-medium text-ink underline decoration-rule underline-offset-2 hover:bg-accent-wash hover:decoration-ink"
+              className="-mx-1 rounded px-1 font-medium text-ink underline decoration-rule underline-offset-2 hover:bg-hover active:bg-press hover:decoration-ink"
             >
               Same time {status.offer.cadence}
             </button>

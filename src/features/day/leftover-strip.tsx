@@ -8,7 +8,7 @@ import { moveLeftoverAction } from "./leftover-actions";
 import { leftoverHeading, type LeftoverData } from "./leftover-model";
 
 const button =
-  "rounded-md px-2.5 py-1 font-medium text-ink-2 hover:bg-accent-wash hover:text-ink pointer-coarse:py-2.5 disabled:opacity-50";
+  "rounded-md px-2.5 py-1 font-medium text-ink-2 hover:bg-hover active:bg-press hover:text-ink pointer-coarse:min-h-11 disabled:opacity-50";
 
 /**
  * What was planned for an earlier day and is still open, with a way to bring it to today. Quiet on
@@ -54,7 +54,7 @@ export function LeftoverStrip({
           <li key={row.id} className="flex items-center gap-3 border-t border-rule-soft py-1.5 first:border-t-0">
             <Glyph type={row.type} state="planned" />
             <div className="min-w-0 flex-1">
-              <button type="button" onClick={() => onSelect(row.id)} className="cursor-pointer rounded text-left font-medium break-words hover:underline">
+              <button type="button" onClick={() => onSelect(row.id)} className="cursor-pointer rounded text-left tap-y font-medium break-words hover:underline">
                 {row.title}
               </button>
               <span className="ml-2 text-xs text-ink-3">{row.planned}</span>

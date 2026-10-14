@@ -66,7 +66,7 @@ export function TagsSection({
               />
               <Link
                 href={hrefFor(tag.name)}
-                className="rounded-md px-2 py-1.5 text-[13px] whitespace-nowrap text-ink-3 tabular hover:bg-accent-wash hover:text-ink"
+                className="inline-flex items-center rounded-md px-2 py-1.5 text-[13px] whitespace-nowrap text-ink-3 tabular hover:bg-hover active:bg-press hover:text-ink pointer-coarse:min-h-11"
               >
                 {openCount(tag.open)}
                 <span className="sr-only"> with #{tag.name}</span>

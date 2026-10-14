@@ -32,7 +32,7 @@ export function LinkedNotes({ itemId, notes, actions }: { itemId: string; notes:
         <ul className="grid grid-cols-[minmax(0,1fr)]">
           {notes.map((n) => (
             <li key={n.linkId}>
-              <Link href={n.href} className="-ml-2 block truncate rounded-md px-2 py-1 hover:bg-accent-wash">
+              <Link href={n.href} className="-ml-2 block truncate rounded-md px-2 py-1 hover:bg-hover active:bg-press">
                 {n.title}
               </Link>
             </li>
@@ -43,7 +43,7 @@ export function LinkedNotes({ itemId, notes, actions }: { itemId: string; notes:
         type="button"
         onClick={newNote}
         disabled={pending}
-        className="-ml-2 inline-flex items-center gap-2 justify-self-start rounded-md px-2 py-1 font-medium text-ink-2 hover:bg-accent-wash hover:text-ink disabled:opacity-60"
+        className="-ml-2 inline-flex items-center gap-2 justify-self-start rounded-md px-2 py-1 font-medium text-ink-2 hover:bg-hover active:bg-press hover:text-ink disabled:opacity-60"
       >
         <PlusIcon />
         New note linked to this

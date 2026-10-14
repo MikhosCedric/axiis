@@ -10,7 +10,7 @@ import { anchorDay, formatWeekHeading, weekHref, weekNavTarget, weekOf } from ".
 import { SpanSwitch } from "./span-switch";
 
 const step =
-  "inline-flex h-9 flex-none items-center gap-1.5 rounded-md border border-rule px-3 font-medium text-ink hover:bg-paper-2";
+  "inline-flex h-9 pointer-coarse:h-11 flex-none items-center gap-1.5 rounded-md border border-rule px-3 font-medium text-ink hover:bg-hover active:bg-press";
 
 function Chevron({ back }: { back?: boolean }) {
   return (
@@ -52,16 +52,19 @@ export function WeekNav({ days, today }: { days: LocalDate[]; today: LocalDate }
   return (
     <nav aria-label="Week" className="mb-5 flex flex-wrap items-center gap-2">
       <SpanSwitch current="week" dayHref={dayHref(anchorDay(days, today), today, "score")} weekHref={weekHref(start, today)} />
-      <Link href={weekHref(previous, today)} className={step} aria-keyshortcuts="[" title="Previous week ( [ )">
-        <Chevron back />
-        <span aria-hidden="true">Previous</span>
-        <span className="sr-only">Previous week, {formatWeekHeading(weekOf(previous))}</span>
-      </Link>
-      <Link href={weekHref(next, today)} className={step} aria-keyshortcuts="]" title="Next week ( ] )">
-        <span aria-hidden="true">Next</span>
-        <Chevron />
-        <span className="sr-only">Next week, {formatWeekHeading(weekOf(next))}</span>
-      </Link>
+      {/* One pair, so Previous and Next never wrap apart. */}
+      <span className="inline-flex flex-none">
+        <Link href={weekHref(previous, today)} className={`${step} rounded-r-none`} aria-keyshortcuts="[" title="Previous week ( [ )">
+          <Chevron back />
+          <span aria-hidden="true">Previous</span>
+          <span className="sr-only">Previous week, {formatWeekHeading(weekOf(previous))}</span>
+        </Link>
+        <Link href={weekHref(next, today)} className={`${step} -ml-px rounded-l-none`} aria-keyshortcuts="]" title="Next week ( ] )">
+          <span aria-hidden="true">Next</span>
+          <Chevron />
+          <span className="sr-only">Next week, {formatWeekHeading(weekOf(next))}</span>
+        </Link>
+      </span>
       <WeekPicker start={start} onPick={(picked) => router.push(weekHref(picked, today))} />
       {!isThisWeek && (
         <Link href="/week" aria-keyshortcuts="t" title="Back to this week ( T )" className={step}>
@@ -115,7 +118,7 @@ function WeekPicker({ start, onPick }: { start: LocalDate; onPick: (date: LocalD
           if (typed.current) commit(e.currentTarget.value, e.currentTarget);
           typed.current = false;
         }}
-        className="h-9 rounded-md border border-rule bg-sheet px-2.5 text-ink tabular focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-accent"
+        className="h-9 pointer-coarse:h-11 rounded-md border border-rule bg-sheet px-2.5 text-ink tabular focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-accent"
       />
     </>
   );

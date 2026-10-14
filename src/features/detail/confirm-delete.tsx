@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { DeleteIcon } from "./icons";
 
-const quiet = "rounded-md px-2 py-1 font-medium hover:bg-accent-wash";
+const quiet = "rounded-md px-2 py-1 font-medium hover:bg-hover active:bg-press";
 
 /** Delete with one inline "Yes / No" step. Focus lands on No so a stray Enter keeps the item. */
 export function ConfirmDelete({
@@ -77,7 +77,7 @@ export function ConfirmDelete({
       onClick={() => setAsking(true)}
       className={
         compact
-          ? "grid size-8 pointer-coarse:size-11 place-items-center rounded-md text-ink-3 hover:bg-accent-wash hover:text-ink"
+          ? "grid size-8 pointer-coarse:size-11 place-items-center rounded-md text-ink-3 hover:bg-hover active:bg-press hover:text-ink"
           : `${quiet} -ml-2 inline-flex items-center gap-2 text-ink-2 hover:text-ink`
       }
     >

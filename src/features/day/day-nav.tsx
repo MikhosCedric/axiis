@@ -12,7 +12,7 @@ import { dayHref, isTypingTarget, navTarget, shortcutAction } from "./nav";
 import type { DayViewMode } from "./types";
 
 const step =
-  "inline-flex h-9 flex-none items-center gap-1.5 rounded-md border border-rule px-3 font-medium text-ink hover:bg-paper-2";
+  "inline-flex h-9 pointer-coarse:h-11 flex-none items-center gap-1.5 rounded-md border border-rule px-3 font-medium text-ink hover:bg-hover active:bg-press";
 
 function Chevron({ back }: { back?: boolean }) {
   return (
@@ -52,23 +52,26 @@ export function DayNav({ date, today, mode }: { date: LocalDate; today: LocalDat
   return (
     <nav aria-label="Day" className="mb-5 flex flex-wrap items-center gap-2">
       <SpanSwitch current="day" dayHref={dayHref(date, today, mode)} weekHref={weekHref(date, today)} />
-      <Link href={dayHref(previous, today, mode)} className={step} aria-keyshortcuts="[" title="Previous day ( [ )">
-        <Chevron back />
-        <span aria-hidden="true">Previous</span>
-        <span className="sr-only">Previous day, {formatDayHeading(previous)}</span>
-      </Link>
-      <Link href={dayHref(next, today, mode)} className={step} aria-keyshortcuts="]" title="Next day ( ] )">
-        <span aria-hidden="true">Next</span>
-        <Chevron />
-        <span className="sr-only">Next day, {formatDayHeading(next)}</span>
-      </Link>
+      {/* One pair, so Previous and Next never wrap apart. */}
+      <span className="inline-flex flex-none">
+        <Link href={dayHref(previous, today, mode)} className={`${step} rounded-r-none`} aria-keyshortcuts="[" title="Previous day ( [ )">
+          <Chevron back />
+          <span aria-hidden="true">Previous</span>
+          <span className="sr-only">Previous day, {formatDayHeading(previous)}</span>
+        </Link>
+        <Link href={dayHref(next, today, mode)} className={`${step} -ml-px rounded-l-none`} aria-keyshortcuts="]" title="Next day ( ] )">
+          <span aria-hidden="true">Next</span>
+          <Chevron />
+          <span className="sr-only">Next day, {formatDayHeading(next)}</span>
+        </Link>
+      </span>
       <DatePicker date={date} onPick={(picked) => router.push(dayHref(picked, today, mode))} />
       {date !== today && (
         <Link
           href={dayHref(today, today, mode)}
           aria-keyshortcuts="t"
           title="Back to today ( T )"
-          className="inline-flex h-9 items-center rounded-md border border-rule px-3 font-medium text-ink hover:bg-paper-2"
+          className="inline-flex h-9 pointer-coarse:h-11 items-center rounded-md border border-rule px-3 font-medium text-ink hover:bg-hover active:bg-press"
         >
           Today
         </Link>
@@ -121,7 +124,7 @@ function DatePicker({ date, onPick }: { date: LocalDate; onPick: (date: LocalDat
           if (typed.current) commit(e.currentTarget.value, e.currentTarget);
           typed.current = false;
         }}
-        className="h-9 rounded-md border border-rule bg-sheet px-2.5 text-ink tabular"
+        className="h-9 pointer-coarse:h-11 rounded-md border border-rule bg-sheet px-2.5 text-ink tabular"
       />
     </>
   );

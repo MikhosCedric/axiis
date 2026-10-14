@@ -1,5 +1,6 @@
 "use client";
 
+import { PaletteProvider } from "@/features/palette/palette";
 import { useSearchParams } from "next/navigation";
 import { startTransition, useState } from "react";
 import type { Area, Item } from "@/domain/item";
@@ -43,7 +44,8 @@ export function InboxHarness({ items, areas, initial }: { items: Item[]; areas: 
   const item = fake.items.find((i) => i.id === selected);
 
   return (
-    <>
+    // The provider gives the Guide button its dialog, as the app layout does.
+    <PaletteProvider today={data.today}>
       <div className="flex flex-wrap items-center gap-4 border-b border-rule bg-paper-2 px-4 py-2 text-[13px] text-ink-2">
         <span>Inbox harness with fixture data in {data.timeZone}. Saves stay in this tab.</span>
         <label className="flex items-center gap-2">
@@ -66,6 +68,6 @@ export function InboxHarness({ items, areas, initial }: { items: Item[]; areas: 
           ) : null
         }
       />
-    </>
+    </PaletteProvider>
   );
 }

@@ -43,7 +43,7 @@ export function SettingsView({
       className="max-w-[640px] px-4 pt-6 pb-16 rail:px-9 rail:pt-8 min-[1180px]:grid min-[1180px]:max-w-[968px] min-[1180px]:grid-cols-[11rem_minmax(0,1fr)] min-[1180px]:gap-x-12"
     >
       <header className="min-[1180px]:col-span-2">
-        <h1 className="font-serif text-[clamp(28px,3vw,40px)] leading-[1.1] font-medium tracking-[-0.015em]">Settings</h1>
+        <h1 className="headline">Settings</h1>
         <p className="mt-2.5 text-[15px] break-words text-ink-2">
           {email ? (
             <>
@@ -59,7 +59,7 @@ export function SettingsView({
         <ul className="border-t border-rule">
           {PARTS.map((part) => (
             <li key={part.id} className="border-b border-rule-soft">
-              <a href={`#${part.id}`} className="block rounded-md px-2 py-2 font-medium text-ink-2 no-underline hover:bg-accent-wash hover:text-ink">
+              <a href={`#${part.id}`} className="block rounded-md px-2 py-2 font-medium text-ink-2 no-underline hover:bg-hover active:bg-press hover:text-ink">
                 {part.name}
               </a>
             </li>
@@ -92,7 +92,7 @@ export function SettingsView({
             <a
               href={EXPORT_PATH}
               download
-              className="mt-4 inline-block rounded-lg border border-rule px-3.5 py-2 font-medium text-ink no-underline hover:bg-accent-wash"
+              className="mt-4 inline-flex items-center rounded-lg border border-rule px-3.5 py-2 font-medium text-ink no-underline hover:bg-hover active:bg-press pointer-coarse:min-h-11"
             >
               Download export
             </a>
