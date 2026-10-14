@@ -258,6 +258,8 @@ export function ScoreView({
       <div
         ref={scroller}
         onScroll={syncAxis}
+        // Present once the axis has been fitted to the width it was measured at, after hydration.
+        data-axis-measured={measured > 0 ? "" : undefined}
         tabIndex={empty ? 0 : undefined}
         role={empty ? "region" : undefined}
         aria-label={empty ? "Hours of the day" : undefined}

@@ -1,3 +1,4 @@
+import { devHarnessEnabled } from "@/lib/dev-harness";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { DAY_VIEW_PARAM } from "@/features/day/types";
@@ -13,7 +14,7 @@ export const metadata: Metadata = { title: "Score harness" };
  * `?tray=empty` leaves nothing waiting; `?firstday` starts from an account that has never stored an item.
  */
 export default async function ScoreHarnessPage({ searchParams }: PageProps<"/dev/score">) {
-  if (process.env.NODE_ENV === "production") notFound();
+  if (!devHarnessEnabled()) notFound();
   const params = await searchParams;
   const one = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v);
   const timeZone = resolveTimeZone(one(params.tz));
