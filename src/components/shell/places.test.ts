@@ -8,7 +8,7 @@ const today = "2026-10-06" as LocalDate;
 describe("PLACES", () => {
   it("groups the rail's places as Plan, Capture and Library", () => {
     const grouped = Object.fromEntries(PLACE_GROUPS.map((g) => [g, PLACES.filter((p) => p.group === g).map((p) => p.label)]));
-    expect(grouped).toEqual({ Plan: ["Today", "Week", "Due"], Capture: ["Inbox"], Library: ["Lists", "Notes", "Tags"] });
+    expect(grouped).toEqual({ Plan: ["Today", "Week", "Month", "Due"], Capture: ["Inbox"], Library: ["Lists", "Notes", "Tags"] });
   });
 
   it("keeps four tabs for the phone bar", () => {
@@ -22,6 +22,7 @@ describe("PLACES", () => {
       expect(p.here(p.href, today), p.label).toBe(true);
     }
     expect(PLACES.find((p) => p.id === "today")!.here(`/day/${today}`, today)).toBe(true);
+    expect(PLACES.find((p) => p.id === "month")!.here("/month/2026-11", today)).toBe(true);
   });
 
   it("keeps Search and Settings off the rail's lists but reachable by G and a key", () => {
@@ -29,6 +30,7 @@ describe("PLACES", () => {
     expect(GO_PLACES.map((p) => [p.key, p.href])).toEqual([
       ["t", "/today"],
       ["w", "/week"],
+      ["m", "/month"],
       ["d", "/due"],
       ["i", "/inbox"],
       ["l", "/lists"],

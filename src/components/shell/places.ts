@@ -1,13 +1,14 @@
 import type { LocalDate } from "@/domain/item";
 import { DUE_PATH } from "@/features/due/model";
 import { LISTS_PATH } from "@/features/lists/model";
+import { MONTH_PATH } from "@/features/month/model";
 import { TAGS_PATH } from "@/features/tags/model";
 
 /** The rail's headings, in the order they stand. */
 export const PLACE_GROUPS = ["Plan", "Capture", "Library"] as const;
 export type PlaceGroup = (typeof PLACE_GROUPS)[number];
 
-export type PlaceId = "today" | "week" | "due" | "inbox" | "lists" | "notes" | "tags" | "search" | "settings";
+export type PlaceId = "today" | "week" | "month" | "due" | "inbox" | "lists" | "notes" | "tags" | "search" | "settings";
 
 /**
  * Every page a person can go to, for the rail, the phone bar, the palette and the G-then-letter keys.
@@ -45,6 +46,17 @@ export const PLACES: readonly Place[] = [
     here: (p, today) => p === "/today" || p === `/day/${today}`,
   },
   { id: "week", label: "Week", href: "/week", hint: "Seven days at a glance", group: "Plan", tab: true, go: "w", also: ["planner"], here: under("/week") },
+  {
+    id: "month",
+    label: "Month",
+    href: MONTH_PATH,
+    hint: "The whole month at a glance",
+    group: "Plan",
+    tab: false,
+    go: "m",
+    also: ["calendar"],
+    here: under(MONTH_PATH),
+  },
   {
     id: "due",
     label: "Due",

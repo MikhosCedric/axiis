@@ -48,6 +48,19 @@ describe("captureTask", () => {
     expect(calls.create[1].schedule).toEqual({ kind: "day", on: "2026-10-08" });
   });
 
+  it("lands a line that names no day on the default day, and lets a named day win", async () => {
+    const { repo, calls } = fakeRepo();
+    const on = "2026-11-20" as LocalDate;
+    await captureTask(repo, "dentist", NOW, LONDON, on);
+    await captureTask(repo, "dentist 9:00", NOW, LONDON, on);
+    await captureTask(repo, "dentist tomorrow", NOW, LONDON, on);
+    expect(calls.create.map((c) => c.schedule)).toEqual([
+      { kind: "day", on: "2026-11-20" },
+      { kind: "timed", start: new Date("2026-11-20T09:00:00Z"), end: new Date("2026-11-20T09:30:00Z") },
+      { kind: "day", on: "2026-10-08" },
+    ]);
+  });
+
   it("puts a time with no day on today, and names a typed length's end", async () => {
     const { repo, calls } = fakeRepo();
     expect(await captureTask(repo, "gym 22:00 for 45m", NOW, LONDON)).toMatchObject({ landed: { on: "2026-10-07", day: "today", time: { start: "22:00", end: "22:45" } } });

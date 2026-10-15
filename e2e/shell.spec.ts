@@ -35,10 +35,11 @@ test.describe("the rail", () => {
     await page.goto("/dev/palette");
     const rail = page.getByRole("navigation", { name: "Primary" });
     await expect(rail.getByRole("heading")).toHaveText(["Plan", "Capture", "Library", "Open today, by area"]);
-    await expect(rail.getByRole("list", { name: "Plan" }).getByRole("link")).toHaveText(["Today", "Week", "Due"]);
+    await expect(rail.getByRole("list", { name: "Plan" }).getByRole("link")).toHaveText(["Today", "Week", "Month", "Due"]);
     await expect(rail.getByRole("list", { name: "Capture" }).getByRole("link")).toHaveText(["Inbox"]);
     await expect(rail.getByRole("list", { name: "Library" }).getByRole("link")).toHaveText(["Lists", "Notes", "Tags"]);
     await expect(rail.getByRole("link", { name: "Inbox" })).toHaveAttribute("title", "Waiting for a day");
+    await expect(rail.getByRole("link", { name: "Month" })).toHaveAttribute("title", "The whole month at a glance");
     await expect(rail.getByRole("region", { name: "Open today, by area" }).getByRole("link")).toHaveCount(0);
     await expect(rail.getByRole("link", { name: "Search" })).toHaveCount(0);
   });
@@ -140,12 +141,15 @@ test.describe("shell on a phone", () => {
     const more = nav.getByRole("button", { name: "More" });
     await more.click();
     const sheet = page.getByRole("dialog", { name: "More" });
-    await expect(sheet.getByRole("heading")).toHaveText(["Library", "Account"]);
+    await expect(sheet.getByRole("heading")).toHaveText(["Plan", "Library", "Account"]);
+    await expect(sheet.getByRole("list", { name: "Plan" }).getByRole("link")).toHaveText([/^Month/]);
+    await expect(sheet.getByRole("link", { name: "Month", exact: true })).toHaveAccessibleDescription("The whole month at a glance");
     await expect(sheet.getByRole("list", { name: "Library" }).getByRole("link")).toHaveText([/^Lists/, /^Notes/, /^Tags/]);
     await expect(sheet.getByRole("link", { name: "Lists", exact: true })).toHaveAccessibleDescription("Checklists");
     await expect(sheet.getByRole("list", { name: "Account" }).getByRole("listitem")).toHaveText([/Theme/, /^Settings/, /Sign out/]);
     for (const control of [
       sheet.getByRole("link", { name: "Search", exact: true }),
+      sheet.getByRole("link", { name: "Month", exact: true }),
       sheet.getByRole("link", { name: "Lists", exact: true }),
       sheet.getByRole("link", { name: "Notes", exact: true }),
       sheet.getByRole("link", { name: "Tags", exact: true }),
