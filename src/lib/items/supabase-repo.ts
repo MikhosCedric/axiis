@@ -290,24 +290,12 @@ export class SupabaseItemsRepo implements ItemsRepo {
     return unwrap("listTags", await this.db.from("tags").select(TAG_COLUMNS), tagList);
   }
 
-  /** Open counts per tag id, from the links whose item is open and live. */
+  /** Open counts per tag id, one row per tag with any (`tag_open_counts`, migration 0008), so one request is complete. */
   private async openCounts(): Promise<Map<string, number>> {
-    const links = await readAll(
-      "listTags",
-      (from, to) =>
-        this.db
-          .from("item_tags")
-          .select("tag_id,items!inner(id)", { count: "exact" })
-          .eq("items.status", "open")
-          .is("items.deleted_at", null)
-          .order("item_id")
-          .order("tag_id")
-          .range(from, to),
-      (raw) => z.array(z.object({ tag_id: z.uuid() })).parse(raw),
+    const rows = unwrap("listTags", await this.db.rpc("tag_open_counts"), (raw) =>
+      z.array(z.object({ tag_id: z.uuid(), open: z.number().int() })).parse(raw),
     );
-    const counts = new Map<string, number>();
-    for (const { tag_id } of links) counts.set(tag_id, (counts.get(tag_id) ?? 0) + 1);
-    return counts;
+    return new Map(rows.map((r) => [r.tag_id, r.open]));
   }
 
   async listTags(): Promise<TagSummary[]> {
