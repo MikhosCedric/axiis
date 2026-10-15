@@ -62,9 +62,12 @@ signedIn.describe("the Month", () => {
     const first = cell(page, /^Friday 1 May/);
     await expect(first).toHaveAttribute("tabindex", "0");
     await expect(page.getByRole("gridcell").and(page.locator("[tabindex='0']"))).toHaveCount(1);
-    await first.focus();
-    await page.keyboard.press("ArrowRight");
-    await expect(cell(page, /^Saturday 2 May/)).toBeFocused();
+    // The grid's keys answer once React has hydrated it, so a press before then is tried again.
+    await expect(async () => {
+      await first.focus();
+      await page.keyboard.press("ArrowRight");
+      await expect(cell(page, /^Saturday 2 May/)).toBeFocused({ timeout: 1000 });
+    }).toPass();
     await page.keyboard.press("ArrowDown");
     await expect(cell(page, /^Saturday 9 May/)).toBeFocused();
     await page.keyboard.press("Home");
@@ -94,9 +97,11 @@ signedIn.describe("the Month", () => {
 
   signedIn("captures onto the day in focus, and a drag moves the item to another day", async ({ page }) => {
     await page.goto("/month/2099-08");
-    await cell(page, /^Saturday 1 August/).focus();
-    await page.keyboard.press("ArrowRight");
-    await expect(page.getByRole("textbox", { name: "Capture for Sunday 2 August" })).toBeVisible();
+    await expect(async () => {
+      await cell(page, /^Saturday 1 August/).focus();
+      await page.keyboard.press("ArrowRight");
+      await expect(page.getByRole("textbox", { name: "Capture for Sunday 2 August" })).toBeVisible({ timeout: 1000 });
+    }).toPass();
     await page.getByRole("textbox", { name: "Capture for Sunday 2 August" }).fill("Water the garden 7:30");
     await page.keyboard.press("Enter");
     await expect(page.getByText("Planned for Sunday 2 August, 07:30.")).toBeVisible();
