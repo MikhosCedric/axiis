@@ -87,6 +87,33 @@ export function monthNavTarget(action: MonthNavAction, month: YearMonth, today: 
   return parseYearMonth(to) ?? month;
 }
 
+/** Months in a row of the Jump to month picker. */
+export const PICKER_COLUMNS = 3;
+
+/** Where a key press moves the month picker's focus, or null for any other key or a move past the span Axiis plans on. */
+export function pickerStep(key: string, from: YearMonth): YearMonth | null {
+  const year = from.slice(0, 4);
+  const to: Record<string, YearMonth> = {
+    ArrowLeft: addMonths(from, -1),
+    ArrowRight: addMonths(from, 1),
+    ArrowUp: addMonths(from, -PICKER_COLUMNS),
+    ArrowDown: addMonths(from, PICKER_COLUMNS),
+    PageUp: addMonths(from, -12),
+    PageDown: addMonths(from, 12),
+    Home: `${year}-01` as YearMonth,
+    End: `${year}-12` as YearMonth,
+  };
+  return key in to ? parseYearMonth(to[key]) : null;
+}
+
+/** The same month `years` away, or the nearest month inside the span when that is past it. */
+export function stepYear(month: YearMonth, years: number): YearMonth {
+  const to = addMonths(month, years * 12);
+  const first = monthOf(FIRST_DATE);
+  const last = monthOf(LAST_DATE);
+  return to < first ? first : to > last ? last : to;
+}
+
 const monthYear = new Intl.DateTimeFormat("en-GB", { month: "long", year: "numeric", timeZone: "UTC" });
 
 /** "October 2026". */
