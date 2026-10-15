@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { parseItemKey } from "@/domain/item-key";
+import { useClock } from "@/components/shell/clock-context";
 import { loadDetail } from "@/features/detail/commands";
 import { DetailSheet, MissingItem } from "@/features/detail/detail-sheet";
 import type { DetailActions, DetailView } from "@/features/detail/model";
@@ -27,23 +28,24 @@ export function ListsHarness({ empty, itemId }: { empty: boolean; itemId: string
   const [version, setVersion] = useState(0);
   const [failing, setFailing] = useState(settings.failing);
   const [data, setData] = useState<ListsData | null>(null);
+  const clock = useClock();
   const [loaded, setLoaded] = useState<{ key: string; view: DetailView | null } | null>(null);
 
   useEffect(() => {
-    void loadLists(store.repo, TZ).then(setData);
-  }, [store, version]);
+    void loadLists(store.repo, TZ, clock).then(setData);
+  }, [store, version, clock]);
 
   useEffect(() => {
     const key = parseItemKey(itemId);
     if (!key || !itemId) return;
     let live = true;
-    void loadDetail(store.repo, key, new Date(), TZ).then((view) => {
+    void loadDetail(store.repo, key, new Date(), TZ, clock).then((view) => {
       if (live) setLoaded({ key: itemId, view });
     });
     return () => {
       live = false;
     };
-  }, [store, itemId, version]);
+  }, [store, itemId, version, clock]);
 
   async function saved<R extends ActionResult>(result: R): Promise<R> {
     if (result.ok) setVersion((v) => v + 1);
@@ -72,7 +74,7 @@ export function ListsHarness({ empty, itemId }: { empty: boolean; itemId: string
     await pause();
     if (settings.failing) return { ok: false, error: FAILED };
     const result = await setDoneCommand(store.repo, id, done, TZ);
-    if (result.ok) setData(await loadLists(store.repo, TZ));
+    if (result.ok) setData(await loadLists(store.repo, TZ, clock));
     return saved(result);
   }
 

@@ -20,7 +20,16 @@ export default defineConfig({
   reporter: process.env.CI ? [["list"], ["html", { open: "never" }]] : "list",
   timeout: 30_000,
   expect: { timeout: 10_000 },
-  use: { baseURL, trace: "retain-on-failure" },
+  use: {
+    baseURL,
+    trace: "retain-on-failure",
+    // Time format: Auto would follow the browser's en-US locale to the 12-hour clock. Specs read
+    // 24-hour times unless they choose otherwise (e2e/time-format.spec.ts).
+    storageState: {
+      cookies: [{ name: "clock", value: "24", domain: "localhost", path: "/", expires: -1, httpOnly: false, secure: false, sameSite: "Lax" }],
+      origins: [],
+    },
+  },
   projects: [{ name: channel, use: { ...devices["Desktop Chrome"], channel } }],
   webServer: {
     // The browser-test production build: every route is compiled before the first test, and the fake

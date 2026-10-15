@@ -1,6 +1,6 @@
 import { cookies } from "next/headers";
 import { cache } from "react";
-import { TZ_COOKIE } from "@/components/shell/cookies";
+import { CLOCK_COOKIE, readClock, TZ_COOKIE } from "@/components/shell/cookies";
 import type { LocalDate } from "@/domain/item";
 import { getItemsRepo } from "@/lib/items";
 import { resolveTimeZone, toLocalDate } from "@/lib/dates";
@@ -8,6 +8,9 @@ import { loadDay } from "./load";
 import { loadRailCounts } from "./rail";
 
 export const getTimeZone = cache(async () => resolveTimeZone((await cookies()).get(TZ_COOKIE)?.value));
+
+/** The clock times are written in, as the root layout read it for the browser. */
+export const getClock = cache(async () => readClock((await cookies()).get(CLOCK_COOKIE)?.value).clock);
 
 // One instant per request, so the shell and the page agree on which day is today.
 export const getNow = cache(() => new Date());

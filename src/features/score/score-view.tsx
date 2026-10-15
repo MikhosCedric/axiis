@@ -14,7 +14,8 @@ import { repeats, type Area, type LocalDate, type ShownItem } from "@/domain/ite
 import { RepeatMark } from "@/features/today/repeat-mark";
 import { tagLine } from "@/features/tags/model";
 import { RowTags } from "@/features/tags/row-tags";
-import { formatClock } from "@/features/today/format";
+import { formatClock, formatHour } from "@/lib/clock";
+import { useClock } from "@/components/shell/clock-context";
 import { Glyph } from "@/features/today/glyph";
 import { LineLegend } from "@/features/today/line-legend";
 import { SameInInbox } from "@/features/inbox/same-in-inbox";
@@ -79,6 +80,7 @@ export function ScoreView({
   selectedId: string | null;
   justDone: string | null;
 } & ScoreHandlers) {
+  const clock = useClock();
   const root = useRef<HTMLElement>(null);
   const scroller = useRef<HTMLDivElement>(null);
   const ticks = useRef<HTMLDivElement>(null);
@@ -238,7 +240,7 @@ export function ScoreView({
                 className="absolute inset-y-0 border-l border-rule pt-[9px] pl-1.5 text-xs leading-none font-medium text-ink-3 tabular"
                 style={{ left: xAt(axis, m) }}
               >
-                {String(Math.floor(m / 60) % 24).padStart(2, "0")}
+                {formatHour(Math.floor(m / 60), clock)}
               </span>
             ))}
             {nowMinutes !== null && nowMinutes >= axis.start && nowMinutes <= axis.end && (
@@ -246,7 +248,7 @@ export function ScoreView({
                 className="absolute top-[5px] z-[1] -translate-x-1/2 rounded bg-accent px-1.5 py-1 text-xs leading-none font-semibold text-on-accent tabular"
                 style={{ left: xAt(axis, nowMinutes) }}
               >
-                {formatClock(instantAt(date, nowMinutes, timeZone), timeZone)}
+                {formatClock(instantAt(date, nowMinutes, timeZone), timeZone, clock)}
               </span>
             )}
           </div>
@@ -419,12 +421,13 @@ function BeamView({
   onPointerDown: (e: ReactPointerEvent<HTMLElement>, kind: "move" | "resize") => void;
   onKeyDown: (e: KeyboardEvent<HTMLElement>) => void;
 }) {
+  const clock = useClock();
   const { item, state } = beam.value;
   const mine = preview?.item.id === item.id;
   const resizing = mine && preview.kind === "resize" && preview.target?.kind === "resize";
   const span = (resizing && spanOf({ ...item, schedule: preview.target!.placement.schedule }, ctx.date, ctx.timeZone)) || beam.span;
-  const startClock = formatClock(minutesToDate(ctx, span.start), ctx.timeZone);
-  const endClock = formatClock(minutesToDate(ctx, span.end), ctx.timeZone);
+  const startClock = formatClock(minutesToDate(ctx, span.start), ctx.timeZone, clock);
+  const endClock = formatClock(minutesToDate(ctx, span.end), ctx.timeZone, clock);
   const p = progress(count);
   const cls = [
     styles.beam,
@@ -472,6 +475,7 @@ function minutesToDate(ctx: DropContext, minutes: number) {
 }
 
 function Ghost({ top, placement, ctx }: { top: number; placement: Placement; ctx: DropContext }) {
+  const clock = useClock();
   const s = placement.schedule;
   if (s.kind !== "timed") return null;
   const start = localMinutes(s.start, ctx.date, ctx.timeZone);
@@ -482,7 +486,7 @@ function Ghost({ top, placement, ctx }: { top: number; placement: Placement; ctx
       style={{ left: xAt(ctx.axis, start), width: (end - start) * PX_PER_MINUTE, top }}
     >
       <span className={`${styles.tip} tabular`}>
-        {formatClock(s.start, ctx.timeZone)} to {formatClock(s.end, ctx.timeZone)}
+        {formatClock(s.start, ctx.timeZone, clock)} to {formatClock(s.end, ctx.timeZone, clock)}
       </span>
     </div>
   );
@@ -490,6 +494,7 @@ function Ghost({ top, placement, ctx }: { top: number; placement: Placement; ctx
 
 /** A first-day example: drawn like a planned beam in Hairline, hidden from assistive tech, never a target. EXAMPLES_NOTE says what it is. */
 function Example({ example, top, ctx }: { example: ExampleBeam; top: number; ctx: DropContext }) {
+  const clock = useClock();
   const { span } = example;
   return (
     <div
@@ -500,7 +505,7 @@ function Example({ example, top, ctx }: { example: ExampleBeam; top: number; ctx
     >
       <span className={styles.label}>
         {example.title}
-        <span className={styles.clock}>{formatClock(minutesToDate(ctx, span.start), ctx.timeZone)}</span>
+        <span className={styles.clock}>{formatClock(minutesToDate(ctx, span.start), ctx.timeZone, clock)}</span>
       </span>
     </div>
   );

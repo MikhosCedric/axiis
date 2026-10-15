@@ -1,5 +1,6 @@
 import type { Area } from "@/domain/item";
-import type { Density, Theme } from "@/components/shell/cookies";
+import type { ClockSetting, Density, Theme } from "@/components/shell/cookies";
+import type { Clock } from "@/lib/clock";
 import type { TagSummary } from "@/domain/tag";
 import { TagsSection, type TagActions } from "@/features/tags/tags-section";
 import { AreasSection, type AreaActions } from "./areas-section";
@@ -26,6 +27,7 @@ export function SettingsView({
   deleteAccount,
   theme = "system",
   density = "spacious",
+  clock = { setting: "auto", clock: "24" },
 }: {
   email: string | null;
   areas: Area[];
@@ -37,6 +39,8 @@ export function SettingsView({
   /** The theme and density saved on this device. */
   theme?: Theme;
   density?: Density;
+  /** The time format chosen on this device, and the clock it comes to. */
+  clock?: { setting: ClockSetting; clock: Clock };
 }) {
   return (
     <div
@@ -77,7 +81,7 @@ export function SettingsView({
         </div>
 
         <div id="display">
-          <DisplaySection theme={theme} density={density} />
+          <DisplaySection theme={theme} density={density} clock={clock} />
         </div>
 
         <div id="your-data" className="space-y-12">

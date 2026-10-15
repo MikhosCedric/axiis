@@ -25,7 +25,9 @@ import { STATE_WORD } from "@/features/score/score-view";
 import { captureAction, setDoneAction } from "@/features/today/actions";
 import { CaptureField } from "@/features/today/capture-field";
 import type { ActionResult } from "@/features/today/commands";
-import { formatClock, formatDayHeading } from "@/features/today/format";
+import { formatDayHeading } from "@/features/today/format";
+import { formatClock } from "@/lib/clock";
+import { useClock } from "@/components/shell/clock-context";
 import { Glyph } from "@/features/today/glyph";
 import { GuideButton, type GuideTopic } from "@/features/palette/guide";
 import { LineLegend } from "@/features/today/line-legend";
@@ -82,6 +84,7 @@ export function WeekView({
   detail?: ReactNode;
   actions?: WeekActions;
 }) {
+  const clock = useClock();
   const { days, today, timeZone, areas } = data;
   const router = useRouter();
   const pathname = usePathname();
@@ -130,7 +133,7 @@ export function WeekView({
   function describe(item: ShownItem, to: Destination) {
     if (to === "tray") return `${item.title} is waiting, with no day.`;
     const s = moveTo(item, to, timeZone).schedule;
-    const at = s.kind === "timed" ? ` at ${formatClock(s.start, timeZone)}` : "";
+    const at = s.kind === "timed" ? ` at ${formatClock(s.start, timeZone, clock)}` : "";
     return `${item.title} is on ${formatDayHeading(to)}${at}.`;
   }
 
@@ -382,11 +385,12 @@ function ItemRow({
   onPointerDown: (e: ReactPointerEvent<HTMLElement>) => void;
   onKeyDown: (e: KeyboardEvent<HTMLElement>) => void;
 }) {
+  const clock = useClock();
   const { item, state } = entry;
   const s = item.schedule;
-  const time = s.kind === "timed" ? formatClock(s.start, timeZone) : s.kind === "day" ? "Any time" : null;
+  const time = s.kind === "timed" ? formatClock(s.start, timeZone, clock) : s.kind === "day" ? "Any time" : null;
   const spokenTime =
-    s.kind === "timed" ? `${formatClock(s.start, timeZone)} to ${formatClock(s.end, timeZone)}` : (time ?? "waiting");
+    s.kind === "timed" ? `${formatClock(s.start, timeZone, clock)} to ${formatClock(s.end, timeZone, clock)}` : (time ?? "waiting");
   const tagged = tagLine(tags ?? [], 2);
   const label = [item.title, spokenTime, area, STATE_WORD[state], repeats(item) && "repeats", tagged.spoken].filter(Boolean).join(", ");
   const shape =

@@ -83,7 +83,7 @@ describe("listNoteRows", () => {
     const task = makeItem({ title: "A task" });
     const w = world([older, newer, task]);
     w.store.bodyText.set(older.id, "\nFirst line\nsecond line");
-    const rows = await listNoteRows(w.notes, w.items, null, NOW, TZ);
+    const rows = await listNoteRows(w.notes, w.items, null, NOW, TZ, "24");
     expect(rows).toEqual([
       { id: newer.id, title: "Untitled note", firstLine: "", areaName: null, edited: "Edited today, 11:05" },
       { id: older.id, title: "Older", firstLine: "First line", areaName: "Home", edited: "Edited 30 Sept" },
@@ -93,7 +93,7 @@ describe("listNoteRows", () => {
   it("filters to notes that match a search", async () => {
     const garden = makeItem({ type: "note", title: "Garden" });
     const w = world([garden, makeItem({ type: "note", title: "Trip" }), makeItem({ title: "Garden task" })]);
-    const rows = await listNoteRows(w.notes, w.items, "garden", NOW, TZ);
+    const rows = await listNoteRows(w.notes, w.items, "garden", NOW, TZ, "24");
     expect(rows.map((r) => r.id)).toEqual([garden.id]);
   });
 });
@@ -123,13 +123,13 @@ describe("links", () => {
     const w = world([note, other, task]);
     await linkItems(w.notes, note.id, task.id);
     await linkItems(w.notes, other.id, note.id);
-    const view = await loadNote(w.notes, w.items, note.id, NOW, TZ);
+    const view = await loadNote(w.notes, w.items, note.id, NOW, TZ, "24");
     expect(view?.connected).toEqual([
       expect.objectContaining({ id: task.id, title: "Buy compost", done: true, backlink: false, href: `/today?item=${task.id}` }),
       expect.objectContaining({ id: other.id, title: "Bulbs", backlink: true, href: `/notes/${other.id}` }),
     ]);
     await unlinkItems(w.notes, view?.connected[1].linkId);
-    expect((await loadNote(w.notes, w.items, note.id, NOW, TZ))?.connected.map((c) => c.id)).toEqual([task.id]);
+    expect((await loadNote(w.notes, w.items, note.id, NOW, TZ, "24"))?.connected.map((c) => c.id)).toEqual([task.id]);
   });
 
   it("hides links to deleted items", async () => {
@@ -138,7 +138,7 @@ describe("links", () => {
     const w = world([note, task]);
     await linkItems(w.notes, note.id, task.id);
     w.store.items.splice(w.store.items.indexOf(task), 1);
-    expect((await loadNote(w.notes, w.items, note.id, NOW, TZ))?.connected).toEqual([]);
+    expect((await loadNote(w.notes, w.items, note.id, NOW, TZ, "24"))?.connected).toEqual([]);
   });
 });
 

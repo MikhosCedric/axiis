@@ -1,3 +1,4 @@
+import type { Clock } from "@/lib/clock";
 import type { ItemType, LocalDate } from "@/domain/item";
 import { parseTagName, tagKey, type TagName } from "@/domain/tag";
 import { PLACES } from "@/components/shell/places";
@@ -64,7 +65,7 @@ function dateLabel(date: LocalDate, today: LocalDate): string {
  * search results once they are back for this very input. With nothing typed,
  * the item the screen has selected comes first. Empty sections are left out.
  */
-export function paletteSections(input: string, today: LocalDate, find: Find, selected: Target | null = null): Section[] {
+export function paletteSections(input: string, today: LocalDate, clock: Clock, find: Find, selected: Target | null = null): Section[] {
   const text = input.trim();
   const places = rank(DESTINATIONS, text, (p) => [p.label, ...p.also]);
   const go: Command[] = places.map((p) =>
@@ -90,7 +91,7 @@ export function paletteSections(input: string, today: LocalDate, find: Find, sel
     date && !coveredByToday ? [{ kind: "date", id: `date-${date}`, label: dateLabel(date, today), href: dayHref(date, today, "score") }] : [];
 
   const read = parseCapture(text);
-  const understood = previewWords(read);
+  const understood = previewWords(read, clock);
   const label = understood ? `Capture “${read.title}” as a task: ${understood}` : `Capture “${text}” as a task`;
   const capture: Command[] = exact || tag ? [] : [{ kind: "capture", id: "capture", label, title: text }];
 
