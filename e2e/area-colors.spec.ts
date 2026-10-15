@@ -23,11 +23,21 @@ const dot = (scope: Locator) => scope.locator("[data-area-color]");
 const fill = (scope: Locator) => dot(scope).first().evaluate((el) => getComputedStyle(el).backgroundColor);
 const staffLabel = (page: Page, name: string) => page.locator("[data-staff-label]").filter({ hasText: name });
 
+/** Opens an area's picker; the button answers once React has hydrated the page, so a click before then is tried again. */
+async function openPicker(page: Page, area: string) {
+  const group = page.getByRole("group", { name: `Colour for ${area}` });
+  await expect(async () => {
+    if (!(await group.isVisible())) await page.getByRole("button", { name: new RegExp(`^Colour for ${area}: `) }).click();
+    await expect(group).toBeVisible({ timeout: 1000 });
+  }).toPass();
+  return group;
+}
+
 async function colourWorkAndHome(page: Page) {
   await page.goto("/settings");
   const areas = page.getByRole("region", { name: "Areas" });
-  await areas.getByRole("button", { name: "Colour for Work: None" }).click();
-  const work = page.getByRole("group", { name: "Colour for Work" });
+  await expect(areas.getByRole("button", { name: "Colour for Work: None" })).toBeVisible();
+  const work = await openPicker(page, "Work");
   await expect(work.getByRole("radio")).toHaveCount(9);
   await expect(work.getByRole("radio", { name: "None" })).toBeChecked();
   await work.getByRole("radio", { name: "Clay" }).check();
@@ -121,8 +131,7 @@ signedIn.describe("area colours", () => {
 
     signedIn("give each swatch a 44px target and keep the page from scrolling sideways", async ({ page }) => {
       await page.goto("/settings");
-      await page.getByRole("button", { name: "Colour for Work: None" }).click();
-      const swatches = page.getByRole("group", { name: "Colour for Work" }).locator("label");
+      const swatches = (await openPicker(page, "Work")).locator("label");
       await expect(swatches).toHaveCount(9);
       for (const box of await swatches.evaluateAll((els) => els.map((el) => el.getBoundingClientRect()))) {
         expect(box.width).toBeGreaterThanOrEqual(44);
