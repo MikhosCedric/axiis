@@ -1,6 +1,6 @@
 import { createLinkedNoteAction } from "@/features/notes/actions";
 import { linkedNotes } from "@/features/notes/commands";
-import { getNow, getTimeZone } from "@/features/day/server";
+import { getClock, getNow, getTimeZone } from "@/features/day/server";
 import { setDoneAction } from "@/features/today/actions";
 import { addTagAction, removeTagAction } from "@/features/tags/actions";
 import { parseItemKey } from "@/domain/item-key";
@@ -53,8 +53,8 @@ const actions: DetailActions = {
 export async function DetailPanel({ itemId }: { itemId: string | null }) {
   const key = parseItemKey(itemId);
   if (!key) return null;
-  const [repo, notes, timeZone] = await Promise.all([getItemsRepo(), getNotesRepo(), getTimeZone()]);
-  const view = await loadDetail(repo, key, getNow(), timeZone);
+  const [repo, notes, timeZone, clock] = await Promise.all([getItemsRepo(), getNotesRepo(), getTimeZone(), getClock()]);
+  const view = await loadDetail(repo, key, getNow(), timeZone, clock);
   if (!view) return <MissingItem />;
   const linked = await linkedNotes(notes, view.notesFor);
   // Keyed by the key it was opened with: the first "This one" change to an

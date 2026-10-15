@@ -1,18 +1,16 @@
 import { describe, expect, it } from "vitest";
 import { ITEM_TYPES, type ItemId, type LocalDate } from "@/domain/item";
 import { area, makeItem } from "@/features/today/test-support";
-import { buildDetail, clockOf, describeWhen, minutesOf, planOptions, progressLine, subtaskPolicy, timeFrom } from "./model";
+import { buildDetail, describeWhen, planOptions, progressLine, subtaskPolicy, timeFrom } from "./model";
 
 describe("timeFrom", () => {
   it("reads a start and an end as minutes and a length", () => {
     expect(timeFrom("14:00", "15:30")).toEqual({ start: 840, length: 90 });
-    expect(clockOf(840 + 90)).toBe("15:30");
   });
 
   it("runs past midnight when the end is not after the start", () => {
     expect(timeFrom("23:00", "01:00")).toEqual({ start: 1380, length: 120 });
     expect(timeFrom("09:00", "09:00")).toEqual({ start: 540, length: 1440 });
-    expect(clockOf(1380 + 120)).toBe("01:00");
   });
 
   it("gives a start with no end the default length, and nothing without a start", () => {
@@ -22,27 +20,14 @@ describe("timeFrom", () => {
   });
 
   it("refuses an end it cannot read rather than guessing a length", () => {
-    expect(timeFrom("07:15", "7pm")).toBeNull();
+    expect(timeFrom("07:15", "7xm")).toBeNull();
     expect(timeFrom("07:15", "25:00")).toBeNull();
   });
-});
 
-describe("minutesOf", () => {
-  it.each([
-    ["14:30", 870],
-    ["14.30", 870],
-    ["1430", 870],
-    ["0930", 570],
-    ["930", 570],
-    ["9", 540],
-    [" 23:59 ", 1439],
-    ["00:00", 0],
-  ])("reads %s as a 24-hour clock", (raw, minutes) => {
-    expect(minutesOf(raw)).toBe(minutes);
-  });
-
-  it.each(["", "24:00", "12:60", "2:5", "9am", "12345", "-1:00", "1:2:3"])("refuses %j", (raw) => {
-    expect(minutesOf(raw)).toBeNull();
+  it("reads either clock in either field", () => {
+    expect(timeFrom("9:30 AM", "2pm")).toEqual({ start: 570, length: 270 });
+    expect(timeFrom("9:30\u00a0PM", "23:00")).toEqual({ start: 1290, length: 90 });
+    expect(timeFrom("21:30", "12:15 AM")).toEqual({ start: 1290, length: 165 });
   });
 });
 
@@ -71,7 +56,7 @@ describe("subtaskPolicy", () => {
 });
 
 describe("buildDetail", () => {
-  const base = { areas: [], subtasks: [], parent: null, timeZone: "UTC", today: "2026-10-06" as LocalDate };
+  const base = { areas: [], subtasks: [], parent: null, timeZone: "UTC", clock: "24" as const, today: "2026-10-06" as LocalDate };
 
   it("lists subtasks only for an item that may hold them", () => {
     const child = makeItem({ title: "Pack charger", status: "done" });
@@ -109,8 +94,8 @@ describe("buildDetail", () => {
 
 describe("describeWhen", () => {
   it("names an unscheduled item and a day-only plan", () => {
-    expect(describeWhen({ kind: "unscheduled" }, "UTC")).toBe("Waiting for a time");
-    expect(describeWhen({ kind: "day", on: "2026-10-06" as LocalDate }, "UTC")).toBe("Tuesday 6 October");
+    expect(describeWhen({ kind: "unscheduled" }, "UTC", "24")).toBe("Waiting for a time");
+    expect(describeWhen({ kind: "day", on: "2026-10-06" as LocalDate }, "UTC", "24")).toBe("Tuesday 6 October");
   });
 
   it("formats a timed plan in the user's zone, not the server's", () => {
@@ -119,8 +104,9 @@ describe("describeWhen", () => {
       start: new Date("2026-10-06T03:30:00Z"),
       end: new Date("2026-10-06T04:00:00Z"),
     };
-    expect(describeWhen(schedule, "UTC")).toBe("Tuesday 6 October, 03:30 to 04:00");
-    expect(describeWhen(schedule, "Asia/Kolkata")).toBe("Tuesday 6 October, 09:00 to 09:30");
+    expect(describeWhen(schedule, "UTC", "24")).toBe("Tuesday 6 October, 03:30 to 04:00");
+    expect(describeWhen(schedule, "Asia/Kolkata", "24")).toBe("Tuesday 6 October, 09:00 to 09:30");
+    expect(describeWhen(schedule, "Asia/Kolkata", "12").replace(/ /g, " ")).toBe("Tuesday 6 October, 9:00 AM to 9:30 AM");
   });
 
   it("names the end day when a plan runs past midnight", () => {
@@ -129,7 +115,7 @@ describe("describeWhen", () => {
       start: new Date("2026-10-06T22:00:00Z"),
       end: new Date("2026-10-07T01:00:00Z"),
     };
-    expect(describeWhen(schedule, "UTC")).toBe("Tuesday 6 October, 22:00 to Wednesday 7 October, 01:00");
+    expect(describeWhen(schedule, "UTC", "24")).toBe("Tuesday 6 October, 22:00 to Wednesday 7 October, 01:00");
   });
 
   it("does not throw on a stored plan that runs into a five-digit year", () => {
@@ -138,12 +124,12 @@ describe("describeWhen", () => {
       start: new Date("9999-12-31T23:30:00Z"),
       end: new Date(Date.UTC(10000, 0, 1, 0, 30)),
     };
-    expect(describeWhen(schedule, "UTC")).toBe("Friday 31 December, 23:30 to Saturday 1 January, 00:30");
-    expect(describeWhen({ kind: "day", on: "10000-01-01" as LocalDate }, "UTC")).toBe("Saturday 1 January");  });
+    expect(describeWhen(schedule, "UTC", "24")).toBe("Friday 31 December, 23:30 to Saturday 1 January, 00:30");
+    expect(describeWhen({ kind: "day", on: "10000-01-01" as LocalDate }, "UTC", "24")).toBe("Saturday 1 January");  });
 });
 
 describe("due", () => {
-  const base = { areas: [], subtasks: [], parent: null, timeZone: "UTC", today: "2026-10-06" as LocalDate };
+  const base = { areas: [], subtasks: [], parent: null, timeZone: "UTC", clock: "24" as const, today: "2026-10-06" as LocalDate };
   const daily = { freq: "daily", interval: 1, end: { kind: "never" } } as const;
 
   it("lets a one-off task or checklist set its due date, and nothing else", () => {
@@ -168,7 +154,7 @@ describe("progressLine", () => {
 });
 
 describe("retype", () => {
-  const base = { areas: [], subtasks: [], parent: null, timeZone: "UTC", today: "2026-10-06" as LocalDate };
+  const base = { areas: [], subtasks: [], parent: null, timeZone: "UTC", clock: "24" as const, today: "2026-10-06" as LocalDate };
 
   it("offers a type choice to a top-level task, event or checklist, never to a note or a subtask", () => {
     for (const type of ["task", "event", "checklist"] as const) {
@@ -180,7 +166,7 @@ describe("retype", () => {
 });
 
 describe("planOptions", () => {
-  const base = { areas: [], subtasks: [], parent: null, timeZone: "UTC", today: "2026-10-06" as LocalDate };
+  const base = { areas: [], subtasks: [], parent: null, timeZone: "UTC", clock: "24" as const, today: "2026-10-06" as LocalDate };
   const daily = { freq: "daily", interval: 1, end: { kind: "never" } } as const;
 
   it("lets a one-off item go to any day, and off it or timed only once it has one", () => {

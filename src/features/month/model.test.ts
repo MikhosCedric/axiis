@@ -1,3 +1,4 @@
+import type { Clock } from "@/lib/clock";
 import { describe, expect, it } from "vitest";
 import type { Area, AreaId, Item, LocalDate } from "@/domain/item";
 import { makeItem } from "@/features/today/test-support";
@@ -22,9 +23,9 @@ const d = (s: string) => s as LocalDate;
 const ym = (s: string) => s as YearMonth;
 const NOW = new Date("2026-10-14T12:00:00Z");
 
-function build(month: string, items: Item[], { due = [] as Item[], areas = [] as Area[], timeZone = "UTC" } = {}) {
+function build(month: string, items: Item[], { due = [] as Item[], areas = [] as Area[], timeZone = "UTC", clock = "24" as Clock } = {}) {
   const days = monthGrid(ym(month));
-  return buildMonth({ month: ym(month), days, scheduled: items, due, areas, timeZone, now: NOW });
+  return buildMonth({ month: ym(month), days, scheduled: items, due, areas, timeZone, clock, now: NOW });
 }
 
 const cell = (b: ReturnType<typeof build>, date: string) => b.cells.find((c) => c.date === date)!;
@@ -149,6 +150,14 @@ describe("buildMonth", () => {
     const autumn = build("2026-10", [timed("2026-10-25", 23 * 60, 23 * 60 + 59, london)], { timeZone: london });
     expect(cell(autumn, "2026-10-25").marks.map((m) => m.time)).toEqual(["23:00"]);
     expect(cell(autumn, "2026-10-26").marks).toEqual([]);
+  });
+
+  it("writes a mark's start and a later day's end on the 12-hour clock when that is the setting", () => {
+    const late = timed("2026-10-09", 22 * 60, 25 * 60, "UTC", { title: "Late" });
+    const b = build("2026-10", [late], { clock: "12" });
+    const times = (date: string) => cell(b, date).marks.map((m) => m.time?.replace(/ /g, " "));
+    expect(times("2026-10-09")).toEqual(["10:00 PM"]);
+    expect(times("2026-10-10")).toEqual(["to 1:00 AM"]);
   });
 
   it("orders a day's day-only items by area, then timed ones by start, and sends at most three", () => {

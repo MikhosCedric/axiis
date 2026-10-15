@@ -2,14 +2,14 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { cache } from "react";
 import { readDayQuery } from "@/features/day/nav";
-import { getTimeZone } from "@/features/day/server";
+import { getClock, getTimeZone } from "@/features/day/server";
 import { DetailPanel } from "@/features/detail/detail-panel";
 import { loadTagged } from "@/features/tags/commands";
 import { tagFromSegment, TAGS_PATH } from "@/features/tags/model";
 import { TaggedView } from "@/features/tags/tagged-view";
 import { getItemsRepo } from "@/lib/items";
 
-const load = cache(async (segment: string) => loadTagged(await getItemsRepo(), tagFromSegment(segment), await getTimeZone()));
+const load = cache(async (segment: string) => loadTagged(await getItemsRepo(), tagFromSegment(segment), await getTimeZone(), await getClock()));
 
 export async function generateMetadata({ params }: PageProps<"/tags/[name]">): Promise<Metadata> {
   const data = await load((await params).name);

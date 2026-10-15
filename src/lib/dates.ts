@@ -164,6 +164,12 @@ function wallAsUtc(at: number, timeZone: string): number {
   return offset === null ? readWall(at, timeZone) : Math.floor(at / MINUTE) * MINUTE + offset;
 }
 
+/** Minutes past local midnight that the clocks in `timeZone` show at `at`, 0 to 1439; seconds are dropped. */
+export function wallMinutes(at: Date, timeZone: string): number {
+  const wall = wallAsUtc(at.getTime(), timeZone);
+  return (((wall % DAY) + DAY) % DAY) / MINUTE;
+}
+
 /**
  * Wall-clock minutes from local midnight of `date` to `at`, so 09:30 is 570
  * even on a day that is 23 or 25 hours long. Instants on the next local day

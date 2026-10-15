@@ -149,8 +149,8 @@ describe("planning a one-off item from the panel", () => {
     expect(await setTime(repo, task.id, { start: 90, length: 150 }, NY)).toEqual({ ok: true });
     // 01:30 EST to 04:00 EDT is 90 real minutes.
     expect(task.schedule).toEqual(timed("2026-03-08T06:30:00Z", "2026-03-08T08:00:00Z"));
-    expect(describeWhen(task.schedule, NY)).toBe("Sunday 8 March, 01:30 to 04:00");
-    expect((await loadDetail(repo, { kind: "item", id: task.id }, new Date("2026-03-07T15:00:00Z"), NY))?.time).toEqual({ start: 90, length: 150 });
+    expect(describeWhen(task.schedule, NY, "24")).toBe("Sunday 8 March, 01:30 to 04:00");
+    expect((await loadDetail(repo, { kind: "item", id: task.id }, new Date("2026-03-07T15:00:00Z"), NY, "24"))?.time).toEqual({ start: 90, length: 150 });
   });
 
   it("keeps a typed end on the wall clock on the day the clocks go back", async () => {
@@ -159,7 +159,7 @@ describe("planning a one-off item from the panel", () => {
     expect(await setTime(repo, task.id, { start: 0, length: 23 * 60 + 59 }, NY)).toEqual({ ok: true });
     // 00:00 EDT to 23:59 EST is 25 hours less a minute.
     expect(task.schedule).toEqual(timed("2026-11-01T04:00:00Z", "2026-11-02T04:59:00Z"));
-    expect(describeWhen(task.schedule, NY)).toBe("Sunday 1 November, 00:00 to 23:59");
+    expect(describeWhen(task.schedule, NY, "24")).toBe("Sunday 1 November, 00:00 to 23:59");
   });
 
   it("refuses a start or an end the clocks skip, naming the first time that happens, and writes nothing", async () => {

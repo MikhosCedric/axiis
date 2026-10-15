@@ -21,15 +21,3 @@ export function formatDayIn(date: LocalDate, today: LocalDate): string {
 export function yearOf(date: LocalDate): string {
   return date.slice(0, date.indexOf("-", 1));
 }
-
-const clocks = new Map<string, Intl.DateTimeFormat>();
-
-/** 24-hour "09:30" in the user's zone. */
-export function formatClock(at: Date, timeZone: string): string {
-  let f = clocks.get(timeZone);
-  if (!f) {
-    f = new Intl.DateTimeFormat("en-GB", { hour: "2-digit", minute: "2-digit", hourCycle: "h23", timeZone });
-    clocks.set(timeZone, f);
-  }
-  return f.format(at);
-}

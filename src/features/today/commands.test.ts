@@ -3,7 +3,7 @@ import type { LocalDate } from "@/domain/item";
 import { TAGS_PER_ITEM, TAGS_PER_USER } from "@/domain/tag";
 import { QUOTA_MESSAGE } from "@/lib/quota";
 import { captureChecklist, captureTask, setDone } from "./commands";
-import { formatClock, formatDayHeading } from "./format";
+import { formatDayHeading } from "./format";
 import { fakeRepo, makeItem } from "./test-support";
 
 // 21:00 on Wednesday 7 October in London, 06:00 on Thursday 8 October in Tokyo.
@@ -28,7 +28,7 @@ describe("captureTask", () => {
   it("plans a timed slot at the default length and tags it, from the words alone", async () => {
     const { repo, calls, items, itemTags, tags } = fakeRepo();
     const result = await captureTask(repo, "dentist tomorrow 9:00 #health", NOW, LONDON);
-    expect(result).toEqual({ ok: true, id: items[0].id, type: "task", title: "dentist", landed: { on: "2026-10-08", day: "tomorrow", time: { start: "09:00", end: null } }, tags: ["health"], missed: [] });
+    expect(result).toEqual({ ok: true, id: items[0].id, type: "task", title: "dentist", landed: { on: "2026-10-08", day: "tomorrow", time: { start: 540, end: null } }, tags: ["health"], missed: [] });
     expect(calls.create).toEqual([
       {
         type: "task",
@@ -63,7 +63,7 @@ describe("captureTask", () => {
 
   it("puts a time with no day on today, and names a typed length's end", async () => {
     const { repo, calls } = fakeRepo();
-    expect(await captureTask(repo, "gym 22:00 for 45m", NOW, LONDON)).toMatchObject({ landed: { on: "2026-10-07", day: "today", time: { start: "22:00", end: "22:45" } } });
+    expect(await captureTask(repo, "gym 22:00 for 45m", NOW, LONDON)).toMatchObject({ landed: { on: "2026-10-07", day: "today", time: { start: 1320, end: 1365 } } });
     expect(calls.create[0].schedule).toEqual({
       kind: "timed",
       start: new Date("2026-10-07T21:00:00Z"),
@@ -184,12 +184,5 @@ describe("setDone", () => {
 describe("format", () => {
   it("writes the heading for the local date, not the server's", () => {
     expect(formatDayHeading("2026-10-06" as LocalDate)).toBe("Tuesday 6 October");
-  });
-
-  it("shows 24-hour clock times in the user's zone", () => {
-    const t = new Date("2026-10-06T13:05:00Z");
-    expect(formatClock(t, "UTC")).toBe("13:05");
-    expect(formatClock(t, "Asia/Kolkata")).toBe("18:35");
-    expect(formatClock(new Date("2026-10-06T00:00:00Z"), "UTC")).toBe("00:00");
   });
 });

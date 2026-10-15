@@ -1,6 +1,6 @@
 import { repeats, type Area, type ItemType, type LocalDate, type ShownItem, type SpanRange } from "@/domain/item";
 import { stateOf, type BeamState } from "@/features/today/model";
-import { formatClock } from "@/features/today/format";
+import { formatClock, formatMinutes, type Clock } from "@/lib/clock";
 import { WEEK_LENGTH, weekOf } from "@/features/week/model";
 import { addDays, dayRangeFor, FIRST_DATE, LAST_DATE, localMinutes, toLocalDate } from "@/lib/dates";
 import { RANGE_LIMIT } from "@/lib/items/repo";
@@ -100,7 +100,7 @@ export type MonthMark = {
   title: string;
   type: ItemType;
   state: BeamState;
-  /** "09:30" on the day it starts, "to 01:00" on a later day it runs into, null for a day-only or due mark. */
+  /** "09:30" or "9:30 AM" on the day it starts, "to 01:00" on a later day it runs into, null for a day-only or due mark. */
   time: string | null;
   area: string | null;
   repeats: boolean;
@@ -119,9 +119,6 @@ const shown = (i: ShownItem) => i.type !== "note" && i.status !== "dropped";
 /** Minutes past local midnight that an item can reach and still end on its first day, with three hours to spare for a change of clocks. */
 const SURELY_SAME_DAY = 21 * 60;
 
-/** "09:30" from minutes past midnight, as `formatClock` writes it. */
-const clock = (minutes: number) => `${String(Math.floor(minutes / 60)).padStart(2, "0")}:${String(minutes % 60).padStart(2, "0")}`;
-
 type Placed = { mark: MonthMark; rank: [number, number, number] };
 
 /**
@@ -138,9 +135,10 @@ export function buildMonth(input: {
   due: readonly ShownItem[];
   areas: readonly Area[];
   timeZone: string;
+  clock: Clock;
   now: Date;
 }): MonthBuild {
-  const { month, days, timeZone, now } = input;
+  const { month, days, timeZone, clock, now } = input;
   const first = days[0];
   const last = days[days.length - 1];
   const areaOf = new Map(input.areas.map((a) => [a.id as string, a]));
@@ -183,7 +181,7 @@ export function buildMonth(input: {
     const to = endDay > last ? last : endDay;
     for (let d = from; d <= to; d = addDays(d, 1)) {
       const starts = d === startDay;
-      const time = starts ? clock(startMinutes) : `to ${formatClock(s.end, timeZone)}`;
+      const time = starts ? formatMinutes(startMinutes, clock) : `to ${formatClock(s.end, timeZone, clock)}`;
       byDay.get(d)!.push({ mark: { ...mark, time, due: false, movable: starts }, rank: [1, starts ? s.start.getTime() : -Infinity, 0] });
     }
   }
