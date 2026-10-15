@@ -102,6 +102,22 @@ describe("SupabaseItemsRepo.listDue", () => {
   });
 });
 
+describe("SupabaseItemsRepo.listDueIn", () => {
+  it("reads live, non-repeating items due inside the dates, bounded, soonest first, without body", async () => {
+    const { repo, requests } = stubbed();
+    await repo.listDueIn(d("2026-09-28"), d("2026-11-09"));
+    const q = requests[0];
+    expect(q.getAll("due_on")).toEqual(["gte.2026-09-28", "lt.2026-11-09"]);
+    expect(q.get("deleted_at")).toBe("is.null");
+    expect(q.get("rrule")).toBe("is.null");
+    expect(q.get("type")).toBe("neq.note");
+    expect(q.get("status")).toBe("neq.dropped");
+    expect(q.get("order")).toBe("due_on.asc,created_at.asc");
+    expect(q.get("limit")).toBe("500");
+    expect(q.get("select")!.split(",")).not.toContain("body");
+  });
+});
+
 describe("SupabaseItemsRepo.listBehind", () => {
   it("reads open one-off tasks planned before the day, timed and day-only, oldest first", async () => {
     const { repo, requests } = stubbed();
