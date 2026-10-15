@@ -173,8 +173,8 @@ components:
     rounded: "{rounded.md}"
     padding: "8px"
   nav-link-current:
-    backgroundColor: "{colors.engraving-ink}"
-    textColor: "{colors.music-paper}"
+    backgroundColor: "{colors.sheet}"
+    textColor: "{colors.engraving-ink}"
     rounded: "{rounded.md}"
     padding: "8px"
   now-flag:
