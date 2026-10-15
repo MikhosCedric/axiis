@@ -13,7 +13,7 @@ const DAY_MS = 86_400_000;
 export async function loadDue(repo: ItemsRepo, now: Date, timeZone: string): Promise<DueData> {
   const today = toLocalDate(now, timeZone);
   const [items, areas] = await Promise.all([repo.listDue(new Date(now.getTime() - DAY_MS)), repo.listAreas()]);
-  const areaName = new Map<string, string>(areas.map((a) => [a.id, a.name]));
+  const areaOf = new Map(areas.map((a) => [a.id as string, a]));
   return {
     today,
     rows: items.flatMap((item) => {
@@ -30,7 +30,8 @@ export async function loadDue(repo: ItemsRepo, now: Date, timeZone: string): Pro
           due: dueWords(item.dueOn, today, done),
           group: dueGroup(item.dueOn, today),
           when: item.schedule.kind === "unscheduled" ? null : whenOf(item, timeZone),
-          area: item.areaId ? (areaName.get(item.areaId) ?? null) : null,
+          area: areaOf.get(item.areaId ?? "")?.name ?? null,
+          areaColor: areaOf.get(item.areaId ?? "")?.color ?? null,
         },
       ];
     }),

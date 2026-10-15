@@ -50,14 +50,16 @@ export async function listNoteRows(
   now: Date,
   timeZone: string,
 ): Promise<NoteRow[]> {
-  const areas = new Map((await items.listAreas()).map((a) => [a.id as string, a.name]));
-  const areaName = (id: AreaId | null) => (id && areas.get(id)) ?? null;
+  const areas = new Map((await items.listAreas()).map((a) => [a.id as string, a]));
+  const areaName = (id: AreaId | null) => areas.get(id ?? "")?.name ?? null;
+  const areaColor = (id: AreaId | null) => areas.get(id ?? "")?.color ?? null;
   if (query) {
     return (await notes.search(query, { type: "note" })).map(({ item, snippet }) => ({
       id: item.id,
       title: displayTitle(item),
       firstLine: snippet,
       areaName: areaName(item.areaId),
+      areaColor: areaColor(item.areaId),
       edited: formatEdited(item.updatedAt, now, timeZone),
     }));
   }
@@ -66,6 +68,7 @@ export async function listNoteRows(
     title: displayTitle({ type: "note", title: n.title }),
     firstLine: firstLine(n.excerpt),
     areaName: areaName(n.areaId),
+    areaColor: areaColor(n.areaId),
     edited: formatEdited(n.updatedAt, now, timeZone),
   }));
 }

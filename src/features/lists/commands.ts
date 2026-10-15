@@ -8,7 +8,7 @@ import type { ListsData } from "./model";
 export async function loadLists(repo: ItemsRepo, timeZone: string): Promise<ListsData> {
   const [items, areas] = await Promise.all([repo.listChecklists(), repo.listAreas()]);
   const counts = await repo.childCounts(items.map((i) => i.id));
-  const areaName = new Map<string, string>(areas.map((a) => [a.id, a.name]));
+  const areaOf = new Map(areas.map((a) => [a.id as string, a]));
   return {
     rows: items.map((item) => ({
       id: item.id,
@@ -17,7 +17,8 @@ export async function loadLists(repo: ItemsRepo, timeZone: string): Promise<List
       repeats: repeats(item),
       // A series always has a schedule, so "no day" only ever hides a plain checklist's.
       when: item.schedule.kind === "unscheduled" ? null : whenOf(item, timeZone),
-      area: item.areaId ? (areaName.get(item.areaId) ?? null) : null,
+      area: areaOf.get(item.areaId ?? "")?.name ?? null,
+      areaColor: areaOf.get(item.areaId ?? "")?.color ?? null,
       progress: repeats(item) ? null : (counts[item.id] ?? { done: 0, total: 0 }),
     })),
     full: items.length >= LISTS_LIMIT,

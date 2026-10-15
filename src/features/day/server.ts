@@ -22,5 +22,5 @@ export const getDay = cache(async (date: LocalDate) => loadDay(await getItemsRep
 export const getRailAreas = cache(async () => {
   const repo = await getItemsRepo();
   const [areas, open] = await Promise.all([repo.listAreas(), loadRailCounts(repo, await getTodayDate(), await getTimeZone())]);
-  return areas.map((a) => ({ id: a.id, name: a.name, open: open.get(a.id) ?? 0 }));
+  return areas.map((a) => ({ id: a.id, name: a.name, color: a.color, open: open.get(a.id) ?? 0 }));
 });

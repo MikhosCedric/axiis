@@ -2,7 +2,8 @@
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useId, useMemo, useOptimistic, useRef, useState, useTransition, type FormEvent, type ReactNode, type RefObject } from "react";
-import type { Item, LocalDate } from "@/domain/item";
+import { AreaLabel } from "@/components/area-mark";
+import type { Area, Item, LocalDate } from "@/domain/item";
 import { SELECTED_ITEM_PARAM } from "@/features/day/types";
 import { DetailAside } from "@/features/detail/detail-aside";
 import { captureAction, setDoneAction } from "@/features/today/actions";
@@ -59,7 +60,7 @@ export function InboxView({
   const [shown, change] = useOptimistic(rows, (current: Item[], c: Change) =>
     c.kind === "hide" ? current.filter((i) => i.id !== c.id) : current.map((i) => (i.id === c.id ? { ...i, status: "open" } : i)),
   );
-  const areaName = new Map<string, string>(areas.map((a) => [a.id, a.name]));
+  const areaOf = new Map(areas.map((a) => [a.id as string, a]));
 
   useEffect(() => {
     const target = refocus.current;
@@ -161,7 +162,7 @@ export function InboxView({
                   key={item.id}
                   item={item}
                   today={today}
-                  area={item.areaId ? (areaName.get(item.areaId) ?? null) : null}
+                  area={item.areaId ? (areaOf.get(item.areaId) ?? null) : null}
                   count={childCounts[item.id]}
                   tags={data.tags[item.id]}
                   selected={selectedId === item.id}
@@ -206,7 +207,7 @@ function InboxRow({
 }: {
   item: Item;
   today: LocalDate;
-  area: string | null;
+  area: Area | null;
   count: { total: number; done: number } | undefined;
   tags: readonly string[] | undefined;
   selected: boolean;
@@ -262,7 +263,7 @@ function InboxRow({
         )}
         <RowTags tags={tags} selected={selected} />
       </button>
-      <span className={`text-[13px] max-rail:hidden ${quiet}`}>{area ?? ""}</span>
+      <span className={`text-[13px] max-rail:hidden ${quiet}`}>{area && <AreaLabel name={area.name} color={area.color} />}</span>
       {done ? (
         <span className={`pr-1 text-[13px] ${quiet}`}>Done</span>
       ) : (
