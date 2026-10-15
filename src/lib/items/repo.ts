@@ -103,12 +103,18 @@ export interface ItemsRepo {
   create(input: NewItem): Promise<Item>;
   update(id: ItemId, patch: ItemPatch): Promise<Item>;
   softDelete(id: ItemId): Promise<void>;
+  /**
+   * Hard-deletes up to 500 of the account's items soft-deleted more than 30
+   * days ago (`purge_deleted_items`, migration 0008), so an account at its
+   * item cap can free room. Overrides of a purged series stay, detached.
+   */
+  purgeDeleted(): Promise<void>;
 
   /**
-   * Every tag, with how many open live items carry it. Unordered. The counts
-   * read every open tagged item, so this grows with the account: use
-   * `listTagNames` when the counts are not shown. Limits and name rules live
-   * in the tag commands.
+   * Every tag, with how many open live items carry it. Unordered. Two reads:
+   * the tags, and one count per tag from `tag_open_counts` (migration 0008),
+   * so its size follows the number of tags, not of tagged items. Limits and
+   * name rules live in the tag commands.
    */
   listTags(): Promise<TagSummary[]>;
   /** Every tag, without counts. One read of the tags table, which the commands keep to `TAGS_PER_USER` rows. Unordered. */

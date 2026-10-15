@@ -26,5 +26,8 @@ export function seriesTimeOffer(
   if (was.kind === "timed" && was.start.getTime() === s.start.getTime() && was.end.getTime() === s.end.getTime()) return null;
   const start = localMinutes(s.start, date, timeZone);
   if (start < 0 || start >= DAY_MINUTES) return null;
-  return { id: item.id, title: item.title, time: { start, length: Math.round((s.end.getTime() - s.start.getTime()) / 60_000) }, cadence: cadences[r.seriesId] };
+  // The series repeats its wall-clock end, so on a day the clocks change the offer reads the wall, not real minutes.
+  const wallLength = localMinutes(s.end, date, timeZone) - start;
+  const length = wallLength > 0 ? wallLength : Math.round((s.end.getTime() - s.start.getTime()) / 60_000);
+  return { id: item.id, title: item.title, time: { start, length }, cadence: cadences[r.seriesId] };
 }

@@ -61,7 +61,7 @@ How the app uses them (`src/domain/tag.ts`, `src/features/tags/`):
 - A name is stored as typed but trimmed, with runs of spaces collapsed and a leading `#` dropped, 1 to 32 characters. Two names are one tag when they match without case. Limits: 10 tags per item, 200 per user, checked by the commands.
 - Tags are hard-deleted. Deleting a tag removes its `item_tags` rows by cascade and never touches an item. Rename changes the one `tags` row.
 - A series carries the tags for all its occurrences. An override of a live series has no tag rows of its own; it shows and edits the series' (`tagOwner`). See `docs/recurrence.md`.
-- Open counts count live items whose status is `open`. A tag's page lists live items that are not dropped, open first, then newest, at most 200.
+- Open counts count live items whose status is `open`. They come from `tag_open_counts()` (migration 0008, not yet applied to the hosted project): a `security invoker` SQL function that groups the caller's `item_tags` joined to open, live items and returns one `(tag_id, open)` row per tag that has any, so a read is one request of at most 500 rows (the tag cap) however many items are tagged. Row Level Security still applies; the `user_id` filters let it use `item_tags_user_tag` and the items primary key. Execute is granted to `authenticated` only. The detail panel orders its tag suggestions by these counts, and the Tags page shows them. A tag's page lists live items that are not dropped, open first, then newest, at most 200.
 - Search reads `#name` words as a filter: words narrow the text hits to items carrying every named tag, or an override whose series carries them; tags alone list every item carrying them.
 
 ## Quotas (migration 0006, not yet applied to the hosted project)
@@ -76,12 +76,24 @@ Signup is open and PostgREST takes writes straight from the browser's session, s
 | `areas` | 100 per user | 12 live (`AREA_LIMIT`) |
 | `item_tags` | 20 per item | 10 (`TAGS_PER_ITEM`) |
 
-- Soft-deleted rows count. They keep their storage, and leaving them out would let an insert-then-delete loop run forever. Nothing purges them yet; a purge of old soft-deleted rows is the remedy if a real account nears a cap.
+- Soft-deleted rows count. They keep their storage, and leaving them out would let an insert-then-delete loop run forever. Items soft-deleted more than 30 days ago are purged (below), so an account at its item cap frees room 30 days after it deletes.
 - An `after insert` statement trigger checks the users (or items) in the inserted rows, counting at most cap + 1 rows through an index that leads with `user_id` (`item_id` for `item_tags`). A bulk insert that crosses the cap is refused whole. Two concurrent inserts can each see room and both land, so a cap can be overshot by a few rows.
 - The functions are `security invoker` with `set search_path = ''`. Row Level Security shows a user all of their own rows, soft-deleted ones included, so the count is complete; signup's `handle_new_user` runs as the table owner and is not limited by RLS.
 - A refusal is SQLSTATE `54000` (`program_limit_exceeded`). `src/lib/quota.ts` turns it into "This account has reached its size limit" for capture, new notes, links, areas, tags, subtasks and occurrence overrides.
 - Only inserts are checked. Updates, soft deletes, and account deletion with its cascades are untouched. The migration adds `items (user_id, parent_id) where parent_id is not null`, so deleting an account with 20,000 items no longer scans the table once per item for the parent foreign key.
 - The note body cap drops from 2 MB to 512 KB of jsonb (`items_body_size`). The editor refuses more than 200 KB of JSON (`BODY_MAX_BYTES`), which measured at most 1.5 times larger as jsonb.
+
+## Purge (migration 0008, not yet applied to the hosted project)
+
+`purge_deleted_items()` hard-deletes up to 500 of the caller's items soft-deleted more than 30 days ago, oldest first, and returns how many went. `deleteItem` calls it (`ItemsRepo.purgeDeleted`) after every delete, and ignores a failure, so a delete never fails because of it and the app works before 0008 is applied.
+
+- `security invoker` with `set search_path = ''`: Row Level Security limits it to the caller's rows. Execute is granted to `authenticated` only. A new index `items (user_id, deleted_at) where deleted_at is not null` finds the rows.
+- Links and `item_tags` go with their item by cascade. Tags stay.
+- A parent stays while any of its children is not purged in the same call (`parent_id` has no delete action). Subtasks are soft-deleted with their parent, so they normally go together.
+- `series_id` cascades, but a deleted series leaves its overrides as ordinary items. Overrides of a purged series that are not purged themselves are detached first (`series_id` and `original_on` set to null), as "Does not repeat" detaches them, so they are kept.
+- Within any 30 days an insert-then-delete loop still holds at most the cap, so the quota keeps its purpose.
+- `hasAnyItem` counts deleted rows as stored, so an account whose every item was deleted and purged sees the first-day examples again.
+- Areas are not purged: their cap of 100 already leaves room to churn against 12 live ones.
 
 ## Rate limits (migration 0007, not yet applied to the hosted project)
 
@@ -108,7 +120,7 @@ The waiting items (top level, no schedule, not notes) are filtered in the query:
 
 ## Bounded reads
 
-PostgREST answers at most `max-rows` rows (1000 on Supabase) and says nothing when it stops. So every read either has an explicit limit below that and a visible "showing the newest N" line when it is reached (the Inbox, the waiting tray, a week's planned items at 500, Lists, Due, a tag's page), or must be complete and is read in pages sized by an exact count (`readAll` in `supabase-repo.ts`: overrides, child counts, tags of items, open counts per tag).
+PostgREST answers at most `max-rows` rows (1000 on Supabase) and says nothing when it stops. So every read either has an explicit limit below that and a visible "showing the newest N" line when it is reached (the Inbox, the waiting tray, a week's planned items at 500, Lists, Due, a tag's page), or must be complete and is read in pages sized by an exact count (`readAll` in `supabase-repo.ts`: overrides, child counts, tags of items). Open counts per tag come from one `tag_open_counts()` call, which returns at most one row per tag (500 by the quota), so one request is complete.
 
 ## Lists query
 
