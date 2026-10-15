@@ -2,6 +2,7 @@
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useOptimistic, useTransition, type ReactNode } from "react";
+import { AreaLabel } from "@/components/area-mark";
 import { SELECTED_ITEM_PARAM } from "@/features/day/types";
 import { DetailAside } from "@/features/detail/detail-aside";
 import { setDoneAction } from "@/features/today/actions";
@@ -124,7 +125,7 @@ function DueRowView({
         <p className={`mt-0.5 flex flex-wrap gap-x-3 text-xs ${quiet}`}>
           <span className="tabular">{row.due}</span>
           {row.when && <span className="tabular">Planned {row.when}</span>}
-          {row.area && <span>{row.area}</span>}
+          {row.area && <AreaLabel name={row.area} color={row.areaColor} />}
         </p>
       </div>
     </li>

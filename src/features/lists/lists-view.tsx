@@ -2,6 +2,7 @@
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useId, useOptimistic, useTransition, type ReactNode } from "react";
+import { AreaLabel } from "@/components/area-mark";
 import { SELECTED_ITEM_PARAM } from "@/features/day/types";
 import { DetailAside } from "@/features/detail/detail-aside";
 import { CaptureField } from "@/features/today/capture-field";
@@ -157,7 +158,7 @@ function ListRowView({
             </span>
           )}
           {row.when && <span className="tabular">{row.when}</span>}
-          {row.area && <span>{row.area}</span>}
+          {row.area && <AreaLabel name={row.area} color={row.areaColor} />}
         </p>
       </div>
     </li>

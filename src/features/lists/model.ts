@@ -1,3 +1,4 @@
+import type { AreaColor } from "@/domain/area-color";
 import type { ItemId } from "@/domain/item";
 import type { ChildCount } from "@/lib/items/repo";
 
@@ -10,6 +11,7 @@ export type ListRow = {
   /** When it is planned or how it repeats; null when it has no day. */
   when: string | null;
   area: string | null;
+  areaColor: AreaColor | null;
   /** Lines done of all its lines. Null for a series, which never has lines of its own. */
   progress: ChildCount | null;
 };
