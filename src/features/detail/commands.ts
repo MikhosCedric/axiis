@@ -348,6 +348,8 @@ export async function deleteItem(repo: ItemsRepo, rawKey: unknown, timeZone: str
       for (const child of await repo.listChildren(item.id)) await repo.softDelete(child.id);
       await repo.softDelete(item.id);
     }
+    // Frees room under the item cap. Housekeeping, so a failure never fails the delete.
+    await repo.purgeDeleted().catch(() => undefined);
   });
 }
 

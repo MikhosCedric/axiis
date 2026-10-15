@@ -47,12 +47,14 @@ export function fakeRepo(items: Item[] = [], areas: Area[] = []) {
     addTags: [ItemId, TagName[]][];
     /** Reads of every tag with its open count, which grow with the account. */
     listTags: number;
+    purgeDeleted: number;
   } = {
     listForDay: [],
     create: [],
     update: [],
     addTags: [],
     listTags: 0,
+    purgeDeleted: 0,
   };
   const repo: ItemsRepo = {
     async listAreas() {
@@ -204,6 +206,9 @@ export function fakeRepo(items: Item[] = [], areas: Area[] = []) {
         items.splice(at, 1);
         deleted += 1;
       }
+    },
+    async purgeDeleted() {
+      calls.purgeDeleted += 1;
     },
     async listTags() {
       calls.listTags += 1;

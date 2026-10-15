@@ -76,12 +76,24 @@ Signup is open and PostgREST takes writes straight from the browser's session, s
 | `areas` | 100 per user | 12 live (`AREA_LIMIT`) |
 | `item_tags` | 20 per item | 10 (`TAGS_PER_ITEM`) |
 
-- Soft-deleted rows count. They keep their storage, and leaving them out would let an insert-then-delete loop run forever. Nothing purges them yet; a purge of old soft-deleted rows is the remedy if a real account nears a cap.
+- Soft-deleted rows count. They keep their storage, and leaving them out would let an insert-then-delete loop run forever. Items soft-deleted more than 30 days ago are purged (below), so an account at its item cap frees room 30 days after it deletes.
 - An `after insert` statement trigger checks the users (or items) in the inserted rows, counting at most cap + 1 rows through an index that leads with `user_id` (`item_id` for `item_tags`). A bulk insert that crosses the cap is refused whole. Two concurrent inserts can each see room and both land, so a cap can be overshot by a few rows.
 - The functions are `security invoker` with `set search_path = ''`. Row Level Security shows a user all of their own rows, soft-deleted ones included, so the count is complete; signup's `handle_new_user` runs as the table owner and is not limited by RLS.
 - A refusal is SQLSTATE `54000` (`program_limit_exceeded`). `src/lib/quota.ts` turns it into "This account has reached its size limit" for capture, new notes, links, areas, tags, subtasks and occurrence overrides.
 - Only inserts are checked. Updates, soft deletes, and account deletion with its cascades are untouched. The migration adds `items (user_id, parent_id) where parent_id is not null`, so deleting an account with 20,000 items no longer scans the table once per item for the parent foreign key.
 - The note body cap drops from 2 MB to 512 KB of jsonb (`items_body_size`). The editor refuses more than 200 KB of JSON (`BODY_MAX_BYTES`), which measured at most 1.5 times larger as jsonb.
+
+## Purge (migration 0008, not yet applied to the hosted project)
+
+`purge_deleted_items()` hard-deletes up to 500 of the caller's items soft-deleted more than 30 days ago, oldest first, and returns how many went. `deleteItem` calls it (`ItemsRepo.purgeDeleted`) after every delete, and ignores a failure, so a delete never fails because of it and the app works before 0008 is applied.
+
+- `security invoker` with `set search_path = ''`: Row Level Security limits it to the caller's rows. Execute is granted to `authenticated` only. A new index `items (user_id, deleted_at) where deleted_at is not null` finds the rows.
+- Links and `item_tags` go with their item by cascade. Tags stay.
+- A parent stays while any of its children is not purged in the same call (`parent_id` has no delete action). Subtasks are soft-deleted with their parent, so they normally go together.
+- `series_id` cascades, but a deleted series leaves its overrides as ordinary items. Overrides of a purged series that are not purged themselves are detached first (`series_id` and `original_on` set to null), as "Does not repeat" detaches them, so they are kept.
+- Within any 30 days an insert-then-delete loop still holds at most the cap, so the quota keeps its purpose.
+- `hasAnyItem` counts deleted rows as stored, so an account whose every item was deleted and purged sees the first-day examples again.
+- Areas are not purged: their cap of 100 already leaves room to churn against 12 live ones.
 
 ## Rate limits (migration 0007, not yet applied to the hosted project)
 

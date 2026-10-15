@@ -286,6 +286,10 @@ export class SupabaseItemsRepo implements ItemsRepo {
     unwrap("softDelete", result, () => undefined);
   }
 
+  async purgeDeleted(): Promise<void> {
+    unwrap("purgeDeleted", await this.db.rpc("purge_deleted_items"), () => undefined);
+  }
+
   private async allTags(): Promise<Tag[]> {
     return unwrap("listTags", await this.db.from("tags").select(TAG_COLUMNS), tagList);
   }
