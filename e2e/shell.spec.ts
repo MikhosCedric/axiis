@@ -1,3 +1,4 @@
+import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 
 test("the Score and Week trays are the Inbox's waiting pile and say so", async ({ page }) => {
@@ -81,6 +82,8 @@ test.describe("shell on a phone", () => {
       await expect(control).toBeInViewport({ ratio: 1 });
       expect((await control.boundingBox())!.height).toBeGreaterThanOrEqual(44);
     }
+    const results = await new AxeBuilder({ page }).analyze();
+    expect(results.violations.filter((v) => v.impact === "serious" || v.impact === "critical")).toEqual([]);
     await page.keyboard.press("Escape");
     await expect(sheet).toBeHidden();
     await expect(more).toBeFocused();
