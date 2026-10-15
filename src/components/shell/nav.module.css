@@ -31,6 +31,42 @@
   }
 }
 
+/*
+ * The rail's account menu, a popover in the top layer. The rail is always the first 216px of the
+ * window and its account row always sits 24px off its foot, so the menu opens just above that row.
+ */
+.menu {
+  inset: auto auto 66px 16px;
+  width: 184px;
+  margin: 0;
+  padding: 4px;
+  border: 1px solid var(--rule);
+  border-radius: 8px;
+  background: var(--sheet);
+  color: var(--ink);
+  box-shadow: var(--float);
+  --ground: var(--sheet);
+}
+
+@media (pointer: coarse) {
+  .menu {
+    bottom: 74px;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .menu:popover-open {
+    animation: lift 160ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+}
+
+@keyframes lift {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+}
+
 @keyframes rise {
   from {
     transform: translateY(100%);

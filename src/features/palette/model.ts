@@ -1,9 +1,8 @@
 import type { ItemType, LocalDate } from "@/domain/item";
 import { parseTagName, tagKey, type TagName } from "@/domain/tag";
+import { PLACES } from "@/components/shell/places";
 import { dayHref } from "@/features/day/nav";
-import { DUE_PATH } from "@/features/due/model";
-import { LISTS_PATH } from "@/features/lists/model";
-import { tagHref, TAGS_PATH } from "@/features/tags/model";
+import { tagHref } from "@/features/tags/model";
 import type { SearchRow } from "@/features/notes/model";
 import { parseCapture, previewWords } from "@/features/today/capture-syntax";
 import { formatDayIn } from "@/features/today/format";
@@ -22,8 +21,8 @@ export type Act =
   | { do: "ask-tag" };
 
 export type Command =
-  | { kind: "go"; id: string; label: string; href: string }
-  | { kind: "help"; id: string; label: string }
+  | { kind: "go"; id: string; label: string; href: string; hint?: string }
+  | { kind: "help"; id: string; label: string; hint: string }
   | { kind: "date"; id: string; label: string; href: string }
   | { kind: "capture"; id: string; label: string; title: string }
   | { kind: "open"; id: string; label: string; detail: string; target: Target }
@@ -42,19 +41,12 @@ export type Find =
 export const FIND_MIN = 2;
 export const FIND_MAX = 6;
 
-type Place = { label: string; href: string | null; also: string[] };
+type Destination = { label: string; href: string | null; hint: string; also: readonly string[] };
 
-const PLACES: Place[] = [
-  { label: "Today", href: "/today", also: ["score", "day"] },
-  { label: "Week", href: "/week", also: ["planner"] },
-  { label: "Inbox", href: "/inbox", also: ["unscheduled", "waiting"] },
-  { label: "Due", href: DUE_PATH, also: ["deadlines", "deadline", "overdue"] },
-  { label: "Lists", href: LISTS_PATH, also: ["checklists"] },
-  { label: "Notes", href: "/notes", also: [] },
-  { label: "Tags", href: TAGS_PATH, also: ["labels"] },
-  { label: "Search", href: "/search", also: ["find"] },
-  { label: "Settings", href: "/settings", also: ["account", "areas", "export"] },
-  { label: "Guide", href: null, also: ["help", "keyboard shortcuts", "keys"] },
+/** Every page, then the Guide, which opens a dialog rather than a page. */
+const DESTINATIONS: Destination[] = [
+  ...PLACES,
+  { label: "Guide", href: null, hint: "Help and every shortcut", also: ["help", "keyboard shortcuts", "keys"] },
 ];
 
 /** The query search should run for this input, or null when it is too short to be worth it. */
@@ -74,11 +66,11 @@ function dateLabel(date: LocalDate, today: LocalDate): string {
  */
 export function paletteSections(input: string, today: LocalDate, find: Find, selected: Target | null = null): Section[] {
   const text = input.trim();
-  const places = rank(PLACES, text, (p) => [p.label, ...p.also]);
+  const places = rank(DESTINATIONS, text, (p) => [p.label, ...p.also]);
   const go: Command[] = places.map((p) =>
     p.href === null
-      ? { kind: "help", id: "help", label: p.label }
-      : { kind: "go", id: `go-${p.label.toLowerCase()}`, label: p.label, href: p.href },
+      ? { kind: "help", id: "help", label: p.label, hint: p.hint }
+      : { kind: "go", id: `go-${p.label.toLowerCase()}`, label: p.label, href: p.href, hint: p.hint },
   );
   if (!text) {
     const pick: Section[] = selected

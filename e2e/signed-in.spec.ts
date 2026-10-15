@@ -34,6 +34,9 @@ signedIn.describe("signed in", () => {
     await page.keyboard.press("g");
     await page.keyboard.press("l");
     await expect(page).toHaveURL("/lists");
+    await page.keyboard.press("g");
+    await page.keyboard.press("s");
+    await expect(page).toHaveURL("/search");
   });
 
   for (const path of ["/day/2026-02-30", "/day/abc", "/day/1969-12-31"]) {
@@ -114,8 +117,6 @@ signedIn.describe("signed in", () => {
     ["Lists", "/lists", "Lists"],
     ["Tags", "/tags", "Tags"],
     ["Notes", "/notes", "Notes"],
-    ["Search", "/search", "Search"],
-    ["Settings", "/settings", "Settings"],
   ] as const) {
     signedIn(`the nav rail's ${label} link opens ${path}`, async ({ page }) => {
       await page.goto(path === "/inbox" ? "/lists" : "/inbox");
@@ -126,6 +127,30 @@ signedIn.describe("signed in", () => {
       await expect(page.getByRole("heading", { level: 1, ...(heading && { name: heading }) })).toBeVisible();
     });
   }
+
+  signedIn("the rail's account menu opens Settings and marks the row current there", async ({ page }) => {
+    await page.goto("/inbox");
+    const nav = page.getByRole("navigation", { name: "Primary" });
+    await nav.getByRole("button", { name: "Account" }).click();
+    await nav.getByRole("group", { name: "Account" }).getByRole("link", { name: "Settings" }).click();
+    await expect(page).toHaveURL("/settings");
+    await expect(page.getByRole("heading", { level: 1, name: "Settings" })).toBeVisible();
+    await expect(nav.getByRole("group", { name: "Account" })).toBeHidden();
+    await nav.getByRole("button", { name: "Account" }).click();
+    await expect(nav.getByRole("link", { name: "Settings" })).toHaveAttribute("aria-current", "page");
+  });
+
+  signedIn("the Search page is one choice away from the rail's search field", async ({ page }) => {
+    await page.goto("/inbox");
+    // The field answers once React has hydrated the rail, so a click before then is tried again.
+    await expect(async () => {
+      await page.getByRole("navigation", { name: "Primary" }).getByRole("button", { name: /^Search or go to/ }).click();
+      await expect(page.getByRole("dialog", { name: "Search and commands" })).toBeVisible({ timeout: 1000 });
+    }).toPass();
+    await page.getByRole("option", { name: "Search, Find any task or note" }).click();
+    await expect(page).toHaveURL("/search");
+    await expect(page.getByRole("heading", { level: 1, name: "Search" })).toBeVisible();
+  });
 
   signedIn("a task captured on Today waits in the Inbox, and planned for tomorrow it shows on that day", async ({ page }) => {
     const title = `Call the plumber ${Date.now()}`;
@@ -313,6 +338,7 @@ signedIn.describe("signed in", () => {
 
   signedIn("signing out returns to sign in and ends the session", async ({ page }) => {
     await page.goto("/today");
+    await page.getByRole("button", { name: "Account" }).click();
     await page.getByRole("button", { name: "Sign out" }).click();
     await expect(page).toHaveURL("/login");
     await page.goto("/today");
