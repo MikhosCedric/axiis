@@ -183,7 +183,7 @@ function ColorPicker({ id, area, onPick }: { id: string; area: Area; onPick: (co
         <label
           key={color ?? "none"}
           title={areaColorLabel(color)}
-          className="grid size-8 cursor-pointer place-items-center rounded-full hover:bg-hover has-checked:shadow-[inset_0_0_0_1.5px_var(--ink)] has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-accent pointer-coarse:size-11"
+          className="relative grid size-8 cursor-pointer place-items-center rounded-full hover:bg-hover has-checked:shadow-[inset_0_0_0_1.5px_var(--ink)] has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-accent pointer-coarse:size-11"
         >
           <input
             type="radio"
@@ -191,7 +191,7 @@ function ColorPicker({ id, area, onPick }: { id: string; area: Area; onPick: (co
             value={color ?? ""}
             checked={area.color === color}
             onChange={() => onPick(color)}
-            className="sr-only"
+            className="absolute inset-0 m-0 size-full cursor-pointer appearance-none rounded-full opacity-0"
           />
           <span className="sr-only">{areaColorLabel(color)}</span>
           <Swatch color={color} size={16} />
