@@ -97,6 +97,13 @@ export const WeekIcon = () => (
   </Icon>
 );
 
+export const MonthIcon = () => (
+  <Icon>
+    <rect x="2.5" y="3.5" width="13" height="11" rx="1.5" />
+    <path d="M2.5 7.2h13M2.5 10.8h13M6.8 3.5v11M11.2 3.5v11" />
+  </Icon>
+);
+
 export const SettingsIcon = () => (
   <Icon>
     <path d="M3 5.5h12M3 12.5h12" />

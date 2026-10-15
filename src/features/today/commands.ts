@@ -56,14 +56,22 @@ export async function captureChecklist(repo: ItemsRepo, raw: unknown): Promise<C
 /**
  * Captures a task from a line of text. A day, a time, a length and tags at
  * the line's start or end are read here, on the server, against its own clock
- * and the user's time zone; the client sends only the words.
+ * and the user's time zone; the client sends only the words. A line that
+ * names no day lands on `defaultOn` when one is given (the Month's focused
+ * day), else on today when it names a time, else nowhere.
  */
-export async function captureTask(repo: ItemsRepo, raw: unknown, now: Date, timeZone: string): Promise<CaptureResult> {
+export async function captureTask(
+  repo: ItemsRepo,
+  raw: unknown,
+  now: Date,
+  timeZone: string,
+  defaultOn: LocalDate | null = null,
+): Promise<CaptureResult> {
   const text = titleSchema.safeParse(raw);
   if (!text.success) return { ok: false, error: TOO_LONG };
   const said = parseCapture(text.data);
   const today = toLocalDate(now, timeZone);
-  const on = said.day ? dayOf(said.day, today) : said.time ? today : null;
+  const on = said.day ? dayOf(said.day, today) : (defaultOn ?? (said.time ? today : null));
 
   let schedule: Schedule = { kind: "unscheduled" };
   let landed: Landed | null = null;

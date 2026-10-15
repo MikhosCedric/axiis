@@ -11,6 +11,7 @@ import {
   DueIcon,
   InboxIcon,
   ListsIcon,
+  MonthIcon,
   MoreIcon,
   NotesIcon,
   SearchIcon,
@@ -29,6 +30,7 @@ export type NavArea = { id: string; name: string; open: number };
 const ICONS: Record<PlaceId, ReactNode> = {
   today: <TodayIcon />,
   week: <WeekIcon />,
+  month: <MonthIcon />,
   due: <DueIcon />,
   inbox: <InboxIcon />,
   lists: <ListsIcon />,
