@@ -21,7 +21,14 @@ const row = (n: number, over: Partial<SearchRow> = {}): SearchRow => ({
 
 describe("paletteSections", () => {
   it("offers every page, then the Guide, when nothing is typed", () => {
-    expect(labels("   ")).toEqual({ go: ["Today", "Week", "Inbox", "Due", "Lists", "Notes", "Tags", "Search", "Settings", "Guide"] });
+    expect(labels("   ")).toEqual({ go: ["Today", "Week", "Due", "Inbox", "Lists", "Notes", "Tags", "Search", "Settings", "Guide"] });
+  });
+
+  it("says in a few words what each page and the Guide hold", () => {
+    const go = paletteSections("", today, idle)[0].commands;
+    expect(go.find((c) => c.label === "Inbox")).toMatchObject({ hint: "Waiting for a day" });
+    expect(go.find((c) => c.label === "Guide")).toMatchObject({ hint: "Help and every shortcut" });
+    expect(go.every((c) => (c.kind === "go" || c.kind === "help") && c.hint)).toBe(true);
   });
 
   it("goes to a tag's page for #name, any spaces and case kept, and offers no capture", () => {
