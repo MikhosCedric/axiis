@@ -8,6 +8,7 @@ const ITEM = "00000000-0000-4000-8000-00000000000a" as ItemId;
 const OTHER = "00000000-0000-4000-8000-00000000000b" as ItemId;
 const DEEP = "00000000-0000-4000-b000-000000000001" as TagId;
 const HOME = "00000000-0000-4000-b000-000000000002" as TagId;
+const UNUSED = "00000000-0000-4000-b000-000000000003" as TagId;
 const name = (s: string) => s as TagName;
 
 type Request = { method: string; table: string; params: URLSearchParams; body: unknown };
@@ -39,28 +40,25 @@ function stubbed(answer: (r: Request, nth: number) => Reply = () => ({ body: [] 
 }
 
 describe("SupabaseItemsRepo tags", () => {
-  it("counts only open, live items per tag, reading past the server's row cap", async () => {
-    const page = (n: number, tag: string) => Array.from({ length: n }, () => ({ tag_id: tag, items: { id: ITEM } }));
-    const { repo, requests } = stubbed((r, nth) => {
-      if (r.table === "tags") return { body: [{ id: DEEP, name: "Deep" }, { id: HOME, name: "home" }] };
-      return nth === 1
-        ? { body: page(1000, DEEP), headers: { "content-range": "0-999/1005" } }
-        : { body: [...page(3, DEEP), ...page(2, HOME)], headers: { "content-range": "1000-1004/1005" } };
+  it("reads each tag's open count from one tag_open_counts call, however many items carry it", async () => {
+    const { repo, requests } = stubbed((r) => {
+      if (r.table === "tags") return { body: [{ id: DEEP, name: "Deep" }, { id: HOME, name: "home" }, { id: UNUSED, name: "unused" }] };
+      return { body: [{ tag_id: DEEP, open: 1003 }, { tag_id: HOME, open: 2 }] };
     });
 
     expect(await repo.listTags()).toEqual([
       { id: DEEP, name: "Deep", open: 1003 },
       { id: HOME, name: "home", open: 2 },
+      { id: UNUSED, name: "unused", open: 0 },
     ]);
-
-    const counts = requests.filter((r) => r.table === "item_tags");
-    expect(counts[0].params.get("select")).toBe("tag_id,items!inner(id)");
-    expect(counts[0].params.get("items.status")).toBe("eq.open");
-    expect(counts[0].params.get("items.deleted_at")).toBe("is.null");
-    expect(counts.map((r) => [r.params.get("offset"), r.params.get("limit")])).toEqual([
-      ["0", "1000"],
-      ["1000", "1000"],
-    ]);
+    expect(requests.map((r) => [r.method, r.table])).toEqual(
+      expect.arrayContaining([
+        ["GET", "tags"],
+        ["POST", "tag_open_counts"],
+      ]),
+    );
+    expect(requests).toHaveLength(2);
+    expect(requests.some((r) => r.table === "item_tags")).toBe(false);
   });
 
   it("reads the tags of many items in one request, keyed by item", async () => {

@@ -61,7 +61,7 @@ How the app uses them (`src/domain/tag.ts`, `src/features/tags/`):
 - A name is stored as typed but trimmed, with runs of spaces collapsed and a leading `#` dropped, 1 to 32 characters. Two names are one tag when they match without case. Limits: 10 tags per item, 200 per user, checked by the commands.
 - Tags are hard-deleted. Deleting a tag removes its `item_tags` rows by cascade and never touches an item. Rename changes the one `tags` row.
 - A series carries the tags for all its occurrences. An override of a live series has no tag rows of its own; it shows and edits the series' (`tagOwner`). See `docs/recurrence.md`.
-- Open counts count live items whose status is `open`. A tag's page lists live items that are not dropped, open first, then newest, at most 200.
+- Open counts count live items whose status is `open`. They come from `tag_open_counts()` (migration 0008, not yet applied to the hosted project): a `security invoker` SQL function that groups the caller's `item_tags` joined to open, live items and returns one `(tag_id, open)` row per tag that has any, so a read is one request of at most 500 rows (the tag cap) however many items are tagged. Row Level Security still applies; the `user_id` filters let it use `item_tags_user_tag` and the items primary key. Execute is granted to `authenticated` only. The detail panel orders its tag suggestions by these counts, and the Tags page shows them. A tag's page lists live items that are not dropped, open first, then newest, at most 200.
 - Search reads `#name` words as a filter: words narrow the text hits to items carrying every named tag, or an override whose series carries them; tags alone list every item carrying them.
 
 ## Quotas (migration 0006, not yet applied to the hosted project)
@@ -108,7 +108,7 @@ The waiting items (top level, no schedule, not notes) are filtered in the query:
 
 ## Bounded reads
 
-PostgREST answers at most `max-rows` rows (1000 on Supabase) and says nothing when it stops. So every read either has an explicit limit below that and a visible "showing the newest N" line when it is reached (the Inbox, the waiting tray, a week's planned items at 500, Lists, Due, a tag's page), or must be complete and is read in pages sized by an exact count (`readAll` in `supabase-repo.ts`: overrides, child counts, tags of items, open counts per tag).
+PostgREST answers at most `max-rows` rows (1000 on Supabase) and says nothing when it stops. So every read either has an explicit limit below that and a visible "showing the newest N" line when it is reached (the Inbox, the waiting tray, a week's planned items at 500, Lists, Due, a tag's page), or must be complete and is read in pages sized by an exact count (`readAll` in `supabase-repo.ts`: overrides, child counts, tags of items). Open counts per tag come from one `tag_open_counts()` call, which returns at most one row per tag (500 by the quota), so one request is complete.
 
 ## Lists query
 
