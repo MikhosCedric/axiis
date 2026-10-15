@@ -17,9 +17,9 @@ colors:
   press-tint: "rgba(28, 27, 34, 0.11)"
   on-verdigris: "#f3eee1"
   scrim: "rgb(8 7 10 / 0.48)"
-  night-paper: "#16151b"
-  night-rail: "#1c1b22"
-  night-sheet: "#201f27"
+  night-paper: "#14131a"
+  night-rail: "#0e0d13"
+  night-sheet: "#1f1e27"
   night-ink: "#ece5d3"
   night-ink-secondary: "#bdb7a8"
   night-ink-quiet: "#9d978a"
@@ -197,7 +197,7 @@ components:
 
 Axiis draws a day the way an engraver sets a page of chamber music. Each area of life (Work, Home, Health) is a staff of five faint ruled lines. One hour axis runs across every staff, with a barline on each hour and a double barline where the day ends. Items are beams laid on those lines, and their line form, not a colour, says where they stand: dashed while planned, solid while happening, hollow once done. A single verdigris playhead marks now.
 
-The surface is warm music paper in light and a deep ink-blue night in dark, both on one set of shared tokens. Depth comes from hairlines and tonal paper steps, almost never from shadow. Type pairs Besley, a bookish serif with high contrast, for headings, staff names and the wordmark, with Hanken Grotesk for everything a hand operates. The interface is quiet by default and spacious, and its one loud moment is the colour of now.
+The surface is warm music paper in light and a deep ink-blue night in dark, both on one set of shared tokens, each declared once as `light-dark(day, night)`. Depth comes from hairlines and tonal paper steps, almost never from shadow. Type pairs Besley, a bookish serif with high contrast, for headings, staff names and the wordmark, with Hanken Grotesk for everything a hand operates. The interface is quiet by default and spacious, and its one loud moment is the colour of now.
 
 This is the incumbent system as shipped in `src/app/globals.css`, `src/features/**` and `src/components/**`, extracted from code. It rejects the blank-canvas SaaS look, blue or purple gradients, guilt badges and per-type colour coding.
 
@@ -218,8 +218,8 @@ A two-ink, one-pigment palette: warm paper, near-black ink in three strengths, a
 
 ### Neutral
 - **Music Paper** (`music-paper` / `night-paper`): the page ground, also written into the browser theme colour and the manifest through `src/lib/theme-colors.ts`.
-- **Rail Paper** (`rail-paper` / `night-rail`): one step darker, used for the nav rail and the public header's hover.
-- **Sheet** (`sheet` / `night-sheet`): one step lighter, for raised writing surfaces: the capture input, chips, the palette dialog, and the inner fill of a done glyph's head.
+- **Rail Paper** (`rail-paper` / `night-rail`): one step darker, used for the nav rail and the public header's hover. At night it is the darkest tone (`#0e0d13`), so the rail reads as recessed.
+- **Sheet** (`sheet` / `night-sheet`): one step lighter, for raised writing surfaces: the capture input, chips, the detail panel, the palette dialog, the current rail item, and the inner fill of a done glyph's head. At night it is the lightest ground (`#1f1e27`), so a raised thing is lighter, as it would be under a lamp.
 - **Engraving Ink** (`engraving-ink` / `night-ink`): primary text, planned beams, the current nav item's fill and the ink button.
 - **Ink Secondary** (`ink-secondary`): supporting text, quiet control labels.
 - **Ink Quiet** (`ink-quiet`): metadata, hour numerals, placeholders, done items and their glyphs.
@@ -230,9 +230,13 @@ A two-ink, one-pigment palette: warm paper, near-black ink in three strengths, a
 - **Field Stroke** (`field-stroke`): input borders and the hover border of chips and quiet public buttons. It is the only stroke strong enough to mark a control boundary on its own.
 
 ### Named Rules
+**The One Declaration Rule.** Every colour token is declared once on `:root` as `light-dark(day, night)`, and `color-scheme` picks the side: `light dark` by default (the device decides), forced by `data-theme="light"` or `"dark"` from the theme cookie. A token never has a second dark block to keep in sync. `src/lib/theme-colors.test.ts` reads the paper token from that one declaration.
+
+**The Tonal Depth Rule.** Depth is three tones, not lines or shadows: Rail Paper below the page, Music Paper the page, Sheet above it. At night the steps are wider than by day (recessed rail `#0e0d13`, page `#14131a`, sheet `#1f1e27`), because a hairline carries less at night.
+
 **The Now Rule.** Verdigris means now, a drag target, or the focused or selected thing. It never marks an item type, an area, a category or a success message. A screen with no now and nothing focused carries almost no verdigris.
 
-**The Ink-for-Selection Rule.** The current navigation item and the active segment of a toggle are filled with ink, not verdigris. Place in the app is shown in ink; verdigris is kept for time and focus.
+**The Ink-for-Selection Rule.** The current navigation item is marked in ink (an ink tick on a raised sheet) and the active segment of a toggle is filled with ink, never verdigris. Place in the app is shown in ink; verdigris is kept for time and focus.
 
 **The No-Type-Hue Rule.** PRODUCT.md allowed a small set of item-type hues. The shipped system uses none. Type is shown by glyph shape (see Components), so do not introduce type colours without revisiting that decision.
 
@@ -245,7 +249,7 @@ A two-ink, one-pigment palette: warm paper, near-black ink in three strengths, a
 
 ### Hierarchy
 - **Display** (500, `clamp(2.6rem, 1.4rem + 5.2vw, 5.25rem)`, line-height 1, -0.025em, balanced, max 13ch): the landing page headline only.
-- **Headline** (500, `clamp(28px, 3vw, 40px)`, 1.1, -0.015em): every app page title (Today's date, Week, Inbox, Due, Lists, Notes, Tags, Search, Settings), always through the `headline` utility in `globals.css`, which also balances the lines. The note editor's title field is the one exception (3.2vw, 1.15), because it is a growing text field. Landing section heads use a larger clamp (`1.6rem` to `2.25rem`).
+- **Headline** (500, `clamp(28px, 3vw, 40px)`, 1.1, -0.015em): every app page title (Today's date, Week, Inbox, Due, Lists, Notes, Tags, Search, Settings), always through the `headline` utility in `globals.css`, which also balances the lines. In a day's title the weekday is set in Ink Secondary, so the date leads ("Thursday 15 October"). Under every title sits one `page-summary` line (15px, 1.5, Ink Secondary). The note editor's title field is the one exception (3.2vw, 1.15), because it is a growing text field. Landing section heads use a larger clamp (`1.6rem` to `2.25rem`).
 - **Title** (Besley 500, 18px to 22px): section heads inside a page (Waiting, Subtasks, Linked notes, Due's Earlier, This week and Later at 18px), staff names (16px, 19px at rail width) and the wordmark (600, 20px to 22px, -0.01em).
 - **Body** (Hanken 400, 14px, 1.45): the default for the app. Page subtitles under an app headline and public body copy step up to 15px at 1.6 (Body Large), the landing lead paragraph to 17px to 18px, held to 34ch to 36rem. Note bodies are set for reading at 16px, 1.65, 68ch.
 - **Mono** (system monospace, 0.88em on Rail Paper with a soft hairline): inline code in notes only.
@@ -264,6 +268,8 @@ The app is a two-column shell: a nav rail and a content column. At 760px and up 
 
 The Score is the organizing grid. A sticky label column (`--lw`, 80px, or 104px at rail width) holds staff names. The hour axis is 76px per hour (`background-size: 76px`), each staff sub-row is 25px tall with five lines 6px apart, and beams snap to quarter hours. On the app, the axis covers 07:00 to 20:00, widened to whole hours that hold every beam and now. When its container has room for more, it gains whole hours to fill it, later ones up to 24:00 first so nothing already drawn moves, then earlier ones down to 00:00; the hour stays 76px, so what is left over is under one hour. A drag in progress keeps the axis it started on. When the axis is wider than its container, it scrolls horizontally inside it and opens scrolled to now (30% from the left) or to the first beam. On the landing sample score the visible window narrows instead (10:00 to 16:00 under 640px, 08:00 to 17:00, then 07:00 to 19:00 from 1000px), so it never scrolls sideways.
 
+A page head with day or week steps (Day/Week, Previous and Next, the date) is a `page-head`: the steps sit to the right of the title when the page column, a `page` container, is at least 56rem wide, and in one row under the summary otherwise, so they never stack into a tower beside a wrapped title. Under the head, the tool row (capture field, any view switch, the Guide) carries one status line under the field. The screen's own news (a move, a tick, a plan) shares that line with the capture's, through `CaptureField`'s `screenStatus`, so a page reserves one line of room for news, not two.
+
 Spacing follows Tailwind's 4px scale. Controls use 8px and 12px gaps, sections inside a page are separated by 28px (`mt-7`), and public sections by 96px to 128px. Settings is one column below 1180px. From 1180px it is two: a sticky index of its parts (Areas, Tags, Display, Your data) in an 11rem column on the left, and the sections on the right. Theme and Density sit together under Display; the rail's theme toggle changes the same setting. The public site is a single column capped at 1180px with 16px gutters (32px from 640px). Prose is held to 34ch to 72ch. Density is spacious by default. Settings has a Compact choice that tightens list rows only: the rows of Inbox, Due, Lists, a tag's page and the Score's List view, through `--row-y` (cookie `density`, `data-density` on `<html>`). The Score's staves and the Week are the same in both.
 
 ## Elevation & Depth
@@ -271,8 +277,9 @@ Spacing follows Tailwind's 4px scale. Controls use 8px and 12px gaps, sections i
 The system is flat. Structure is drawn with hairlines and three paper tones (Rail Paper, Music Paper, Sheet). Shadow appears only where something genuinely floats above the page.
 
 ### Shadow Vocabulary
-- **Dialog lift** (`box-shadow: 0 24px 56px -16px rgb(14 12 10 / 0.38), 0 2px 6px rgb(14 12 10 / 0.12)`): the command palette, over a `rgb(8 7 10 / 0.48)` backdrop.
-- **Drag lift** (`box-shadow: 0 6px 18px rgba(28, 27, 34, 0.22)`): the floating copy of a chip while it is dragged off the staves.
+- **Float** (`--float`, utility `shadow-float`: `0 24px 56px -16px` and `0 2px 6px`, warm ink by day, near black at night): the command palette and the Guide, over a `rgb(8 7 10 / 0.48)` backdrop.
+- **Lift** (`--lift`, utility `shadow-lift`: `0 6px 18px`, ink by day, black at night): the floating copy of a chip while it is dragged off the staves or across the Week.
+- **Raised tab** (`0 1px 2px` plus an inset Hairline Soft ring): the current rail item only.
 - **Selected chip ring** (`box-shadow: inset 0 0 0 1px var(--accent)`): doubles a selected chip's border in verdigris; a state mark, not depth.
 
 ### Named Rules
@@ -293,7 +300,7 @@ A 44 by 16px drawing of an item: a head and a beam, and the system's state langu
 - **Completion:** on mark-done an ink fill sweeps left to right through the beam and fades (0.56s, `cubic-bezier(0.16, 1, 0.3, 1)`); removed under reduced motion.
 
 ### Beams and the Score
-- **Beam:** a glyph stretched to its duration on a staff, label above in 13px Label with its start time in 12px Ink Quiet. Focus ring sits 6px off the beam. Selected shows a 2px verdigris underline on the label. The right 12px (24px on coarse pointers) is a resize grip.
+- **Beam:** a glyph stretched to its duration on a staff, label above in 13px Label with its start time in 12px Ink Quiet. The label sits over the playhead and the staff lines with a Music Paper halo (three soft `text-shadow`s), so the now line passes behind the words. A staff label says how many items are open only when there are some. Focus ring sits 6px off the beam. Selected shows a 2px verdigris underline on the label. The right 12px (24px on coarse pointers) is a resize grip.
 - **Playhead:** a 2px verdigris rule through every staff at now, with a verdigris clock flag in the axis.
 - **Drag ghost:** a 9px dashed verdigris outline over Verdigris Wash, with the target time range in 12px verdigris 600 above it. The staff under the pointer takes Verdigris Wash; the tray takes a 2px dashed verdigris outline.
 - **Motion:** beams glide to new positions in 0.28s on the house curve and stop easing while tracking a pointer.
@@ -320,9 +327,12 @@ A 44 by 16px drawing of an item: a head and a beam, and the system's state langu
 - **Focus:** the global verdigris ring; the caret is verdigris.
 
 ### Navigation
-- **Rail:** Rail Paper, wordmark in Besley 600 with the crossing-axes mark, links in Hanken 500 Ink Secondary with 18px icons. The current page, Settings included, is an Ink-filled pill with Paper text. Hover is Hover Tint. Areas list each open count as a 6px pill bar in Ink Quiet at 55% opacity, 8px plus 7px per open item, capped at 72px.
+- **Rail:** Rail Paper, wordmark in Besley 600 with the crossing-axes mark, links in Hanken 500 Ink Secondary with 18px icons. The current page, Settings included, is a raised Sheet tab: Ink text at 600, an inset Hairline Soft edge, a 1px shadow, and a 3px Ink tick at its leading edge that marks the state on its own. Hover is Hover Tint. Areas list each open count as a 6px pill bar in Ink Quiet at 55% opacity, 8px plus 7px per open item, capped at 72px.
 - **Mobile:** the same links in a single horizontal scrolling row; utility actions keep icons and hide labels.
 - **Day and week steps:** Day/Week, then Previous and Next joined as one outlined pair (they never wrap apart), the date field, and Today or This week when away from it. All 36px tall, 44px under a coarse pointer.
+
+### Loading
+A loading page is drawn in the shape of the page it becomes, in Press Tint strokes and real hairlines, breathing slowly (`animate-breathe`, 2.4s, opacity to 45%; still under reduced motion). A day draws its title, the capture field's outline, the hour axis at 76px and three 85px staves with a 104px label column; a week draws seven ruled day columns; Inbox and Lists draw the capture outline above their ruled rows; the other list pages draw ruled rows only. Each is one `role="status"` that says Loading.
 
 ### Note Toolbar
 A sticky bar over the note body, held to the body's 68ch measure, with a Hairline Soft rule beneath. Its 32px icon tools (44px on touch) sit in three named groups: Type (Heading, Subheading, Quote, Code), Style (Bold, Italic, Link) and Lists (Bulleted, Numbered), each name in 12px Ink Quiet from 640px and spoken only below. It stays on screen while the note is open, so the tools are found without focusing the body first. A pressed tool is filled with Ink.
@@ -341,7 +351,7 @@ All help lives in one place. The Guide is the palette's dialog (same Sheet, widt
 ### Do:
 - **Do** show an item's state with its line form: dashed planned, solid live, hollow done.
 - **Do** reserve Verdigris (`#0a675a`, dark `#45c7b0`) for now, a drag target, focus or selection, and the public Start with today.
-- **Do** fill the current navigation item with Engraving Ink, not verdigris.
+- **Do** mark the current navigation item in Engraving Ink (its tick), not verdigris.
 - **Do** draw structure with Hairline (28% ink) and Hairline Soft (12% ink), and close the end of a sequence with a `3px double` rule.
 - **Do** set every time, count and date numeral in tabular figures.
 - **Do** use the house curve `cubic-bezier(0.16, 1, 0.3, 1)` for movement, and drop the movement under `prefers-reduced-motion`.

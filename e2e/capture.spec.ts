@@ -96,7 +96,8 @@ test.describe("capture field", () => {
 
 test.describe("palette actions", () => {
   async function openPalette(page: Page) {
-    await expect(page.getByRole("heading", { name: "Palette harness" })).toBeVisible();
+    // The shortcut is a listener React attaches on hydration; the server-drawn heading shows before that.
+    await expect(page.locator("[data-hydrated]")).toBeAttached();
     await page.keyboard.press("Control+k");
     const box = page.getByRole("combobox");
     await expect(box).toBeFocused();

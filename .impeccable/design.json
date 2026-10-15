@@ -16,7 +16,7 @@
       "hairline": { "role": "neutral", "displayName": "Hairline", "canonical": "rgba(28, 27, 34, 0.28)" },
       "hairline-soft": { "role": "neutral", "displayName": "Hairline Soft", "canonical": "rgba(28, 27, 34, 0.12)" },
       "field-stroke": { "role": "neutral", "displayName": "Field Stroke", "canonical": "rgba(28, 27, 34, 0.55)" },
-      "night-paper": { "role": "neutral", "displayName": "Night Paper", "canonical": "#16151b" },
+      "night-paper": { "role": "neutral", "displayName": "Night Paper", "canonical": "#14131a" },
       "night-ink": { "role": "neutral", "displayName": "Night Ink", "canonical": "#ece5d3" }
     },
     "typographyMeta": {

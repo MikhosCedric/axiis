@@ -40,7 +40,7 @@ export function LeftoverStrip({
   }
 
   return (
-    <section aria-labelledby="leftover-h" className="mb-5 max-w-[760px] border-y border-rule py-3">
+    <section aria-labelledby="leftover-h" className="mb-6 border-y border-rule py-3">
       <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
         <h2 id="leftover-h" className="text-[13px] font-semibold text-ink-2">
           {leftoverHeading(data.total)}

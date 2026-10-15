@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useRef, useState, useTransition, type FormEvent } from "react";
+import { useEffect, useRef, useState, useTransition, type FormEvent, type ReactNode } from "react";
 import { captureAction as serverCapture } from "./actions";
 import type { ActionResult, CaptureResult } from "./commands";
 import { CAPTURE_EXAMPLES, CAPTURE_LEAD, capturedLine, firstCapturedLine, parseCapture, previewWords } from "./capture-syntax";
@@ -64,6 +64,7 @@ export function CaptureField({
   placeholder = "Capture anything, then place it later",
   plans = true,
   firstDay = false,
+  screenStatus,
 }: {
   // Some screens still type their capture as a plain ActionResult; the server sends the full CaptureResult.
   captureAction?: (title: string) => Promise<CaptureResult | ActionResult>;
@@ -73,6 +74,11 @@ export function CaptureField({
   plans?: boolean;
   /** The account has never stored an item: lead with a line of help, show examples, and answer the first capture in full. */
   firstDay?: boolean;
+  /**
+   * The screen's own status line (a move, a tick, a plan). It shares this field's status line, so the
+   * page reserves one line of room for news under the field, not two.
+   */
+  screenStatus?: ReactNode;
 }) {
   const input = useRef<HTMLInputElement>(null);
   const [value, setValue] = useState("");
@@ -174,6 +180,7 @@ export function CaptureField({
               <span className="rounded border border-rule px-1.5 py-px">{preview}</span>
             </p>
           )}
+          {screenStatus}
         </div>
       </div>
     </form>

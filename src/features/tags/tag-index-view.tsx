@@ -7,7 +7,7 @@ export function TagIndexView({ tags, hrefFor = tagHref }: { tags: TagSummary[]; 
   return (
     <div className="max-w-[760px] px-4 pt-6 pb-14 rail:px-9 rail:pt-8">
       <h1 className="headline">Tags</h1>
-      <p className="mt-2.5 text-[15px] text-ink-2">
+      <p className="page-summary">
         {tags.length === 0
           ? "No tags yet. Add one from any item's details."
           : `${tags.length === 1 ? "One tag" : `${tags.length} tags`}. Open one to see everything that carries it.`}
