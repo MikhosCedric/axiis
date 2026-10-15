@@ -20,7 +20,6 @@ import { SELECTED_ITEM_PARAM } from "@/features/day/types";
 import { DetailAside } from "@/features/detail/detail-aside";
 import { GuideButton, type GuideTopic } from "@/features/palette/guide";
 import { CaptureField } from "@/features/today/capture-field";
-import type { ActionResult, CaptureResult } from "@/features/today/commands";
 import { formatDayHeading } from "@/features/today/format";
 import { Glyph } from "@/features/today/glyph";
 import type { BeamState } from "@/features/today/model";
@@ -40,19 +39,12 @@ import {
   MARKS_PER_DAY,
   monthHref,
   monthOf,
+  parseYearMonth,
   MONTH_FULL,
   sameDayIn,
   type MonthCell,
   type MonthMark,
 } from "./model";
-
-/** The writes the month makes. Moving is the Week's own command, with the same checks. */
-export type MonthActions = {
-  move: (key: string, to: Destination) => Promise<ActionResult>;
-  capture: (title: string, on: LocalDate) => Promise<CaptureResult | ActionResult>;
-};
-
-const serverActions: MonthActions = { move: moveAction, capture: captureOnAction };
 
 const KEYS_ID = "month-keys";
 const MONTH_GUIDE: GuideTopic[] = ["capture", "month"];
@@ -60,7 +52,6 @@ const MONTH_GUIDE: GuideTopic[] = ["capture", "month"];
 const COMPACT_PX = 576;
 const STATE_WORD: Record<BeamState, string> = { planned: "planned", live: "happening now", done: "done" };
 
-/** A day the next month should focus once it arrives, after the keys walked off the edge of this one. */
 const ARRIVAL_KEY = "axiis-month-focus";
 
 /** The day to focus when a month arrives because the arrow keys walked off the edge of the last one. Read once. */
@@ -106,12 +97,10 @@ export function MonthView({
   data,
   nav,
   detail,
-  actions = serverActions,
 }: {
   data: MonthData;
   nav?: ReactNode;
   detail?: ReactNode;
-  actions?: MonthActions;
 }) {
   const { month, today } = data;
   const router = useRouter();
@@ -160,7 +149,7 @@ export function MonthView({
     setStatus(null);
     startTransition(async () => {
       move({ key: mark.key, from: mark.from, to });
-      const result = await actions.move(mark.key, to);
+      const result = await moveAction(mark.key, to);
       setStatus(result.ok ? { text: `${mark.title} is on ${formatDayHeading(to)}.`, error: false } : { text: result.error, error: true });
     });
   }
@@ -179,6 +168,7 @@ export function MonthView({
       setActive(to);
       return;
     }
+    if (!parseYearMonth(monthOf(to))) return;
     leaveArrival(to);
     router.push(monthHref(monthOf(to), today));
   }
@@ -255,7 +245,7 @@ export function MonthView({
         <div className="mt-6 mb-3 flex flex-wrap items-start gap-x-3 gap-y-1">
           <div className="min-w-0 flex-[1_1_280px] rail:max-w-[440px]">
             <CaptureField
-              captureAction={(title) => actions.capture(title, active)}
+              captureAction={(title) => captureOnAction(title, active)}
               label={`Capture for ${formatDayHeading(active)}`}
               placeholder={`Capture for ${formatDayHeading(active)}`}
               screenStatus={
