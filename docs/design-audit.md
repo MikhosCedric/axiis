@@ -51,7 +51,7 @@ axe reported **no violations on any of the 24 loads**, nor with the detail panel
    - **Where.** `src/features/score/score-view.tsx:398` (the label's `maxWidth: labelWidth(beam.free)`) and `:269-275` (the playhead, `z-[3]`).
    - **Evidence.** At 1280px in `/dev/score`, the 15:00 "Quick check-in" label renders as a single "Q", "Stand-up" as "Sta…" and "Plan the Lisbon trip" as "Plan the …". The 2px verdigris playhead is drawn over the label text of "Review pull requests", "Design sync 13:00" and "Inbox, now". The full title remains in `aria-label` and `title`, so this is a sighted-reader problem.
    - **Fix.** Below a minimum width (for example 4ch), show the start time alone or move the label up a row. Give labels a paper halo (`text-shadow` or a `--paper` background) so the playhead passes behind the words, not through them. Suggested command `/impeccable polish`.
-   - **Status. Deferred.** Choosing between a time-only label and a second label row changes how the Score reads, which is a design call.
+   - **Status. Half fixed later (`ui-refine-4`).** Labels now sit over the playhead with a paper halo, so the line passes behind the words. Collapsed labels on short beams are still deferred: choosing between a time-only label and a second label row changes how the Score reads, which is a design call.
 
 5. **[P2, Responsive] Touch targets are mostly 32px, and short beams are 19px wide.**
    - **Where.** Icon buttons (`size-8`, 32×32) in `detail-sheet.tsx:25`, `subtasks.tsx:140`, `connected.tsx:160` and `areas-section.tsx:40`. Quarter-hour beams in `score.module.css` (`.beam`, 25px tall). The resize grip (12px, or 24px under `pointer: coarse`).
@@ -81,7 +81,7 @@ axe reported **no violations on any of the 24 loads**, nor with the detail panel
    - **Where.** `src/app/globals.css:20-52`.
    - **Evidence.** The 12 dark values appear once under `[data-theme="dark"]` and again under `prefers-color-scheme: dark`, held together by a "Keep in sync" comment. They match today.
    - **Fix.** Declare each token once with `light-dark()` and let `color-scheme` pick the theme. Set `color-scheme: light dark` on `:root`, then force `light` or `dark` from `data-theme`. Suggested command `/impeccable polish`.
-   - **Status. Deferred.** The values match today, and moving every token to `light-dark()` changes how themes are forced, so it wants its own change and a decision on browser support.
+   - **Status. Fixed later (`ui-refine-4`).** Every token is declared once as `light-dark(day, night)`; `color-scheme` is `light dark` on `:root` and forced by `data-theme`. `light-dark()` needs Chrome 123, Safari 17.5 or Firefox 120 (all 2024).
 
 10. **[P3, Implementation integrity] The page-title style is copied as a literal 10 times.**
     - **Where.** `font-serif text-[clamp(28px,3vw,40px)] leading-[1.1] font-medium tracking-[-0.015em]` in `day-view`, `week-view`, `inbox-view`, `lists-view`, `notes-list`, `search-view`, `settings-view`, `tag-index-view`, `tagged-view` and the detail harness. `note-editor.tsx:148` has already drifted to `3.2vw` and `1.15`.
