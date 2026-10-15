@@ -156,7 +156,11 @@ export function WeekView({
     });
   }
 
-  const start = useWeekDrag(fly, { days, timeZone, onDrop: move, onTap: (item) => select(item.id) }, setPreview);
+  const start = useWeekDrag(
+    fly,
+    { days, accepts: (item, to) => moves(item, to, timeZone), onDrop: move, onTap: (item) => select(item.id) },
+    setPreview,
+  );
 
   useEffect(() => {
     const id = refocus.current;
