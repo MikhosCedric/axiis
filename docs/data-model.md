@@ -9,7 +9,9 @@ All tables carry `user_id uuid not null default auth.uid() references auth.users
 Same-user integrity is enforced structurally, not by trigger: `items` has `unique (user_id, id)`, and every reference to an item or area is a composite foreign key `(user_id, x_id)`, so a row can never point at another user's row.
 
 ### `areas`
-The user's parts of life (Work, Home, Health). `id`, `name`, `position double precision`, `deleted_at`. `unique (user_id, id)`.
+The user's parts of life (Work, Home, Health). `id`, `name`, `position double precision`, `color text null`, `deleted_at`. `unique (user_id, id)`.
+
+`color` (migration 0009) is a palette name or null for None. The check `areas_color_palette` allows only `clay`, `ochre`, `moss`, `sage`, `slate`, `plum`, `rose` and `stone`, the names in `AREA_COLORS` (`src/domain/area-color.ts`). The database stores the name, never a hex value; the colours are design tokens (DESIGN.md, Colour for Areas). `setAreaColor` in `src/features/account/commands.ts` sets and clears it, and the export carries it.
 
 ### `items`
 | column | type | notes |

@@ -229,6 +229,13 @@ A two-ink, one-pigment palette: warm paper, near-black ink in three strengths, a
 - **Press Tint** (`press-tint`, `--press`, `active:bg-press`): 11% ink (12% paper in dark) while the same control is held down, so a press answers before the page does.
 - **Field Stroke** (`field-stroke`): input borders and the hover border of chips and quiet public buttons. It is the only stroke strong enough to mark a control boundary on its own.
 
+### Colour for Areas
+A person may give each area one colour from a fixed palette of eight muted inks, or None. None is the default, for new areas and for every area that existed before colours, so nothing on screen changes until a colour is picked.
+- **Palette** (`--area-<name>` in `globals.css`, names in `src/domain/area-color.ts`, stored as the name in `areas.color`): Clay `#964b2c` / `#d58464`, Ochre `#9d752f` / `#e8bc78`, Moss `#485320` / `#7a8753`, Sage `#6a816e` / `#acc5b0`, Slate `#597b99` / `#9bbfdf`, Plum `#5c3861` / `#946d9a`, Rose `#7a444f` / `#b67b85`, Stone `#796e63` / `#b2a59a` (day / night). Each holds 3:1 on Rail Paper, Paper and Sheet in both themes, stays apart from the others under protanopia, deuteranopia and tritanopia, and stays well away from Verdigris (`src/domain/area-color.test.ts`).
+- **Where it shows:** only as a small dot (`AreaMark`, 8px, 6px in a month cell, `src/components/area-mark.tsx`) beside the area's name: the staff label and readout on the Score, a beam's label, the Week's chips and rows, Month marks, the detail panel's Area field, rows in Inbox, Due, Lists, Tags and Notes, and the rail's area links. A done item's dot is hollow, like its glyph. The colour never fills a beam, tints text or a row, or replaces a line form.
+- **Never the only sign:** the dot is `aria-hidden` and always sits beside the area's name or inside a control named for the area, so nothing is lost to someone who cannot tell the colours apart.
+- **Picker:** Settings, Areas, the swatch button on each row opens a native radio group (None first, then the palette in order). Arrow keys move and choose, the chosen swatch is ringed in Ink (the Ink-for-Selection Rule), focus keeps the global ring, and each swatch is 44px on touch.
+
 ### Named Rules
 **The One Declaration Rule.** Every colour token is declared once on `:root` as `light-dark(day, night)`, and `color-scheme` picks the side: `light dark` by default (the device decides), forced by `data-theme="light"` or `"dark"` from the theme cookie. A token never has a second dark block to keep in sync. `src/lib/theme-colors.test.ts` reads the paper token from that one declaration.
 
@@ -377,7 +384,8 @@ All help lives in one place. The Guide is the palette's dialog (same Sheet, widt
 - **Do** keep copy quiet and plain: sentence case, no exclamation marks, no guilt about overdue items ("Waiting", "For things that belong to the day but not to an hour.").
 
 ### Don't:
-- **Don't** colour-code item types or areas; type is the glyph's head shape.
+- **Don't** colour-code item types; type is the glyph's head shape. An area's colour is the person's choice from the area palette, shown only as a dot beside its name.
+- **Don't** add Verdigris, or any hue near it, to the area palette.
 - **Don't** use verdigris for success, decoration, icons or headings.
 - **Don't** add shadows to cards or rows; only floating layers (the palette, a dragged chip) are lifted.
 - **Don't** set controls, labels or metadata in Besley.
