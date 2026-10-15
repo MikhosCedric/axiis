@@ -25,8 +25,8 @@ function Chevron({ back }: { back?: boolean }) {
  * Jump to month: a native popover under its button, with a year stepper over
  * the year's months in rows of three. Arrows move between months and across
  * years, Page Up and Page Down by a year, Enter goes. The month on screen is
- * filled with Ink and this month carries a Verdigris tick. Escape and a click
- * outside close it, and focus goes back to the button.
+ * filled with Ink, and this month has an Ink tick, as the grid marks today in
+ * Ink. Escape and a click outside close it, and focus goes back to the button.
  */
 export function MonthPicker({ month, today, className }: { month: YearMonth; today: LocalDate; className: string }) {
   const id = useId();
@@ -154,7 +154,7 @@ export function MonthPicker({ month, today, className }: { month: YearMonth; tod
               >
                 {SHORT[i]}
                 {now && (
-                  <span aria-hidden="true" className={`absolute inset-x-[30%] bottom-1.5 h-0.5 rounded-full ${shown ? "bg-paper" : "bg-accent"}`} />
+                  <span aria-hidden="true" className={`absolute inset-x-[30%] bottom-1.5 h-0.5 rounded-full ${shown ? "bg-paper" : "bg-ink"}`} />
                 )}
               </button>
             );
