@@ -24,7 +24,9 @@ A solo productivity web app. One connected set of items, shown through many view
 
 **Link**: a typed edge between two items, such as a note referencing a task. Backlinks are links read in reverse.
 
-**View**: a query over items, never its own data. Score, List, Week and Today are views.
+**View**: a query over items, never its own data. Score, List, Week, Month and Today are views.
+
+**Month**: the view of one calendar month as whole weeks. Each day shows what is planned on it (a timed item on every day it covers), what falls due on it, and how many more there are. Items with no day never appear on it. Capture there lands on the day in focus.
 
 **Lists**: the view of every top-level checklist, open first, each with how many of its lines are done. A checklist's subtasks are called its lines there. A repeating checklist shows once, as its series.
 
@@ -38,7 +40,7 @@ A solo productivity web app. One connected set of items, shown through many view
 
 **Tray**: the "Waiting" list of open items with no day, under the Score and the Week. The same items make up the Inbox. Dragging an item from the tray onto a staff schedules it.
 
-**Capture**: adding an item from one line of text. A plain line lands unscheduled in the tray. On Today, Week, the Inbox and the palette, a day, a time, a length and tags at the line's start or end plan and tag the new task ("dentist tomorrow 9:00 #health"); a checklist captured on Lists keeps its name as typed. Must take under two seconds.
+**Capture**: adding an item from one line of text. A plain line lands unscheduled in the tray. On Today, Week, Month, the Inbox and the palette, a day, a time, a length and tags at the line's start or end plan and tag the new task ("dentist tomorrow 9:00 #health"); a checklist captured on Lists keeps its name as typed. Must take under two seconds.
 
 **First day**: the state of an account that has never stored an item of any type or status, deleted ones included. The day screen draws example beams and leaves out what only explains items, until the first capture. An account that once had items never returns to it.
 
