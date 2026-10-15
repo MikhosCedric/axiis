@@ -54,7 +54,7 @@ export function ListsView({
     <div className={selectedParam ? "min-[1180px]:grid min-[1180px]:grid-cols-[minmax(0,1fr)_328px]" : ""}>
       <div className="min-w-0 px-4 pt-6 pb-14 rail:px-9 rail:pt-8">
         <h1 className="headline">Lists</h1>
-        <p className="mt-2.5 text-[15px] text-ink-2">{listsSummary(data.rows)}</p>
+        <p className="page-summary">{listsSummary(data.rows)}</p>
 
         <div className="mt-6">
           <CaptureField captureAction={captureAndOpen} label="New checklist" placeholder="Name a checklist, then add its lines" plans={false} />

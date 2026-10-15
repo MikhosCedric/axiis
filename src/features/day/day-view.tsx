@@ -50,6 +50,24 @@ const MODES: { mode: DayViewMode; label: string }[] = [
   { mode: "list", label: "List" },
 ];
 
+/** "Thursday 15 October", with the weekday a step quieter so the date leads. */
+function DayHeading({ date }: { date: DayData["date"] }) {
+  const text = formatDayHeading(date);
+  const gap = text.indexOf(" ");
+  return (
+    <time dateTime={date}>
+      {gap > 0 ? (
+        <>
+          <span className="text-ink-2">{text.slice(0, gap)}</span>
+          {text.slice(gap)}
+        </>
+      ) : (
+        text
+      )}
+    </time>
+  );
+}
+
 function useNow(nowIso: string, ticking: boolean) {
   const [now, setNow] = useState(() => new Date(nowIso));
   useEffect(() => {
@@ -188,15 +206,15 @@ export function DayView({
 
   return (
     <div className={selectedParam ? "min-[1180px]:grid min-[1180px]:grid-cols-[minmax(0,1fr)_328px]" : ""}>
-      <div className="min-w-0 px-4 pt-6 pb-14 rail:px-9 rail:pt-8">
-        <header className="flex flex-col-reverse gap-3 rail:flex-row-reverse rail:items-start rail:justify-between rail:gap-6">
+      <div className="@container/page min-w-0 px-4 pt-6 pb-14 rail:px-9 rail:pt-8">
+        <header className="page-head">
           {/* A server element can arrive late as a lazy chunk, which React then checks for a key among its siblings. */}
           <Fragment key="nav">{nav}</Fragment>
           <div className="min-w-0">
             <h1 className="headline">
-              <time dateTime={date}>{formatDayHeading(date)}</time>
+              <DayHeading date={date} />
             </h1>
-            <p className="mt-2.5 text-[15px] text-ink-2">{summaryLine(view, isToday)}</p>
+            <p className="page-summary">{summaryLine(view, isToday)}</p>
           </div>
         </header>
 

@@ -44,7 +44,7 @@ export function SettingsView({
     >
       <header className="min-[1180px]:col-span-2">
         <h1 className="headline">Settings</h1>
-        <p className="mt-2.5 text-[15px] break-words text-ink-2">
+        <p className="page-summary break-words">
           {email ? (
             <>
               Signed in as <span className="text-ink">{email}</span>

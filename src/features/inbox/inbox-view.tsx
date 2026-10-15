@@ -130,7 +130,7 @@ export function InboxView({
           >
             Inbox
           </h1>
-          <p className="mt-2.5 text-[15px] text-ink-2">{inboxSummary(shown)}</p>
+          <p className="page-summary">{inboxSummary(shown)}</p>
         </header>
 
         <div className="mt-6 flex flex-wrap items-start gap-x-3 gap-y-1">
