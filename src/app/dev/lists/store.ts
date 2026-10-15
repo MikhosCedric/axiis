@@ -7,8 +7,8 @@ const areaId = (n: number) => `f3000000-0000-4000-9000-${String(n).padStart(12, 
 const at = (day: string) => new Date(`2026-${day}T09:00:00Z`);
 
 const AREAS: Area[] = [
-  { id: areaId(1), name: "Work", position: 0 },
-  { id: areaId(2), name: "Home", position: 1 },
+  { id: areaId(1), name: "Work", position: 0, color: null },
+  { id: areaId(2), name: "Home", position: 1, color: null },
 ];
 
 /** Checklists in every state the page draws, beside items it must leave out. */

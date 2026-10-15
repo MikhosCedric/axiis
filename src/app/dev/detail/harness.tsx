@@ -19,9 +19,9 @@ const areaId = (n: number) => `00000000-0000-4000-9000-${String(n).padStart(12, 
 const day = (s: string) => s as LocalDate;
 
 const AREAS: Area[] = [
-  { id: areaId(1), name: "Work", position: 0 },
-  { id: areaId(2), name: "Home", position: 1 },
-  { id: areaId(3), name: "Health", position: 2 },
+  { id: areaId(1), name: "Work", position: 0, color: null },
+  { id: areaId(2), name: "Home", position: 1, color: null },
+  { id: areaId(3), name: "Health", position: 2, color: null },
 ];
 
 function fixtures(): Item[] {

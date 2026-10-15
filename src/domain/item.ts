@@ -1,6 +1,7 @@
 // zod/mini, not classic zod: this module reaches the browser, and classic zod ships every locale with it.
 import * as z from "zod/mini";
 import { parseLocalDate } from "@/lib/dates";
+import type { AreaColor } from "./area-color";
 import type { OccurrenceKey } from "./item-key";
 import type { Rule } from "./recurrence";
 
@@ -88,6 +89,8 @@ export type Area = {
   id: AreaId;
   name: string;
   position: number;
+  /** Null is None: the area is drawn in ink, as before colours existed. */
+  color: AreaColor | null;
 };
 
 export type NewItem = {

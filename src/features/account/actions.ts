@@ -6,7 +6,7 @@ import { getAreasRepo } from "@/lib/areas";
 import { endFakeSession, getFakeAccount } from "@/lib/supabase/fake-session";
 import { createClient } from "@/lib/supabase/server";
 import type { ActionResult } from "@/features/today/commands";
-import { addArea, deleteAccount, moveArea, removeArea, renameArea } from "./commands";
+import { addArea, deleteAccount, moveArea, removeArea, renameArea, setAreaColor } from "./commands";
 
 // The repo is bound to the signed-in user's session and RLS scopes every
 // write, so a direct POST without a session cannot touch anyone's rows.
@@ -22,6 +22,10 @@ export async function addAreaAction(name: string): Promise<ActionResult> {
 
 export async function renameAreaAction(id: string, name: string): Promise<ActionResult> {
   return refreshed(await renameArea(await getAreasRepo(), id, name));
+}
+
+export async function setAreaColorAction(id: string, color: string | null): Promise<ActionResult> {
+  return refreshed(await setAreaColor(await getAreasRepo(), id, color));
 }
 
 export async function removeAreaAction(id: string): Promise<ActionResult> {
