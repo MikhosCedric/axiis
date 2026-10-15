@@ -220,3 +220,62 @@ describe("isSameDay", () => {
     expect(isSameDay(d("2026-10-07"), now, "Asia/Kolkata")).toBe(true);
   });
 });
+
+describe("the zone offset cache", () => {
+  // Half- and quarter-hour offsets, a half-hour change (Lord Howe), a date-line jump (Apia), a change at
+  // midnight (Santiago) and an offset with seconds until 1972 (Monrovia).
+  const ZONES = [
+    "UTC",
+    "America/New_York",
+    "Europe/London",
+    "Asia/Kolkata",
+    "Asia/Kathmandu",
+    "Australia/Lord_Howe",
+    "Pacific/Chatham",
+    "Pacific/Apia",
+    "America/Santiago",
+    "Africa/Monrovia",
+    "America/St_Johns",
+  ];
+  const formats = new Map(
+    ZONES.map((timeZone) => [
+      timeZone,
+      new Intl.DateTimeFormat("en-CA", {
+        timeZone,
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+        hourCycle: "h23",
+      }),
+    ]),
+  );
+  const read = (at: Date, timeZone: string) => {
+    const parts = formats.get(timeZone)!.formatToParts(at);
+    const get = (type: string) => parts.find((p) => p.type === type)!.value;
+    return { date: `${get("year")}-${get("month")}-${get("day")}`, minutes: Number(get("hour")) * 60 + Number(get("minute")) };
+  };
+
+  it("reads the same date and clock as Intl across every kind of change and at random instants", () => {
+    let seed = 7;
+    const random = () => (seed = (seed * 1_103_515_245 + 12_345) % 2_147_483_648) / 2_147_483_648;
+    const from = Date.UTC(1970, 0, 1);
+    const to = Date.UTC(2200, 11, 31);
+    const changeDays = ["1971-04-25", "1971-10-31", "2011-12-29", "2026-03-08", "2026-03-29", "2026-04-04", "2026-04-05", "2026-09-06", "2026-09-27", "2026-10-04", "2026-10-25", "2026-11-01"];
+    for (const zone of ZONES) {
+      const instants: number[] = [];
+      for (let i = 0; i < 400; i++) instants.push(from + Math.floor(random() * (to - from)));
+      for (const day of changeDays) {
+        const start = Date.UTC(Number(day.slice(0, 4)), Number(day.slice(5, 7)) - 1, Number(day.slice(8))) - 14 * 3_600_000;
+        for (let m = 0; m < 52 * 60; m += 11) instants.push(start + m * 60_000, start + m * 60_000 + 30_000);
+      }
+      for (const t of instants) {
+        const at = new Date(t);
+        const want = read(at, zone);
+        expect(toLocalDate(at, zone), `${zone} ${at.toISOString()}`).toBe(want.date);
+        expect(localMinutes(at, d(want.date), zone), `${zone} ${at.toISOString()}`).toBe(want.minutes);
+      }
+    }
+  });
+});

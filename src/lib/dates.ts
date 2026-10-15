@@ -12,8 +12,13 @@ function dateFormatter(timeZone: string): Intl.DateTimeFormat {
   return f;
 }
 
+/** Where an ISO string's date reads the same as Intl's: years 1000 to 9999. */
+const FOUR_DIGIT_YEARS = { from: Date.UTC(1000, 0, 1), to: Date.UTC(10000, 0, 1) };
+
 /** The calendar date `now` falls on in `timeZone`. */
 export function toLocalDate(now: Date, timeZone: string): LocalDate {
+  const wall = wallAsUtc(now.getTime(), timeZone);
+  if (wall >= FOUR_DIGIT_YEARS.from && wall < FOUR_DIGIT_YEARS.to) return new Date(wall).toISOString().slice(0, 10) as LocalDate;
   const parts = dateFormatter(timeZone).formatToParts(now);
   const get = (type: Intl.DateTimeFormatPartTypes) => parts.find((p) => p.type === type)!.value;
   return `${get("year")}-${get("month")}-${get("day")}` as LocalDate;
@@ -121,11 +126,42 @@ function clockFormatter(timeZone: string): Intl.DateTimeFormat {
   return f;
 }
 
-/** The wall clock at `at` in `timeZone`, written as if it were a UTC instant. */
-function wallAsUtc(at: number, timeZone: string): number {
+function readWall(at: number, timeZone: string): number {
   const parts = clockFormatter(timeZone).formatToParts(new Date(at));
   const get = (type: Intl.DateTimeFormatPartTypes) => Number(parts.find((p) => p.type === type)!.value);
   return Date.UTC(get("year"), get("month") - 1, get("day"), get("hour"), get("minute"));
+}
+
+/**
+ * Each zone's offset by UTC hour: a whole number of minutes when it holds for
+ * that entire hour, or null when it changes inside it or carries seconds. Asking
+ * Intl costs microseconds and a month of series asks tens of thousands of times,
+ * nearly always about hours already seen. Clocks change at most once an hour,
+ * so the same offset at an hour's first and last minute holds between them.
+ */
+const offsets = new Map<string, Map<number, number | null>>();
+const OFFSET_HOURS_KEPT = 50_000;
+
+function hourOffset(hour: number, timeZone: string): number | null {
+  let zone = offsets.get(timeZone);
+  if (!zone) offsets.set(timeZone, (zone = new Map()));
+  let offset = zone.get(hour);
+  if (offset !== undefined) return offset;
+  const start = hour * HOUR;
+  const last = start + HOUR - MINUTE;
+  const first = readWall(start, timeZone) - start;
+  // A probe half a minute in catches an offset with seconds, which the minute-wide read above rounds away.
+  const steady = readWall(last, timeZone) - last === first && readWall(start + MINUTE / 2, timeZone) - start === first;
+  offset = steady ? first : null;
+  if (zone.size >= OFFSET_HOURS_KEPT) zone.clear();
+  zone.set(hour, offset);
+  return offset;
+}
+
+/** The wall clock at `at` in `timeZone`, written as if it were a UTC instant. Seconds are dropped. */
+function wallAsUtc(at: number, timeZone: string): number {
+  const offset = hourOffset(Math.floor(at / HOUR), timeZone);
+  return offset === null ? readWall(at, timeZone) : Math.floor(at / MINUTE) * MINUTE + offset;
 }
 
 /**
