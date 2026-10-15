@@ -140,6 +140,12 @@ export function fakeRepo(items: Item[] = [], areas: Area[] = []) {
         .sort((a, b) => (a.dueOn! < b.dueOn! ? -1 : a.dueOn! > b.dueOn! ? 1 : a.createdAt.getTime() - b.createdAt.getTime()))
         .slice(0, DUE_LIMIT);
     },
+    async listDueIn(fromDate, toDate) {
+      return single()
+        .filter((i) => i.dueOn !== null && fromDate <= i.dueOn && i.dueOn < toDate && i.type !== "note" && i.status !== "dropped")
+        .sort((a, b) => (a.dueOn! < b.dueOn! ? -1 : a.dueOn! > b.dueOn! ? 1 : a.createdAt.getTime() - b.createdAt.getTime()))
+        .slice(0, RANGE_LIMIT);
+    },
     async listBehind(range) {
       const startOf = (i: Item) => (i.schedule.kind === "timed" ? i.schedule.start.getTime() : i.schedule.kind === "day" ? Date.parse(`${i.schedule.on}T00:00:00Z`) : 0);
       return items

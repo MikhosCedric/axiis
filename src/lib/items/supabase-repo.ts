@@ -197,6 +197,18 @@ export class SupabaseItemsRepo implements ItemsRepo {
     return unwrap("listDue", result, itemList);
   }
 
+  async listDueIn(fromDate: LocalDate, toDate: LocalDate): Promise<Item[]> {
+    const result = await this.single()
+      .gte("due_on", fromDate)
+      .lt("due_on", toDate)
+      .neq("type", "note")
+      .neq("status", "dropped")
+      .order("due_on")
+      .order("created_at")
+      .limit(RANGE_LIMIT);
+    return unwrap("listDueIn", result, itemList);
+  }
+
   async listBehind(range: DayRange): Promise<Item[]> {
     const open = () =>
       this.single().is("series_id", null).is("parent_id", null).eq("status", "open").neq("type", "note");

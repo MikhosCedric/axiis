@@ -84,6 +84,11 @@ export interface ItemsRepo {
    */
   listDue(doneSince: Date): Promise<Item[]>;
   /**
+   * Live items due on a date in `[fromDate, toDate)` that are not notes, not
+   * series and not dropped, open or done, by due date, at most `RANGE_LIMIT`.
+   */
+  listDueIn(fromDate: LocalDate, toDate: LocalDate): Promise<Item[]>;
+  /**
    * Open top-level tasks and checklists planned for a day before `range.date`
    * (a day, or a time that began before `range.from`), not repeating, oldest
    * first, at most `BEHIND_LIMIT`.
