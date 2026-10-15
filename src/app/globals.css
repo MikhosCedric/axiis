@@ -1,67 +1,46 @@
 @import "tailwindcss";
 
+/*
+ * Every token is declared once, as light-dark(day, night). color-scheme picks the side:
+ * the device's setting, unless the theme cookie has put data-theme on <html>.
+ */
 :root {
-  --paper: #ebe4d4;
-  --paper-2: #e2dac6;
-  --sheet: #f3eee1;
-  --ink: #1c1b22;
-  --ink-2: #4a4741;
-  --ink-3: #625e55;
-  --rule: rgba(28, 27, 34, 0.28);
-  --rule-soft: rgba(28, 27, 34, 0.12);
-  --field: rgba(28, 27, 34, 0.55);
-  --accent: #0a675a;
-  --accent-wash: rgba(10, 103, 90, 0.14);
+  color-scheme: light dark;
+  /* Ground, the recessed rail, and the raised sheet. At night the steps widen so depth reads as tone, not as lines. */
+  --paper: light-dark(#ebe4d4, #14131a);
+  --paper-2: light-dark(#e2dac6, #0e0d13);
+  --sheet: light-dark(#f3eee1, #1f1e27);
+  --ink: light-dark(#1c1b22, #ece5d3);
+  --ink-2: light-dark(#4a4741, #bdb7a8);
+  --ink-3: light-dark(#625e55, #9d978a);
+  --rule: light-dark(rgba(28, 27, 34, 0.28), rgba(236, 229, 211, 0.3));
+  --rule-soft: light-dark(rgba(28, 27, 34, 0.12), rgba(236, 229, 211, 0.12));
+  --field: light-dark(rgba(28, 27, 34, 0.55), rgba(236, 229, 211, 0.5));
+  --accent: light-dark(#0a675a, #45c7b0);
+  --accent-wash: light-dark(rgba(10, 103, 90, 0.14), rgba(69, 199, 176, 0.16));
   /* Neutral ink tints for hover and press, so verdigris stays for now, drag, focus and selection. */
-  --hover: rgba(28, 27, 34, 0.06);
-  --press: rgba(28, 27, 34, 0.11);
-  --on-accent: #f3eee1;
+  --hover: light-dark(rgba(28, 27, 34, 0.06), rgba(236, 229, 211, 0.07));
+  --press: light-dark(rgba(28, 27, 34, 0.11), rgba(236, 229, 211, 0.12));
+  --on-accent: light-dark(#f3eee1, #10201d);
+  /* What floats over the page: the palette, the Guide, a sheet. Deeper at night, where a shadow has less to show against. */
+  --float:
+    0 24px 56px -16px light-dark(rgb(14 12 10 / 0.38), rgb(0 0 0 / 0.72)),
+    0 2px 6px light-dark(rgb(14 12 10 / 0.12), rgb(0 0 0 / 0.4)),
+    0 0 0 1px light-dark(rgb(14 12 10 / 0.06), rgb(236 229 211 / 0.1));
   /* Vertical padding of a list row; the Density setting tightens it. */
   --row-y: 0.625rem;
+}
+
+:root[data-theme="light"] {
   color-scheme: light;
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
 }
 
 :root[data-density="compact"] {
   --row-y: 0.25rem;
-}
-
-/* Keep in sync with the prefers-color-scheme block below. */
-:root[data-theme="dark"] {
-  --paper: #16151b;
-  --paper-2: #1c1b22;
-  --sheet: #201f27;
-  --ink: #ece5d3;
-  --ink-2: #bdb7a8;
-  --ink-3: #9d978a;
-  --rule: rgba(236, 229, 211, 0.3);
-  --rule-soft: rgba(236, 229, 211, 0.12);
-  --field: rgba(236, 229, 211, 0.5);
-  --accent: #45c7b0;
-  --accent-wash: rgba(69, 199, 176, 0.16);
-  --hover: rgba(236, 229, 211, 0.07);
-  --press: rgba(236, 229, 211, 0.12);
-  --on-accent: #10201d;
-  color-scheme: dark;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --paper: #16151b;
-    --paper-2: #1c1b22;
-    --sheet: #201f27;
-    --ink: #ece5d3;
-    --ink-2: #bdb7a8;
-    --ink-3: #9d978a;
-    --rule: rgba(236, 229, 211, 0.3);
-    --rule-soft: rgba(236, 229, 211, 0.12);
-    --field: rgba(236, 229, 211, 0.5);
-    --accent: #45c7b0;
-    --accent-wash: rgba(69, 199, 176, 0.16);
-    --hover: rgba(236, 229, 211, 0.07);
-    --press: rgba(236, 229, 211, 0.12);
-    --on-accent: #10201d;
-    color-scheme: dark;
-  }
 }
 
 @theme inline {
@@ -83,6 +62,21 @@
   --font-sans: var(--font-hanken), system-ui, -apple-system, "Segoe UI", sans-serif;
   --ease-axiis: cubic-bezier(0.16, 1, 0.3, 1);
   --breakpoint-rail: 760px;
+  --shadow-float: var(--float);
+  /* A loading page breathes slowly; a fast pulse reads as alarm. */
+  --animate-breathe: breathe 2.4s ease-in-out infinite;
+
+  @keyframes breathe {
+    50% {
+      opacity: 0.45;
+    }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-breathe {
+    animation: none;
+  }
 }
 
 /* The Headline type step: every app page title. */
@@ -93,6 +87,32 @@
   line-height: 1.1;
   letter-spacing: -0.015em;
   text-wrap: balance;
+}
+
+/* The line under a page title: what the page holds, in a sentence. */
+@utility page-summary {
+  margin-top: 0.625rem;
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--ink-2);
+  text-wrap: pretty;
+}
+
+/*
+ * A page title with its day or week steps. The steps sit beside the title when the page column
+ * (a `page` container) has room for both on one line, and under it otherwise, so they never wrap into a tower.
+ */
+@utility page-head {
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 1rem;
+
+  @container page (width >= 56rem) {
+    flex-direction: row-reverse;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1.5rem;
+  }
 }
 
 /* A text control inside a row: under a coarse pointer its hit area reaches 44px tall without moving the text. */
