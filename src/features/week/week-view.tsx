@@ -214,16 +214,19 @@ export function WeekView({
           </div>
         </header>
 
-        <div className="mt-6 flex flex-wrap items-start gap-x-3 gap-y-1">
+        <div className="mt-6 mb-3 flex flex-wrap items-start gap-x-3 gap-y-1">
           <div className="min-w-0 flex-[1_1_280px] rail:max-w-[440px]">
-            <CaptureField captureAction={actions.capture} />
+            <CaptureField
+              captureAction={actions.capture}
+              screenStatus={
+                <p role="status" className={status?.error ? "font-medium text-ink" : "text-ink-2"}>
+                  {status?.text}
+                </p>
+              }
+            />
           </div>
           <GuideButton topics={WEEK_GUIDE} className="ml-auto" />
         </div>
-
-        <p role="status" className={`mb-2 min-h-5 text-[13px] ${status?.error ? "font-medium text-ink" : "text-ink-2"}`}>
-          {status?.text}
-        </p>
 
         <section aria-labelledby="week-h" className="@container">
           <h2 id="week-h" className="sr-only">
@@ -281,7 +284,7 @@ export function WeekView({
           ref={fly}
           hidden={!preview}
           aria-hidden="true"
-          className="pointer-events-none fixed top-0 left-0 z-50 flex max-w-[28ch] items-center gap-2 rounded-md border border-rule bg-sheet px-2.5 py-1.5 shadow-[0_6px_18px_rgba(28,27,34,0.18)]"
+          className="pointer-events-none fixed top-0 left-0 z-50 flex max-w-[28ch] items-center gap-2 rounded-md border border-rule bg-sheet px-2.5 py-1.5 shadow-lift"
         >
           {preview && (
             <>

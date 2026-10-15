@@ -27,6 +27,8 @@
     0 24px 56px -16px light-dark(rgb(14 12 10 / 0.38), rgb(0 0 0 / 0.72)),
     0 2px 6px light-dark(rgb(14 12 10 / 0.12), rgb(0 0 0 / 0.4)),
     0 0 0 1px light-dark(rgb(14 12 10 / 0.06), rgb(236 229 211 / 0.1));
+  /* A thing held under the pointer: a dragged chip. */
+  --lift: 0 6px 18px light-dark(rgb(28 27 34 / 0.22), rgb(0 0 0 / 0.6));
   /* Vertical padding of a list row; the Density setting tightens it. */
   --row-y: 0.625rem;
 }
@@ -63,6 +65,7 @@
   --ease-axiis: cubic-bezier(0.16, 1, 0.3, 1);
   --breakpoint-rail: 760px;
   --shadow-float: var(--float);
+  --shadow-lift: var(--lift);
   /* A loading page breathes slowly; a fast pulse reads as alarm. */
   --animate-breathe: breathe 2.4s ease-in-out infinite;
 
