@@ -100,8 +100,8 @@ export const WeekIcon = () => (
 export const SettingsIcon = () => (
   <Icon>
     <path d="M3 5.5h12M3 12.5h12" />
-    <circle cx="6.5" cy="5.5" r="1.6" fill="var(--paper-2)" />
-    <circle cx="11.5" cy="12.5" r="1.6" fill="var(--paper-2)" />
+    <circle cx="6.5" cy="5.5" r="1.6" fill="var(--ground, var(--paper-2))" />
+    <circle cx="11.5" cy="12.5" r="1.6" fill="var(--ground, var(--paper-2))" />
   </Icon>
 );
 
@@ -115,5 +115,14 @@ export const SearchIcon = () => (
   <Icon>
     <circle cx="8" cy="8" r="4.6" />
     <path d="M11.5 11.5L15.5 15.5" />
+  </Icon>
+);
+
+/** Three dots, for the phone bar's More. */
+export const MoreIcon = () => (
+  <Icon>
+    <circle cx="3.75" cy="9" r="1.25" fill="currentColor" stroke="none" />
+    <circle cx="9" cy="9" r="1.25" fill="currentColor" stroke="none" />
+    <circle cx="14.25" cy="9" r="1.25" fill="currentColor" stroke="none" />
   </Icon>
 );
