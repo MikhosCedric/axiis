@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useId, useRef, type ReactNode } from "react";
+import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import type { LocalDate } from "@/domain/item";
 import { useOpenPalette } from "@/features/palette/palette";
 import { useIsMac } from "@/features/palette/use-is-mac";
@@ -121,11 +121,11 @@ function SearchField() {
       type="button"
       onClick={openPalette}
       aria-keyshortcuts={mac ? "Meta+K" : "Control+K"}
-      className="flex h-9 w-full items-center gap-2 rounded-lg border border-rule bg-sheet px-2.5 text-left text-[13px] text-ink-3 [--ground:var(--sheet)] hover:border-field hover:text-ink-2 pointer-coarse:min-h-11"
+      className="flex h-9 w-full items-center gap-1.5 rounded-lg border border-rule bg-sheet pr-1.5 pl-2 text-left text-[13px] text-ink-3 [--ground:var(--sheet)] hover:border-field hover:text-ink-2 pointer-coarse:min-h-11 [&>svg]:size-4"
     >
       <SearchIcon />
-      <span className="min-w-0 flex-1 truncate">Search or jump to…</span>
-      <kbd aria-hidden="true" className="flex-none rounded border border-rule px-1 font-sans text-[11px] font-semibold text-ink-3">
+      <span className="min-w-0 flex-1 truncate">Search or go to…</span>
+      <kbd aria-hidden="true" className="flex-none rounded border border-rule px-1 font-sans text-[10.5px] leading-4 font-semibold text-ink-3">
         {mac ? "⌘K" : "Ctrl K"}
       </kbd>
     </button>
@@ -168,6 +168,7 @@ const menuRow = `${quiet} w-full pointer-coarse:min-h-11`;
 function AccountMenu({ settingsHere }: { settingsHere: boolean }) {
   const id = useId();
   const menu = useRef<HTMLDivElement>(null);
+  const [open, setOpen] = useState(false);
   const pathname = usePathname();
   const close = () => menu.current?.hidePopover();
 
@@ -177,7 +178,7 @@ function AccountMenu({ settingsHere }: { settingsHere: boolean }) {
 
   return (
     <div className="mt-auto">
-      <button type="button" popoverTarget={id} className={`${settingsHere ? current : quiet} w-full pointer-coarse:min-h-11`}>
+      <button type="button" popoverTarget={id} aria-expanded={open} className={`${settingsHere ? current : quiet} w-full pointer-coarse:min-h-11`}>
         <SettingsIcon />
         <span className="flex-1 text-left">Account</span>
         <svg viewBox="0 0 12 12" width={12} height={12} aria-hidden="true" className="flex-none text-ink-3" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
@@ -191,6 +192,7 @@ function AccountMenu({ settingsHere }: { settingsHere: boolean }) {
         role="group"
         aria-label="Account"
         onToggle={(e) => {
+          setOpen(e.newState === "open");
           if (e.newState === "open") menu.current?.querySelector<HTMLElement>("a, button")?.focus();
         }}
         className={styles.menu}
@@ -246,7 +248,7 @@ function PhoneHeader() {
         className="-mr-2 inline-flex size-11 items-center justify-center rounded-md text-ink-2 hover:bg-hover hover:text-ink active:bg-press"
       >
         <SearchIcon />
-        <span className="sr-only">Search or jump to</span>
+        <span className="sr-only">Search or go to</span>
       </button>
     </header>
   );
