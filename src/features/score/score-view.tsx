@@ -27,6 +27,7 @@ import {
   axisWidth,
   beamTop,
   hourTicks,
+  HOUR_PX,
   labelWidth,
   layoutScore,
   PX_PER_MINUTE,
@@ -156,7 +157,8 @@ export function ScoreView({
     // An empty first day opens on its examples, which show what the Score is for better than the time does.
     const focus =
       nowMinutes !== null && !examples.length ? xAt(axis, nowMinutes) - 0.3 * visible : Number.isFinite(first) ? xAt(axis, first) - 24 : 0;
-    el.scrollLeft = Math.max(0, focus);
+    // On a whole hour, so the first label shows whole: a clipped "9 AM" would read as "AM".
+    el.scrollLeft = Math.floor(Math.max(0, Math.min(focus, el.scrollWidth - el.clientWidth)) / HOUR_PX) * HOUR_PX;
     syncAxis();
     // Only on first paint: later renders keep wherever the person scrolled to.
     // eslint-disable-next-line react-hooks/exhaustive-deps
