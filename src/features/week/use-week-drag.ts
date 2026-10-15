@@ -1,13 +1,14 @@
 "use client";
 
 import { useEffect, useLayoutEffect, useRef, type PointerEvent as ReactPointerEvent, type RefObject } from "react";
-import type { ShownItem, LocalDate } from "@/domain/item";
-import { moves, readDropZone, type Destination } from "./model";
+import type { LocalDate, ShownItem } from "@/domain/item";
+import { readDropZone, type Destination } from "./model";
 
-export type WeekDragPreview = { item: ShownItem; over: Destination | null };
+/** `T` is what is held: the Week's items, or the Month's marks. */
+export type WeekDragPreview<T = ShownItem> = { item: T; over: Destination | null };
 
-type Gesture = {
-  item: ShownItem;
+type Gesture<T> = {
+  item: T;
   pointerId: number;
   x0: number;
   y0: number;
@@ -26,11 +27,12 @@ type Gesture = {
   };
 };
 
-type Live = {
+type Live<T> = {
   days: LocalDate[];
-  timeZone: string;
-  onDrop: (item: ShownItem, to: Destination) => void;
-  onTap: (item: ShownItem) => void;
+  /** Whether dropping `item` on `to` would change anything; a zone that would not is no target. */
+  accepts: (item: T, to: Destination) => boolean;
+  onDrop: (item: T, to: Destination) => void;
+  onTap: (item: T) => void;
 };
 
 const MOUSE_SLOP = 4;
@@ -46,8 +48,12 @@ const FLY_OFFSET = 14;
  * are any element with a `data-drop` of a date in the week or `tray`; the
  * floating copy ignores the pointer so the zone under it can be read.
  */
-export function useWeekDrag(fly: RefObject<HTMLDivElement | null>, live: Live, setPreview: (p: WeekDragPreview | null) => void) {
-  const gesture = useRef<Gesture | null>(null);
+export function useWeekDrag<T = ShownItem>(
+  fly: RefObject<HTMLDivElement | null>,
+  live: Live<T>,
+  setPreview: (p: WeekDragPreview<T> | null) => void,
+) {
+  const gesture = useRef<Gesture<T> | null>(null);
   const latest = useRef(live);
   const frame = useRef<number | null>(null);
 
@@ -55,13 +61,13 @@ export function useWeekDrag(fly: RefObject<HTMLDivElement | null>, live: Live, s
     latest.current = live;
   });
 
-  function zoneAt(g: Gesture): Destination | null {
+  function zoneAt(g: Gesture<T>): Destination | null {
     const zone = document.elementFromPoint(g.x, g.y)?.closest<HTMLElement>("[data-drop]");
     const to = readDropZone(zone?.dataset.drop, latest.current.days);
-    return to && moves(g.item, to, latest.current.timeZone) ? to : null;
+    return to && latest.current.accepts(g.item, to) ? to : null;
   }
 
-  function track(g: Gesture) {
+  function track(g: Gesture<T>) {
     const el = fly.current;
     if (el) el.style.transform = `translate(${g.x + FLY_OFFSET}px, ${g.y + FLY_OFFSET}px)`;
     const over = zoneAt(g);
@@ -84,7 +90,7 @@ export function useWeekDrag(fly: RefObject<HTMLDivElement | null>, live: Live, s
     frame.current = requestAnimationFrame(autoScroll);
   }
 
-  function activate(g: Gesture) {
+  function activate(g: Gesture<T>) {
     g.active = true;
     g.timer = null;
     document.documentElement.dataset.scoreDragging = "";
@@ -92,7 +98,7 @@ export function useWeekDrag(fly: RefObject<HTMLDivElement | null>, live: Live, s
     track(g);
   }
 
-  function detach(g: Gesture) {
+  function detach(g: Gesture<T>) {
     window.removeEventListener("pointermove", g.listeners.move);
     window.removeEventListener("pointerup", g.listeners.up);
     window.removeEventListener("pointercancel", g.listeners.cancel);
@@ -163,10 +169,10 @@ export function useWeekDrag(fly: RefObject<HTMLDivElement | null>, live: Live, s
     };
   }, []);
 
-  return function start(e: ReactPointerEvent<HTMLElement>, item: ShownItem) {
+  return function start(e: ReactPointerEvent<HTMLElement>, item: T) {
     if (e.button !== 0 || gesture.current) return;
     const touch = e.pointerType === "touch";
-    const g: Gesture = {
+    const g: Gesture<T> = {
       item,
       pointerId: e.pointerId,
       x0: e.clientX,
