@@ -143,6 +143,11 @@ export function localMinutes(at: Date, date: LocalDate, timeZone: string): numbe
  * forward by the size of the gap, as clocks do.
  */
 export function instantAt(date: LocalDate, minutes: number, timeZone: string): Date {
+  return new Date(resolveWall(date, minutes, timeZone).at);
+}
+
+/** `instantAt`, and whether the clocks show that time at all. */
+function resolveWall(date: LocalDate, minutes: number, timeZone: string): { at: number; shown: boolean } {
   const wall = utcMidnight(date) + minutes * MINUTE;
   const offsetAt = (t: number) => wallAsUtc(t, timeZone) - Math.floor(t / MINUTE) * MINUTE;
   // Offsets near `wall` give at most two candidates, one per side of a transition.
@@ -150,8 +155,36 @@ export function instantAt(date: LocalDate, minutes: number, timeZone: string): D
     .map((offset) => wall - offset)
     .sort((a, b) => a - b);
   const exact = candidates.find((t) => wallAsUtc(t, timeZone) === wall);
-  if (exact !== undefined) return new Date(exact);
-  return new Date(wall - offsetAt(candidates[0]));
+  if (exact !== undefined) return { at: exact, shown: true };
+  return { at: wall - offsetAt(candidates[0]), shown: false };
+}
+
+/** The instant the clocks first show `minutes` on `date`, or if they skip it, the first time they show after it. */
+function shownAt(date: LocalDate, minutes: number, timeZone: string): number {
+  const r = resolveWall(date, minutes, timeZone);
+  return r.shown ? r.at : resolveWall(date, firstShownMinute(date, minutes, timeZone), timeZone).at;
+}
+
+/**
+ * A timed span on `date` read off the wall clock, as a series repeats it: from
+ * `startMinutes` to `endMinutes` past local midnight, however long that is in
+ * real time on a day the clocks change. A time the clocks skip becomes the first
+ * time they show after it, as `setTime` suggests; a repeated time is its first.
+ * When that leaves the end not after the start (both fell in the skipped hour),
+ * the end is `lengthMs` after the start.
+ */
+export function wallSpanOn(
+  date: LocalDate,
+  startMinutes: number,
+  endMinutes: number,
+  lengthMs: number,
+  timeZone: string,
+): { start: Date; end: Date } {
+  const start = shownAt(date, startMinutes, timeZone);
+  // Most days the offset does not change inside the span, so one check settles the end.
+  const guess = start + (endMinutes - startMinutes) * MINUTE;
+  const end = wallAsUtc(guess, timeZone) === utcMidnight(date) + endMinutes * MINUTE ? guess : shownAt(date, endMinutes, timeZone);
+  return { start: new Date(start), end: new Date(end > start ? end : start + lengthMs) };
 }
 
 /**

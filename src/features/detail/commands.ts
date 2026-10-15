@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { idSchema, repeats, type AreaId, type Item, type ItemId, type ItemPatch, type LocalDate, type Schedule } from "@/domain/item";
 import { parseItemKey, type ParsedItemKey } from "@/domain/item-key";
-import { addDays, DATE_RANGE_ERROR, firstShownMinute, instantAt, localMinutes, outOfRange, parseLocalDate, toLocalDate } from "@/lib/dates";
+import { addDays, DATE_RANGE_ERROR, firstShownMinute, instantAt, localMinutes, outOfRange, parseLocalDate, toLocalDate, wallSpanOn } from "@/lib/dates";
 import { formatDayHeading } from "@/features/today/format";
 import { materialize, resolveKey } from "@/lib/items/occurrences";
 import type { ItemsRepo } from "@/lib/items/repo";
@@ -171,29 +171,19 @@ function scheduleOnOwnDay(
 }
 
 /**
- * A timed schedule at local wall-clock `start` on `on`. The length is real
- * time, as expansion keeps it, so a start the clocks skip never leaves it empty.
- */
-function timedAt(on: LocalDate, start: number, lengthMs: number, timeZone: string): Schedule {
-  const from = instantAt(on, start, timeZone);
-  return { kind: "timed", start: from, end: new Date(from.getTime() + lengthMs) };
-}
-
-/**
  * A timed schedule from a start and an end typed on the wall clock of `on`,
  * so both read back as typed on a day the clocks change. A time the clocks
- * skip is refused rather than quietly moved. A series keeps its length in
- * real minutes instead, as expansion does, so its other days read as typed.
+ * skip is refused rather than quietly moved. A series is stored the same way
+ * and expansion keeps that wall-clock start and end on every day it repeats.
  */
-function typedOn(on: LocalDate, { start, length }: TimeOfDay, timeZone: string, isSeries: boolean): Schedule | { refused: string } {
-  for (const m of isSeries ? [start] : [start, start + length]) {
+function typedOn(on: LocalDate, { start, length }: TimeOfDay, timeZone: string): Schedule | { refused: string } {
+  for (const m of [start, start + length]) {
     const shown = firstShownMinute(on, m, timeZone);
     if (shown !== m) {
       const day = formatDayHeading(addDays(on, Math.floor(m / DAY_MINUTES)));
       return { refused: `${clockOf(m)} does not happen on ${day}, when the clocks go forward. Try ${clockOf(shown)}.` };
     }
   }
-  if (isSeries) return timedAt(on, start, length * 60_000, timeZone);
   return { kind: "timed", start: instantAt(on, start, timeZone), end: instantAt(on, start + length, timeZone) };
 }
 
@@ -211,7 +201,7 @@ export async function setTime(
 ): Promise<ActionResult> {
   const time = timeSchema.safeParse(rawTime);
   if (!time.success) return { ok: false, error: "That time is not one Axiis can use." };
-  return scheduleOnOwnDay(repo, rawKey, rawScope, timeZone, (on, item) => typedOn(on, time.data, timeZone, item.recurrence.kind === "series"));
+  return scheduleOnOwnDay(repo, rawKey, rawScope, timeZone, (on) => typedOn(on, time.data, timeZone));
 }
 
 /** Takes the time away, leaving the item on its day at any time, for this one or all of them. */
@@ -271,8 +261,8 @@ export async function setType(repo: ItemsRepo, rawKey: unknown, rawType: unknown
 }
 
 /**
- * Moves a series' first date, keeping its time of day on the wall clock and
- * its length in real minutes. Only the series changes: every override keeps
+ * Moves a series' first date, keeping its start and end on the wall clock
+ * as expansion places them (`wallSpanOn`). Only the series changes: every override keeps
  * its own day, the one it was changed from included. Only a date comes from
  * the client.
  */
@@ -292,10 +282,12 @@ export async function setFirstDay(repo: ItemsRepo, rawKey: unknown, rawDate: unk
   });
 }
 
-/** A day or timed schedule on another date, at the same wall-clock time and for the same real minutes. */
+/** A day or timed schedule on another date, at the same wall-clock start and end. */
 function movedTo(s: Exclude<Schedule, { kind: "unscheduled" }>, on: LocalDate, timeZone: string): Schedule {
   if (s.kind === "day") return { kind: "day", on };
-  return timedAt(on, localMinutes(s.start, toLocalDate(s.start, timeZone), timeZone), s.end.getTime() - s.start.getTime(), timeZone);
+  const was = toLocalDate(s.start, timeZone);
+  const [start, end] = [s.start, s.end].map((t) => localMinutes(t, was, timeZone));
+  return { kind: "timed", ...wallSpanOn(on, start, end, s.end.getTime() - s.start.getTime(), timeZone) };
 }
 
 export async function addSubtask(repo: ItemsRepo, rawParentId: unknown, rawTitle: unknown): Promise<ActionResult> {
@@ -356,6 +348,8 @@ export async function deleteItem(repo: ItemsRepo, rawKey: unknown, timeZone: str
       for (const child of await repo.listChildren(item.id)) await repo.softDelete(child.id);
       await repo.softDelete(item.id);
     }
+    // Frees room under the item cap. Housekeeping, so a failure never fails the delete.
+    await repo.purgeDeleted().catch(() => undefined);
   });
 }
 

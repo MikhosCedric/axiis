@@ -2,7 +2,7 @@ import { RRule } from "rrule";
 import { describe, expect, it } from "vitest";
 import type { ItemId, LocalDate, Schedule, SpanRange } from "@/domain/item";
 import { WEEKDAYS, type Rule, type RuleEnd } from "@/domain/recurrence";
-import { addDays, dayRangeFor, instantAt, localMinutes, toLocalDate } from "@/lib/dates";
+import { addDays, dayRangeFor, firstShownMinute, instantAt, localMinutes, toLocalDate } from "@/lib/dates";
 import { MAX_OCCURRENCES, expandSeries, type Occurrence, type SeriesSource } from "./expand";
 
 const ID = "00000000-0000-4000-8000-0000000000aa" as ItemId;
@@ -11,12 +11,16 @@ const floating = (date: LocalDate) => new Date(`${date}T00:00:00Z`);
 const FREQ = { daily: RRule.DAILY, weekly: RRule.WEEKLY, monthly: RRule.MONTHLY, yearly: RRule.YEARLY } as const;
 const DAYS = { MO: RRule.MO, TU: RRule.TU, WE: RRule.WE, TH: RRule.TH, FR: RRule.FR, SA: RRule.SA, SU: RRule.SU };
 
-/** The expansion before fast-forwarding: the rule always runs from the series' first date. */
+/**
+ * The expansion before fast-forwarding: the rule always runs from the series' first date,
+ * and each time is placed minute by minute, without the shortcut `wallSpanOn` takes.
+ */
 function fromFirstDate(series: SeriesSource, span: SpanRange, timeZone: string): Occurrence[] {
   const s = series.schedule;
   if (s.kind === "unscheduled") return [];
   const firstOn = s.kind === "day" ? s.on : toLocalDate(s.start, timeZone);
-  const minutes = s.kind === "timed" ? localMinutes(s.start, firstOn, timeZone) : 0;
+  const startMinutes = s.kind === "timed" ? localMinutes(s.start, firstOn, timeZone) : 0;
+  const endMinutes = s.kind === "timed" ? localMinutes(s.end, firstOn, timeZone) : 0;
   const length = s.kind === "timed" ? s.end.getTime() - s.start.getTime() : 0;
   const { rule } = series;
   const rrule = new RRule({
@@ -32,8 +36,9 @@ function fromFirstDate(series: SeriesSource, span: SpanRange, timeZone: string):
   return dates.map((d) => {
     const originalOn = d.toISOString().slice(0, 10) as LocalDate;
     if (s.kind === "day") return { seriesId: series.id, originalOn, schedule: { kind: "day", on: originalOn } };
-    const start = instantAt(originalOn, minutes, timeZone);
-    return { seriesId: series.id, originalOn, schedule: { kind: "timed", start, end: new Date(start.getTime() + length) } };
+    const start = instantAt(originalOn, firstShownMinute(originalOn, startMinutes, timeZone), timeZone);
+    const end = instantAt(originalOn, firstShownMinute(originalOn, endMinutes, timeZone), timeZone);
+    return { seriesId: series.id, originalOn, schedule: { kind: "timed", start, end: end > start ? end : new Date(start.getTime() + length) } };
   });
 }
 
@@ -103,6 +108,28 @@ describe("expandSeries fast-forward", () => {
       expect({ seed, got: comparable(expandSeries(series, span, tz)) }).toEqual({ seed, got: expected });
     }
     expect(nonEmpty).toBeGreaterThan(800);
+  });
+
+  it("reads every timed occurrence at its series' wall-clock start and end when the clocks show them, and ends it after it starts", () => {
+    let checked = 0;
+    for (let seed = 1; seed <= 1000; seed++) {
+      const { series, span, tz } = arbitrary(seed);
+      const s = series.schedule;
+      if (s.kind !== "timed") continue;
+      const firstOn = toLocalDate(s.start, tz);
+      const wall = [localMinutes(s.start, firstOn, tz), localMinutes(s.end, firstOn, tz)];
+      for (const o of expandSeries(series, span, tz)) {
+        if (o.schedule.kind !== "timed") throw new Error("expected timed");
+        const { start, end } = o.schedule;
+        if (!(end > start)) expect({ seed, on: o.originalOn, endsAfterStart: false }).toBeNull();
+        if (wall.every((m) => firstShownMinute(o.originalOn, m, tz) === m)) {
+          checked++;
+          const got = [localMinutes(start, o.originalOn, tz), localMinutes(end, o.originalOn, tz)];
+          if (got[0] !== wall[0] || got[1] !== wall[1]) expect({ seed, on: o.originalOn, got }).toEqual({ seed, on: o.originalOn, got: wall });
+        }
+      }
+    }
+    expect(checked).toBeGreaterThan(2000);
   });
 
   it("spends a count on the occurrences it skips", () => {

@@ -33,6 +33,16 @@ describe("seriesTimeOffer", () => {
     expect(seriesTimeOffer(occurrence(), timed(9 * 60, 9 * 60 + 30, tz), date, tz, cadences)?.time).toEqual({ start: 540, length: 30 });
   });
 
+  it("offers the length on the wall clock on the night the clocks go forward, as the series will repeat it", () => {
+    const tz = "America/New_York";
+    const on = "2026-03-08" as LocalDate;
+    const placed = { schedule: { kind: "timed" as const, start: instantAt(on, 60, tz), end: instantAt(on, 4 * 60, tz) } };
+    expect(seriesTimeOffer(occurrence({ recurrence: { kind: "occurrence", seriesId, originalOn: on } }), placed, on, tz, cadences)?.time).toEqual({
+      start: 60,
+      length: 180,
+    });
+  });
+
   it("offers it for an override too", () => {
     const override = occurrence({ id: "00000000-0000-4000-8000-0000000000bb" as ItemId, recurrence: { kind: "override", seriesId, originalOn: date } });
     expect(seriesTimeOffer(override, timed(600, 630), date, "UTC", cadences)?.id).toBe(override.id);

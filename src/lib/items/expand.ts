@@ -2,7 +2,7 @@ import { RRule, type Weekday as RRuleWeekday } from "rrule";
 import type { ItemId, LocalDate, Schedule, SpanRange } from "@/domain/item";
 import { occurrenceKey } from "@/domain/item-key";
 import { WEEKDAYS, type Rule, type Weekday } from "@/domain/recurrence";
-import { instantAt, localMinutes, toLocalDate } from "@/lib/dates";
+import { localMinutes, toLocalDate, wallSpanOn } from "@/lib/dates";
 
 /** Hard ceiling on occurrences from one series in one read, whatever the span. */
 export const MAX_OCCURRENCES = 400;
@@ -60,9 +60,9 @@ function fastForward(rule: Rule, firstOn: LocalDate, fromDate: LocalDate): { sta
  * The occurrences of a series whose local date falls in `[span.fromDate, span.toDate)`.
  *
  * The rule runs on floating calendar dates (UTC midnights standing for local
- * dates), and each date is placed back on the clock with `instantAt`. So a
- * 09:00 item stays at 09:00 local across daylight-saving changes, and a time
- * the clocks skip moves forward with them. Monthly on the 31st skips months
+ * dates), and each date is placed back on the clock with `wallSpanOn`. So an
+ * 08:00 to 09:00 item reads 08:00 to 09:00 local on every day, the days the
+ * clocks change included, whatever that lasts in real time. Monthly on the 31st skips months
  * without one, and a weekly rule whose weekdays leave out the first date's
  * weekday does not land on that first date, both as RFC 5545 says.
  */
@@ -70,7 +70,8 @@ export function expandSeries(series: SeriesSource, span: SpanRange, timeZone: st
   const s = series.schedule;
   if (s.kind === "unscheduled") return [];
   const firstOn = s.kind === "day" ? s.on : toLocalDate(s.start, timeZone);
-  const minutes = s.kind === "timed" ? localMinutes(s.start, firstOn, timeZone) : 0;
+  const startMinutes = s.kind === "timed" ? localMinutes(s.start, firstOn, timeZone) : 0;
+  const endMinutes = s.kind === "timed" ? localMinutes(s.end, firstOn, timeZone) : 0;
   const length = s.kind === "timed" ? s.end.getTime() - s.start.getTime() : 0;
 
   const { rule } = series;
@@ -98,8 +99,7 @@ export function expandSeries(series: SeriesSource, span: SpanRange, timeZone: st
   return dates.map((d) => {
     const originalOn = d.toISOString().slice(0, 10) as LocalDate;
     if (s.kind === "day") return { seriesId: series.id, originalOn, schedule: { kind: "day", on: originalOn } };
-    const start = instantAt(originalOn, minutes, timeZone);
-    return { seriesId: series.id, originalOn, schedule: { kind: "timed", start, end: new Date(start.getTime() + length) } };
+    return { seriesId: series.id, originalOn, schedule: { kind: "timed", ...wallSpanOn(originalOn, startMinutes, endMinutes, length, timeZone) } };
   });
 }
 
