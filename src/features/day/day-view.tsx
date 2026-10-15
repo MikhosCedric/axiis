@@ -218,9 +218,27 @@ export function DayView({
           </div>
         </header>
 
-        <div className="mt-6 flex flex-wrap items-start gap-x-3 gap-y-1">
+        <div className="mt-6 mb-3 flex flex-wrap items-start gap-x-3 gap-y-1">
           <div className="min-w-0 flex-[1_1_280px] rail:max-w-[440px]">
-            <CaptureField captureAction={actions.capture} firstDay={firstDay} />
+            <CaptureField
+              captureAction={actions.capture}
+              firstDay={firstDay}
+              screenStatus={
+                <p role="status" className={status?.error ? "font-medium text-ink" : "text-ink-2"}>
+                  {status?.text}
+                  {status?.offer && " "}
+                  {status?.offer && (
+                    <button
+                      type="button"
+                      onClick={() => timeSeries(status.offer!)}
+                      className="-mx-1 rounded px-1 font-medium text-ink underline decoration-rule underline-offset-2 hover:bg-hover active:bg-press hover:decoration-ink"
+                    >
+                      Same time {status.offer.cadence}
+                    </button>
+                  )}
+                </p>
+              }
+            />
           </div>
           <div role="group" aria-label="View" className="inline-flex overflow-hidden rounded-lg border border-rule">
             {MODES.map(({ mode: m, label }) => (
@@ -238,22 +256,6 @@ export function DayView({
           <GuideButton topics={DAY_GUIDE} className="ml-auto" />
         </div>
 
-        <p
-          role="status"
-          className={`mb-2 min-h-5 text-[13px] ${status?.error ? "font-medium text-ink" : "text-ink-2"}`}
-        >
-          {status?.text}
-          {status?.offer && " "}
-          {status?.offer && (
-            <button
-              type="button"
-              onClick={() => timeSeries(status.offer!)}
-              className="-mx-1 rounded px-1 font-medium text-ink underline decoration-rule underline-offset-2 hover:bg-hover active:bg-press hover:decoration-ink"
-            >
-              Same time {status.offer.cadence}
-            </button>
-          )}
-        </p>
 
         {isToday && leftover && (
           <LeftoverStrip data={leftover} onSelect={select} onStatus={(text, error) => setStatus({ text, error })} />
