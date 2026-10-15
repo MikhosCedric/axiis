@@ -54,7 +54,7 @@ export function TaggedView({
           </span>
           {data.tag.name}
         </h1>
-        <p className="mt-2.5 text-[15px] text-ink-2">{taggedSummary(data.rows)}</p>
+        <p className="page-summary">{taggedSummary(data.rows)}</p>
         <p role="status" className={`mt-4 min-h-5 text-[13px] ${ticks.status?.error ? "font-medium text-ink" : "text-ink-2"}`}>
           {ticks.status?.text}
         </p>

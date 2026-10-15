@@ -44,7 +44,7 @@ export function DueView({
     <div className={selectedParam ? "min-[1180px]:grid min-[1180px]:grid-cols-[minmax(0,1fr)_328px]" : ""}>
       <div className="min-w-0 px-4 pt-6 pb-14 rail:px-9 rail:pt-8">
         <h1 className="headline">Due</h1>
-        <p className="mt-2.5 text-[15px] text-ink-2">{dueSummary(rows)}</p>
+        <p className="page-summary">{dueSummary(rows)}</p>
         <p role="status" className={`mt-4 min-h-5 text-[13px] ${ticks.status?.error ? "font-medium text-ink" : "text-ink-2"}`}>
           {ticks.status?.text}
         </p>
