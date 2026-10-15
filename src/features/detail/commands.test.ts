@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { ItemId } from "@/domain/item";
+import type { ItemId, LocalDate } from "@/domain/item";
 import type { ItemsRepo } from "@/lib/items/repo";
 import { area, fakeRepo, makeItem } from "@/features/today/test-support";
 import { RATE_MESSAGE } from "@/lib/quota";
@@ -111,6 +111,28 @@ describe("deleteItem", () => {
 
     expect(await deleteItem(repo, child.id, "UTC")).toEqual({ ok: true });
     expect(deleted).toEqual([child.id]);
+  });
+
+  it("purges old soft-deleted items once the delete is done, and not when only one occurrence is skipped", async () => {
+    const parent = makeItem();
+    const { repo, calls } = recordingRepo([parent, makeItem({ parentId: parent.id })]);
+    expect(await deleteItem(repo, parent.id, "UTC")).toEqual({ ok: true });
+    expect(calls.purgeDeleted).toBe(1);
+
+    const series = makeItem({ schedule: { kind: "day", on: "2026-10-05" as LocalDate }, recurrence: { kind: "series", rule: { freq: "daily", interval: 1, end: { kind: "never" } } } });
+    const skip = recordingRepo([series]);
+    expect(await deleteItem(skip.repo, `${series.id}~2026-10-06`, "UTC", "one")).toEqual({ ok: true });
+    expect(skip.calls.purgeDeleted).toBe(0);
+  });
+
+  it("still reports the delete as done when the purge fails", async () => {
+    const item = makeItem();
+    const { repo, deleted } = recordingRepo([item]);
+    repo.purgeDeleted = async () => {
+      throw new Error("function public.purge_deleted_items() does not exist");
+    };
+    expect(await deleteItem(repo, item.id, "UTC")).toEqual({ ok: true });
+    expect(deleted).toEqual([item.id]);
   });
 
   it("leaves the parent in place when a subtask fails to delete", async () => {
