@@ -62,6 +62,15 @@ describe("paletteSections", () => {
     expect(sections[0].commands[0]).toMatchObject({ kind: "date", label: "Go to Thursday 24 December", href: "/day/2026-12-24" });
   });
 
+  it("offers a month for a month phrase, with no capture", () => {
+    const sections = paletteSections("month november", today, "24", idle);
+    expect(sections.map((s) => s.id)).toEqual(["dates"]);
+    expect(sections[0].commands[0]).toMatchObject({ kind: "date", label: "Go to November 2026", href: "/month/2026-11" });
+    expect(labels("nov 2027").dates).toEqual(["Go to November 2027"]);
+    expect(labels("month october").dates).toEqual(["Go to October 2026"]);
+    expect(paletteSections("month october", today, "24", idle)[0].commands[0]).toMatchObject({ href: "/month" });
+  });
+
   it("adds the year when the date is in another one", () => {
     expect(labels("jan 3").dates).toEqual(["Go to Sunday 3 January 2027"]);
   });

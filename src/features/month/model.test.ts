@@ -15,8 +15,10 @@ import {
   monthSummary,
   namesNoMonth,
   parseYearMonth,
+  pickerStep,
   sameDayIn,
   selectedMarkKey,
+  stepYear,
   type YearMonth,
 } from "./model";
 
@@ -238,6 +240,27 @@ describe("selectedMarkKey", () => {
   it("passes anything else through", () => {
     expect(selectedMarkKey(cells, `${SERIES}~2026-10-14`)).toBe(`${SERIES}~2026-10-14`);
     expect(selectedMarkKey(cells, null)).toBeNull();
+  });
+});
+
+describe("the Jump to month picker", () => {
+  it("moves by a month, a row of three, a year, and to the year's ends, across years", () => {
+    expect(pickerStep("ArrowRight", ym("2026-12"))).toBe("2027-01");
+    expect(pickerStep("ArrowLeft", ym("2026-01"))).toBe("2025-12");
+    expect(pickerStep("ArrowDown", ym("2026-11"))).toBe("2027-02");
+    expect(pickerStep("ArrowUp", ym("2026-05"))).toBe("2026-02");
+    expect(pickerStep("PageDown", ym("2026-05"))).toBe("2027-05");
+    expect(pickerStep("Home", ym("2026-05"))).toBe("2026-01");
+    expect(pickerStep("End", ym("2026-05"))).toBe("2026-12");
+    expect(pickerStep("Enter", ym("2026-05"))).toBeNull();
+  });
+
+  it("stops at the ends of the span Axiis plans on", () => {
+    expect(pickerStep("ArrowLeft", ym("1970-01"))).toBeNull();
+    expect(pickerStep("ArrowDown", ym("2200-11"))).toBeNull();
+    expect(stepYear(ym("2026-05"), 1)).toBe("2027-05");
+    expect(stepYear(ym("1970-05"), -1)).toBe("1970-01");
+    expect(stepYear(ym("2200-05"), 1)).toBe("2200-12");
   });
 });
 

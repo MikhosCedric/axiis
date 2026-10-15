@@ -1,4 +1,5 @@
 import type { LocalDate } from "@/domain/item";
+import { monthOf, parseYearMonth, type YearMonth } from "@/features/month/model";
 import { WEEK_LENGTH, weekOf } from "@/features/week/model";
 import { addDays, parseLocalDate } from "@/lib/dates";
 import { fold } from "./rank";
@@ -91,6 +92,25 @@ export function parseDatePhrase(text: string, today: LocalDate): LocalDate | nul
   if (m) return monthDay(m[2], m[1], m[3], today);
 
   return null;
+}
+
+/**
+ * The month a typed phrase names, or null: "month november" (the next
+ * November, this month included), "month nov 2027", "nov 2026",
+ * "November 2026" and "2026-11". A bare month name is left to capture and
+ * search, as "may" is also a word.
+ */
+export function parseMonthPhrase(text: string, today: LocalDate): YearMonth | null {
+  const phrase = fold(text).replace(/,/g, " ").replace(/\s+/g, " ").trim();
+  const iso = /^(?:month )?(\d{4})-(\d{2})$/.exec(phrase);
+  if (iso) return parseYearMonth(`${iso[1]}-${iso[2]}`);
+  const m = /^(month )?([a-z]+)\.?(?: (\d{4}))?$/.exec(phrase);
+  if (!m || MONTHS[m[2]] === undefined || (!m[1] && !m[3])) return null;
+  const month = pad(MONTHS[m[2]], 2);
+  if (m[3]) return parseYearMonth(`${m[3]}-${month}`);
+  const year = Number(today.slice(0, 4));
+  const thisYear = `${pad(year, 4)}-${month}`;
+  return parseYearMonth(thisYear >= monthOf(today) ? thisYear : `${pad(year + 1, 4)}-${month}`);
 }
 
 const DAY_NAMES = Object.keys(WEEKDAYS).filter((w) => w.endsWith("day"));
