@@ -18,7 +18,7 @@ const pause = () => new Promise((resolve) => setTimeout(resolve, 450));
 export function SettingsHarness() {
   const [{ repo, initial }] = useState(() => {
     const fake = fakeAreasRepo(["Work", "Home", "Health", "A longer area name that runs to forty"]);
-    return { repo: fake.repo, initial: fake.rows.map(({ id, name, position }): Area => ({ id, name, position })) };
+    return { repo: fake.repo, initial: fake.rows.map(({ id, name, position, color }): Area => ({ id, name, position, color })) };
   });
   const [areas, setAreas] = useState(initial);
   const [failing, setFailing] = useState(false);

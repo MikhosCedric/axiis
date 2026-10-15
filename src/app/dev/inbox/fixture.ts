@@ -9,7 +9,7 @@ const id = () => `f2000000-0000-4000-8000-${String(++seq).padStart(12, "0")}`;
 /** An inbox with tasks, an untimed event and a checklist, beside items the inbox must leave out. */
 export function seedInbox(now: Date, timeZone: string): { items: Item[]; areas: Area[] } {
   seq = 0;
-  const [work, home] = ["Work", "Home"].map((name, position): Area => ({ id: id() as AreaId, name, position }));
+  const [work, home] = ["Work", "Home"].map((name, position): Area => ({ id: id() as AreaId, name, position, color: null }));
   const daysAgo = (n: number) => new Date(now.getTime() - n * 86_400_000);
   const item = (title: string, ago: number, over: Partial<Item> = {}) =>
     makeItem({ id: id() as ItemId, title, createdAt: daysAgo(ago), updatedAt: daysAgo(ago), ...over });

@@ -14,7 +14,7 @@ export function seedFixture(now: Date, timeZone: string): { items: Item[]; areas
   const date = toLocalDate(now, timeZone);
   const at = (h: number, m = 0) => instantAt(date, h * 60 + m, timeZone);
   const [work, home, health] = ["Work", "Home", "Health"].map(
-    (name, position): Area => ({ id: id() as AreaId, name, position }),
+    (name, position): Area => ({ id: id() as AreaId, name, position, color: null }),
   );
   const item = (over: Partial<Item>) => makeItem({ id: id() as ItemId, ...over });
   const timed = (title: string, area: Area | null, from: Date, to: Date, over: Partial<Item> = {}) =>

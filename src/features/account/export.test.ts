@@ -13,7 +13,7 @@ const ISO = "2026-10-06T08:00:00.123Z";
 const OWNER: ExportUser = { id: USER, email: "ana@example.com", createdAt: "2026-01-02T03:04:05.000Z" };
 
 const rows: Record<ExportTable, unknown[]> = {
-  areas: [{ id: AREA, name: "Work", position: 1, created_at: T, updated_at: T, deleted_at: "2026-10-07T01:00:00+08:00" }],
+  areas: [{ id: AREA, name: "Work", position: 1, color: "moss", created_at: T, updated_at: T, deleted_at: "2026-10-07T01:00:00+08:00" }],
   items: [
     {
       id: ITEM,
@@ -88,7 +88,7 @@ describe("exportChunks", () => {
       version: 1,
       exportedAt: "2026-10-06T12:00:00.000Z",
       user: OWNER,
-      areas: [{ id: AREA, name: "Work", position: 1, createdAt: ISO, updatedAt: ISO, deletedAt: "2026-10-06T17:00:00.000Z" }],
+      areas: [{ id: AREA, name: "Work", position: 1, color: "moss", createdAt: ISO, updatedAt: ISO, deletedAt: "2026-10-06T17:00:00.000Z" }],
       items: [
         {
           id: ITEM,

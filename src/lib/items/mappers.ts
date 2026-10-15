@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { AREA_COLORS } from "@/domain/area-color";
 import {
   ITEM_STATUSES,
   ITEM_TYPES,
@@ -19,7 +20,8 @@ export const ITEM_COLUMNS =
   "id,type,title,body,status,area_id,parent_id,position,start_at,end_at,scheduled_on,due_on,rrule,series_id,original_on,completed_at,created_at,updated_at";
 /** Everything but `body`, which is the heaviest column and which no list view draws. Lists read items with `body: null`. */
 export const LIST_COLUMNS = ITEM_COLUMNS.replace("body,", "");
-export const AREA_COLUMNS = "id,name,position";
+/** `color` needs migration 0009; deploy after it is applied, or every area read fails. */
+export const AREA_COLUMNS = "id,name,position,color";
 
 const timestampSchema = z.iso.datetime({ offset: true }).transform((s) => new Date(s));
 const itemIdSchema = z.uuid().transform((s) => s as ItemId);
@@ -48,7 +50,7 @@ const itemRowSchema = z.object({
   updated_at: timestampSchema,
 });
 
-const areaRowSchema = z.object({ id: areaIdSchema, name: z.string(), position: z.number() });
+const areaRowSchema = z.object({ id: areaIdSchema, name: z.string(), position: z.number(), color: z.enum(AREA_COLORS).nullable() });
 
 type ScheduleColumns = {
   start_at: string | null;

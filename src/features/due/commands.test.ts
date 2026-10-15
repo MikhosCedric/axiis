@@ -7,7 +7,7 @@ const d = (s: string) => s as LocalDate;
 const now = new Date("2026-10-08T10:00:00Z");
 const work = "00000000-0000-4000-9000-000000000001" as AreaId;
 
-const run = (items: ReturnType<typeof makeItem>[]) => loadDue(fakeRepo(items, [{ id: work, name: "Work", position: 1 }]).repo, now, "UTC");
+const run = (items: ReturnType<typeof makeItem>[]) => loadDue(fakeRepo(items, [{ id: work, name: "Work", position: 1, color: null }]).repo, now, "UTC");
 
 describe("loadDue", () => {
   it("lists dated open items soonest first, grouped and worded against today", async () => {

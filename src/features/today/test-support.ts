@@ -304,4 +304,4 @@ function drop<T>(list: T[], match: (entry: T) => boolean) {
 let tagSeq = 0;
 const tagId = () => `00000000-0000-4000-b000-${String(++tagSeq).padStart(12, "0")}` as TagId;
 
-export const area = (name: string): Area => ({ id: uuid() as AreaId, name, position: 0 });
+export const area = (name: string): Area => ({ id: uuid() as AreaId, name, position: 0, color: null });
