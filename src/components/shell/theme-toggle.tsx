@@ -40,7 +40,7 @@ export function ThemeToggle({ className }: { className: string }) {
   return (
     <button type="button" onClick={toggleTheme} aria-label="Switch between light and dark" className={className}>
       <ThemeIcon />
-      <span className="max-rail:sr-only">Theme</span>
+      <span>Theme</span>
     </button>
   );
 }
