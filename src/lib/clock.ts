@@ -48,8 +48,12 @@ export function parseClock(text: string): number | null {
   return ((hours % 12) + (half === "p" ? 12 : 0)) * 60 + minutes;
 }
 
-/** The clock this browser's language and region use. Browser only. */
+/**
+ * The clock this browser's language and region use. Browser only. Asks for
+ * the browser's first language by name: Intl's own default can be the
+ * operating system's region instead, which an emulated locale does not change.
+ */
 export function deviceClock(): Clock {
-  const cycle = new Intl.DateTimeFormat(undefined, { hour: "numeric" }).resolvedOptions().hourCycle;
+  const cycle = new Intl.DateTimeFormat(navigator.languages?.[0] ?? navigator.language, { hour: "numeric" }).resolvedOptions().hourCycle;
   return cycle === "h11" || cycle === "h12" ? "12" : "24";
 }
