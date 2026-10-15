@@ -69,6 +69,25 @@
   /* A loading page breathes slowly; a fast pulse reads as alarm. */
   --animate-breathe: breathe 2.4s ease-in-out infinite;
 
+  /*
+   * The detail panel arriving: from the right beside the page, from below when it stacks under it.
+   * Movement only, no fade, so its text is never measured half-transparent (axe reads opacity).
+   */
+  --animate-panel-in: panel-in 320ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  --animate-panel-rise: panel-rise 320ms cubic-bezier(0.16, 1, 0.3, 1) both;
+
+  @keyframes panel-in {
+    from {
+      transform: translateX(16px);
+    }
+  }
+
+  @keyframes panel-rise {
+    from {
+      transform: translateY(8px);
+    }
+  }
+
   @keyframes breathe {
     50% {
       opacity: 0.45;
@@ -239,6 +258,29 @@
 ::view-transition-old(root),
 ::view-transition-new(root) {
   animation-duration: 0.2s;
+}
+
+/* A change of page: the old one fades quickly, the new one rises 6px into place once it has gone. */
+::view-transition-old(.page-out) {
+  animation: 120ms ease-out both vt-fade reverse;
+}
+
+::view-transition-new(.page-in) {
+  animation:
+    220ms ease-out 80ms both vt-fade,
+    360ms cubic-bezier(0.16, 1, 0.3, 1) 80ms both vt-rise;
+}
+
+@keyframes vt-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes vt-rise {
+  from {
+    transform: translateY(6px);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

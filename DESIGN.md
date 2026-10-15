@@ -337,6 +337,13 @@ A loading page is drawn in the shape of the page it becomes, in Press Tint strok
 ### Note Toolbar
 A sticky bar over the note body, held to the body's 68ch measure, with a Hairline Soft rule beneath. Its 32px icon tools (44px on touch) sit in three named groups: Type (Heading, Subheading, Quote, Code), Style (Bold, Italic, Link) and Lists (Bulleted, Numbered), each name in 12px Ink Quiet from 640px and spoken only below. It stays on screen while the note is open, so the tools are found without focusing the body first. A pressed tool is filled with Ink.
 
+### Motion
+Movement is spent on three moments, each on the house curve and each dropped under `prefers-reduced-motion`:
+- **A change of page** (a new path, not a new query): React's `<ViewTransition>` in `src/components/shell/page-transition.tsx`. The old page fades in 120ms; the new one waits 80ms, then fades in over 220ms while rising 6px over 360ms. The rail does not move. A change of query (the selected item, Score or List) is the same page and keeps the Score and List morph.
+- **The detail panel arriving:** 16px in from the right beside the page, 8px up when it stacks under it, 320ms. Movement only, no fade, so its text is never measured half-transparent.
+- **A sheet rising:** the phone's More sheet, 320ms from below; the palette and Guide keep their 200ms rise.
+The done sweep on a glyph and the beam glide stay as they were. Hover and press only ease colour (140ms).
+
 ### Command Palette
 A native `<dialog>` in Sheet, 560px wide, 12px radius, Dialog lift shadow, rising 8px with a 0.985 scale-in over 200ms. Options are 40px tall; the active option takes Verdigris Wash.
 
