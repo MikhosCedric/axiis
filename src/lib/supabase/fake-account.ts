@@ -1,4 +1,4 @@
-import type { Item, ItemId, LocalDate } from "@/domain/item";
+import type { Area, Item, ItemId, LocalDate } from "@/domain/item";
 import type { ExportTable, PageReader } from "@/features/account/export";
 import { bodyText, type DocNode } from "@/features/notes/doc";
 import { fakeRepo, makeItem } from "@/features/today/test-support";
@@ -31,12 +31,30 @@ function fixtures(): Item[] {
   ];
 }
 
-/** Which in-memory account a request uses: the fixtures, or one that has never stored an item. */
-export type FakeAccountKind = "fixtures" | "empty";
+const areaDay = "2099-05-20" as LocalDate;
+
+/** Items in areas, for the area colour test, on a day no real "today" meets. The other accounts' items have no area. */
+function areaFixtures(areas: Area[]): Item[] {
+  const [work, home] = areas;
+  return [
+    makeItem({
+      id: id(21),
+      title: "Draft the budget",
+      areaId: work.id,
+      schedule: { kind: "timed", start: new Date(`${areaDay}T10:00:00Z`), end: new Date(`${areaDay}T11:30:00Z`) },
+      createdAt: created,
+    }),
+    makeItem({ id: id(22), title: "Water the ferns", areaId: home.id, schedule: { kind: "day", on: areaDay }, createdAt: created }),
+    makeItem({ id: id(23), title: "Sort the receipts", areaId: work.id, createdAt: created }),
+  ];
+}
+
+/** Which in-memory account a request uses: the fixtures, one that has never stored an item, or one whose items sit in areas. */
+export type FakeAccountKind = "fixtures" | "empty" | "areas";
 
 function createAccount(kind: FakeAccountKind) {
   const areas = fakeAreasRepo(["Work", "Home", "Health"]);
-  const items = kind === "fixtures" ? fixtures() : [];
+  const items = kind === "fixtures" ? fixtures() : kind === "areas" ? areaFixtures(areas.rows) : [];
   const fake = fakeRepo(items);
   fake.repo.listAreas = () => areas.repo.list();
   if (kind === "fixtures") fake.tag(id(1), "errands");
