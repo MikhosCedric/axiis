@@ -13,7 +13,7 @@ export default function Loading() {
             </div>
           ))}
           {Array.from({ length: 35 }, (_, i) => (
-            <div key={i} className="min-h-14 border-r border-b border-rule px-1 pt-2 @min-[36rem]/month:min-h-28">
+            <div key={i} className="min-h-14 border-r border-b border-rule px-1 pt-2 @min-[36rem]/month:min-h-32">
               <Bone className="mx-auto h-3 w-4 @min-[36rem]/month:mx-0" />
             </div>
           ))}

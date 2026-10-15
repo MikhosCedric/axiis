@@ -405,7 +405,7 @@ function DayCell({
       onPointerDown={onPointerDown}
       onClick={onClick}
       onKeyDown={onKeyDown}
-      className={`group/day relative flex min-h-14 min-w-0 cursor-pointer flex-col border-r border-b border-rule px-0.5 pt-1 pb-1 transition-colors focus-visible:outline-offset-[-3px] @min-[36rem]/month:min-h-28 @min-[36rem]/month:px-1 ${
+      className={`group/day relative flex min-h-14 min-w-0 cursor-pointer flex-col border-r border-b border-rule px-0.5 pt-1 pb-1 transition-colors focus-visible:outline-offset-[-3px] @min-[36rem]/month:min-h-32 @min-[36rem]/month:px-1 ${
         over ? "bg-accent-wash" : active ? "bg-hover @min-[36rem]/month:bg-transparent" : "hover:bg-hover"
       }`}
     >
