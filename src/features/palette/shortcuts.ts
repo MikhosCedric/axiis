@@ -14,6 +14,7 @@ export type Handler =
   | "capture"
   | "score-item"
   | "week-item"
+  | "month-grid"
   | "inline-edit"
   | "confirm-delete"
   | "note-editor"
@@ -48,11 +49,11 @@ export const SHORTCUTS: ShortcutGroup[] = [
     shortcuts: GO_PLACES.map((p) => ({ chords: [k(GO_KEY)], then: k(p.key), does: `Go to ${p.label}`, handler: "go" as const })),
   },
   {
-    where: "Today and Week",
+    where: "Today, Week and Month",
     shortcuts: [
-      { chords: [k("[")], does: "Previous day or week", handler: "day-nav" },
-      { chords: [k("]")], does: "Next day or week", handler: "day-nav" },
-      { chords: [k("t")], does: "Back to today or this week", handler: "day-nav" },
+      { chords: [k("[")], does: "Previous day, week or month", handler: "day-nav" },
+      { chords: [k("]")], does: "Next day, week or month", handler: "day-nav" },
+      { chords: [k("t")], does: "Back to today, this week or this month", handler: "day-nav" },
       { chords: [k("c")], does: "Go to the capture field", handler: "capture" },
       { chords: [k("Escape")], does: "Leave the capture field", handler: "capture" },
     ],
@@ -82,6 +83,16 @@ export const SHORTCUTS: ShortcutGroup[] = [
       { chords: [k("ArrowLeft"), k("ArrowRight")], does: "Move it a day earlier or later", handler: "week-item" },
       { chords: [k("ArrowUp")], does: "Give a waiting task a day", handler: "week-item" },
       { chords: [k("Backspace"), k("Delete")], does: "Send it back to waiting", handler: "week-item" },
+    ],
+  },
+  {
+    where: "A day on the Month",
+    shortcuts: [
+      { chords: [k("ArrowLeft"), k("ArrowRight")], does: "The day before or after", handler: "month-grid" },
+      { chords: [k("ArrowUp"), k("ArrowDown")], does: "The same day a week earlier or later", handler: "month-grid" },
+      { chords: [k("Home"), k("End")], does: "The first or last day of that week", handler: "month-grid" },
+      { chords: [k("PageUp"), k("PageDown")], does: "The same day a month earlier or later", handler: "month-grid" },
+      { chords: [k("Enter")], does: "Open the day", handler: "month-grid" },
     ],
   },
   {
@@ -145,6 +156,10 @@ const NAMES: Record<string, string> = {
   Backspace: "Backspace",
   Delete: "Delete",
   Enter: "Enter",
+  Home: "Home",
+  End: "End",
+  PageUp: "Page Up",
+  PageDown: "Page Down",
 };
 
 const SPOKEN: Record<string, string> = {
