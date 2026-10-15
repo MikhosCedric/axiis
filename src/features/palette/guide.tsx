@@ -6,7 +6,7 @@ import { chordCaps, chordSpoken, HELP_KEY, SHORTCUTS, type Chord } from "./short
 import { useIsMac } from "./use-is-mac";
 
 /** A part of the Guide that explains one screen's own words and gestures. */
-export type GuideTopic = "capture" | "score" | "week";
+export type GuideTopic = "capture" | "score" | "week" | "month";
 
 type GuideControls = {
   open: () => void;
@@ -120,11 +120,24 @@ function WeekTopic({ id }: { id: string }) {
   );
 }
 
+function MonthTopic({ id }: { id: string }) {
+  return (
+    <Topic id={id} title="The month">
+      <p>
+        Click a day, or press Enter on it, to open it. The arrow keys move between days, Page Up and Page Down change
+        the month. Drag an item to another day to move it there. What you capture lands on the day in focus unless you
+        name another.
+      </p>
+    </Topic>
+  );
+}
+
 /** In the order the Guide shows them. */
 const TOPICS: Record<GuideTopic, (props: { id: string }) => ReactNode> = {
   capture: CaptureTopic,
   score: ScoreTopic,
   week: WeekTopic,
+  month: MonthTopic,
 };
 
 /** What the Guide shows: the screen's own topics first, then every keyboard shortcut. */
