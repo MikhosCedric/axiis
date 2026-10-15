@@ -21,8 +21,8 @@ async function axis(page: Page) {
 }
 
 /** Opens the Score harness once hydrated and its axis has been fitted to the measured width, so nothing below reads the server-drawn default. */
-async function gotoScore(page: Page) {
-  await page.goto("/dev/score");
+async function gotoScore(page: Page, query = "") {
+  await page.goto(`/dev/score${query}`);
   await expect(page.locator("[data-axis-measured]")).toBeAttached();
 }
 
@@ -82,7 +82,8 @@ test.describe("while dragging", () => {
   test.use({ viewport: { width: 1920, height: 900 } });
 
   test("a resize mid-drag leaves the axis alone until the beam is let go", async ({ page }) => {
-    await gotoScore(page);
+    // At midday, so the axis only has to hold the beams; just after midnight it has to reach back to now, and cannot shrink.
+    await gotoScore(page, "?at=12:00");
     const beam = page.getByRole("button", { name: /^Design sync, / });
     const before = await axis(page);
     expect(before.scrolls).toBe(false);
