@@ -1,4 +1,5 @@
 import { repeats, type Area, type ItemType, type LocalDate, type ShownItem, type SpanRange } from "@/domain/item";
+import { occurrenceKey } from "@/domain/item-key";
 import { stateOf, type BeamState } from "@/features/today/model";
 import { formatClock, formatMinutes, type Clock } from "@/lib/clock";
 import { WEEK_LENGTH, weekOf } from "@/features/week/model";
@@ -97,6 +98,8 @@ export function formatMonthHeading(month: YearMonth): string {
 export type MonthMark = {
   /** The item key, as `?item=` and the move action take it. */
   key: string;
+  /** An override's occurrence key, which `?item=` still holds after a first change stored the occurrence. */
+  occurrence: string | null;
   title: string;
   type: ItemType;
   state: BeamState;
@@ -151,6 +154,7 @@ export function buildMonth(input: {
     const area = item.areaId ? (areaOf.get(item.areaId) ?? null) : null;
     return {
       key: item.id,
+      occurrence: item.recurrence.kind === "override" ? occurrenceKey(item.recurrence.seriesId, item.recurrence.originalOn) : null,
       title: item.title,
       type: item.type,
       state: stateOf(item, now),
@@ -203,6 +207,13 @@ export function buildMonth(input: {
     return { date, marks: placed.slice(0, MARKS_PER_DAY).map((p) => p.mark), more: Math.max(0, placed.length - MARKS_PER_DAY) };
   });
   return { cells, open, due };
+}
+
+/** The key of the mark `selected` names: an override answers to its occurrence key too. Anything else passes through. */
+export function selectedMarkKey(cells: readonly MonthCell[], selected: string | null): string | null {
+  if (selected === null) return null;
+  for (const cell of cells) for (const m of cell.marks) if (m.key === selected || m.occurrence === selected) return m.key;
+  return selected;
 }
 
 export function monthSummary(open: number, due: number): string {

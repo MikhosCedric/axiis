@@ -1,6 +1,6 @@
 import type { Clock } from "@/lib/clock";
 import { describe, expect, it } from "vitest";
-import type { Area, AreaId, Item, LocalDate } from "@/domain/item";
+import type { Area, AreaId, Item, ItemId, LocalDate } from "@/domain/item";
 import { makeItem } from "@/features/today/test-support";
 import { dayRangeFor, instantAt } from "@/lib/dates";
 import {
@@ -16,6 +16,7 @@ import {
   namesNoMonth,
   parseYearMonth,
   sameDayIn,
+  selectedMarkKey,
   type YearMonth,
 } from "./model";
 
@@ -220,6 +221,23 @@ describe("buildMonth", () => {
     const done = makeItem({ title: "Done", schedule: { kind: "day", on: d("2026-10-14") }, status: "done" });
     const states = Object.fromEntries(cell(build("2026-10", [live, done]), "2026-10-14").marks.map((m) => [m.title, m.state]));
     expect(states).toEqual({ Done: "done", Now: "live" });
+  });
+});
+
+describe("selectedMarkKey", () => {
+  const SERIES = "6f9619ff-8b86-4011-b42d-00c04fc96400" as ItemId;
+  const override = timed("2026-10-07", 540, 600, "UTC", { title: "Stretch", recurrence: { kind: "override", seriesId: SERIES, originalOn: d("2026-10-07") } });
+  const plain = timed("2026-10-08", 540, 600, "UTC", { title: "Dentist" });
+  const { cells } = build("2026-10", [override, plain]);
+
+  it("finds a mark by its key, and an override by the occurrence key the URL held before it was stored", () => {
+    expect(selectedMarkKey(cells, plain.id)).toBe(plain.id);
+    expect(selectedMarkKey(cells, `${SERIES}~2026-10-07`)).toBe(override.id);
+  });
+
+  it("passes anything else through", () => {
+    expect(selectedMarkKey(cells, `${SERIES}~2026-10-14`)).toBe(`${SERIES}~2026-10-14`);
+    expect(selectedMarkKey(cells, null)).toBeNull();
   });
 });
 
