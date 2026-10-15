@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import type { Area } from "@/domain/item";
 import type { TagSummary } from "@/domain/tag";
 import type { AreaActions } from "@/features/account/areas-section";
-import { addArea, deleteAccount, moveArea, removeArea, renameArea } from "@/features/account/commands";
+import { addArea, deleteAccount, moveArea, removeArea, renameArea, setAreaColor } from "@/features/account/commands";
 import { SettingsView } from "@/features/account/settings-view";
 import { deleteTag, loadTagIndex, renameTag } from "@/features/tags/commands";
 import type { TagActions } from "@/features/tags/tags-section";
@@ -39,6 +39,7 @@ export function SettingsHarness() {
     rename: fake(renameArea),
     remove: fake(removeArea),
     move: fake(moveArea),
+    color: fake(setAreaColor),
   };
 
   const [tags, setTags] = useState<TagSummary[]>([]);

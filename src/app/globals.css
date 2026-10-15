@@ -29,6 +29,18 @@
     0 0 0 1px light-dark(rgb(14 12 10 / 0.06), rgb(236 229 211 / 0.1));
   /* A thing held under the pointer: a dragged chip. */
   --lift: 0 6px 18px light-dark(rgb(28 27 34 / 0.22), rgb(0 0 0 / 0.6));
+  /*
+   * Area colours, named in src/domain/area-color.ts. They tint a small mark beside an area's name (a dot),
+   * never text, a fill or a line form, and each holds 3:1 on Rail Paper, Paper and Sheet (area-color.test.ts).
+   */
+  --area-clay: light-dark(#964b2c, #d58464);
+  --area-ochre: light-dark(#9d752f, #e8bc78);
+  --area-moss: light-dark(#485320, #7a8753);
+  --area-sage: light-dark(#6a816e, #acc5b0);
+  --area-slate: light-dark(#597b99, #9bbfdf);
+  --area-plum: light-dark(#5c3861, #946d9a);
+  --area-rose: light-dark(#7a444f, #b67b85);
+  --area-stone: light-dark(#796e63, #b2a59a);
   /* Vertical padding of a list row; the Density setting tightens it. */
   --row-y: 0.625rem;
 }
