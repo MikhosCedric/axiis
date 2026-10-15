@@ -14,7 +14,8 @@ import {
   type PointerEvent as ReactPointerEvent,
   type ReactNode,
 } from "react";
-import { repeats, type LocalDate, type ShownItem } from "@/domain/item";
+import { AreaLabel, AreaMark } from "@/components/area-mark";
+import { repeats, type Area, type LocalDate, type ShownItem } from "@/domain/item";
 import { RepeatMark } from "@/features/today/repeat-mark";
 import { tagLine } from "@/features/tags/model";
 import { selectedIn, type ItemKey } from "@/domain/item-key";
@@ -113,7 +114,7 @@ export function WeekView({
       ).waiting,
     [items, today, timeZone, now],
   );
-  const areaName = (item: ShownItem) => areas.find((a) => a.id === item.areaId)?.name ?? null;
+  const areaOf = (item: ShownItem) => areas.find((a) => a.id === item.areaId) ?? null;
   const shownSelected = selectedIn(items, selectedId);
 
   function select(id: string | null) {
@@ -194,7 +195,7 @@ export function WeekView({
       entry={entry}
       variant={variant}
       timeZone={timeZone}
-      area={areaName(entry.item)}
+      area={areaOf(entry.item)}
       tags={data.tags[entry.item.id]}
       selected={shownSelected === entry.item.id}
       justDone={justDone === entry.item.id}
@@ -374,7 +375,7 @@ function ItemRow({
   entry: TodayEntry;
   variant: "row" | "chip";
   timeZone: string;
-  area: string | null;
+  area: Area | null;
   tags: readonly string[] | undefined;
   selected: boolean;
   justDone: boolean;
@@ -388,7 +389,7 @@ function ItemRow({
   const spokenTime =
     s.kind === "timed" ? `${formatClock(s.start, timeZone)} to ${formatClock(s.end, timeZone)}` : (time ?? "waiting");
   const tagged = tagLine(tags ?? [], 2);
-  const label = [item.title, spokenTime, area, STATE_WORD[state], repeats(item) && "repeats", tagged.spoken].filter(Boolean).join(", ");
+  const label = [item.title, spokenTime, area?.name, STATE_WORD[state], repeats(item) && "repeats", tagged.spoken].filter(Boolean).join(", ");
   const shape =
     variant === "chip"
       ? "inline-flex max-w-[34ch] items-center gap-2 rounded-md border border-rule bg-sheet px-2.5 py-1.5 pointer-coarse:min-h-11"
@@ -408,6 +409,7 @@ function ItemRow({
       } ${lifted ? "opacity-35" : ""}`}
     >
       <Glyph type={item.type} state={state} justDone={justDone} className={variant === "row" ? "!w-9 mt-0.5" : "!w-9"} />
+      {variant === "chip" && <AreaMark color={area?.color ?? null} done={state === "done"} />}
       <span className={`min-w-0 ${variant === "chip" ? "truncate" : ""}`}>
         <span className={`block leading-snug break-words ${variant === "chip" ? "truncate" : ""} ${TITLE_WEIGHT[state]}`}>
           {item.title}
@@ -416,7 +418,7 @@ function ItemRow({
         {variant === "row" && (
           <span className="mt-0.5 flex flex-wrap gap-x-2 text-xs text-ink-3">
             {time && <span className="tabular">{time}</span>}
-            {area && <span className="min-w-0 truncate">{area}</span>}
+            {area && <AreaLabel name={area.name} color={area.color} />}
             {tagged.shown && <span className="min-w-0 truncate">{tagged.shown}</span>}
           </span>
         )}
