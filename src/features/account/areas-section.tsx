@@ -108,7 +108,7 @@ export function AreasSection({ areas, actions }: { areas: Area[]; actions: AreaA
                   onClick={() => setPicking((open) => (open === area.id ? null : area.id))}
                   className={`${iconButton} group-has-[[role=group]]/actions:hidden aria-expanded:bg-press`}
                 >
-                  <Swatch color={area.color} className="size-3" />
+                  <Swatch color={area.color} size={12} />
                 </button>
                 {(["up", "down"] as const).map((direction) => {
                   const atEnd = direction === "up" ? index === 0 : index === shown.length - 1;
@@ -162,11 +162,11 @@ export function AreasSection({ areas, actions }: { areas: Area[]; actions: AreaA
 }
 
 /** A colour's dot, or for None a dashed empty ring, so None reads as a choice rather than a gap. */
-function Swatch({ color, className }: { color: AreaColor | null; className: string }) {
+function Swatch({ color, size }: { color: AreaColor | null; size: number }) {
   return color ? (
-    <AreaMark color={color} className={className} />
+    <AreaMark color={color} size={size} />
   ) : (
-    <span aria-hidden="true" className={`rounded-full border-[1.5px] border-dashed border-ink-3 ${className}`} />
+    <span aria-hidden="true" className="rounded-full border-[1.5px] border-dashed border-ink-3" style={{ width: size, height: size }} />
   );
 }
 
@@ -194,7 +194,7 @@ function ColorPicker({ id, area, onPick }: { id: string; area: Area; onPick: (co
             className="sr-only"
           />
           <span className="sr-only">{areaColorLabel(color)}</span>
-          <Swatch color={color} className="size-4" />
+          <Swatch color={color} size={16} />
         </label>
       ))}
       <span aria-hidden="true" className="ml-2 text-[13px] text-ink-2">

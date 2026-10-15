@@ -1,3 +1,4 @@
+import type { AreaColor } from "@/domain/area-color";
 import type { Area, AreaId, LocalDate, ShownItem } from "@/domain/item";
 import type { ItemKey } from "@/domain/item-key";
 import type { TodayEntry, TodayView } from "@/features/today/model";
@@ -90,6 +91,7 @@ export type Beam = Packed<TodayEntry>;
 export type Staff = {
   areaId: AreaId | null;
   name: string;
+  color: AreaColor | null;
   rows: number;
   beams: Beam[];
   open: number;
@@ -165,14 +167,14 @@ export function layoutScore({
   );
   const areaOf = (e: TodayEntry) => (e.item.areaId !== null && known.has(e.item.areaId) ? e.item.areaId : null);
   const needsNoArea = areas.length === 0 || timed.some((t) => areaOf(t.value) === null);
-  const keys: { areaId: AreaId | null; name: string }[] = [
-    ...areas.map((a) => ({ areaId: a.id, name: a.name })),
-    ...(needsNoArea ? [{ areaId: null, name: NO_AREA }] : []),
+  const keys: Pick<Staff, "areaId" | "name" | "color">[] = [
+    ...areas.map((a) => ({ areaId: a.id, name: a.name, color: a.color })),
+    ...(needsNoArea ? [{ areaId: null, name: NO_AREA, color: null }] : []),
   ];
 
   let top = 0;
   let ghost: ScoreLayout["ghost"] = null;
-  const staves = keys.map(({ areaId, name }, index) => {
+  const staves = keys.map(({ areaId, name, color }, index) => {
     const mine = timed.filter((t) => areaOf(t.value) === areaId);
     const packed = packRows(mine, axis.end);
     let rows = packed.rows;
@@ -184,6 +186,7 @@ export function layoutScore({
     const staff: Staff = {
       areaId,
       name,
+      color,
       rows,
       beams: placed,
       open: mine.filter((t) => t.value.state !== "done").length,
