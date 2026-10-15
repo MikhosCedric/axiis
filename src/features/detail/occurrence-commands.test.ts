@@ -345,6 +345,28 @@ describe("setTime", () => {
     expect((await loadOccurrences(w.repo, span, ny)).occurrences[0].schedule).toEqual(timed("2026-11-02T05:00:00Z", "2026-11-02T09:00:00Z"));
   });
 
+  it("keeps a typed end on the wall clock when the series starts on the night the clocks go forward, and every day after", async () => {
+    const ny = "America/New_York";
+    const w = world({ schedule: { kind: "day", on: d("2026-03-08") } });
+    expect(await setTime(w.repo, w.series.id, { start: 90, length: 150 }, ny, "all")).toEqual({ ok: true });
+    // 01:30 EST to 04:00 EDT is 90 real minutes.
+    expect(w.series.schedule).toEqual(timed("2026-03-08T06:30:00Z", "2026-03-08T08:00:00Z"));
+    const span = { from: new Date(0), to: new Date(0), fromDate: d("2026-03-08"), toDate: d("2026-03-10") };
+    expect((await loadOccurrences(w.repo, span, ny)).occurrences.map((o) => o.schedule)).toEqual([
+      timed("2026-03-08T06:30:00Z", "2026-03-08T08:00:00Z"),
+      timed("2026-03-09T05:30:00Z", "2026-03-09T08:00:00Z"),
+    ]);
+  });
+
+  it("refuses an end the clocks skip on the series' own date", async () => {
+    const w = world({ schedule: { kind: "day", on: d("2026-03-08") } });
+    expect(await setTime(w.repo, w.series.id, { start: 60, length: 90 }, "America/New_York", "all")).toEqual({
+      ok: false,
+      error: "02:30 does not happen on Sunday 8 March, when the clocks go forward. Try 03:00.",
+    });
+    expect(w.series.schedule).toEqual({ kind: "day", on: "2026-03-08" });
+  });
+
   it("refuses all of them for something that does not repeat, and writes nothing", async () => {
     const plain = makeItem({ schedule: { kind: "day", on: d("2026-10-06") } });
     const orphan = makeItem({ recurrence: { kind: "override", seriesId: plain.id, originalOn: d("2026-10-06") } });
@@ -444,6 +466,15 @@ describe("setFirstDay", () => {
     const w = world({ schedule: timed("2026-03-07T14:00:00Z", "2026-03-07T14:30:00Z") });
     expect(await setFirstDay(w.repo, w.series.id, "2026-03-09", ny)).toEqual({ ok: true });
     expect(w.series.schedule).toEqual(timed("2026-03-09T13:00:00Z", "2026-03-09T13:30:00Z"));
+  });
+
+  it("keeps the start and end on the wall clock when the new first date is the night the clocks go forward", async () => {
+    const ny = "America/New_York";
+    // 01:00 to 04:00 EST on Saturday 7 March, three real hours.
+    const w = world({ schedule: timed("2026-03-07T06:00:00Z", "2026-03-07T09:00:00Z") });
+    expect(await setFirstDay(w.repo, w.series.id, "2026-03-08", ny)).toEqual({ ok: true });
+    // 01:00 EST to 04:00 EDT on Sunday, two real hours.
+    expect(w.series.schedule).toEqual(timed("2026-03-08T06:00:00Z", "2026-03-08T08:00:00Z"));
   });
 
   it("refuses a first date after the series ends, bad dates and things that do not repeat, and writes nothing", async () => {
