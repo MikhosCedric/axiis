@@ -28,8 +28,11 @@ export type NavArea = { id: string; name: string; open: number };
 
 const base = "flex items-center gap-2.5 rounded-md p-2 font-medium max-rail:p-1.5";
 const quiet = `${base} text-ink-2 hover:bg-hover hover:text-ink active:bg-press`;
-/** The current place, in ink: the Ink-for-Selection rule. */
-const current = `${base} bg-ink text-paper`;
+/**
+ * The current place: a sheet of paper raised off the rail, its label in full ink, with an ink tick
+ * at its leading edge (the Ink-for-Selection rule). The tick carries the state on its own.
+ */
+const current = `${base} relative bg-sheet text-ink font-semibold shadow-[0_1px_2px_rgb(14_12_10/0.08),inset_0_0_0_1px_var(--rule-soft)] before:absolute before:inset-y-2 before:left-0 before:w-[3px] before:rounded-full before:bg-ink`;
 const toolShape = "max-rail:size-11 max-rail:justify-center rail:w-full";
 const tool = `${quiet} ${toolShape}`;
 

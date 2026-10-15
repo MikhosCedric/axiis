@@ -50,6 +50,24 @@ const MODES: { mode: DayViewMode; label: string }[] = [
   { mode: "list", label: "List" },
 ];
 
+/** "Thursday 15 October", with the weekday a step quieter so the date leads. */
+function DayHeading({ date }: { date: DayData["date"] }) {
+  const text = formatDayHeading(date);
+  const gap = text.indexOf(" ");
+  return (
+    <time dateTime={date}>
+      {gap > 0 ? (
+        <>
+          <span className="text-ink-2">{text.slice(0, gap)}</span>
+          {text.slice(gap)}
+        </>
+      ) : (
+        text
+      )}
+    </time>
+  );
+}
+
 function useNow(nowIso: string, ticking: boolean) {
   const [now, setNow] = useState(() => new Date(nowIso));
   useEffect(() => {
@@ -188,21 +206,39 @@ export function DayView({
 
   return (
     <div className={selectedParam ? "min-[1180px]:grid min-[1180px]:grid-cols-[minmax(0,1fr)_328px]" : ""}>
-      <div className="min-w-0 px-4 pt-6 pb-14 rail:px-9 rail:pt-8">
-        <header className="flex flex-col-reverse gap-3 rail:flex-row-reverse rail:items-start rail:justify-between rail:gap-6">
+      <div className="@container/page min-w-0 px-4 pt-6 pb-14 rail:px-9 rail:pt-8">
+        <header className="page-head">
           {/* A server element can arrive late as a lazy chunk, which React then checks for a key among its siblings. */}
           <Fragment key="nav">{nav}</Fragment>
           <div className="min-w-0">
             <h1 className="headline">
-              <time dateTime={date}>{formatDayHeading(date)}</time>
+              <DayHeading date={date} />
             </h1>
-            <p className="mt-2.5 text-[15px] text-ink-2">{summaryLine(view, isToday)}</p>
+            <p className="page-summary">{summaryLine(view, isToday)}</p>
           </div>
         </header>
 
-        <div className="mt-6 flex flex-wrap items-start gap-x-3 gap-y-1">
+        <div className="mt-6 mb-3 flex flex-wrap items-start gap-x-3 gap-y-1">
           <div className="min-w-0 flex-[1_1_280px] rail:max-w-[440px]">
-            <CaptureField captureAction={actions.capture} firstDay={firstDay} />
+            <CaptureField
+              captureAction={actions.capture}
+              firstDay={firstDay}
+              screenStatus={
+                <p role="status" className={status?.error ? "font-medium text-ink" : "text-ink-2"}>
+                  {status?.text}
+                  {status?.offer && " "}
+                  {status?.offer && (
+                    <button
+                      type="button"
+                      onClick={() => timeSeries(status.offer!)}
+                      className="-mx-1 rounded px-1 font-medium text-ink underline decoration-rule underline-offset-2 hover:bg-hover active:bg-press hover:decoration-ink"
+                    >
+                      Same time {status.offer.cadence}
+                    </button>
+                  )}
+                </p>
+              }
+            />
           </div>
           <div role="group" aria-label="View" className="inline-flex overflow-hidden rounded-lg border border-rule">
             {MODES.map(({ mode: m, label }) => (
@@ -220,22 +256,6 @@ export function DayView({
           <GuideButton topics={DAY_GUIDE} className="ml-auto" />
         </div>
 
-        <p
-          role="status"
-          className={`mb-2 min-h-5 text-[13px] ${status?.error ? "font-medium text-ink" : "text-ink-2"}`}
-        >
-          {status?.text}
-          {status?.offer && " "}
-          {status?.offer && (
-            <button
-              type="button"
-              onClick={() => timeSeries(status.offer!)}
-              className="-mx-1 rounded px-1 font-medium text-ink underline decoration-rule underline-offset-2 hover:bg-hover active:bg-press hover:decoration-ink"
-            >
-              Same time {status.offer.cadence}
-            </button>
-          )}
-        </p>
 
         {isToday && leftover && (
           <LeftoverStrip data={leftover} onSelect={select} onStatus={(text, error) => setStatus({ text, error })} />

@@ -54,15 +54,21 @@ export function ListsView({
     <div className={selectedParam ? "min-[1180px]:grid min-[1180px]:grid-cols-[minmax(0,1fr)_328px]" : ""}>
       <div className="min-w-0 px-4 pt-6 pb-14 rail:px-9 rail:pt-8">
         <h1 className="headline">Lists</h1>
-        <p className="mt-2.5 text-[15px] text-ink-2">{listsSummary(data.rows)}</p>
+        <p className="page-summary">{listsSummary(data.rows)}</p>
 
-        <div className="mt-6">
-          <CaptureField captureAction={captureAndOpen} label="New checklist" placeholder="Name a checklist, then add its lines" plans={false} />
+        <div className="mt-6 mb-3">
+          <CaptureField
+            captureAction={captureAndOpen}
+            label="New checklist"
+            placeholder="Name a checklist, then add its lines"
+            plans={false}
+            screenStatus={
+              <p role="status" className={ticks.status?.error ? "font-medium text-ink" : "text-ink-2"}>
+                {ticks.status?.text}
+              </p>
+            }
+          />
         </div>
-
-        <p role="status" className={`min-h-5 text-[13px] ${ticks.status?.error ? "font-medium text-ink" : "text-ink-2"}`}>
-          {ticks.status?.text}
-        </p>
 
         {data.rows.length > 0 ? (
           <ul className="mt-2 max-w-[760px] border-t border-rule">

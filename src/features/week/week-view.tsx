@@ -202,28 +202,31 @@ export function WeekView({
 
   return (
     <div className={selectedParam ? "min-[1180px]:grid min-[1180px]:grid-cols-[minmax(0,1fr)_328px]" : ""}>
-      <div className="min-w-0 px-4 pt-6 pb-14 rail:px-9 rail:pt-8">
-        <header className="flex flex-col-reverse gap-3 rail:flex-row-reverse rail:items-start rail:justify-between rail:gap-6">
+      <div className="@container/page min-w-0 px-4 pt-6 pb-14 rail:px-9 rail:pt-8">
+        <header className="page-head">
           {/* A server element can arrive late as a lazy chunk, which React then checks for a key among its siblings. */}
           <Fragment key="nav">{nav}</Fragment>
           <div className="min-w-0">
             <h1 className="headline">
               {formatWeekHeading(days)}
             </h1>
-            <p className="mt-2.5 text-[15px] text-ink-2">{weekSummary(week, waiting)}</p>
+            <p className="page-summary">{weekSummary(week, waiting)}</p>
           </div>
         </header>
 
-        <div className="mt-6 flex flex-wrap items-start gap-x-3 gap-y-1">
+        <div className="mt-6 mb-3 flex flex-wrap items-start gap-x-3 gap-y-1">
           <div className="min-w-0 flex-[1_1_280px] rail:max-w-[440px]">
-            <CaptureField captureAction={actions.capture} />
+            <CaptureField
+              captureAction={actions.capture}
+              screenStatus={
+                <p role="status" className={status?.error ? "font-medium text-ink" : "text-ink-2"}>
+                  {status?.text}
+                </p>
+              }
+            />
           </div>
           <GuideButton topics={WEEK_GUIDE} className="ml-auto" />
         </div>
-
-        <p role="status" className={`mb-2 min-h-5 text-[13px] ${status?.error ? "font-medium text-ink" : "text-ink-2"}`}>
-          {status?.text}
-        </p>
 
         <section aria-labelledby="week-h" className="@container">
           <h2 id="week-h" className="sr-only">
@@ -281,7 +284,7 @@ export function WeekView({
           ref={fly}
           hidden={!preview}
           aria-hidden="true"
-          className="pointer-events-none fixed top-0 left-0 z-50 flex max-w-[28ch] items-center gap-2 rounded-md border border-rule bg-sheet px-2.5 py-1.5 shadow-[0_6px_18px_rgba(28,27,34,0.18)]"
+          className="pointer-events-none fixed top-0 left-0 z-50 flex max-w-[28ch] items-center gap-2 rounded-md border border-rule bg-sheet px-2.5 py-1.5 shadow-lift"
         >
           {preview && (
             <>

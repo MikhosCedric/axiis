@@ -1,1 +1,5 @@
-export { PageSkeleton as default } from "@/components/page-skeleton";
+import { PageSkeleton } from "@/components/page-skeleton";
+
+export default function Loading() {
+  return <PageSkeleton capture />;
+}

@@ -50,7 +50,7 @@ export function DayNav({ date, today, mode }: { date: LocalDate; today: LocalDat
   }, [router, date, today, mode]);
 
   return (
-    <nav aria-label="Day" className="mb-5 flex flex-wrap items-center gap-2">
+    <nav aria-label="Day" className="flex flex-wrap items-center gap-2">
       <SpanSwitch current="day" dayHref={dayHref(date, today, mode)} weekHref={weekHref(date, today)} />
       {/* One pair, so Previous and Next never wrap apart. */}
       <span className="inline-flex flex-none">

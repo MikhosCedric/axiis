@@ -4,7 +4,7 @@
     .ink { stroke: #1c1b22; }
     .now { fill: #0a675a; }
     @media (prefers-color-scheme: dark) {
-      .tile { fill: #16151b; }
+      .tile { fill: #14131a; }
       .ink { stroke: #ece5d3; }
       .now { fill: #45c7b0; }
     }

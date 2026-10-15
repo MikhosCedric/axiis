@@ -274,7 +274,7 @@ export function ScoreView({
                 <span className="block font-serif text-base leading-tight font-medium [overflow-wrap:anywhere] rail:text-[19px]">
                   {staff.name}
                 </span>
-                {!firstDay && <span className="mt-1 block text-xs text-ink-3">{staff.open} open</span>}
+                {!firstDay && staff.open > 0 && <span className="mt-1 block text-xs text-ink-3 tabular">{staff.open} open</span>}
               </div>
               <div
                 className={`${styles.staffBody} ${target?.kind === "staff" && target.staff === i ? styles.over : ""}`}
@@ -315,7 +315,7 @@ export function ScoreView({
             {nowMinutes !== null && nowMinutes >= axis.start && nowMinutes <= axis.end && (
               <div
                 aria-hidden="true"
-                className="pointer-events-none absolute inset-y-0 z-[3] -ml-px w-0.5 bg-accent"
+                className="pointer-events-none absolute inset-y-0 z-[2] -ml-px w-0.5 bg-accent"
                 style={{ left: xAt(axis, nowMinutes) }}
               />
             )}
