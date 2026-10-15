@@ -59,14 +59,30 @@ test.describe("shell on a phone", () => {
     await atLeastThumb(page.getByRole("navigation", { name: "Site" }).getByRole("link"));
   });
 
-  test("settings and sign out are on screen without scrolling the bar", async ({ page }) => {
+  test("the bottom bar holds four places and More, which opens the rest a thumb wide", async ({ page }) => {
     await page.goto("/dev/palette");
     const nav = page.getByRole("navigation", { name: "Primary" });
-    for (const control of [nav.getByRole("link", { name: "Settings" }), nav.getByRole("button", { name: "Sign out" })]) {
+    const bar = nav.getByRole("listitem");
+    await expect(bar).toHaveText(["Today", "Week", "Inbox", "Due", "More"]);
+    const box = (await nav.boundingBox())!;
+    expect(box.y + box.height).toBeCloseTo(812, 0);
+
+    const more = nav.getByRole("button", { name: "More" });
+    await more.click();
+    const sheet = page.getByRole("dialog", { name: "More" });
+    for (const control of [
+      sheet.getByRole("link", { name: "Lists" }),
+      sheet.getByRole("link", { name: "Notes" }),
+      sheet.getByRole("link", { name: "Tags" }),
+      sheet.getByRole("link", { name: "Search" }),
+      sheet.getByRole("link", { name: "Settings" }),
+      sheet.getByRole("button", { name: "Sign out" }),
+    ]) {
       await expect(control).toBeInViewport({ ratio: 1 });
-      const box = await control.boundingBox();
-      expect(box!.height).toBeGreaterThanOrEqual(44);
-      expect(box!.width).toBeGreaterThanOrEqual(44);
+      expect((await control.boundingBox())!.height).toBeGreaterThanOrEqual(44);
     }
+    await page.keyboard.press("Escape");
+    await expect(sheet).toBeHidden();
+    await expect(more).toBeFocused();
   });
 });
