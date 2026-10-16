@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import type { TagSummary } from "@/domain/tag";
 import { parseItemKey } from "@/domain/item-key";
+import { useClock } from "@/components/shell/clock-context";
 import { loadDetail } from "@/features/detail/commands";
 import { DetailSheet, MissingItem } from "@/features/detail/detail-sheet";
 import type { DetailActions, DetailView } from "@/features/detail/model";
@@ -53,23 +54,24 @@ export function TagIndexHarness() {
 export function TaggedHarness({ name, itemId }: { name: string; itemId: string | null }) {
   const [version, setVersion] = useState(0);
   const [data, setData] = useState<TaggedData | null | undefined>(undefined);
+  const clock = useClock();
   const [loaded, setLoaded] = useState<{ key: string; view: DetailView | null } | null>(null);
 
   useEffect(() => {
-    void loadTagged(store.repo, name, TZ).then(setData);
-  }, [name, version]);
+    void loadTagged(store.repo, name, TZ, clock).then(setData);
+  }, [name, version, clock]);
 
   useEffect(() => {
     const key = parseItemKey(itemId);
     if (!key || !itemId) return;
     let live = true;
-    void loadDetail(store.repo, key, new Date(), TZ).then((view) => {
+    void loadDetail(store.repo, key, new Date(), TZ, clock).then((view) => {
       if (live) setLoaded({ key: itemId, view });
     });
     return () => {
       live = false;
     };
-  }, [itemId, version]);
+  }, [itemId, version, clock]);
 
   const actions: DetailActions = {
     ...harnessDetailActions(store.repo, TZ, async (command) => {
@@ -88,7 +90,7 @@ export function TaggedHarness({ name, itemId }: { name: string; itemId: string |
     if (settings.failing) return { ok: false, error: "That change did not save. Try again." };
     const result = await setDoneCommand(store.repo, id, done, TZ);
     if (result.ok) {
-      setData(await loadTagged(store.repo, name, TZ));
+      setData(await loadTagged(store.repo, name, TZ, clock));
       setVersion((v) => v + 1);
     }
     return result;

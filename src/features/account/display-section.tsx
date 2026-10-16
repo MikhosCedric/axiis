@@ -1,8 +1,20 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { DENSITY_COOKIE, DENSITIES, THEMES, type Density, type Theme } from "@/components/shell/cookies";
+import {
+  CLOCK_COOKIE,
+  CLOCK_SETTINGS,
+  clockCookieValue,
+  DENSITY_COOKIE,
+  DENSITIES,
+  THEMES,
+  type ClockSetting,
+  type Density,
+  type Theme,
+} from "@/components/shell/cookies";
 import { applyTheme, useTheme } from "@/components/shell/theme-toggle";
+import { deviceClock, formatMinutes, type Clock } from "@/lib/clock";
 
 const THEME_LABEL: Record<Theme, { name: string; says: string }> = {
   system: { name: "System", says: "Light or dark, as this device is set." },
@@ -14,6 +26,17 @@ const DENSITY_LABEL: Record<Density, { name: string; says: string }> = {
   spacious: { name: "Spacious", says: "Room around every row." },
   compact: { name: "Compact", says: "Rows sit closer, so more of a long list fits on screen." },
 };
+
+/** Two times that show which clock a choice writes: "9:30 AM and 2:15 PM". */
+const sample = (clock: Clock) => `${formatMinutes(570, clock)} and ${formatMinutes(855, clock)}`;
+
+function clockNames(clock: Clock): Record<ClockSetting, { name: string; says: string }> {
+  return {
+    auto: { name: "Auto", says: `As this device’s language and region write times, so ${sample(clock)}.` },
+    "12": { name: "12-hour", says: `Like ${sample("12")}.` },
+    "24": { name: "24-hour", says: `Like ${sample("24")}.` },
+  };
+}
 
 function saveDensity(next: Density) {
   document.documentElement.dataset.density = next;
@@ -54,12 +77,30 @@ function Choice<T extends string>({
 }
 
 /**
- * Theme and row spacing, both kept for this device in cookies, so the first paint already has them.
+ * Theme, row spacing and time format, each kept for this device in a cookie, so the first paint already has them.
  * The rail's toggle changes the same theme; this section follows it.
  */
-export function DisplaySection({ theme, density }: { theme: Theme; density: Density }) {
+export function DisplaySection({
+  theme,
+  density,
+  clock,
+}: {
+  theme: Theme;
+  density: Density;
+  clock: { setting: ClockSetting; clock: Clock };
+}) {
+  const router = useRouter();
   const shownTheme = useTheme(theme);
   const [shownDensity, setDensity] = useState(density);
+  const [shownClock, setClock] = useState(clock);
+
+  /** Times the server wrote, such as the Month's marks, need the new cookie, so the page is drawn again. */
+  function chooseClock(setting: ClockSetting) {
+    const device = deviceClock();
+    setClock({ setting, clock: setting === "auto" ? device : setting });
+    document.cookie = `${CLOCK_COOKIE}=${clockCookieValue(setting, device)}; path=/; max-age=31536000; samesite=lax`;
+    router.refresh();
+  }
 
   return (
     <section aria-labelledby="display-heading">
@@ -86,6 +127,10 @@ export function DisplaySection({ theme, density }: { theme: Theme; density: Dens
           saveDensity(next);
         }}
       />
+
+      <h3 className="mt-6 font-medium text-ink">Time format</h3>
+      <p className="mt-1 max-w-[60ch] text-ink-2">How every time in Axiis is written. A time can be typed either way.</p>
+      <Choice label="Time format" options={CLOCK_SETTINGS} names={clockNames(shownClock.clock)} value={shownClock.setting} onChoose={chooseClock} />
     </section>
   );
 }

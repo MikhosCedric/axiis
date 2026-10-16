@@ -1,7 +1,7 @@
 "use server";
 
 import { refresh } from "next/cache";
-import { getNow, getTimeZone } from "@/features/day/server";
+import { getClock, getNow, getTimeZone } from "@/features/day/server";
 import { getItemsRepo } from "@/lib/items";
 import type { ActionResult } from "@/features/today/commands";
 import { moveItem } from "@/features/week/commands";
@@ -39,7 +39,7 @@ export async function setAreaAction(id: string, areaId: string | null, scope?: u
 }
 
 export async function setTimeAction(id: string, time: unknown, scope?: unknown): Promise<ActionResult> {
-  return refreshed(await setTime(await getItemsRepo(), id, time, await getTimeZone(), scope));
+  return refreshed(await setTime(await getItemsRepo(), id, time, await getTimeZone(), scope, await getClock()));
 }
 
 export async function unplanAction(id: string): Promise<ActionResult> {

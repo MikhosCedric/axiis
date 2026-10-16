@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
 import type { LocalDate } from "@/domain/item";
 import { isTypingTarget, shortcutAction } from "@/features/day/nav";
+import { MonthPicker } from "./month-picker";
 import { formatMonthHeading, monthHref, monthNavTarget, monthOf, type YearMonth } from "./model";
 
 const step =
@@ -78,6 +79,7 @@ export function MonthNav({ month, today }: { month: YearMonth; today: LocalDate 
           <span className="sr-only">Next month, {formatMonthHeading(next)}</span>
         </StepLink>
       </span>
+      <MonthPicker month={month} today={today} className={step} />
       {!isThisMonth && (
         <Link href={monthHref(monthOf(today), today)} aria-keyshortcuts="t" title="Back to this month ( T )" className={step}>
           This month

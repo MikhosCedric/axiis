@@ -126,7 +126,7 @@ function MonthTopic({ id }: { id: string }) {
       <p>
         Click a day, or press Enter on it, to open it. The arrow keys move between days, Page Up and Page Down change
         the month. Drag an item to another day to move it there. What you capture lands on the day in focus unless you
-        name another.
+        name another. Jump to month goes to any month, as does typing one in the palette, such as “nov 2026”.
       </p>
     </Topic>
   );

@@ -3,12 +3,13 @@ import { idSchema, repeats, type AreaId, type Item, type ItemId, type ItemPatch,
 import { parseItemKey, type ParsedItemKey } from "@/domain/item-key";
 import { addDays, DATE_RANGE_ERROR, firstShownMinute, instantAt, localMinutes, outOfRange, parseLocalDate, toLocalDate, wallSpanOn } from "@/lib/dates";
 import { formatDayHeading } from "@/features/today/format";
+import { formatMinutes, type Clock } from "@/lib/clock";
 import { materialize, resolveKey } from "@/lib/items/occurrences";
 import type { ItemsRepo } from "@/lib/items/repo";
 import type { ActionResult } from "@/features/today/commands";
 import { TITLE_MAX } from "@/features/today/model";
 import { DAY_MINUTES } from "@/features/score/layout";
-import { buildDetail, clockOf, firstDay, retypable, subtaskPolicy, takesDue, TYPE_CHOICES, type DetailView, type Scope, type TimeOfDay } from "./model";
+import { buildDetail, firstDay, retypable, subtaskPolicy, takesDue, TYPE_CHOICES, type DetailView, type Scope, type TimeOfDay } from "./model";
 import { firstOccurrence, repeatSchema, ruleFor } from "./repeat";
 import { byName } from "@/domain/tag";
 import { byUse } from "@/features/tags/model";
@@ -89,7 +90,13 @@ function saveTo(
   });
 }
 
-export async function loadDetail(repo: ItemsRepo, key: ParsedItemKey, now: Date, timeZone: string): Promise<DetailView | null> {
+export async function loadDetail(
+  repo: ItemsRepo,
+  key: ParsedItemKey,
+  now: Date,
+  timeZone: string,
+  clock: Clock,
+): Promise<DetailView | null> {
   const found = await resolveKey(repo, key, timeZone);
   if (!found) return null;
   const item = found.item;
@@ -108,7 +115,7 @@ export async function loadDetail(repo: ItemsRepo, key: ParsedItemKey, now: Date,
   const on = byName((await repo.tagsForItems([owner as ItemId]))[owner] ?? []).map((t) => t.name);
   const today = toLocalDate(now, timeZone);
   const skipped = overrides.flatMap((o) => (o.status === "dropped" && o.recurrence.kind === "override" ? [o.recurrence.originalOn] : []));
-  return buildDetail({ item, series, areas, subtasks, parent, timeZone, today, skipped, tags: { on, known: byUse(known) } });
+  return buildDetail({ item, series, areas, subtasks, parent, timeZone, clock, today, skipped, tags: { on, known: byUse(known) } });
 }
 
 export async function renameItem(
@@ -176,12 +183,12 @@ function scheduleOnOwnDay(
  * skip is refused rather than quietly moved. A series is stored the same way
  * and expansion keeps that wall-clock start and end on every day it repeats.
  */
-function typedOn(on: LocalDate, { start, length }: TimeOfDay, timeZone: string): Schedule | { refused: string } {
+function typedOn(on: LocalDate, { start, length }: TimeOfDay, timeZone: string, clock: Clock): Schedule | { refused: string } {
   for (const m of [start, start + length]) {
     const shown = firstShownMinute(on, m, timeZone);
     if (shown !== m) {
       const day = formatDayHeading(addDays(on, Math.floor(m / DAY_MINUTES)));
-      return { refused: `${clockOf(m)} does not happen on ${day}, when the clocks go forward. Try ${clockOf(shown)}.` };
+      return { refused: `${formatMinutes(m, clock)} does not happen on ${day}, when the clocks go forward. Try ${formatMinutes(shown, clock)}.` };
     }
   }
   return { kind: "timed", start: instantAt(on, start, timeZone), end: instantAt(on, start + length, timeZone) };
@@ -198,10 +205,12 @@ export async function setTime(
   rawTime: unknown,
   timeZone: string,
   rawScope?: unknown,
+  /** Only for the refusal of a time the clocks skip, which names it and the time to try instead. */
+  clock: Clock = "24",
 ): Promise<ActionResult> {
   const time = timeSchema.safeParse(rawTime);
   if (!time.success) return { ok: false, error: "That time is not one Axiis can use." };
-  return scheduleOnOwnDay(repo, rawKey, rawScope, timeZone, (on) => typedOn(on, time.data, timeZone));
+  return scheduleOnOwnDay(repo, rawKey, rawScope, timeZone, (on) => typedOn(on, time.data, timeZone, clock));
 }
 
 /** Takes the time away, leaving the item on its day at any time, for this one or all of them. */

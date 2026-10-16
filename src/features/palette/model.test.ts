@@ -7,7 +7,7 @@ import { actedLine, actSections, FIND_MAX, findQuery, findStatus, paletteSection
 const today = "2026-10-06" as LocalDate;
 const idle: Find = { status: "idle" };
 const labels = (input: string, find: Find = idle) =>
-  Object.fromEntries(paletteSections(input, today, find).map((s) => [s.id, s.commands.map((c) => c.label)]));
+  Object.fromEntries(paletteSections(input, today, "24", find).map((s) => [s.id, s.commands.map((c) => c.label)]));
 
 const row = (n: number, over: Partial<SearchRow> = {}): SearchRow => ({
   id: `00000000-0000-4000-8000-${String(n).padStart(12, "0")}` as ItemId,
@@ -25,14 +25,14 @@ describe("paletteSections", () => {
   });
 
   it("says in a few words what each page and the Guide hold", () => {
-    const go = paletteSections("", today, idle)[0].commands;
+    const go = paletteSections("", today, "24", idle)[0].commands;
     expect(go.find((c) => c.label === "Inbox")).toMatchObject({ hint: "Waiting for a day" });
     expect(go.find((c) => c.label === "Guide")).toMatchObject({ hint: "Help and every shortcut" });
     expect(go.every((c) => (c.kind === "go" || c.kind === "help") && c.hint)).toBe(true);
   });
 
   it("goes to a tag's page for #name, any spaces and case kept, and offers no capture", () => {
-    const sections = paletteSections("#Deep  work", today, idle);
+    const sections = paletteSections("#Deep  work", today, "24", idle);
     expect(sections.map((s) => s.id)).toEqual(["go"]);
     expect(sections[0].commands[0]).toEqual({ kind: "go", id: "go-tag-deep work", label: "Go to #Deep work", href: "/tags/Deep%20work" });
     expect(labels("#").go).toBeUndefined();
@@ -49,7 +49,7 @@ describe("paletteSections", () => {
   });
 
   it("links pages to their routes and the Guide to the help dialog", () => {
-    const go = paletteSections("", today, idle)[0].commands;
+    const go = paletteSections("", today, "24", idle)[0].commands;
     expect(go.find((c) => c.label === "Week")).toMatchObject({ kind: "go", href: "/week" });
     expect(go.find((c) => c.label === "Inbox")).toMatchObject({ kind: "go", href: "/inbox" });
     expect(go.find((c) => c.label === "Lists")).toMatchObject({ kind: "go", href: "/lists" });
@@ -57,9 +57,18 @@ describe("paletteSections", () => {
   });
 
   it("offers a date for a date phrase, with no capture", () => {
-    const sections = paletteSections("dec 24", today, idle);
+    const sections = paletteSections("dec 24", today, "24", idle);
     expect(sections.map((s) => s.id)).toEqual(["dates"]);
     expect(sections[0].commands[0]).toMatchObject({ kind: "date", label: "Go to Thursday 24 December", href: "/day/2026-12-24" });
+  });
+
+  it("offers a month for a month phrase, with no capture", () => {
+    const sections = paletteSections("month november", today, "24", idle);
+    expect(sections.map((s) => s.id)).toEqual(["dates"]);
+    expect(sections[0].commands[0]).toMatchObject({ kind: "date", label: "Go to November 2026", href: "/month/2026-11" });
+    expect(labels("nov 2027").dates).toEqual(["Go to November 2027"]);
+    expect(labels("month october").dates).toEqual(["Go to October 2026"]);
+    expect(paletteSections("month october", today, "24", idle)[0].commands[0]).toMatchObject({ href: "/month" });
   });
 
   it("adds the year when the date is in another one", () => {
@@ -76,12 +85,12 @@ describe("paletteSections", () => {
   });
 
   it("offers to capture any other text, trimmed", () => {
-    const capture = paletteSections("  call the dentist ", today, idle).find((s) => s.id === "capture");
+    const capture = paletteSections("  call the dentist ", today, "24", idle).find((s) => s.id === "capture");
     expect(capture?.commands).toEqual([{ kind: "capture", id: "capture", label: "Capture “call the dentist” as a task", title: "call the dentist" }]);
   });
 
   it("says what capture will understand, and sends the words as typed", () => {
-    const capture = paletteSections("dentist tomorrow 9:00 #health", today, idle).find((s) => s.id === "capture");
+    const capture = paletteSections("dentist tomorrow 9:00 #health", today, "24", idle).find((s) => s.id === "capture");
     expect(capture?.commands).toEqual([
       {
         kind: "capture",
@@ -101,7 +110,7 @@ describe("paletteSections", () => {
 
   it("opens a note in its editor and a task in the Today panel, as search links them", () => {
     const task = row(1, { type: "task", title: "Buy bulbs", href: "/today?item=1", done: true });
-    const find = paletteSections("bulbs", today, { status: "done", query: "bulbs", rows: [task] }).find((s) => s.id === "find");
+    const find = paletteSections("bulbs", today, "24", { status: "done", query: "bulbs", rows: [task] }).find((s) => s.id === "find");
     expect(find?.commands[0]).toMatchObject({
       kind: "open",
       label: "Buy bulbs",
@@ -110,12 +119,12 @@ describe("paletteSections", () => {
   });
 
   it("puts pages, dates, capture and results in that order", () => {
-    const sections = paletteSections("notes", today, { status: "done", query: "notes", rows: [row(1)] });
+    const sections = paletteSections("notes", today, "24", { status: "done", query: "notes", rows: [row(1)] });
     expect(sections.map((s) => s.id)).toEqual(["go", "capture", "find"]);
   });
 
   it("gives every command a distinct id", () => {
-    const ids = paletteSections("se", today, { status: "done", query: "se", rows: [row(1), row(2)] }).flatMap((s) => s.commands.map((c) => c.id));
+    const ids = paletteSections("se", today, "24", { status: "done", query: "se", rows: [row(1), row(2)] }).flatMap((s) => s.commands.map((c) => c.id));
     expect(new Set(ids).size).toBe(ids.length);
   });
 });
@@ -124,10 +133,10 @@ const task: Target = { key: "k1", title: "dentist", type: "task", done: false, h
 
 describe("the selected item", () => {
   it("comes first when nothing is typed, and goes once typing starts", () => {
-    const sections = paletteSections("", today, idle, { ...task, href: null });
+    const sections = paletteSections("", today, "24", idle, { ...task, href: null });
     expect(sections.map((s) => s.id)).toEqual(["selected", "go"]);
     expect(sections[0].commands).toEqual([{ kind: "open", id: "selected", label: "dentist", detail: "", target: { ...task, href: null } }]);
-    expect(paletteSections("we", today, idle, task).map((s) => s.id)).not.toContain("selected");
+    expect(paletteSections("we", today, "24", idle, task).map((s) => s.id)).not.toContain("selected");
   });
 });
 

@@ -13,6 +13,7 @@ import {
   type KeyboardEvent as ReactKeyboardEvent,
   type ReactNode,
 } from "react";
+import { useClock } from "@/components/shell/clock-context";
 import type { LocalDate } from "@/domain/item";
 import { isTypingTarget } from "@/features/day/nav";
 import { SELECTED_ITEM_PARAM } from "@/features/day/types";
@@ -239,6 +240,7 @@ function PaletteBody({
   onHelp: () => void;
 }) {
   const router = useRouter();
+  const clock = useClock();
   const id = useId();
   const [input, setInput] = useState("");
   const [find, setFind] = useState<Find>({ status: "idle" });
@@ -265,7 +267,7 @@ function PaletteBody({
     };
   }, [actions]);
 
-  const sections = target ? actSections(input, target) : paletteSections(input, today, find, selected);
+  const sections = target ? actSections(input, target) : paletteSections(input, today, clock, find, selected);
   const commands = sections.flatMap((s) => s.commands);
   const current = commands.length ? Math.min(active, commands.length - 1) : -1;
   const optionId = (c: Command) => `${id}-${c.id}`;
@@ -372,7 +374,7 @@ function PaletteBody({
     actions.capture(title).then(
       (result) => {
         if (result.ok) {
-          setNote(capturedLine(result, "palette"));
+          setNote(capturedLine(result, "palette", clock));
           return;
         }
         setInput((value) => value || title);

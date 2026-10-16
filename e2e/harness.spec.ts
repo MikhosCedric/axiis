@@ -206,7 +206,7 @@ test("detail: a skipped day is listed on the series and can be restored", async 
   await expect(skipped).toHaveCount(0);
 });
 
-test("detail: times are typed and shown on the 24-hour clock, and an unreadable one is not saved", async ({ page }) => {
+test("detail: times are typed either way and shown on the 24-hour clock, and an unreadable one is not saved", async ({ page }) => {
   // The When row also holds the Move to button, so read only the words it shows.
   const when = (label: string) => page.getByRole("complementary").locator("dt", { hasText: label }).locator("+ dd > span").first();
   await page.goto("/dev/detail?item=00000000-0000-4000-8000-000000000070~2026-10-11");
@@ -227,9 +227,14 @@ test("detail: times are typed and shown on the 24-hour clock, and an unreadable 
 
   await end.fill("3pm");
   await end.press("Enter");
+  await expect(end).toHaveValue("15:00");
+  await expect(when("When")).toHaveText("Sunday 11 October, 09:30 to 15:00");
+
+  await end.fill("3 xm");
+  await end.press("Enter");
   await expect(end).toHaveAttribute("aria-invalid", "true");
-  await expect(page.getByText("That time could not be read. 24-hour clock, like 14:30 or 1430.")).toBeVisible();
-  await expect(when("When")).toHaveText("Sunday 11 October, 09:30 to 15:15");
+  await expect(page.getByText("That time could not be read. 24-hour clock, like 14:30 or 1430. 2:30pm works too.")).toBeVisible();
+  await expect(when("When")).toHaveText("Sunday 11 October, 09:30 to 15:00");
 });
 
 test("week: dragging an item to another day plans it there", async ({ page }) => {

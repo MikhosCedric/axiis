@@ -5,12 +5,11 @@ import type { TagName } from "@/domain/tag";
 import { dayWords } from "@/features/inbox/model";
 import { DEFAULT_MINUTES } from "@/features/score/drop";
 import { tagCaptured } from "@/features/tags/commands";
-import { instantAt, toLocalDate } from "@/lib/dates";
+import { instantAt, toLocalDate, wallMinutes } from "@/lib/dates";
 import { materialize } from "@/lib/items/occurrences";
 import type { ItemsRepo } from "@/lib/items/repo";
 import { saveFailure } from "@/lib/quota";
 import { dayOf, parseCapture } from "./capture-syntax";
-import { formatClock } from "./format";
 import { TITLE_MAX } from "./model";
 
 export type ActionResult = { ok: true } | { ok: false; error: string };
@@ -31,9 +30,10 @@ export type CaptureResult =
 
 /**
  * Where a capture was planned: its date, that date in words ("tomorrow"), and
- * its clock times or null. `end` is set only when a length was typed.
+ * the wall-clock minutes past midnight its start and end show, or null. `end`
+ * is set only when a length was typed. The screen writes them on its clock.
  */
-export type Landed = { on: LocalDate; day: string; time: { start: string; end: string | null } | null };
+export type Landed = { on: LocalDate; day: string; time: { start: number; end: number | null } | null };
 
 const TOO_LONG = `Titles can be up to ${TITLE_MAX} characters. Put the rest in a note later.`;
 
@@ -79,7 +79,7 @@ export async function captureTask(
     const start = instantAt(on, said.time.start, timeZone);
     const end = instantAt(on, said.time.start + (said.time.length ?? DEFAULT_MINUTES), timeZone);
     schedule = { kind: "timed", start, end };
-    const time = { start: formatClock(start, timeZone), end: said.time.length === null ? null : formatClock(end, timeZone) };
+    const time = { start: wallMinutes(start, timeZone), end: said.time.length === null ? null : wallMinutes(end, timeZone) };
     landed = { on, day: dayWords(on, today), time };
   } else if (on) {
     schedule = { kind: "day", on };
