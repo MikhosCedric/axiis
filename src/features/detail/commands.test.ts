@@ -211,16 +211,16 @@ describe("loadDetail", () => {
     const child = makeItem({ title: "Pack", parentId: parent.id, status: "done" });
     const { repo } = fakeRepo([parent, child], [work]);
 
-    const parentView = await loadDetail(repo, { kind: "item", id: parent.id }, NOW, "Asia/Kolkata");
+    const parentView = await loadDetail(repo, { kind: "item", id: parent.id }, NOW, "Asia/Kolkata", "24");
     expect(parentView?.when).toBe("Tuesday 6 October, 09:00 to 09:30");
     expect(parentView?.nesting).toEqual({ kind: "holds-subtasks", subtasks: [{ id: child.id, title: "Pack", done: true }] });
 
-    const childView = await loadDetail(repo, { kind: "item", id: child.id }, NOW, "UTC");
+    const childView = await loadDetail(repo, { kind: "item", id: child.id }, NOW, "UTC", "24");
     expect(childView?.nesting).toEqual({ kind: "is-subtask", parent: { id: parent.id, title: "Trip" } });
   });
 
   it("returns null for an item that is not there", async () => {
     const { repo } = fakeRepo();
-    expect(await loadDetail(repo, { kind: "item", id: makeItem().id }, NOW, "UTC")).toBeNull();
+    expect(await loadDetail(repo, { kind: "item", id: makeItem().id }, NOW, "UTC", "24")).toBeNull();
   });
 });

@@ -43,6 +43,15 @@ const EDGE_PX = 56;
 const EDGE_SPEED = 12;
 const FLY_OFFSET = 14;
 
+/** Takes off the listeners a gesture added and its pending long press. */
+function detach(g: Gesture<unknown>) {
+  window.removeEventListener("pointermove", g.listeners.move);
+  window.removeEventListener("pointerup", g.listeners.up);
+  window.removeEventListener("pointercancel", g.listeners.cancel);
+  window.removeEventListener("keydown", g.listeners.key, true);
+  if (g.timer !== null) window.clearTimeout(g.timer);
+}
+
 /**
  * Pointer and touch dragging between the week's days and the tray. Drop zones
  * are any element with a `data-drop` of a date in the week or `tray`; the
@@ -96,14 +105,6 @@ export function useWeekDrag<T = ShownItem>(
     document.documentElement.dataset.scoreDragging = "";
     setPreview({ item: g.item, over: null });
     track(g);
-  }
-
-  function detach(g: Gesture<T>) {
-    window.removeEventListener("pointermove", g.listeners.move);
-    window.removeEventListener("pointerup", g.listeners.up);
-    window.removeEventListener("pointercancel", g.listeners.cancel);
-    window.removeEventListener("keydown", g.listeners.key, true);
-    if (g.timer !== null) window.clearTimeout(g.timer);
   }
 
   function finish(commit: boolean) {

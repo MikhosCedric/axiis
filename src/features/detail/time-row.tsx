@@ -3,7 +3,9 @@
 import { useId, useState, type FocusEvent, type RefObject } from "react";
 import type { LocalDate } from "@/domain/item";
 import { DATE_RANGE_ERROR, FIRST_DATE, LAST_DATE, outOfRange, parseLocalDate } from "@/lib/dates";
-import { clockOf, timeFrom, type TimeOfDay } from "./model";
+import { useClock } from "@/components/shell/clock-context";
+import { formatMinutes } from "@/lib/clock";
+import { timeFrom, type TimeOfDay } from "./model";
 
 const field =
   "rounded-md border border-transparent bg-transparent py-1 pr-1 pl-1.5 text-ink tabular hover:border-rule-soft focus:border-field focus:bg-sheet";
@@ -27,8 +29,9 @@ export function TimeRow({
 }) {
   const labelId = useId();
   const hintId = useId();
-  const [start, setStart] = useState(time ? clockOf(time.start) : "");
-  const [end, setEnd] = useState(time ? clockOf(time.start + time.length) : "");
+  const clock = useClock();
+  const [start, setStart] = useState(time ? formatMinutes(time.start, clock) : "");
+  const [end, setEnd] = useState(time ? formatMinutes(time.start + time.length, clock) : "");
   const [timed, setTimed] = useState(time !== null);
   const [unread, setUnread] = useState(false);
 
@@ -36,8 +39,8 @@ export function TimeRow({
     const next = timeFrom(start, end);
     setUnread(next === null && (start.trim() !== "" || end.trim() !== ""));
     if (!next) return;
-    setStart(clockOf(next.start));
-    setEnd(clockOf(next.start + next.length));
+    setStart(formatMinutes(next.start, clock));
+    setEnd(formatMinutes(next.start + next.length, clock));
     setTimed(true);
     if (time?.start !== next.start || time.length !== next.length) save(next);
   }
@@ -47,15 +50,15 @@ export function TimeRow({
       <input
         ref={ref}
         type="text"
-        inputMode="numeric"
+        inputMode={clock === "24" ? "numeric" : "text"}
         autoComplete="off"
-        placeholder="hh:mm"
+        placeholder={clock === "24" ? "hh:mm" : "h:mm am"}
         aria-label={label}
         aria-describedby={hintId}
         aria-invalid={unread || undefined}
         value={value}
         onChange={(e) => set(e.target.value)}
-        className={`${field} w-[7ch] text-center`}
+        className={`${field} ${clock === "24" ? "w-[7ch]" : "w-[10ch]"} text-center`}
       />
     );
   }
@@ -103,7 +106,8 @@ export function TimeRow({
           <span className="text-[13px] text-ink-3">Any time</span>
         )}
         <p id={hintId} aria-live="polite" className={unread ? "basis-full text-[13px] font-medium text-ink" : "sr-only"}>
-          {unread ? "That time could not be read. " : ""}24-hour clock, like 14:30 or 1430.
+          {unread ? "That time could not be read. " : ""}
+          {clock === "24" ? "24-hour clock, like 14:30 or 1430. 2:30pm works too." : "Like 2:30 PM, 2:30pm or 14:30."}
         </p>
       </dd>
     </>

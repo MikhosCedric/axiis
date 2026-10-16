@@ -2,7 +2,7 @@ import type { AreaColor } from "@/domain/area-color";
 import type { AreaId, Item, ItemId, ItemType } from "@/domain/item";
 import { toLocalDate } from "@/lib/dates";
 import type { ActionResult } from "@/features/today/commands";
-import { formatClock } from "@/features/today/format";
+import { formatClock, type Clock } from "@/lib/clock";
 import { SELECTED_ITEM_PARAM } from "@/features/day/types";
 
 export type Created = { ok: true; id: string } | { ok: false; error: string };
@@ -77,11 +77,11 @@ function dateFormat(timeZone: string, withYear: boolean) {
   return f;
 }
 
-/** "Edited today, 14:05", "Edited 3 Oct", or "Edited 3 Oct 2025" for another year, in the user's zone. */
-export function formatEdited(at: Date, now: Date, timeZone: string): string {
+/** "Edited today, 14:05" (or "2:05 PM"), "Edited 3 Oct", or "Edited 3 Oct 2025" for another year, in the user's zone. */
+export function formatEdited(at: Date, now: Date, timeZone: string, clock: Clock): string {
   const day = toLocalDate(at, timeZone);
   const today = toLocalDate(now, timeZone);
-  if (day === today) return `Edited today, ${formatClock(at, timeZone)}`;
+  if (day === today) return `Edited today, ${formatClock(at, timeZone, clock)}`;
   return `Edited ${dateFormat(timeZone, day.slice(0, 4) !== today.slice(0, 4)).format(at)}`;
 }
 

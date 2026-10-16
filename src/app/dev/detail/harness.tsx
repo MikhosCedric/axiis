@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import type { Area, AreaId, Item, ItemId, LocalDate } from "@/domain/item";
 import { occurrenceKey, parseItemKey } from "@/domain/item-key";
 import { fakeRepo, makeItem } from "@/features/today/test-support";
+import { useClock } from "@/components/shell/clock-context";
 import { loadDetail } from "@/features/detail/commands";
 import { DetailSheet, MissingItem } from "@/features/detail/detail-sheet";
 import type { DetailActions, DetailView } from "@/features/detail/model";
@@ -141,6 +142,7 @@ export function DetailHarness({ itemId, timeZone }: { itemId: string | null; tim
   const [store] = useState(createStore);
   const [version, setVersion] = useState(0);
   const [failing, setFailing] = useState(false);
+  const clock = useClock();
   const [loaded, setLoaded] = useState<{ key: string; view: DetailView | null } | null>(null);
 
   const actions: DetailActions = {
@@ -162,13 +164,13 @@ export function DetailHarness({ itemId, timeZone }: { itemId: string | null; tim
     const key = parseItemKey(itemId);
     if (!key || !itemId) return;
     let live = true;
-    loadDetail(store.repo, key, new Date(), timeZone).then((view) => {
+    loadDetail(store.repo, key, new Date(), timeZone, clock).then((view) => {
       if (live) setLoaded({ key: itemId, view });
     });
     return () => {
       live = false;
     };
-  }, [itemId, version, store, timeZone]);
+  }, [itemId, version, store, timeZone, clock]);
 
   const current = loaded && loaded.key === itemId ? loaded : null;
 

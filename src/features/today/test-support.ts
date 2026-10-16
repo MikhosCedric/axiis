@@ -106,7 +106,10 @@ export function fakeRepo(items: Item[] = [], areas: Area[] = []) {
         .slice(0, RANGE_LIMIT);
     },
     async listSeries() {
-      return items.filter((i) => i.recurrence.kind === "series").slice(0, MAX_SERIES);
+      return items
+        .filter((i) => i.recurrence.kind === "series")
+        .slice(0, MAX_SERIES)
+        .map((i) => ({ ...i, body: null }));
     },
     async listInbox() {
       return items

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState, useTransition, type FormEvent, type ReactNode } from "react";
+import { useClock } from "@/components/shell/clock-context";
 import { captureAction as serverCapture } from "./actions";
 import type { ActionResult, CaptureResult } from "./commands";
 import { CAPTURE_EXAMPLES, CAPTURE_LEAD, capturedLine, firstCapturedLine, parseCapture, previewWords } from "./capture-syntax";
@@ -85,7 +86,8 @@ export function CaptureField({
   const [status, setStatus] = useState<Status | null>(null);
   const [pending, startTransition] = useTransition();
   const unmark = useRef<() => void>(() => {});
-  const preview = plans ? previewWords(parseCapture(value)) : null;
+  const clock = useClock();
+  const preview = plans ? previewWords(parseCapture(value), clock) : null;
   const example = useExample(firstDay);
   const pathname = usePathname();
 
@@ -122,7 +124,7 @@ export function CaptureField({
         return;
       }
       if ("id" in result) {
-        setStatus(first ? { ...firstCapturedLine(result), error: false } : { text: capturedLine(result, "field"), error: false });
+        setStatus(first ? { ...firstCapturedLine(result, clock), error: false } : { text: capturedLine(result, "field", clock), error: false });
         unmark.current = markWhenShown(result.id);
       }
     });

@@ -62,7 +62,9 @@ export interface ItemsRepo {
    */
   listRange(range: SpanRange): Promise<Item[]>;
   /**
-   * Live series, at most `MAX_SERIES`, oldest first. `listForDay` and
+   * Live series, at most `MAX_SERIES`, oldest first, without their body, as
+   * every list read is: storing an occurrence reads its series whole with
+   * `get`. `listForDay` and
    * `listRange` leave series out: their occurrences are expanded instead.
    */
   listSeries(): Promise<Item[]>;

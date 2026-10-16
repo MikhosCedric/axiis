@@ -57,6 +57,56 @@ signedIn.describe("the Month", () => {
     await expect(page).toHaveURL("/month");
   });
 
+  signedIn("Jump to month opens a year of months: arrows and Enter go, a click goes, Escape closes and returns focus", async ({ page }) => {
+    await page.goto("/month/2099-05");
+    const jump = page.getByRole("button", { name: "Jump to month" });
+    const picker = page.getByRole("dialog", { name: "Jump to month" });
+    await jump.click();
+    await expect(picker).toBeVisible();
+    await expect(jump).toHaveAttribute("aria-expanded", "true");
+    await expect(picker.getByRole("button", { name: "May 2099" })).toBeFocused();
+    await expect(picker.getByRole("button", { name: "May 2099" })).toHaveAttribute("aria-current", "page");
+
+    await page.keyboard.press("Escape");
+    await expect(picker).toBeHidden();
+    await expect(jump).toBeFocused();
+
+    // Down a row of three, across into next year, then a year back with Page Up.
+    await page.keyboard.press("Enter");
+    await page.keyboard.press("ArrowDown");
+    await page.keyboard.press("ArrowDown");
+    await page.keyboard.press("ArrowDown");
+    await expect(picker.getByText("2100", { exact: true })).toBeVisible();
+    await expect(picker.getByRole("button", { name: "February 2100" })).toBeFocused();
+    await page.keyboard.press("PageUp");
+    await page.keyboard.press("ArrowRight");
+    await expect(picker.getByRole("button", { name: "March 2099" })).toBeFocused();
+    await page.keyboard.press("Enter");
+    await expect(page).toHaveURL("/month/2099-03");
+    await expect(page.getByRole("heading", { level: 1, name: "March 2099" })).toBeVisible();
+
+    await jump.click();
+    await picker.getByRole("button", { name: "Next year, 2100" }).click();
+    await picker.getByRole("button", { name: "November 2100" }).click();
+    await expect(page).toHaveURL("/month/2100-11");
+    await expect(picker).toBeHidden();
+  });
+
+  signedIn("marks this month in the picker, and on a phone fits it on screen with 44px months", async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 812 });
+    await page.goto("/month");
+    await page.getByRole("button", { name: "Jump to month" }).click();
+    const picker = page.getByRole("dialog", { name: "Jump to month" });
+    const months = picker.getByRole("group", { name: /^Months of / }).getByRole("button");
+    await expect(months).toHaveCount(12);
+    await expect(picker.getByRole("button", { name: /, this month$/ })).toHaveAttribute("aria-current", "page");
+    const box = (await picker.boundingBox())!;
+    expect(box.x).toBeGreaterThanOrEqual(16);
+    expect(box.x + box.width).toBeLessThanOrEqual(375 - 16);
+    for (const b of await months.evaluateAll((els) => els.map((el) => el.getBoundingClientRect().height))) expect(b).toBeGreaterThanOrEqual(44);
+    expect(await axe(page)).toEqual([]);
+  });
+
   signedIn("moves focus through the grid with the arrows, Home, End and the page keys, and Enter opens the day", async ({ page }) => {
     await page.goto("/month/2099-05");
     const first = cell(page, /^Friday 1 May/);

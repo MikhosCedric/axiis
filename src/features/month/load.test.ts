@@ -47,7 +47,7 @@ function seriesAccount(ageDays: number, rule: Rule, around: LocalDate): Item[] {
 describe("loadMonth", () => {
   it("reads the grid once: one planned read, one due read, one series read and one override read, never a read per day", async () => {
     const { repo, reads } = counted(fakeRepo(seriesAccount(0, DAILY, d("2026-10-01"))).repo);
-    await loadMonth(repo, ym("2026-10"), NOW, NY);
+    await loadMonth(repo, ym("2026-10"), NOW, NY, "24");
     expect(reads).toEqual({ listAreas: 1, listRange: 1, listSeries: 1, listOverrides: 1, listDueIn: 1 });
   });
 
@@ -59,7 +59,7 @@ describe("loadMonth", () => {
     const listDueIn = repo.listDueIn;
     repo.listRange = (r) => (spans.push(r), listRange(r));
     repo.listDueIn = (from, to) => (due.push([from, to]), listDueIn(from, to));
-    await loadMonth(repo, ym("2026-10"), NOW, NY);
+    await loadMonth(repo, ym("2026-10"), NOW, NY, "24");
     expect(spans).toEqual([
       { from: new Date("2026-09-27T04:00:00Z"), to: new Date("2026-11-02T05:00:00Z"), fromDate: "2026-09-27", toDate: "2026-11-02" },
     ]);
@@ -74,7 +74,7 @@ describe("loadMonth", () => {
       recurrence: { kind: "series", rule: DAILY },
     });
     for (const month of ["2026-03", "2026-11"]) {
-      const data = await loadMonth(fakeRepo([gym]).repo, ym(month), NOW, NY);
+      const data = await loadMonth(fakeRepo([gym]).repo, ym(month), NOW, NY, "24");
       const days = data.cells.filter((c) => monthOf(c.date) === month);
       expect(days.every((c) => c.marks.length === 1 && c.marks[0].time === "08:00"), month).toBe(true);
       expect(days.every((c) => c.marks[0].key === `${gym.id}~${c.date}` && c.marks[0].repeats)).toBe(true);
@@ -82,7 +82,7 @@ describe("loadMonth", () => {
   });
 
   it("sends at most three marks a day, and counts the rest", async () => {
-    const data = await loadMonth(fakeRepo(seriesAccount(0, DAILY, d("2026-10-01"))).repo, ym("2026-10"), NOW, NY);
+    const data = await loadMonth(fakeRepo(seriesAccount(0, DAILY, d("2026-10-01"))).repo, ym("2026-10"), NOW, NY, "24");
     const october = data.cells.find((c) => c.date === "2026-10-20")!;
     expect(october.marks).toHaveLength(MARKS_PER_DAY);
     expect(october.more).toBe(200 - MARKS_PER_DAY);
@@ -91,8 +91,8 @@ describe("loadMonth", () => {
 
   it("draws the same month from a five-year-old series as from a new one", async () => {
     for (const rule of [DAILY, WEEKLY]) {
-      const fresh = await loadMonth(fakeRepo(seriesAccount(0, rule, d("2026-10-01"))).repo, ym("2026-10"), NOW, NY);
-      const old = await loadMonth(fakeRepo(seriesAccount(5 * 365, rule, d("2026-10-01"))).repo, ym("2026-10"), NOW, NY);
+      const fresh = await loadMonth(fakeRepo(seriesAccount(0, rule, d("2026-10-01"))).repo, ym("2026-10"), NOW, NY, "24");
+      const old = await loadMonth(fakeRepo(seriesAccount(5 * 365, rule, d("2026-10-01"))).repo, ym("2026-10"), NOW, NY, "24");
       const shape = (data: typeof fresh) => data.cells.filter((c) => c.date >= "2026-10-08").map((c) => [c.date, c.marks.length + c.more]);
       expect(shape(old)).toEqual(shape(fresh));
     }
@@ -120,7 +120,7 @@ describe.runIf(process.env.BENCH)("loadMonth benchmark", () => {
     for (const rule of [DAILY, WEEKLY]) {
       for (const [label, age] of [["new", 0], ["1 year old", 365], ["5 years old", 1826]] as const) {
         const repo = fakeRepo(seriesAccount(age, rule, d("2026-10-01"))).repo;
-        const ms = await medianMs(() => loadMonth(repo, ym("2026-10"), NOW, NY));
+        const ms = await medianMs(() => loadMonth(repo, ym("2026-10"), NOW, NY, "24"));
         (byAge[rule.freq] ??= []).push(ms);
         rows.push(`${rule.freq}\tmonth\t${label}\t${ms.toFixed(1)} ms`);
       }
