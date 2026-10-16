@@ -154,7 +154,7 @@ export class SupabaseItemsRepo implements ItemsRepo {
   }
 
   async listSeries(): Promise<Item[]> {
-    const result = await this.items(ITEM_COLUMNS).not("rrule", "is", null).order("created_at").limit(MAX_SERIES);
+    const result = await this.items().not("rrule", "is", null).order("created_at").limit(MAX_SERIES);
     return unwrap("listSeries", result, itemList);
   }
 

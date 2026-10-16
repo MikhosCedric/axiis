@@ -5,12 +5,13 @@ import { loadNote } from "@/features/notes/commands";
 import { displayTitle } from "@/features/notes/model";
 import { NoteEditor } from "@/features/notes/note-editor";
 import { notesActions, requestTimeZone } from "@/features/notes/server";
+import { getClock } from "@/features/day/server";
 import { getItemsRepo } from "@/lib/items";
 import { getNotesRepo } from "@/lib/notes";
 
 const load = cache(async (rawId: string) => {
   const [notes, items, timeZone] = await Promise.all([getNotesRepo(), getItemsRepo(), requestTimeZone()]);
-  return loadNote(notes, items, rawId, new Date(), timeZone);
+  return loadNote(notes, items, rawId, new Date(), timeZone, await getClock());
 });
 
 export async function generateMetadata({ params }: PageProps<"/notes/[id]">): Promise<Metadata> {

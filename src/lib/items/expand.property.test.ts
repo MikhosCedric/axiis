@@ -99,15 +99,17 @@ const comparable = (os: Occurrence[]) =>
   os.map((o) => [o.originalOn, o.schedule.kind === "timed" ? `${o.schedule.start.toISOString()}/${o.schedule.end.toISOString()}` : o.schedule.on]);
 
 describe("expandSeries fast-forward", () => {
-  it("returns what running the rule from its first date returns, over generated rules, spans and zones", () => {
+  // 2500 cases in five runs of 500: running the rule from its first date takes about 9 s in all, which one
+  // test's 30 s could not count on while the whole suite shares the machine.
+  it.each([1, 501, 1001, 1501, 2001])("returns what running the rule from its first date returns, over generated rules, spans and zones (seeds %i on)", (first) => {
     let nonEmpty = 0;
-    for (let seed = 1; seed <= 2500; seed++) {
+    for (let seed = first; seed < first + 500; seed++) {
       const { series, span, tz } = arbitrary(seed);
       const expected = comparable(fromFirstDate(series, span, tz));
       if (expected.length > 0) nonEmpty++;
       expect({ seed, got: comparable(expandSeries(series, span, tz)) }).toEqual({ seed, got: expected });
     }
-    expect(nonEmpty).toBeGreaterThan(800);
+    expect(nonEmpty).toBeGreaterThan(150);
   });
 
   it("reads every timed occurrence at its series' wall-clock start and end when the clocks show them, and ends it after it starts", () => {

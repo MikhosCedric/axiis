@@ -1,3 +1,4 @@
+import type { Clock } from "@/lib/clock";
 import { z } from "zod";
 import { idSchema, type AreaId, type Item, type ItemId } from "@/domain/item";
 import { sameTag, type TagName } from "@/domain/tag";
@@ -49,6 +50,7 @@ export async function listNoteRows(
   query: string | null,
   now: Date,
   timeZone: string,
+  clock: Clock,
 ): Promise<NoteRow[]> {
   const areas = new Map((await items.listAreas()).map((a) => [a.id as string, a]));
   const areaName = (id: AreaId | null) => areas.get(id ?? "")?.name ?? null;
@@ -60,7 +62,7 @@ export async function listNoteRows(
       firstLine: snippet,
       areaName: areaName(item.areaId),
       areaColor: areaColor(item.areaId),
-      edited: formatEdited(item.updatedAt, now, timeZone),
+      edited: formatEdited(item.updatedAt, now, timeZone, clock),
     }));
   }
   return (await notes.listNotes()).map((n) => ({
@@ -69,11 +71,18 @@ export async function listNoteRows(
     firstLine: firstLine(n.excerpt),
     areaName: areaName(n.areaId),
     areaColor: areaColor(n.areaId),
-    edited: formatEdited(n.updatedAt, now, timeZone),
+    edited: formatEdited(n.updatedAt, now, timeZone, clock),
   }));
 }
 
-export async function loadNote(notes: NotesRepo, items: ItemsRepo, rawId: unknown, now: Date, timeZone: string): Promise<NoteView | null> {
+export async function loadNote(
+  notes: NotesRepo,
+  items: ItemsRepo,
+  rawId: unknown,
+  now: Date,
+  timeZone: string,
+  clock: Clock,
+): Promise<NoteView | null> {
   const id = parseItemId(rawId);
   if (!id) return null;
   const note = await notes.getNote(id);
@@ -81,7 +90,7 @@ export async function loadNote(notes: NotesRepo, items: ItemsRepo, rawId: unknow
   const [areas, links] = await Promise.all([items.listAreas(), notes.linksFor(id)]);
   return {
     note: { id: note.id, title: note.title, body: note.body, areaId: note.areaId },
-    edited: formatEdited(note.updatedAt, now, timeZone),
+    edited: formatEdited(note.updatedAt, now, timeZone, clock),
     areas: areas.map((a) => ({ id: a.id, name: a.name })),
     connected: links.map(connectedRow),
   };

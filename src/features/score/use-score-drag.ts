@@ -73,6 +73,15 @@ const targetKey = (t: DropTarget | null) => {
   return `${t.kind}:${t.kind === "staff" ? t.staff : ""}:${when}`;
 };
 
+/** Takes off the listeners a gesture added and its pending long press. */
+function detach(g: Gesture) {
+  window.removeEventListener("pointermove", g.listeners.move);
+  window.removeEventListener("pointerup", g.listeners.up);
+  window.removeEventListener("pointercancel", g.listeners.cancel);
+  window.removeEventListener("keydown", g.listeners.key, true);
+  if (g.timer !== null) window.clearTimeout(g.timer);
+}
+
 /** Pointer and touch dragging for the Score. The caller owns the preview so its layout can make room for the drop. */
 export function useScoreDrag(surfaces: DragSurfaces, live: Live, setPreview: (preview: DragPreview | null) => void) {
   const gesture = useRef<Gesture | null>(null);
@@ -144,14 +153,6 @@ export function useScoreDrag(surfaces: DragSurfaces, live: Live, setPreview: (pr
     document.documentElement.dataset.scoreDragging = "";
     setPreview({ item: g.item, kind: g.kind, target: null });
     track(g);
-  }
-
-  function detach(g: Gesture) {
-    window.removeEventListener("pointermove", g.listeners.move);
-    window.removeEventListener("pointerup", g.listeners.up);
-    window.removeEventListener("pointercancel", g.listeners.cancel);
-    window.removeEventListener("keydown", g.listeners.key, true);
-    if (g.timer !== null) window.clearTimeout(g.timer);
   }
 
   function finish(commit: boolean) {

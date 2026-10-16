@@ -5,7 +5,8 @@ import { AreaLabel } from "@/components/area-mark";
 import { repeats, type Area, type ShownItem } from "@/domain/item";
 import { RepeatMark } from "@/features/today/repeat-mark";
 import { RowTags } from "@/features/tags/row-tags";
-import { formatClock } from "@/features/today/format";
+import { formatClock } from "@/lib/clock";
+import { useClock } from "@/components/shell/clock-context";
 import { Glyph } from "@/features/today/glyph";
 import { SameInInbox } from "@/features/inbox/same-in-inbox";
 import { EMPTY_TRAY, TRAY_FULL, WAITING,type BeamState, type TodayEntry, type TodayView } from "@/features/today/model";
@@ -40,6 +41,7 @@ export function ListView({
   onSelect: (id: string | null) => void;
   onToggleDone: (item: ShownItem) => void;
 }) {
+  const clock = useClock();
   const areaOf = new Map(areas.map((a) => [a.id as string, a]));
   const row = ({ item, state }: TodayEntry) => {
     const count = childCounts[item.id];
@@ -59,10 +61,10 @@ export function ListView({
         <span className="pl-1 text-ink-2 tabular">
           {s.kind === "timed" ? (
             <>
-              <time dateTime={s.start.toISOString()}>{formatClock(s.start, timeZone)}</time>
+              <time dateTime={s.start.toISOString()}>{formatClock(s.start, timeZone, clock)}</time>
               <span className="max-rail:hidden">
                 {" to "}
-                <time dateTime={s.end.toISOString()}>{formatClock(s.end, timeZone)}</time>
+                <time dateTime={s.end.toISOString()}>{formatClock(s.end, timeZone, clock)}</time>
               </span>
             </>
           ) : (

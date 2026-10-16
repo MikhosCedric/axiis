@@ -1,4 +1,5 @@
 import type { LocalDate } from "@/domain/item";
+import type { Clock } from "@/lib/clock";
 import { toLocalDate } from "@/lib/dates";
 import { loadOccurrences } from "@/lib/items/occurrences";
 import { RANGE_LIMIT, type ItemsRepo } from "@/lib/items/repo";
@@ -18,7 +19,7 @@ export type MonthData = {
  * One bounded read of everything planned across the grid, one of what falls
  * due in it, and the series expanded once over the same span. No read per day.
  */
-export async function loadMonth(repo: ItemsRepo, month: YearMonth, now: Date, timeZone: string): Promise<MonthData> {
+export async function loadMonth(repo: ItemsRepo, month: YearMonth, now: Date, timeZone: string, clock: Clock): Promise<MonthData> {
   const days = monthGrid(month);
   const span = monthRange(days, timeZone);
   const [areas, stored, { occurrences }, due] = await Promise.all([
@@ -34,6 +35,7 @@ export async function loadMonth(repo: ItemsRepo, month: YearMonth, now: Date, ti
     due,
     areas,
     timeZone,
+    clock,
     now,
   });
   return {

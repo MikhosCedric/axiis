@@ -1,5 +1,6 @@
+import type { Clock } from "@/lib/clock";
 import { describe, expect, it } from "vitest";
-import type { Area, AreaId, Item, LocalDate } from "@/domain/item";
+import type { Area, AreaId, Item, ItemId, LocalDate } from "@/domain/item";
 import { makeItem } from "@/features/today/test-support";
 import { dayRangeFor, instantAt } from "@/lib/dates";
 import {
@@ -14,7 +15,10 @@ import {
   monthSummary,
   namesNoMonth,
   parseYearMonth,
+  pickerStep,
   sameDayIn,
+  selectedMarkKey,
+  stepYear,
   type YearMonth,
 } from "./model";
 
@@ -22,9 +26,9 @@ const d = (s: string) => s as LocalDate;
 const ym = (s: string) => s as YearMonth;
 const NOW = new Date("2026-10-14T12:00:00Z");
 
-function build(month: string, items: Item[], { due = [] as Item[], areas = [] as Area[], timeZone = "UTC" } = {}) {
+function build(month: string, items: Item[], { due = [] as Item[], areas = [] as Area[], timeZone = "UTC", clock = "24" as Clock } = {}) {
   const days = monthGrid(ym(month));
-  return buildMonth({ month: ym(month), days, scheduled: items, due, areas, timeZone, now: NOW });
+  return buildMonth({ month: ym(month), days, scheduled: items, due, areas, timeZone, clock, now: NOW });
 }
 
 const cell = (b: ReturnType<typeof build>, date: string) => b.cells.find((c) => c.date === date)!;
@@ -151,6 +155,14 @@ describe("buildMonth", () => {
     expect(cell(autumn, "2026-10-26").marks).toEqual([]);
   });
 
+  it("writes a mark's start and a later day's end on the 12-hour clock when that is the setting", () => {
+    const late = timed("2026-10-09", 22 * 60, 25 * 60, "UTC", { title: "Late" });
+    const b = build("2026-10", [late], { clock: "12" });
+    const times = (date: string) => cell(b, date).marks.map((m) => m.time?.replace(/ /g, " "));
+    expect(times("2026-10-09")).toEqual(["10:00 PM"]);
+    expect(times("2026-10-10")).toEqual(["to 1:00 AM"]);
+  });
+
   it("orders a day's day-only items by area, then timed ones by start, and sends at most three", () => {
     const home: Area = { id: "a-home" as AreaId, name: "Home", position: 1, color: null };
     const work: Area = { id: "a-work" as AreaId, name: "Work", position: 0, color: "slate" };
@@ -211,6 +223,44 @@ describe("buildMonth", () => {
     const done = makeItem({ title: "Done", schedule: { kind: "day", on: d("2026-10-14") }, status: "done" });
     const states = Object.fromEntries(cell(build("2026-10", [live, done]), "2026-10-14").marks.map((m) => [m.title, m.state]));
     expect(states).toEqual({ Done: "done", Now: "live" });
+  });
+});
+
+describe("selectedMarkKey", () => {
+  const SERIES = "6f9619ff-8b86-4011-b42d-00c04fc96400" as ItemId;
+  const override = timed("2026-10-07", 540, 600, "UTC", { title: "Stretch", recurrence: { kind: "override", seriesId: SERIES, originalOn: d("2026-10-07") } });
+  const plain = timed("2026-10-08", 540, 600, "UTC", { title: "Dentist" });
+  const { cells } = build("2026-10", [override, plain]);
+
+  it("finds a mark by its key, and an override by the occurrence key the URL held before it was stored", () => {
+    expect(selectedMarkKey(cells, plain.id)).toBe(plain.id);
+    expect(selectedMarkKey(cells, `${SERIES}~2026-10-07`)).toBe(override.id);
+  });
+
+  it("passes anything else through", () => {
+    expect(selectedMarkKey(cells, `${SERIES}~2026-10-14`)).toBe(`${SERIES}~2026-10-14`);
+    expect(selectedMarkKey(cells, null)).toBeNull();
+  });
+});
+
+describe("the Jump to month picker", () => {
+  it("moves by a month, a row of three, a year, and to the year's ends, across years", () => {
+    expect(pickerStep("ArrowRight", ym("2026-12"))).toBe("2027-01");
+    expect(pickerStep("ArrowLeft", ym("2026-01"))).toBe("2025-12");
+    expect(pickerStep("ArrowDown", ym("2026-11"))).toBe("2027-02");
+    expect(pickerStep("ArrowUp", ym("2026-05"))).toBe("2026-02");
+    expect(pickerStep("PageDown", ym("2026-05"))).toBe("2027-05");
+    expect(pickerStep("Home", ym("2026-05"))).toBe("2026-01");
+    expect(pickerStep("End", ym("2026-05"))).toBe("2026-12");
+    expect(pickerStep("Enter", ym("2026-05"))).toBeNull();
+  });
+
+  it("stops at the ends of the span Axiis plans on", () => {
+    expect(pickerStep("ArrowLeft", ym("1970-01"))).toBeNull();
+    expect(pickerStep("ArrowDown", ym("2200-11"))).toBeNull();
+    expect(stepYear(ym("2026-05"), 1)).toBe("2027-05");
+    expect(stepYear(ym("1970-05"), -1)).toBe("1970-01");
+    expect(stepYear(ym("2200-05"), 1)).toBe("2200-12");
   });
 });
 

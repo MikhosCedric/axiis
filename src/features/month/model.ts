@@ -1,7 +1,8 @@
 import type { AreaColor } from "@/domain/area-color";
 import { repeats, type Area, type ItemType, type LocalDate, type ShownItem, type SpanRange } from "@/domain/item";
+import { occurrenceKey } from "@/domain/item-key";
 import { stateOf, type BeamState } from "@/features/today/model";
-import { formatClock } from "@/features/today/format";
+import { formatClock, formatMinutes, type Clock } from "@/lib/clock";
 import { WEEK_LENGTH, weekOf } from "@/features/week/model";
 import { addDays, dayRangeFor, FIRST_DATE, LAST_DATE, localMinutes, toLocalDate } from "@/lib/dates";
 import { RANGE_LIMIT } from "@/lib/items/repo";
@@ -87,6 +88,33 @@ export function monthNavTarget(action: MonthNavAction, month: YearMonth, today: 
   return parseYearMonth(to) ?? month;
 }
 
+/** Months in a row of the Jump to month picker. */
+export const PICKER_COLUMNS = 3;
+
+/** Where a key press moves the month picker's focus, or null for any other key or a move past the span Axiis plans on. */
+export function pickerStep(key: string, from: YearMonth): YearMonth | null {
+  const year = from.slice(0, 4);
+  const to: Record<string, YearMonth> = {
+    ArrowLeft: addMonths(from, -1),
+    ArrowRight: addMonths(from, 1),
+    ArrowUp: addMonths(from, -PICKER_COLUMNS),
+    ArrowDown: addMonths(from, PICKER_COLUMNS),
+    PageUp: addMonths(from, -12),
+    PageDown: addMonths(from, 12),
+    Home: `${year}-01` as YearMonth,
+    End: `${year}-12` as YearMonth,
+  };
+  return key in to ? parseYearMonth(to[key]) : null;
+}
+
+/** The same month `years` away, or the nearest month inside the span when that is past it. */
+export function stepYear(month: YearMonth, years: number): YearMonth {
+  const to = addMonths(month, years * 12);
+  const first = monthOf(FIRST_DATE);
+  const last = monthOf(LAST_DATE);
+  return to < first ? first : to > last ? last : to;
+}
+
 const monthYear = new Intl.DateTimeFormat("en-GB", { month: "long", year: "numeric", timeZone: "UTC" });
 
 /** "October 2026". */
@@ -98,10 +126,12 @@ export function formatMonthHeading(month: YearMonth): string {
 export type MonthMark = {
   /** The item key, as `?item=` and the move action take it. */
   key: string;
+  /** An override's occurrence key, which `?item=` still holds after a first change stored the occurrence. */
+  occurrence: string | null;
   title: string;
   type: ItemType;
   state: BeamState;
-  /** "09:30" on the day it starts, "to 01:00" on a later day it runs into, null for a day-only or due mark. */
+  /** "09:30" or "9:30 AM" on the day it starts, "to 01:00" on a later day it runs into, null for a day-only or due mark. */
   time: string | null;
   area: string | null;
   areaColor: AreaColor | null;
@@ -121,9 +151,6 @@ const shown = (i: ShownItem) => i.type !== "note" && i.status !== "dropped";
 /** Minutes past local midnight that an item can reach and still end on its first day, with three hours to spare for a change of clocks. */
 const SURELY_SAME_DAY = 21 * 60;
 
-/** "09:30" from minutes past midnight, as `formatClock` writes it. */
-const clock = (minutes: number) => `${String(Math.floor(minutes / 60)).padStart(2, "0")}:${String(minutes % 60).padStart(2, "0")}`;
-
 type Placed = { mark: MonthMark; rank: [number, number, number] };
 
 /**
@@ -140,9 +167,10 @@ export function buildMonth(input: {
   due: readonly ShownItem[];
   areas: readonly Area[];
   timeZone: string;
+  clock: Clock;
   now: Date;
 }): MonthBuild {
-  const { month, days, timeZone, now } = input;
+  const { month, days, timeZone, clock, now } = input;
   const first = days[0];
   const last = days[days.length - 1];
   const areaOf = new Map(input.areas.map((a) => [a.id as string, a]));
@@ -155,6 +183,7 @@ export function buildMonth(input: {
     const area = item.areaId ? (areaOf.get(item.areaId) ?? null) : null;
     return {
       key: item.id,
+      occurrence: item.recurrence.kind === "override" ? occurrenceKey(item.recurrence.seriesId, item.recurrence.originalOn) : null,
       title: item.title,
       type: item.type,
       state: stateOf(item, now),
@@ -186,7 +215,7 @@ export function buildMonth(input: {
     const to = endDay > last ? last : endDay;
     for (let d = from; d <= to; d = addDays(d, 1)) {
       const starts = d === startDay;
-      const time = starts ? clock(startMinutes) : `to ${formatClock(s.end, timeZone)}`;
+      const time = starts ? formatMinutes(startMinutes, clock) : `to ${formatClock(s.end, timeZone, clock)}`;
       byDay.get(d)!.push({ mark: { ...mark, time, due: false, movable: starts }, rank: [1, starts ? s.start.getTime() : -Infinity, 0] });
     }
   }
@@ -208,6 +237,13 @@ export function buildMonth(input: {
     return { date, marks: placed.slice(0, MARKS_PER_DAY).map((p) => p.mark), more: Math.max(0, placed.length - MARKS_PER_DAY) };
   });
   return { cells, open, due };
+}
+
+/** The key of the mark `selected` names: an override answers to its occurrence key too. Anything else passes through. */
+export function selectedMarkKey(cells: readonly MonthCell[], selected: string | null): string | null {
+  if (selected === null) return null;
+  for (const cell of cells) for (const m of cell.marks) if (m.key === selected || m.occurrence === selected) return m.key;
+  return selected;
 }
 
 export function monthSummary(open: number, due: number): string {

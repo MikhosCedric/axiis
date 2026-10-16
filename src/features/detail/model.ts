@@ -6,7 +6,8 @@ import type { TagName } from "@/domain/tag";
 import { addDays, localMinutes, toLocalDate } from "@/lib/dates";
 import { describeRule, presetOf, type RepeatChoice, type RepeatPreset } from "./repeat";
 import type { ActionResult } from "@/features/today/commands";
-import { formatClock, formatDayHeading, formatDayIn } from "@/features/today/format";
+import { formatDayHeading, formatDayIn } from "@/features/today/format";
+import { formatClock, parseClock, type Clock } from "@/lib/clock";
 import type { Created } from "@/features/notes/model";
 import type { PlanFor } from "@/features/inbox/model";
 import { DEFAULT_MINUTES } from "@/features/score/drop";
@@ -44,30 +45,16 @@ export type Scope = "one" | "all";
 export type TimeOfDay = { start: number; length: number };
 
 
-/** `HH:MM` for minutes past midnight, wrapping past the end of the day. */
-export function clockOf(minutes: number): string {
-  const m = ((minutes % DAY_MINUTES) + DAY_MINUTES) % DAY_MINUTES;
-  return `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`;
-}
-
-/** Minutes past midnight for a 24-hour clock typed loosely ("14:30", "14.30", "1430", "930", "9"), or null. */
-export function minutesOf(clock: string): number | null {
-  const m = /^(\d{1,2})(?:[:.]?(\d{2}))?$/.exec(clock.trim());
-  if (!m) return null;
-  const [hours, minutes] = [Number(m[1]), Number(m[2] ?? 0)];
-  return hours < 24 && minutes < 60 ? hours * 60 + minutes : null;
-}
-
 /**
- * The time two clock fields describe, or null without a readable start or
- * with an end that cannot be read. An end at or before the start runs past
- * midnight; no end gives the default length.
+ * The time two clock fields describe, typed on either clock, or null without
+ * a readable start or with an end that cannot be read. An end at or before the
+ * start runs past midnight; no end gives the default length.
  */
 export function timeFrom(start: string, end: string): TimeOfDay | null {
-  const from = minutesOf(start);
+  const from = parseClock(start);
   if (from === null) return null;
   if (end.trim() === "") return { start: from, length: DEFAULT_MINUTES };
-  const to = minutesOf(end);
+  const to = parseClock(end);
   return to === null ? null : { start: from, length: (to - from + DAY_MINUTES) % DAY_MINUTES || DAY_MINUTES };
 }
 
@@ -191,13 +178,13 @@ export function planOptions(view: Pick<DetailView, "when" | "day" | "repeat">, s
   return { days: true, unplan: view.day !== null, time: view.day !== null, firstDay: false };
 }
 
-export function describeWhen(schedule: Schedule, timeZone: string): string {
+export function describeWhen(schedule: Schedule, timeZone: string, clock: Clock): string {
   if (schedule.kind === "unscheduled") return "Waiting for a time";
   if (schedule.kind === "day") return formatDayHeading(schedule.on);
   const startDay = toLocalDate(schedule.start, timeZone);
   const endDay = toLocalDate(schedule.end, timeZone);
-  const start = `${formatDayHeading(startDay)}, ${formatClock(schedule.start, timeZone)}`;
-  const end = formatClock(schedule.end, timeZone);
+  const start = `${formatDayHeading(startDay)}, ${formatClock(schedule.start, timeZone, clock)}`;
+  const end = formatClock(schedule.end, timeZone, clock);
   return endDay === startDay ? `${start} to ${end}` : `${start} to ${formatDayHeading(endDay)}, ${end}`;
 }
 
@@ -264,13 +251,14 @@ export function buildDetail(input: {
   subtasks: Item[];
   parent: Item | null;
   timeZone: string;
+  clock: Clock;
   /** The user's local date, so a date in another year can say which. */
   today: LocalDate;
   /** The dates a series was skipped on. */
   skipped?: LocalDate[];
   tags?: DetailView["tags"];
 }): DetailView {
-  const { item, series = null, areas, subtasks, parent, timeZone, today, skipped = [], tags = { on: [], known: [] } } = input;
+  const { item, series = null, areas, subtasks, parent, timeZone, clock, today, skipped = [], tags = { on: [], known: [] } } = input;
   const policy = subtaskPolicy(item);
   const nesting: Nesting =
     policy.kind === "holds-subtasks"
@@ -284,7 +272,7 @@ export function buildDetail(input: {
   return {
     item: { id: item.id, type: item.type, title: item.title, done: item.status === "done", areaId: item.areaId },
     retype: retypable(item),
-    when: item.type === "note" ? null : describeWhen(item.schedule, timeZone),
+    when: item.type === "note" ? null : describeWhen(item.schedule, timeZone, clock),
     day: firstDay(item.schedule, timeZone),
     today,
     time: timeOf(item.schedule, timeZone),

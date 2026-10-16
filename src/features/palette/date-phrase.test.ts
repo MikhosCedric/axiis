@@ -1,11 +1,40 @@
 import { describe, expect, it } from "vitest";
 import type { LocalDate } from "@/domain/item";
-import { completeDatePhrase, parseDatePhrase } from "./date-phrase";
+import { completeDatePhrase, parseDatePhrase, parseMonthPhrase } from "./date-phrase";
 
 const d = (s: string) => s as LocalDate;
 const TUESDAY = d("2026-10-06");
 const SUNDAY = d("2026-10-11");
 const parse = (text: string, today = TUESDAY) => parseDatePhrase(text, today);
+
+describe("parseMonthPhrase", () => {
+  const month = (text: string, today = TUESDAY) => parseMonthPhrase(text, today);
+
+  it("reads a month with its year, or after the word month without one", () => {
+    expect(month("nov 2026")).toBe("2026-11");
+    expect(month("November, 2027")).toBe("2027-11");
+    expect(month("month sept 2030")).toBe("2030-09");
+    expect(month("2026-11")).toBe("2026-11");
+    expect(month("month 2099-05")).toBe("2099-05");
+  });
+
+  it("takes a month with no year as the next one, this month included", () => {
+    expect(month("month november")).toBe("2026-11");
+    expect(month("month october")).toBe("2026-10");
+    expect(month("month sep")).toBe("2027-09");
+    expect(month("month jan", d("2026-12-31"))).toBe("2027-01");
+  });
+
+  it("leaves a bare month name, a day, and months outside the span to the rest of the palette", () => {
+    expect(month("may")).toBeNull();
+    expect(month("nov 24")).toBeNull();
+    expect(month("month smarch")).toBeNull();
+    expect(month("2026-13")).toBeNull();
+    expect(month("nov 1969")).toBeNull();
+    expect(month("month dec", d("2200-12-31"))).toBe("2200-12");
+    expect(month("month nov", d("2200-12-31"))).toBeNull();
+  });
+});
 
 describe("parseDatePhrase", () => {
   it("reads today, tomorrow and yesterday", () => {

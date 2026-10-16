@@ -1,3 +1,4 @@
+import type { Clock } from "@/lib/clock";
 import { repeats, type Item, type ItemId, type ShownItem } from "@/domain/item";
 import { parseItemKey, type ParsedItemKey } from "@/domain/item-key";
 import {
@@ -174,18 +175,18 @@ export type TaggedData = {
 };
 
 /** When an item happens, in words: its plan, or how a series repeats. Null for a note. */
-export function whenOf(item: Item, timeZone: string): string | null {
+export function whenOf(item: Item, timeZone: string, clock: Clock): string | null {
   if (item.type === "note") return null;
   const r = item.recurrence;
   if (r.kind === "series") {
     const every = cadence(r.rule, firstDay(item.schedule, timeZone));
     return `Repeats ${every}`;
   }
-  return describeWhen(item.schedule, timeZone);
+  return describeWhen(item.schedule, timeZone, clock);
 }
 
 /** The items with a tag, named any case, open first. Null when no tag has that name. */
-export async function loadTagged(repo: ItemsRepo, rawName: unknown, timeZone: string): Promise<TaggedData | null> {
+export async function loadTagged(repo: ItemsRepo, rawName: unknown, timeZone: string, clock: Clock): Promise<TaggedData | null> {
   const name = parseTagName(rawName);
   if (!name) return null;
   const tag = (await repo.listTagNames()).find((t) => sameTag(t.name, name));
@@ -201,7 +202,7 @@ export async function loadTagged(repo: ItemsRepo, rawName: unknown, timeZone: st
       title: displayTitle(item),
       done: item.status === "done",
       repeats: repeats(item),
-      when: whenOf(item, timeZone),
+      when: whenOf(item, timeZone, clock),
       area: areaOf.get(item.areaId ?? "")?.name ?? null,
       areaColor: areaOf.get(item.areaId ?? "")?.color ?? null,
       tags: byName(tags[item.id] ?? [])

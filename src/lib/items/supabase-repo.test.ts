@@ -142,7 +142,7 @@ describe("SupabaseItemsRepo.listBehind", () => {
 describe("SupabaseItemsRepo columns", () => {
   const selects = (requests: URLSearchParams[]) => requests.map((q) => q.get("select") ?? "");
 
-  it("leaves the body out of every list read, and keeps it for one item and for series", async () => {
+  it("leaves the body out of every list read, and keeps it for one item", async () => {
     const { repo, requests } = stubbed();
     const day = { date: d("2026-10-06"), from: new Date(0), to: new Date(1) };
     await repo.listForDay(day);
@@ -153,11 +153,11 @@ describe("SupabaseItemsRepo columns", () => {
     await repo.listChildren(SERIES);
     await repo.listDue(new Date(0));
     await repo.listBehind(day);
+    await repo.listSeries();
     for (const select of selects(requests)) expect(select.split(",")).not.toContain("body");
 
     requests.length = 0;
     await repo.get(SERIES);
-    await repo.listSeries();
     for (const select of selects(requests)) expect(select.split(",")).toContain("body");
   });
 
