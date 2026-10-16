@@ -13,7 +13,7 @@ import { RepeatMark } from "@/features/today/repeat-mark";
 import { InlineTitle } from "./inline-title";
 import { LinkedNotes } from "./linked-notes";
 import { useItemHref } from "./item-href";
-import { clockOf, planOptions, TYPE_CHOICES, type TypeChoice, type DetailActions, type DetailView, type Scope, type SkippedDate } from "./model";
+import { planOptions, TYPE_CHOICES, type TypeChoice, type DetailActions, type DetailView, type Scope, type SkippedDate } from "./model";
 import { PlanRow } from "./plan-row";
 import { startsRepeating } from "./repeat";
 import { dayWords, planDate } from "@/features/inbox/model";
@@ -22,6 +22,8 @@ import { SkippedDates } from "./skipped-dates";
 import { Subtasks } from "./subtasks";
 import { DateRow, TimeRow } from "./time-row";
 import { formatDayHeading } from "@/features/today/format";
+import { useClock } from "@/components/shell/clock-context";
+import { formatMinutes } from "@/lib/clock";
 import { TagField } from "@/features/tags/tag-field";
 
 const TYPE_WORD: Record<ItemType, string> = { task: "Task", event: "Event", note: "Note", checklist: "Checklist" };
@@ -57,6 +59,7 @@ export function DetailSheet({
   /** Notes linked to this item either way. Not shown for a note, which opens in its own editor. */
   linkedNotes?: ConnectedRow[];
 }) {
+  const clock = useClock();
   const { item, nesting, repeat } = view;
   const itemHref = useItemHref();
   const router = useRouter();
@@ -283,7 +286,7 @@ export function DetailSheet({
                   () => actions.setTime(item.id, time, seriesScope),
                   () =>
                     setStatus(
-                      seriesScope === "all" ? `All of them are at ${clockOf(time.start)} now.` : `At ${clockOf(time.start)} now.`,
+                      seriesScope === "all" ? `All of them are at ${formatMinutes(time.start, clock)} now.` : `At ${formatMinutes(time.start, clock)} now.`,
                     ),
                 )
               }

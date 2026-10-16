@@ -42,6 +42,7 @@ import {
   parseYearMonth,
   MONTH_FULL,
   sameDayIn,
+  selectedMarkKey,
   type MonthCell,
   type MonthMark,
 } from "./model";
@@ -113,6 +114,7 @@ export function MonthView({
   const [preview, setPreview] = useState<WeekDragPreview<MonthMark & { from: LocalDate }> | null>(null);
   const [cells, move] = useOptimistic(data.cells, moveMark);
   const days = cells.map((c) => c.date);
+  const shownSelected = selectedMarkKey(cells, selected);
   const [active, setActive] = useState<LocalDate>(() => anchorOf(month, today));
   const [shownMonth, setShownMonth] = useState(month);
   if (shownMonth !== month) {
@@ -215,7 +217,7 @@ export function MonthView({
       mark={m}
       variant={variant}
       focusable={focusable}
-      selected={selected === m.key}
+      selected={shownSelected === m.key}
       lifted={preview?.item.key === m.key}
       onPointerDown={m.movable ? (e) => start(e, { ...m, from: date }) : undefined}
       onClick={(e) => {

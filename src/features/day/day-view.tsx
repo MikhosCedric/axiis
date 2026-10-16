@@ -17,7 +17,9 @@ import { CaptureField } from "@/features/today/capture-field";
 import { LeftoverStrip } from "./leftover-strip";
 import type { LeftoverData } from "./leftover-model";
 import type { ActionResult } from "@/features/today/commands";
-import { formatClock, formatDayHeading } from "@/features/today/format";
+import { formatDayHeading } from "@/features/today/format";
+import { formatClock } from "@/lib/clock";
+import { useClock } from "@/components/shell/clock-context";
 import { buildToday, stateOf, summaryLine } from "@/features/today/model";
 import { dayRangeFor, instantAt, localMinutes } from "@/lib/dates";
 import { seriesTimeOffer, type SeriesTimeOffer } from "./series-time";
@@ -96,6 +98,7 @@ export function DayView({
 }) {
   const { date, timeZone, areas, isToday, childCounts } = data;
   const router = useRouter();
+  const clock = useClock();
   const pathname = usePathname();
   const params = useSearchParams();
   const selectedParam = params.get(SELECTED_ITEM_PARAM);
@@ -154,7 +157,7 @@ export function DayView({
     if (s.kind === "unscheduled") return `${item.title} is waiting, with no day.`;
     if (s.kind === "day") return `${item.title} is on this day, at any time.`;
     const area = areaName(placement.areaId === undefined ? item.areaId : placement.areaId);
-    return `${item.title}, ${formatClock(s.start, timeZone)} to ${formatClock(s.end, timeZone)}, ${area}.`;
+    return `${item.title}, ${formatClock(s.start, timeZone, clock)} to ${formatClock(s.end, timeZone, clock)}, ${area}.`;
   }
 
   function place(item: ShownItem, placement: Placement) {
@@ -170,11 +173,11 @@ export function DayView({
 
   function timeSeries(offer: SeriesTimeOffer) {
     setStatus(null);
-    const clock = formatClock(instantAt(date, offer.time.start, timeZone), timeZone);
+    const at = formatClock(instantAt(date, offer.time.start, timeZone), timeZone, clock);
     startTransition(async () => {
       const result = await actions.timeSeries(offer.id, offer.time);
       setStatus(
-        result.ok ? { text: `${offer.title} is at ${clock} ${offer.cadence}.`, error: false } : { text: result.error, error: true },
+        result.ok ? { text: `${offer.title} is at ${at} ${offer.cadence}.`, error: false } : { text: result.error, error: true },
       );
     });
   }

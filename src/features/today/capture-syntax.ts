@@ -2,7 +2,8 @@ import type { LocalDate } from "@/domain/item";
 import { parseTagName, tagKey, type TagName } from "@/domain/tag";
 import { WEEK_LENGTH, weekOf } from "@/features/week/model";
 import { addDays, parseLocalDate } from "@/lib/dates";
-import type { CaptureResult } from "./commands";
+import type { CaptureResult, Landed } from "./commands";
+import { formatMinutes, type Clock } from "@/lib/clock";
 import { formatDayHeading } from "./format";
 
 /** A day as typed, before it is pinned to a date: that needs today, which only the server knows for sure. */
@@ -249,14 +250,6 @@ export function dayOf(word: DayWord, today: LocalDate): LocalDate {
   }
 }
 
-const pad = (n: number) => String(n).padStart(2, "0");
-
-/** "09:00" for 540 minutes; a time past midnight wraps to the next day's clock. */
-export function clockWords(minutes: number): string {
-  const m = ((minutes % DAY_MINUTES) + DAY_MINUTES) % DAY_MINUTES;
-  return `${pad(Math.floor(m / 60))}:${pad(m % 60)}`;
-}
-
 function dayWordText(word: DayWord): string {
   switch (word.kind) {
     case "in":
@@ -271,12 +264,12 @@ function dayWordText(word: DayWord): string {
 }
 
 /** What a line will do, for a preview under the field before it is sent, or null when it is all title. */
-export function previewWords(c: CaptureText): string | null {
+export function previewWords(c: CaptureText, clock: Clock): string | null {
   const day = c.day ? dayWordText(c.day) : c.time ? "today" : null;
   const time = c.time
     ? c.time.length === null
-      ? clockWords(c.time.start)
-      : `${clockWords(c.time.start)} to ${clockWords(c.time.start + c.time.length)}`
+      ? formatMinutes(c.time.start, clock)
+      : `${formatMinutes(c.time.start, clock)} to ${formatMinutes(c.time.start + c.time.length, clock)}`
     : null;
   const parts = [day, time, ...c.tags.map((t) => `#${t}`)].filter((p) => p !== null);
   return parts.length ? parts.join(", ") : null;
@@ -300,16 +293,21 @@ export const CAPTURE_LEAD = "Type one thing you have to do. Add a day or a time 
  * What a status line says once a capture has saved: in the capture field,
  * which sits above the tray, or in the palette, which can be opened anywhere.
  */
-export function capturedLine(result: Captured, where: "field" | "palette"): string {
+export function capturedLine(result: Captured, where: "field" | "palette", clock: Clock): string {
   if (result.type === "checklist") return "Captured. It is open, ready for its lines.";
   const tags = result.tags.length ? ` with ${tagList(result.tags)}` : "";
   const what = where === "palette" ? `Captured “${result.title}”` : "Captured";
   const { landed } = result;
-  const plan = landed && (landed.time ? `${landed.day}, ${landed.time.start}${landed.time.end ? ` to ${landed.time.end}` : ""}` : landed.day);
+  const time = landed?.time && landedTime(landed.time, clock);
+  const plan = landed && (time ? `${landed.day}, ${time.start}${time.end ? ` to ${time.end}` : ""}` : landed.day);
   const line = plan
     ? `${where === "palette" ? `${what}. ` : ""}Planned for ${plan}${tags ? `,${tags}` : ""}.`
     : `${what}${tags}. It is waiting for a time${where === "palette" ? " on Today" : ", below"}.`;
   return line + missedLine(result);
+}
+
+function landedTime(time: NonNullable<Landed["time"]>, clock: Clock): { start: string; end: string | null } {
+  return { start: formatMinutes(time.start, clock), end: time.end === null ? null : formatMinutes(time.end, clock) };
 }
 
 function missedLine({ missed }: Captured): string {
@@ -321,13 +319,14 @@ function missedLine({ missed }: Captured): string {
  * understood, as a sentence, and a link to where the item went. A day's link
  * names that day; a capture with no day goes to the Inbox.
  */
-export function firstCapturedLine(result: Captured): { text: string; link: { href: string; label: string } } {
+export function firstCapturedLine(result: Captured, clock: Clock): { text: string; link: { href: string; label: string } } {
   const { landed } = result;
   const title = result.title.charAt(0).toUpperCase() + result.title.slice(1);
   const tags = result.tags.length ? `, tagged ${tagList(result.tags)}` : "";
   if (!landed) return { text: `${title} is waiting, with no day yet${tags}.${missedLine(result)}`, link: { href: "/inbox", label: "See the Inbox" } };
   const day = landed.day === "today" || landed.day === "tomorrow" ? landed.day : `on ${landed.day}`;
-  const time = !landed.time ? ", at any time" : landed.time.end ? ` from ${landed.time.start} to ${landed.time.end}` : ` at ${landed.time.start}`;
+  const at = landed.time && landedTime(landed.time, clock);
+  const time = !at ? ", at any time" : at.end ? ` from ${at.start} to ${at.end}` : ` at ${at.start}`;
   return {
     text: `${title} is ${day}${time}${tags}.${missedLine(result)}`,
     link: { href: landed.day === "today" ? "/today" : `/day/${landed.on}`, label: `See ${landed.day}` },

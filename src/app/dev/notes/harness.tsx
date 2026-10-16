@@ -1,5 +1,6 @@
 "use client";
 
+import { useClock } from "@/components/shell/clock-context";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { listNoteRows, loadNote, searchItems } from "@/features/notes/commands";
@@ -46,7 +47,8 @@ function useLoaded<T>(load: () => Promise<T>) {
 }
 
 export function HarnessList({ query, timeZone }: { query: string; timeZone: string }) {
-  const load = useCallback(() => listNoteRows(store.notes, store.items, query || null, new Date(), timeZone), [query, timeZone]);
+  const clock = useClock();
+  const load = useCallback(() => listNoteRows(store.notes, store.items, query || null, new Date(), timeZone, clock), [query, timeZone, clock]);
   const [rows] = useLoaded<NoteRow[]>(load);
   return (
     <>
@@ -57,10 +59,11 @@ export function HarnessList({ query, timeZone }: { query: string; timeZone: stri
 }
 
 export function HarnessEditor({ noteId, timeZone }: { noteId: string; timeZone: string }) {
+  const clock = useClock();
   const load = useCallback(async () => {
-    const view = await loadNote(store.notes, store.items, noteId, new Date(), timeZone);
+    const view = await loadNote(store.notes, store.items, noteId, new Date(), timeZone, clock);
     return view && { ...view, connected: view.connected.map((c) => ({ ...c, href: harnessHref(c) })) };
-  }, [noteId, timeZone]);
+  }, [noteId, timeZone, clock]);
   const [view, reload] = useLoaded<NoteView | null>(load);
   const withReload = <A extends unknown[], R>(write: (...args: A) => Promise<R>) =>
     async (...args: A) => {
