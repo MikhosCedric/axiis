@@ -28,7 +28,7 @@ What the owner must do before Axiis is public. Each item is done when its check 
 
 ## Supabase Auth hardening
 Signup is open, so anyone can make Supabase send email and write rows. The database caps rows per account (`docs/data-model.md`, Quotas); these settings cover the rest.
-- [ ] CAPTCHA: Authentication, Attack Protection, enable Cloudflare Turnstile for sign-in and signup. The login form must then send the token; that is a code change to request before turning it on, or every sign-in fails.
+- [ ] CAPTCHA: Cloudflare Turnstile on email sign-in. See "Turnstile CAPTCHA" below for the order.
 - [ ] Custom SMTP (Authentication, Emails, SMTP Settings) from a provider such as Resend or Postmark, on the production domain. Publish SPF, DKIM and a DMARC record (`p=quarantine` or stricter) for the sending domain. The built-in sender is rate-limited and not meant for production. Check: a magic link arrives in Gmail's inbox, and "Show original" shows SPF, DKIM and DMARC all `PASS`.
 - [ ] Redirect allowlist (Authentication, URL Configuration) holds only `https://<domain>/auth/callback` and, if this project is also the dev one, `http://localhost:3000/auth/callback`. No wildcards: a pattern such as `https://*.vercel.app/**` lets anyone's Vercel deployment receive a sign-in token. Use a separate Supabase project for preview deployments if they need to sign in.
 - [ ] JWT signing keys (Project Settings, JWT Keys): migrate to asymmetric keys (ES256 or RS256), then revoke the legacy shared secret once nothing uses it.
@@ -36,6 +36,18 @@ Signup is open, so anyone can make Supabase send email and write rows. The datab
 - [ ] Backups: move to Supabase Pro (daily backups, point-in-time recovery as an add-on) before the first real user. Check on the Database, Backups page that a backup is listed and restorable, since the free plan does not offer one.
 - [ ] Rate limits. See "Rate limits" below.
 - [ ] Check: `curl -sI https://<domain>/login | grep -ci '^content-security-policy:'` prints `1`. Two headers would mean a second source (a Vercel header rule or `next.config.ts`) is back; `src/proxy.ts` must be the only one.
+
+## Turnstile CAPTCHA
+The code is in place and off. With `NEXT_PUBLIC_TURNSTILE_SITE_KEY` unset the login page loads nothing from Cloudflare and sends no token. With it set, `/login` loads Turnstile's script (with the request's nonce), its policy opens `https://challenges.cloudflare.com` to `script-src`, `frame-src` and `connect-src` (`src/lib/csp.ts`, `/login` only), and the email form sends the token as `options.captchaToken`. "Continue with Google" is not affected: Supabase does not check a CAPTCHA on OAuth.
+
+Do these in this order. Turning Supabase's check on before the site sends tokens makes every email sign-in fail with "The check that you are a person did not pass".
+1. [ ] Cloudflare dashboard, Turnstile, Add widget. Name `Axiis`, hostnames: the production domain (add `localhost` only if you want to try it in `next dev`). Widget mode: Managed. Copy the site key and the secret key. The secret key goes only into Supabase, never into Vercel or the repo.
+2. [ ] Vercel, Project, Settings, Environment Variables: add `NEXT_PUBLIC_TURNSTILE_SITE_KEY` = the site key, for Production only. It is read at build time, so redeploy (Deployments, the latest, Redeploy, without the build cache).
+3. [ ] Check: on `https://<domain>/login`, the browser console shows no CSP errors, and `curl -sI https://<domain>/login | grep -i content-security-policy` contains `frame-src 'self' https://challenges.cloudflare.com`. A magic link still arrives (Supabase ignores the token while its check is off).
+4. [ ] Supabase, Authentication, Attack Protection: turn on "Enable Captcha protection", provider Cloudflare Turnstile, paste the secret key, Save.
+5. [ ] Check: a magic link from the production site still arrives and signs in. Then in a private window, block `challenges.cloudflare.com` (devtools, Network, Block request domain) and send a link: the form says the check has not finished, and no email is sent.
+
+To turn it off, reverse the order: Supabase's check off first, then remove the Vercel variable and redeploy.
 
 ## Rate limits
 What the code already bounds: migration `0007_rate_limits` caps how fast an account adds rows (120 items, 120 links, 60 tags, 30 areas a minute), `0006_quotas` caps how many it holds, and the login form waits 30 seconds between sign-in emails from one browser (a cookie, so a script can skip it). Nothing in the code limits requests per IP. An in-process counter would not work: Vercel runs many short-lived function instances that share no memory. Per-IP limits belong in the Vercel firewall and in Supabase Auth.

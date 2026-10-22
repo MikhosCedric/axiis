@@ -2,15 +2,19 @@
 
 import { useActionState, useState } from "react";
 import { signInWithEmail, type EmailSignInState } from "./actions";
+import { TurnstileWidget } from "./turnstile-widget";
 
 const initialState: EmailSignInState = { status: "idle" };
 
-export function EmailForm({ next }: { next: string }) {
+/** Set when the sign-in CAPTCHA is on: the Turnstile site key and this request's nonce for its script. */
+export type Captcha = { siteKey: string; nonce?: string };
+
+export function EmailForm({ next, captcha }: { next: string; captcha: Captcha | null }) {
   const [attempt, setAttempt] = useState(0);
-  return <EmailFormAttempt key={attempt} next={next} onRestart={() => setAttempt((n) => n + 1)} />;
+  return <EmailFormAttempt key={attempt} next={next} captcha={captcha} onRestart={() => setAttempt((n) => n + 1)} />;
 }
 
-function EmailFormAttempt({ next, onRestart }: { next: string; onRestart: () => void }) {
+function EmailFormAttempt({ next, captcha, onRestart }: { next: string; captcha: Captcha | null; onRestart: () => void }) {
   const [state, formAction, pending] = useActionState(signInWithEmail, initialState);
 
   if (state.status === "sent") {
@@ -47,6 +51,7 @@ function EmailFormAttempt({ next, onRestart }: { next: string; onRestart: () => 
         aria-describedby={error ? "email-error" : undefined}
         className="w-full rounded-md border border-rule bg-sheet px-3 py-2 text-ink"
       />
+      {captcha && <TurnstileWidget siteKey={captcha.siteKey} nonce={captcha.nonce} attempt={state} />}
       {error && (
         <p id="email-error" role="alert" className="text-sm text-ink">
           {error}
