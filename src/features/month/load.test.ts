@@ -86,7 +86,7 @@ describe("loadMonth", () => {
     const october = data.cells.find((c) => c.date === "2026-10-20")!;
     expect(october.marks).toHaveLength(MARKS_PER_DAY);
     expect(october.more).toBe(200 - MARKS_PER_DAY);
-    expect(data.summary).toBe(`${200 * 31} open this month.`);
+    expect(data.summary).toContain(` · ${200 * 31} open`);
   });
 
   it("draws the same month from a five-year-old series as from a new one", async () => {

@@ -30,10 +30,12 @@ import { formatDayHeading } from "@/features/today/format";
 import { formatClock } from "@/lib/clock";
 import { useClock } from "@/components/shell/clock-context";
 import { Glyph } from "@/features/today/glyph";
+import { DueMark } from "@/features/today/due-mark";
+import { dueWords } from "@/features/today/due";
 import { GuideButton, type GuideTopic } from "@/features/palette/guide";
 import { LineLegend } from "@/features/today/line-legend";
 import { SameInInbox } from "@/features/inbox/same-in-inbox";
-import { buildToday, EMPTY_TRAY, stateOf, TRAY_FULL, WAITING, type TodayEntry } from "@/features/today/model";
+import { buildToday, EMPTY_TRAY, stateOf, TRAY_FULL, INBOX, type TodayEntry } from "@/features/today/model";
 import { dayRangeFor } from "@/lib/dates";
 import { moveAction } from "./actions";
 import type { WeekData } from "./load";
@@ -132,7 +134,7 @@ export function WeekView({
   }
 
   function describe(item: ShownItem, to: Destination) {
-    if (to === "tray") return `${item.title} is waiting, with no day.`;
+    if (to === "tray") return `${item.title} is in the Inbox, with no day.`;
     const s = moveTo(item, to, timeZone).schedule;
     const at = s.kind === "timed" ? ` at ${formatClock(s.start, timeZone, clock)}` : "";
     return `${item.title} is on ${formatDayHeading(to)}${at}.`;
@@ -198,6 +200,7 @@ export function WeekView({
       entry={entry}
       variant={variant}
       timeZone={timeZone}
+      today={today}
       area={areaOf(entry.item)}
       tags={data.tags[entry.item.id]}
       selected={shownSelected === entry.item.id}
@@ -218,7 +221,7 @@ export function WeekView({
             <h1 className="headline">
               {formatWeekHeading(days)}
             </h1>
-            <p className="page-summary">{weekSummary(week, waiting)}</p>
+            <p className="page-summary">{weekSummary(week, waiting, today)}</p>
           </div>
         </header>
 
@@ -255,7 +258,7 @@ export function WeekView({
         {/* Every item's description. Seen in the Guide; here only for screen readers. */}
         <p id={KEYS_ID} className="sr-only">
           Drag an item to another day, or down to the tray to clear its day. With an item focused, Left and Right move it
-          a day, Backspace sends it to the tray, Space marks it done and Enter opens it. On a waiting item, Up gives it a
+          a day, Backspace sends it to the tray, Space marks it done and Enter opens it. On an item in the Inbox, Up gives it a
           day. The bracket keys change the week and T comes back to this one.
         </p>
         <LineLegend now={false} />
@@ -268,7 +271,7 @@ export function WeekView({
           }`}
         >
           <h2 id="week-tray-h" className="font-serif text-lg leading-tight font-medium">
-            {WAITING}
+            {INBOX}
           </h2>
           <p className="mt-1 mb-3.5 text-[13px] text-ink-3">
             No day yet. Drag one onto a day to plan it for that day. Drag a planned item back here to clear its day.{" "}
@@ -322,6 +325,8 @@ function DayColumn({
   children: ReactNode;
 }) {
   const isToday = date === today;
+  // Days already gone are set a step quieter, so the eye finds today and what is still ahead.
+  const past = date < today;
   const headingId = `day-${date}`;
   return (
     <section
@@ -337,13 +342,13 @@ function DayColumn({
           title={`Open ${formatDayHeading(date)}`}
           className="group inline-flex items-baseline gap-1.5 rounded tap-y"
         >
-          <span className="text-[13px] font-medium text-ink-2">
+          <span className={`text-[13px] font-medium ${past ? "text-ink-3" : "text-ink-2"}`}>
             <span className="@min-[50rem]:hidden">{weekdayName(date, "long")}</span>
             <span className="hidden @min-[50rem]:inline">{weekdayName(date, "short")}</span>
           </span>
           <span
             className={`font-serif text-xl leading-none font-medium tabular group-hover:underline ${
-              isToday ? "rounded bg-accent px-1.5 py-0.5 text-on-accent" : ""
+              isToday ? "rounded bg-ink px-1.5 py-0.5 text-paper" : past ? "text-ink-3" : ""
             }`}
           >
             {Number(date.slice(8))}
@@ -367,6 +372,7 @@ function ItemRow({
   entry,
   variant,
   timeZone,
+  today,
   area,
   tags,
   selected,
@@ -378,6 +384,7 @@ function ItemRow({
   entry: TodayEntry;
   variant: "row" | "chip";
   timeZone: string;
+  today: LocalDate;
   area: Area | null;
   tags: readonly string[] | undefined;
   selected: boolean;
@@ -389,11 +396,20 @@ function ItemRow({
   const clock = useClock();
   const { item, state } = entry;
   const s = item.schedule;
-  const time = s.kind === "timed" ? formatClock(s.start, timeZone, clock) : s.kind === "day" ? "Any time" : null;
+  // An event holds its whole time, so it says where it ends too; a task says when it starts.
+  const time =
+    s.kind === "timed"
+      ? item.type === "event"
+        ? `${formatClock(s.start, timeZone, clock)}–${formatClock(s.end, timeZone, clock)}`
+        : formatClock(s.start, timeZone, clock)
+      : s.kind === "day"
+        ? "Any time"
+        : null;
   const spokenTime =
-    s.kind === "timed" ? `${formatClock(s.start, timeZone, clock)} to ${formatClock(s.end, timeZone, clock)}` : (time ?? "waiting");
+    s.kind === "timed" ? `${formatClock(s.start, timeZone, clock)} to ${formatClock(s.end, timeZone, clock)}` : (time ?? "in the Inbox");
   const tagged = tagLine(tags ?? [], 2);
-  const label = [item.title, spokenTime, area?.name, STATE_WORD[state], repeats(item) && "repeats", tagged.spoken].filter(Boolean).join(", ");
+  const due = item.dueOn && state !== "done" ? dueWords(item.dueOn, today).words : null;
+  const label = [item.title, spokenTime, area?.name, STATE_WORD[state], due, repeats(item) && "repeats", tagged.spoken].filter(Boolean).join(", ");
   const shape =
     variant === "chip"
       ? "inline-flex max-w-[34ch] items-center gap-2 rounded-md border border-rule bg-sheet px-2.5 py-1.5 pointer-coarse:min-h-11"
@@ -422,6 +438,7 @@ function ItemRow({
         {variant === "row" && (
           <span className="mt-0.5 flex flex-wrap gap-x-2 text-xs text-ink-3">
             {time && <span className="tabular">{time}</span>}
+            {due && item.dueOn && <DueMark dueOn={item.dueOn} today={today} />}
             {area && <AreaLabel name={area.name} color={area.color} />}
             {tagged.shown && <span className="min-w-0 truncate">{tagged.shown}</span>}
           </span>

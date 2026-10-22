@@ -4,6 +4,21 @@ export const THEME_COOKIE = "theme";
 export const TZ_COOKIE = "tz";
 export const DENSITY_COOKIE = "density";
 export const CLOCK_COOKIE = "clock";
+export const FOCUS_COOKIE = "focus";
+export const TOUR_COOKIE = "tour";
+
+/**
+ * Whether Today shows the tour: on a new account until it is finished or skipped ("done"), and on any
+ * account once the Guide asks for it again ("replay").
+ */
+export function readTour(value: string | undefined, firstDay: boolean): boolean {
+  return value === "replay" || (firstDay && value !== "done");
+}
+
+/** Focus on Today, as this device last left it. Off for a missing or unknown value. */
+export function readFocus(value: string | undefined): boolean {
+  return value === "on";
+}
 
 export const DENSITIES = ["spacious", "compact"] as const;
 export type Density = (typeof DENSITIES)[number];

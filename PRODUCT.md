@@ -46,6 +46,6 @@ None. No copy, data, testimonials, logos, or assets exist. Future work must not 
 ## Product Principles
 1. Capture in under two seconds; organize later.
 2. Everything connects; no item lives in a silo.
-3. Calm by default: no guilt badges, no clutter.
+3. Calm by default: no guilt badges, no clutter. Every screen says where you are and what is next before it shows everything there is.
 4. One model, many views: never make the user pick a type before they can write.
 5. Your data is yours: export and delete anytime.

@@ -70,8 +70,8 @@ export const SHORTCUTS: ShortcutGroup[] = [
         does: `Make it ${SNAP_MINUTES} minutes shorter or longer`,
         handler: "score-item",
       },
-      { chords: [k("ArrowUp"), k("ArrowDown")], does: "Move it to the area above or below, or give a waiting task a time", handler: "score-item" },
-      { chords: [k("Backspace"), k("Delete")], does: "Take its time away, back to waiting", handler: "score-item" },
+      { chords: [k("ArrowUp"), k("ArrowDown")], does: "Move it to the area above or below, or give an Inbox item a time", handler: "score-item" },
+      { chords: [k("Backspace"), k("Delete")], does: "Take its time away, back to the Inbox", handler: "score-item" },
     ],
   },
   {
@@ -81,8 +81,8 @@ export const SHORTCUTS: ShortcutGroup[] = [
       { chords: [k(" ")], does: "Mark done or not done", handler: "week-item" },
       { chords: [k("Escape")], does: "Close the details", handler: "week-item" },
       { chords: [k("ArrowLeft"), k("ArrowRight")], does: "Move it a day earlier or later", handler: "week-item" },
-      { chords: [k("ArrowUp")], does: "Give a waiting task a day", handler: "week-item" },
-      { chords: [k("Backspace"), k("Delete")], does: "Send it back to waiting", handler: "week-item" },
+      { chords: [k("ArrowUp")], does: "Give an Inbox item a day", handler: "week-item" },
+      { chords: [k("Backspace"), k("Delete")], does: "Send it back to the Inbox", handler: "week-item" },
     ],
   },
   {
