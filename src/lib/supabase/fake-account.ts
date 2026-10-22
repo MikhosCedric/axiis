@@ -2,6 +2,7 @@ import type { Area, Item, ItemId, LocalDate } from "@/domain/item";
 import type { ExportTable, PageReader } from "@/features/account/export";
 import { bodyText, type DocNode } from "@/features/notes/doc";
 import { fakeRepo, makeItem } from "@/features/today/test-support";
+import { memoryDeletionPort } from "@/lib/account/fake";
 import { fakeAreasRepo } from "@/lib/areas/fake";
 import { recurrenceToColumns, scheduleToColumns } from "@/lib/items/mappers";
 import { fakeNotesRepo, type NotesStore } from "@/lib/notes/fake";
@@ -49,12 +50,15 @@ function areaFixtures(areas: Area[]): Item[] {
   ];
 }
 
-/** Which in-memory account a request uses: the fixtures, one that has never stored an item, or one whose items sit in areas. */
-export type FakeAccountKind = "fixtures" | "empty" | "areas";
+/**
+ * Which in-memory account a request uses: the fixtures, one that has never stored an item, one whose items
+ * sit in areas, or a copy of the fixtures for the account deletion tests.
+ */
+export type FakeAccountKind = "fixtures" | "empty" | "areas" | "deletion";
 
 function createAccount(kind: FakeAccountKind) {
   const areas = fakeAreasRepo(["Work", "Home", "Health"]);
-  const items = kind === "fixtures" ? fixtures() : kind === "areas" ? areaFixtures(areas.rows) : [];
+  const items = kind === "fixtures" || kind === "deletion" ? fixtures() : kind === "areas" ? areaFixtures(areas.rows) : [];
   const fake = fakeRepo(items);
   fake.repo.listAreas = () => areas.repo.list();
   if (kind === "fixtures") fake.tag(id(1), "errands");
@@ -98,6 +102,7 @@ function createAccount(kind: FakeAccountKind) {
     items: fake.repo,
     notes: fakeNotesRepo(notesStore),
     areas: areas.repo,
+    deletion: memoryDeletionPort(),
     readExport,
   };
 }
