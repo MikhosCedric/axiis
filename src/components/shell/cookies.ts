@@ -4,6 +4,12 @@ export const THEME_COOKIE = "theme";
 export const TZ_COOKIE = "tz";
 export const DENSITY_COOKIE = "density";
 export const CLOCK_COOKIE = "clock";
+export const FOCUS_COOKIE = "focus";
+
+/** Focus on Today, as this device last left it. Off for a missing or unknown value. */
+export function readFocus(value: string | undefined): boolean {
+  return value === "on";
+}
 
 export const DENSITIES = ["spacious", "compact"] as const;
 export type Density = (typeof DENSITIES)[number];

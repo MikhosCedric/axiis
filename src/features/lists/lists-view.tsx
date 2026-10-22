@@ -3,6 +3,7 @@
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useId, useOptimistic, useTransition, type ReactNode } from "react";
 import { AreaLabel } from "@/components/area-mark";
+import { ProgressLine } from "@/components/progress-line";
 import { SELECTED_ITEM_PARAM } from "@/features/day/types";
 import { DetailAside } from "@/features/detail/detail-aside";
 import { CaptureField } from "@/features/today/capture-field";
@@ -162,19 +163,5 @@ function ListRowView({
         </p>
       </div>
     </li>
-  );
-}
-
-/**
- * Progress in line form: the part still to do is dashed, like anything
- * planned, and the part done is solid. Decorative, since the words beside it
- * say the same.
- */
-function ProgressLine({ share }: { share: number }) {
-  return (
-    <span aria-hidden="true" className="relative block h-0.5 w-20 flex-none">
-      <span className="absolute inset-x-0 top-1/2 border-t border-dashed border-current opacity-60" />
-      <span className="absolute inset-y-0 left-0 rounded-full bg-current" style={{ width: `${share * 100}%` }} />
-    </span>
   );
 }
