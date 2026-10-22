@@ -78,7 +78,7 @@ Updated: see the log at the bottom. Phases:
 
 ## Accepted advisories (Supabase security advisor)
 - `delete_my_account` is executable by `authenticated` through RPC. Intended: it only deletes the caller's own account (`auth.uid()`), and `anon`/`public` are revoked.
-- Leaked-password protection is off. Axiis has no passwords (magic link and Google only), so it does not apply.
+- Leaked-password protection is off. Axiis offers no passwords (magic link and Google only), but Supabase's email provider accepts a password sign-up sent straight to its API, so turn it on with the Pro plan (`docs/launch-checklist.md`, Non-negotiables step 8).
 
 ## Migrations applied to the hosted project
 `0001_core`, `0002_account` (applied as `account_deletion`), `0003_search` (applied as `search_and_excerpt`). `0004_recurrence` (applied as `recurrence`), `0005_hardening` (applied as `hardening` on 2026-10-10 after a read-only check that no row broke a new constraint; the security advisor then showed only the two accepted advisories). Any new file in `supabase/migrations/` must be applied with the Supabase MCP `apply_migration`, after a rolled-back `DO` block check, then `get_advisors`.
@@ -86,6 +86,8 @@ Updated: see the log at the bottom. Phases:
 **Applied to the hosted project:** `0006_quotas` (2026-10-13) and `0007_rate_limits` (2026-10-15, owner allowed the write; security advisors after it show only the two accepted items).
 
 **Also applied:** `0008_tag_counts_and_purge` (`tag_open_counts()`, `purge_deleted_items()`, and the index `items_user_deleted_at`; 2026-10-15, owner allowed the write; advisors after it show only the two accepted items). `listTags` calls `tag_open_counts()`, so a migration like this goes on before the code that uses it.
+
+**Also applied:** `0009_area_colors`. **Written, not applied:** `0010_account_deletion_grace` (`account_deletions` and `purge_due_accounts()`; how to schedule it is in `docs/launch-checklist.md`, Account deletion purge). Apply it before deploying the code that reads it.
 
 ## Overnight run, 2026-10-09 (owner away) and how to resume
 **Merged to `main`** (all green in CI): #32 migration `0005_hardening` plus list reads that leave out `body` and keep notes out of Today's waiting read; #33 per-request nonce Content-Security-Policy (every page now renders per request); #34 G-then-letter page shortcuts; #36 repo getters memoised per request and `vercel.json` pinning functions to `hnd1` (Tokyo, next to the Supabase project); #37 an e2e test that read the real date, plus a drag test that failed whenever the drop landed on the current half hour; #39 heading above the day and week controls on a phone; #41 docs; #42 `npm audit --omit=dev` in CI and Dependabot; #43 link-preview card, iOS icon and PNG install icons.

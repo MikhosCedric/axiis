@@ -63,10 +63,10 @@ How the app uses them (`src/domain/tag.ts`, `src/features/tags/`):
 - A name is stored as typed but trimmed, with runs of spaces collapsed and a leading `#` dropped, 1 to 32 characters. Two names are one tag when they match without case. Limits: 10 tags per item, 200 per user, checked by the commands.
 - Tags are hard-deleted. Deleting a tag removes its `item_tags` rows by cascade and never touches an item. Rename changes the one `tags` row.
 - A series carries the tags for all its occurrences. An override of a live series has no tag rows of its own; it shows and edits the series' (`tagOwner`). See `docs/recurrence.md`.
-- Open counts count live items whose status is `open`. They come from `tag_open_counts()` (migration 0008, not yet applied to the hosted project): a `security invoker` SQL function that groups the caller's `item_tags` joined to open, live items and returns one `(tag_id, open)` row per tag that has any, so a read is one request of at most 500 rows (the tag cap) however many items are tagged. Row Level Security still applies; the `user_id` filters let it use `item_tags_user_tag` and the items primary key. Execute is granted to `authenticated` only. The detail panel orders its tag suggestions by these counts, and the Tags page shows them. A tag's page lists live items that are not dropped, open first, then newest, at most 200.
+- Open counts count live items whose status is `open`. They come from `tag_open_counts()` (migration 0008): a `security invoker` SQL function that groups the caller's `item_tags` joined to open, live items and returns one `(tag_id, open)` row per tag that has any, so a read is one request of at most 500 rows (the tag cap) however many items are tagged. Row Level Security still applies; the `user_id` filters let it use `item_tags_user_tag` and the items primary key. Execute is granted to `authenticated` only. The detail panel orders its tag suggestions by these counts, and the Tags page shows them. A tag's page lists live items that are not dropped, open first, then newest, at most 200.
 - Search reads `#name` words as a filter: words narrow the text hits to items carrying every named tag, or an override whose series carries them; tags alone list every item carrying them.
 
-## Quotas (migration 0006, not yet applied to the hosted project)
+## Quotas (migration 0006)
 
 Signup is open and PostgREST takes writes straight from the browser's session, so the database caps how much one account can hold. Where the app has its own limit, the cap sits well above it, so only a script writing to PostgREST directly reaches it. Items and links have no app limit: 20,000 items is about 11 years at five a day, subtasks and moved occurrences included.
 
@@ -85,7 +85,7 @@ Signup is open and PostgREST takes writes straight from the browser's session, s
 - Only inserts are checked. Updates, soft deletes, and account deletion with its cascades are untouched. The migration adds `items (user_id, parent_id) where parent_id is not null`, so deleting an account with 20,000 items no longer scans the table once per item for the parent foreign key.
 - The note body cap drops from 2 MB to 512 KB of jsonb (`items_body_size`). The editor refuses more than 200 KB of JSON (`BODY_MAX_BYTES`), which measured at most 1.5 times larger as jsonb.
 
-## Purge (migration 0008, not yet applied to the hosted project)
+## Purge (migration 0008)
 
 `purge_deleted_items()` hard-deletes up to 500 of the caller's items soft-deleted more than 30 days ago, oldest first, and returns how many went. `deleteItem` calls it (`ItemsRepo.purgeDeleted`) after every delete, and ignores a failure, so a delete never fails because of it and the app works before 0008 is applied.
 
@@ -107,7 +107,7 @@ Signup is open and PostgREST takes writes straight from the browser's session, s
 - `delete_my_account()` ("Delete now") is unchanged and removes the row by cascade.
 - The app reads the row on every signed-in page (`getDeletionRequest`, `src/lib/account/`) for the banner. A failed read counts as no request, so pages still render before 0010 is applied. Asking twice is an insert that ignores the duplicate, so the first date stands. Not part of the export.
 
-## Rate limits (migration 0007, not yet applied to the hosted project)
+## Rate limits (migration 0007)
 
 The quotas bound how much an account holds, not how fast it adds rows. Every server action can be bypassed by calling PostgREST with the same session, so the throttle is in the database.
 
