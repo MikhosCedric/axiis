@@ -25,6 +25,7 @@ import { dayRangeFor, instantAt, localMinutes, toLocalDate } from "@/lib/dates";
 import { FOCUS_COOKIE } from "@/components/shell/cookies";
 import { dayGlance, foldedWords } from "./glance";
 import { GlanceLine, NextUp } from "./next-up";
+import { Tour } from "./tour";
 import { seriesTimeOffer, type SeriesTimeOffer } from "./series-time";
 import { DAY_VIEW_PARAM, SELECTED_ITEM_PARAM, type DayData, type DayViewMode } from "./types";
 
@@ -90,6 +91,7 @@ export function DayView({
   detail,
   leftover,
   focus: focusSaved = false,
+  tour = false,
   actions = serverActions,
 }: {
   data: DayData;
@@ -100,6 +102,8 @@ export function DayView({
   leftover?: LeftoverData | null;
   /** Focus, as this device last left it: today shows only Next up and folds the rest away. */
   focus?: boolean;
+  /** Show the getting-started tour: a new account, or the Guide asked for it again. */
+  tour?: boolean;
   actions?: DayActions;
 }) {
   const { date, timeZone, areas, isToday, childCounts } = data;
@@ -309,6 +313,8 @@ export function DayView({
           )}
           <GuideButton topics={DAY_GUIDE} className="ml-auto" />
         </div>
+
+        {isToday && tour && <Tour />}
 
         {isToday && !firstDay && (
           <NextUp
