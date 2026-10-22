@@ -65,4 +65,15 @@ describe("proxy and the Content-Security-Policy", () => {
     expect(keys).not.toContain("content-security-policy");
     expect(keys).not.toContain("content-security-policy-report-only");
   });
+
+  it("opens Cloudflare's origin on /login only, and only when a Turnstile site key is set", async () => {
+    const policyAt = async (path: string) =>
+      (await proxy(new NextRequest(`http://localhost:3600${path}`))).headers.get("content-security-policy") ?? "";
+    const cloudflare = "https://challenges.cloudflare.com";
+
+    expect(await policyAt("/login")).not.toContain(cloudflare);
+    vi.stubEnv("NEXT_PUBLIC_TURNSTILE_SITE_KEY", "0x4AAAAAAAtestkey");
+    expect(await policyAt("/login")).toContain(`frame-src 'self' ${cloudflare}`);
+    expect(await policyAt("/")).not.toContain(cloudflare);
+  });
 });

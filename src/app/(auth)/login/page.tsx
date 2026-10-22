@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
+import { headers } from "next/headers";
 import Link from "next/link";
 import { BrandMark } from "@/components/shell/icons";
 import { safeNextPath } from "@/lib/auth/next-path";
+import { turnstileSiteKey } from "@/lib/turnstile";
 import { signInWithGoogle } from "./actions";
 import { EmailForm } from "./email-form";
 import { loginError } from "./errors";
@@ -17,6 +19,8 @@ export default async function LoginPage({ searchParams }: PageProps<"/login">) {
   const next = safeNextPath(first(params.next));
   const error = loginError(first(params.error));
   const deleted = first(params.deleted) === "1";
+  const siteKey = turnstileSiteKey();
+  const captcha = siteKey ? { siteKey, nonce: (await headers()).get("x-nonce") ?? undefined } : null;
 
   return (
     <main id="main" className="flex min-h-full flex-1 items-center justify-center bg-paper px-6 py-16 font-sans">
@@ -43,7 +47,7 @@ export default async function LoginPage({ searchParams }: PageProps<"/login">) {
           </p>
         )}
 
-        <EmailForm next={next} />
+        <EmailForm next={next} captcha={captcha} />
 
         <div className="flex items-center gap-3 text-sm text-ink-3" aria-hidden="true">
           <span className="h-px flex-1 bg-rule" />

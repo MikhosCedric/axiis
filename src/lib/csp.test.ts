@@ -28,6 +28,24 @@ describe("contentSecurityPolicy", () => {
   });
 });
 
+describe("contentSecurityPolicy with Turnstile", () => {
+  const origin = "https://challenges.cloudflare.com";
+  const on = contentSecurityPolicy("abc123", { development: false, turnstile: true });
+  const off = contentSecurityPolicy("abc123", { development: false });
+
+  it("leaves Cloudflare out entirely when Turnstile is off", () => {
+    expect(off).not.toContain(origin);
+    expect(directive(off, "frame-src")).toBeUndefined();
+  });
+
+  it("opens the challenge origin to scripts, frames and fetches, and keeps the nonce and strict-dynamic", () => {
+    expect(directive(on, "script-src")).toBe(`script-src 'self' 'nonce-abc123' 'strict-dynamic' ${origin}`);
+    expect(directive(on, "frame-src")).toBe(`frame-src 'self' ${origin}`);
+    expect(directive(on, "connect-src")).toBe(`connect-src 'self' ${origin}`);
+    expect(on).toContain("frame-ancestors 'none'");
+  });
+});
+
 describe("newNonce", () => {
   it("is base64 of 16 bytes and differs each call", () => {
     const a = newNonce();
