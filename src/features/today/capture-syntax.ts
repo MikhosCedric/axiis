@@ -302,7 +302,7 @@ export function capturedLine(result: Captured, where: "field" | "palette", clock
   const plan = landed && (time ? `${landed.day}, ${time.start}${time.end ? ` to ${time.end}` : ""}` : landed.day);
   const line = plan
     ? `${where === "palette" ? `${what}. ` : ""}Planned for ${plan}${tags ? `,${tags}` : ""}.`
-    : `${what}${tags}. It is waiting for a time${where === "palette" ? " on Today" : ", below"}.`;
+    : `${what}${tags}. It is in the Inbox${where === "palette" ? "" : ", below"}.`;
   return line + missedLine(result);
 }
 
@@ -323,7 +323,7 @@ export function firstCapturedLine(result: Captured, clock: Clock): { text: strin
   const { landed } = result;
   const title = result.title.charAt(0).toUpperCase() + result.title.slice(1);
   const tags = result.tags.length ? `, tagged ${tagList(result.tags)}` : "";
-  if (!landed) return { text: `${title} is waiting, with no day yet${tags}.${missedLine(result)}`, link: { href: "/inbox", label: "See the Inbox" } };
+  if (!landed) return { text: `${title} is in the Inbox, with no day yet${tags}.${missedLine(result)}`, link: { href: "/inbox", label: "See the Inbox" } };
   const day = landed.day === "today" || landed.day === "tomorrow" ? landed.day : `on ${landed.day}`;
   const at = landed.time && landedTime(landed.time, clock);
   const time = !at ? ", at any time" : at.end ? ` from ${at.start} to ${at.end}` : ` at ${at.start}`;

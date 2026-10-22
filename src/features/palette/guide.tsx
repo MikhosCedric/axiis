@@ -101,8 +101,8 @@ function ScoreTopic({ id }: { id: string }) {
   return (
     <Topic id={id} title="Moving beams">
       <p>
-        Drag a beam along its staff to move it, or its right end to change its length. Drag it down to Waiting to clear
-        its day, or a waiting one up onto an area to give it a time.
+        Drag a beam along its staff to move it, or its right end to change its length. Drag it down to the Inbox to clear
+        its day, or one from the Inbox up onto an area to give it a time.
       </p>
       <p>On a touch screen, press and hold first, then drag. With a beam focused, the arrow keys do the same; see below.</p>
     </Topic>
@@ -113,7 +113,7 @@ function WeekTopic({ id }: { id: string }) {
   return (
     <Topic id={id} title="Moving between days">
       <p>
-        Drag an item to another day, or down to Waiting to clear its day. With an item focused, the arrow keys do the
+        Drag an item to another day, or down to the Inbox to clear its day. With an item focused, the arrow keys do the
         same; see below.
       </p>
     </Topic>

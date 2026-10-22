@@ -29,7 +29,7 @@ test.describe("score", () => {
 
   test("dragging a waiting item onto an area gives it a time there", async ({ page }) => {
     const score = page.getByRole("region", { name: "Score" });
-    const chip = page.getByRole("region", { name: "Waiting" }).getByRole("button", { name: /^Book the dentist, waiting/ });
+    const chip = page.getByRole("region", { name: "Inbox", exact: true }).getByRole("button", { name: /^Book the dentist, in the Inbox/ });
     const home = await center(score.getByText("Home", { exact: true }));
 
     await dragTo(page, chip, { x: home.box.x + home.box.width + 160, y: home.y });
@@ -41,7 +41,7 @@ test.describe("score", () => {
 
   test("Escape during a drag puts the item back and opens nothing", async ({ page }) => {
     const score = page.getByRole("region", { name: "Score" });
-    const chip = page.getByRole("region", { name: "Waiting" }).getByRole("button", { name: /^Book the dentist, waiting/ });
+    const chip = page.getByRole("region", { name: "Inbox", exact: true }).getByRole("button", { name: /^Book the dentist, in the Inbox/ });
     const home = await center(score.getByText("Home", { exact: true }));
 
     await dragTo(page, chip, { x: home.box.x + home.box.width + 160, y: home.y }, { escape: true });
@@ -111,7 +111,7 @@ for (const view of ["", "&view=list"]) {
   test(`score${view}: an empty tray does not claim everything has a time while some are at any time`, async ({ page }) => {
     await page.goto(`/dev/score?tray=empty${view}`);
     await expect(page.getByText(/Take vitamins/).first()).toBeVisible();
-    await expect(page.getByText("Nothing is waiting. What you capture lands here first.")).toBeVisible();
+    await expect(page.getByText("The Inbox is empty. What you capture lands here first.")).toBeVisible();
     await expect(page.getByText(/Everything has a/)).toHaveCount(0);
   });
 }
@@ -509,7 +509,7 @@ test.describe("inbox", () => {
   });
 
   test("an item can be planned for a picked day, and leaves the inbox", async ({ page }) => {
-    const list = page.getByRole("region", { name: "Waiting" });
+    const list = page.getByRole("region", { name: "Items with no day" });
     const later = new Date(Date.now() + 10 * 86_400_000).toISOString().slice(0, 10);
 
     await list.getByRole("button", { name: "Plan for: Return the library books" }).click();
@@ -522,11 +522,11 @@ test.describe("inbox", () => {
       page.getByRole("status").filter({ hasText: /^Return the library books is planned for \w+day \d+ \w+\.$/ }),
     ).toBeVisible();
     await expect(list.getByRole("button", { name: "Return the library books" })).toHaveCount(0);
-    await expect(page.getByText("4 items waiting.")).toBeVisible();
+    await expect(page.getByText("4 to plan.")).toBeVisible();
   });
 
   test("Escape closes the day choices and returns to the button", async ({ page }) => {
-    const list = page.getByRole("region", { name: "Waiting" });
+    const list = page.getByRole("region", { name: "Items with no day" });
     const plan = list.getByRole("button", { name: "Plan for: Book the dentist" });
 
     await plan.click();
@@ -545,7 +545,7 @@ test.describe("inbox", () => {
     await page.keyboard.press("Space");
     await expect(page.getByRole("status").filter({ hasText: "Book the dentist is done." })).toBeVisible();
     await expect(done).toBeChecked();
-    await expect(page.getByText("4 items waiting.")).toBeVisible();
+    await expect(page.getByText("4 to plan.")).toBeVisible();
 
     await done.focus();
     await page.keyboard.press("Space");
@@ -572,13 +572,13 @@ test.describe("inbox", () => {
 
   test("an empty inbox says so", async ({ page }) => {
     await page.goto("/dev/inbox?empty");
-    await expect(page.getByText("Nothing is waiting.")).toBeVisible();
+    await expect(page.getByText("Nothing here now.")).toBeVisible();
     await expect(page.getByText("Anything you capture without a day lands here, safe until you plan it.")).toBeVisible();
 
     await page.getByLabel("Capture anything").fill("Fix the gate");
     await page.getByLabel("Capture anything").press("Enter");
     await expect(page.getByRole("button", { name: "Plan for: Fix the gate" })).toBeVisible();
-    await expect(page.getByText("1 item waiting.")).toBeVisible();
+    await expect(page.getByText("1 to plan.")).toBeVisible();
   });
 });
 

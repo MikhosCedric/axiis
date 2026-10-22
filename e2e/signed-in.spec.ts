@@ -160,7 +160,7 @@ signedIn.describe("signed in", () => {
     await expect(page.getByText(title).first()).toBeVisible();
 
     await page.goto("/inbox");
-    const list = page.getByRole("region", { name: "Waiting", exact: true });
+    const list = page.getByRole("region", { name: "Items with no day", exact: true });
     await list.getByRole("button", { name: `Plan for: ${title}` }).click();
     await list.getByRole("group", { name: `Plan ${title} for` }).getByRole("button", { name: "Tomorrow" }).click();
     await expect(page.getByRole("status").filter({ hasText: `${title} is planned for tomorrow.` })).toBeVisible();
@@ -255,8 +255,8 @@ signedIn.describe("signed in", () => {
 
   signedIn("Due groups dated items, and a tick marks one done", async ({ page }) => {
     await page.goto("/due");
-    const past = page.getByRole("region", { name: "Earlier" });
-    await expect(page.getByRole("heading", { level: 2, name: "Earlier" })).toHaveCSS("text-transform", "none");
+    const past = page.getByRole("region", { name: "Past due" });
+    await expect(page.getByRole("heading", { level: 2, name: "Past due" })).toHaveCSS("text-transform", "none");
     await expect(past.getByText("File the tax form")).toBeVisible();
     await expect(past.getByText("Was due Wednesday 15 January 2020")).toBeVisible();
     await expect(page.getByRole("region", { name: "Later" }).getByText("Renew the lease")).toBeVisible();

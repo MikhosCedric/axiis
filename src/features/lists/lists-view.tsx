@@ -4,6 +4,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useId, useOptimistic, useTransition, type ReactNode } from "react";
 import { AreaLabel } from "@/components/area-mark";
 import { ProgressLine } from "@/components/progress-line";
+import { place } from "@/components/shell/places";
 import { SELECTED_ITEM_PARAM } from "@/features/day/types";
 import { DetailAside } from "@/features/detail/detail-aside";
 import { CaptureField } from "@/features/today/capture-field";
@@ -56,7 +57,9 @@ export function ListsView({
     <div className={selectedParam ? "min-[1180px]:grid min-[1180px]:grid-cols-[minmax(0,1fr)_328px]" : ""}>
       <div className="min-w-0 px-4 pt-6 pb-14 rail:px-9 rail:pt-8">
         <h1 className="headline">Lists</h1>
-        <p className="page-summary">{listsSummary(data.rows)}</p>
+        <p className="page-summary">
+          {place("lists").hint}. {listsSummary(data.rows)}
+        </p>
 
         <div className="mt-6 mb-3">
           <CaptureField
