@@ -237,18 +237,21 @@ describe("weekSummary", () => {
   const now = at("2026-10-06T08:00:00Z");
   const entry = (item: Item) => ({ item, state: item.status === "done" ? ("done" as const) : ("planned" as const) });
 
-  it("counts open items across the week and the open waiting ones", () => {
+  it("says where the week stands: days left, open, due in it and the open Inbox", () => {
     const week = bucketWeek(
-      [onDay("2026-10-05"), onDay("2026-10-08"), onDay("2026-10-11", { status: "done", completedAt: now })],
+      [
+        onDay("2026-10-05"),
+        onDay("2026-10-08", { dueOn: d("2026-10-09") }),
+        onDay("2026-10-11", { status: "done", completedAt: now }),
+      ],
       days,
       "UTC",
       now,
     );
-    expect(weekSummary(week, [entry(makeItem()), entry(makeItem({ status: "done" }))])).toBe(
-      "2 open across the week. 1 waiting.",
-    );
-    expect(weekSummary(week, [])).toBe("2 open across the week.");
-    expect(weekSummary(bucketWeek([], days, "UTC", now), [])).toBe("Nothing open across the week.");
+    const inbox = [entry(makeItem({ dueOn: d("2026-10-10") })), entry(makeItem({ dueOn: d("2026-10-20") })), entry(makeItem({ status: "done" }))];
+    expect(weekSummary(week, inbox, d("2026-10-06"))).toBe("This week · 6 days left · 2 open · 2 due · 2 in the Inbox");
+    expect(weekSummary(week, [], d("2026-10-11"))).toBe("This week · Last day · 2 open · 1 due");
+    expect(weekSummary(bucketWeek([], days, "UTC", now), [], d("2026-10-14"))).toBe("Last week · Nothing open");
   });
 });
 

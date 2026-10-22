@@ -6,6 +6,7 @@ import { formatClock, formatMinutes, type Clock } from "@/lib/clock";
 import { WEEK_LENGTH, weekOf } from "@/features/week/model";
 import { addDays, dayRangeFor, FIRST_DATE, LAST_DATE, localMinutes, toLocalDate } from "@/lib/dates";
 import { RANGE_LIMIT } from "@/lib/items/repo";
+import { spanLine } from "@/features/day/glance";
 
 /** A calendar month, `YYYY-MM`. */
 export type YearMonth = string & { readonly __brand: "YearMonth" };
@@ -233,7 +234,11 @@ export function buildMonth(input: {
   }
 
   const cells = days.map((date) => {
-    const placed = byDay.get(date)!.sort((a, b) => a.rank[0] - b.rank[0] || a.rank[1] - b.rank[1] || a.rank[2] - b.rank[2]);
+    // Done marks go last, so a day's three shown marks are what is still to do.
+    const done = (p: Placed) => (p.mark.state === "done" ? 1 : 0);
+    const placed = byDay
+      .get(date)!
+      .sort((a, b) => done(a) - done(b) || a.rank[0] - b.rank[0] || a.rank[1] - b.rank[1] || a.rank[2] - b.rank[2]);
     return { date, marks: placed.slice(0, MARKS_PER_DAY).map((p) => p.mark), more: Math.max(0, placed.length - MARKS_PER_DAY) };
   });
   return { cells, open, due };
@@ -246,9 +251,10 @@ export function selectedMarkKey(cells: readonly MonthCell[], selected: string | 
   return selected;
 }
 
-export function monthSummary(open: number, due: number): string {
-  const plan = open === 0 ? "Nothing open this month" : `${open} open this month`;
-  return due ? `${plan}. ${due} due.` : `${plan}.`;
+/** Where the month stands: "This month · 9 days left · 28 open · 4 due", or "Next month · 3 open". */
+export function monthSummary(month: YearMonth, today: LocalDate, open: number, due: number): string {
+  const first = firstOf(month);
+  return spanLine({ first, last: addDays(firstOf(addMonths(month, 1)), -1), noun: "month", open, due }, today);
 }
 
 /** How many items a day holds, sent and counted. */

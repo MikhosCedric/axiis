@@ -26,7 +26,7 @@ describe("paletteSections", () => {
 
   it("says in a few words what each page and the Guide hold", () => {
     const go = paletteSections("", today, "24", idle)[0].commands;
-    expect(go.find((c) => c.label === "Inbox")).toMatchObject({ hint: "Waiting for a day" });
+    expect(go.find((c) => c.label === "Inbox")).toMatchObject({ hint: "Captured, with no day yet" });
     expect(go.find((c) => c.label === "Guide")).toMatchObject({ hint: "Help and every shortcut" });
     expect(go.every((c) => (c.kind === "go" || c.kind === "help") && c.hint)).toBe(true);
   });

@@ -179,7 +179,7 @@ export function planOptions(view: Pick<DetailView, "when" | "day" | "repeat">, s
 }
 
 export function describeWhen(schedule: Schedule, timeZone: string, clock: Clock): string {
-  if (schedule.kind === "unscheduled") return "Waiting for a time";
+  if (schedule.kind === "unscheduled") return "No day yet, in the Inbox";
   if (schedule.kind === "day") return formatDayHeading(schedule.on);
   const startDay = toLocalDate(schedule.start, timeZone);
   const endDay = toLocalDate(schedule.end, timeZone);

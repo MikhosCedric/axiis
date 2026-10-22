@@ -82,7 +82,7 @@ for (const viewport of WIDTHS) {
         await expect(page.getByText(NOTE)).toBeVisible();
         await expect(page.getByText(LEAD)).toBeVisible();
         await expect(page.getByRole("heading", { name: "Any time" })).toHaveCount(0);
-        await expect(page.getByRole("heading", { name: "Waiting" })).toHaveCount(0);
+        await expect(page.getByRole("heading", { name: "Inbox", exact: true })).toHaveCount(0);
         await expect(page.getByText(/^\d+ open$/)).toHaveCount(0);
         await expect(page.locator("#score-keys")).toHaveCount(0);
         await expect(page.getByRole("button", { name: "Guide" })).toBeVisible();
@@ -136,7 +136,7 @@ test.describe("first-day capture", () => {
     await expect(field(page)).toHaveAttribute("placeholder", "Capture anything, then place it later");
 
     await capture(page, "buy milk");
-    await expect(status(page)).toHaveText("Captured. It is waiting for a time, below.");
+    await expect(status(page)).toHaveText("Captured. It is in the Inbox, below.");
   });
 
   test("an account with items shows no examples", async ({ page }) => {
@@ -167,7 +167,7 @@ signedIn.describe("first day on the real route", () => {
     await expect(page.getByRole("heading", { name: "Any time" })).toHaveCount(0);
 
     await capture(page, "buy milk");
-    await expect(status(page)).toHaveText("Buy milk is waiting, with no day yet. See the Inbox.");
+    await expect(status(page)).toHaveText("Buy milk is in the Inbox, with no day yet. See the Inbox.");
     await expect(examples(page)).toHaveCount(0);
     await status(page).getByRole("link", { name: "See the Inbox" }).click();
     await expect(page).toHaveURL("/inbox");
@@ -182,12 +182,12 @@ signedIn.describe("first day on the real route", () => {
     await page.goto("/today");
     await capture(page, "buy milk");
     await expect(examples(page)).toHaveCount(0);
-    await page.getByRole("button", { name: /^buy milk, waiting/ }).press("Enter");
+    await page.getByRole("button", { name: /^buy milk, in the Inbox/ }).press("Enter");
     const panel = page.getByRole("complementary", { name: "Details" });
     await expect(panel).toBeVisible();
     await panel.getByRole("button", { name: "Delete this task" }).click();
     await panel.getByRole("button", { name: "Yes" }).click();
-    await expect(page.getByRole("button", { name: /^buy milk, waiting/ })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: /^buy milk, in the Inbox/ })).toHaveCount(0);
     await page.reload();
     await expect(page.locator("[data-staff-label]").first()).toBeVisible();
     await expect(examples(page)).toHaveCount(0);

@@ -9,6 +9,7 @@ import {
   ViewTransition,
   type KeyboardEvent,
   type PointerEvent as ReactPointerEvent,
+  type ReactNode,
 } from "react";
 import { AreaMark } from "@/components/area-mark";
 import type { AreaColor } from "@/domain/area-color";
@@ -19,9 +20,11 @@ import { RowTags } from "@/features/tags/row-tags";
 import { formatClock, formatHour } from "@/lib/clock";
 import { useClock } from "@/components/shell/clock-context";
 import { Glyph } from "@/features/today/glyph";
+import { DueMark } from "@/features/today/due-mark";
+import { dueWords } from "@/features/today/due";
 import { LineLegend } from "@/features/today/line-legend";
 import { SameInInbox } from "@/features/inbox/same-in-inbox";
-import { EMPTY_TRAY, TRAY_FULL, WAITING,type BeamState, type TodayEntry, type TodayView } from "@/features/today/model";
+import { EMPTY_TRAY, TRAY_FULL, INBOX,type BeamState, type TodayEntry, type TodayView } from "@/features/today/model";
 import { instantAt, localMinutes } from "@/lib/dates";
 import type { ChildCount } from "@/lib/items/repo";
 import { keyPlacement, type DropContext, type Placement } from "./drop";
@@ -50,6 +53,9 @@ export type ScoreHandlers = {
 
 export const STATE_WORD: Record<BeamState, string> = { planned: "planned", live: "happening now", done: "done" };
 
+/** Where beams are drawn, and the real today, which a due date is read from even on another day. */
+type BeamContext = DropContext & { today: LocalDate };
+
 const KEYS_ID = "score-keys";
 
 export function ScoreView({
@@ -57,6 +63,7 @@ export function ScoreView({
   waitingFull,
   areas,
   date,
+  today,
   timeZone,
   nowMinutes,
   childCounts,
@@ -74,6 +81,8 @@ export function ScoreView({
   waitingFull: boolean;
   areas: Area[];
   date: LocalDate;
+  /** The real today, for due marks. */
+  today: LocalDate;
   timeZone: string;
   /** Local minutes of now when the day shown is today, else null. */
   nowMinutes: number | null;
@@ -129,7 +138,7 @@ export function ScoreView({
   const { axis, staves } = score;
   const examples = useMemo(() => (firstDay ? exampleBeams(areas) : []), [firstDay, areas]);
   const empty = staves.every((s) => s.beams.length === 0);
-  const ctx: DropContext = { date, timeZone, axis, now: nowMinutes };
+  const ctx: BeamContext = { date, timeZone, axis, now: nowMinutes, today };
   const start = useScoreDrag(
     { scroller, layer, tray, anyTime: strip, fly },
     {
@@ -193,6 +202,40 @@ export function ScoreView({
     }
   }
 
+  const chip = (entry: TodayEntry, where: string) => (
+    <li key={entry.item.id} className="min-w-0">
+      <Chip
+        entry={entry}
+        count={childCounts[entry.item.id]}
+        tags={tags[entry.item.id]}
+        today={today}
+        selected={selectedId === entry.item.id}
+        justDone={justDone === entry.item.id}
+        lifted={preview?.item.id === entry.item.id && preview.kind !== "resize"}
+        where={entry.item.areaId ? `${where}, ${areaName(entry.item)}` : where}
+        color={colorOf(entry.item)}
+        onPointerDown={(e) => start(e, "place", entry.item)}
+        onKeyDown={(e) => keyDown(e, entry.item)}
+      />
+    </li>
+  );
+
+  /** Open chips, then the done ones folded into one quiet "Done (n)". A chip just ticked stays put until it settles. */
+  function chips(entries: TodayEntry[], where: string) {
+    const done = entries.filter((e) => e.state === "done" && e.item.id !== justDone && e.item.id !== selectedId);
+    const open = entries.filter((e) => !done.includes(e));
+    return (
+      <>
+        {open.map((e) => chip(e, where))}
+        {done.length > 0 && (
+          <li className="min-w-0">
+            <DoneFold count={done.length}>{done.map((e) => chip(e, where))}</DoneFold>
+          </li>
+        )}
+      </>
+    );
+  }
+
   // Over a staff the ghost shows where the item will land, so the floating copy would only hide it.
   const showFly = preview !== null && preview.kind !== "resize" && target?.kind !== "staff";
 
@@ -211,23 +254,8 @@ export function ScoreView({
             Any time
           </h3>
           {score.anyTime.length ? (
-            <ul className="flex min-w-0 flex-wrap gap-2.5 p-2.5" aria-label="Any time today">
-              {score.anyTime.map((entry) => (
-                <li key={entry.item.id} className="min-w-0">
-                  <Chip
-                    entry={entry}
-                    count={childCounts[entry.item.id]}
-                    tags={tags[entry.item.id]}
-                    selected={selectedId === entry.item.id}
-                    justDone={justDone === entry.item.id}
-                    lifted={preview?.item.id === entry.item.id && preview.kind !== "resize"}
-                    where={entry.item.areaId ? `any time, ${areaName(entry.item)}` : "any time"}
-                    color={colorOf(entry.item)}
-                    onPointerDown={(e) => start(e, "place", entry.item)}
-                    onKeyDown={(e) => keyDown(e, entry.item)}
-                  />
-                </li>
-              ))}
+            <ul className="flex min-w-0 flex-wrap items-center gap-2.5 p-2.5" aria-label="Any time today">
+              {chips(score.anyTime, "any time")}
             </ul>
           ) : (
             <p className="px-3 py-3 text-[13px] text-ink-3">For things that belong to the day but not to an hour.</p>
@@ -343,7 +371,7 @@ export function ScoreView({
           <p id={KEYS_ID} className="sr-only">
             Drag a beam to move it, or its right end to change its length. With a beam focused, Left and Right move it a
             quarter hour, Shift with Left and Right changes its length, Up and Down change its area, Space marks it done,
-            Enter opens it and Backspace sends it back to waiting. On a waiting item, Up or Down gives it a time.
+            Enter opens it and Backspace sends it back to the Inbox. On an item in the Inbox, Up or Down gives it a time.
           </p>
           <LineLegend now />
 
@@ -353,7 +381,7 @@ export function ScoreView({
             className={`mt-7 pt-2 ${target?.kind === "tray" ? styles.dropZone : ""}`}
           >
             <h3 id="tray-h" className="font-serif text-lg leading-tight font-medium">
-              {WAITING}
+              {INBOX}
             </h3>
             <p className="mt-1 mb-3.5 text-[13px] text-ink-3">
               No day yet.{" "}
@@ -364,24 +392,7 @@ export function ScoreView({
               Drag a beam back here to clear its day. <SameInInbox />
             </p>
             {score.waiting.length ? (
-              <ul className="flex flex-wrap gap-2.5">
-                {score.waiting.map((entry) => (
-                  <li key={entry.item.id} className="min-w-0">
-                    <Chip
-                      entry={entry}
-                      count={childCounts[entry.item.id]}
-                      tags={tags[entry.item.id]}
-                      selected={selectedId === entry.item.id}
-                      justDone={justDone === entry.item.id}
-                      lifted={preview?.item.id === entry.item.id && preview.kind !== "resize"}
-                      where={entry.item.areaId ? `waiting, ${areaName(entry.item)}` : "waiting"}
-                      color={colorOf(entry.item)}
-                      onPointerDown={(e) => start(e, "place", entry.item)}
-                      onKeyDown={(e) => keyDown(e, entry.item)}
-                    />
-                  </li>
-                ))}
-              </ul>
+              <ul className="flex flex-wrap items-center gap-2.5">{chips(score.waiting, "in the Inbox")}</ul>
             ) : (
               <p className="text-[13px] text-ink-3">{EMPTY_TRAY}</p>
             )}
@@ -420,7 +431,7 @@ function BeamView({
 }: {
   beam: Beam;
   staff: Staff;
-  ctx: DropContext;
+  ctx: BeamContext;
   preview: DragPreview | null;
   count: ChildCount | undefined;
   tags: readonly string[] | undefined;
@@ -437,6 +448,9 @@ function BeamView({
   const startClock = formatClock(minutesToDate(ctx, span.start), ctx.timeZone, clock);
   const endClock = formatClock(minutesToDate(ctx, span.end), ctx.timeZone, clock);
   const p = progress(count);
+  // Its time is over and it was never ticked: said in words, quietly, so the day reads left of the playhead.
+  const over = state === "planned" && ctx.now !== null && span.end <= ctx.now;
+  const event = item.type === "event";
   const cls = [
     styles.beam,
     styles[state],
@@ -451,7 +465,7 @@ function BeamView({
       role="button"
       tabIndex={0}
       aria-pressed={selected}
-      aria-label={`${item.title}, ${startClock} to ${endClock}, ${staff.name}, ${STATE_WORD[state]}${repeats(item) ? ", repeats" : ""}${p ? `, ${p.spoken}` : ""}${spokenTags(tags)}`}
+      aria-label={`${item.title}, ${event ? "event, " : ""}${startClock} to ${endClock}, ${staff.name}, ${over ? "time passed" : STATE_WORD[state]}${item.dueOn && state !== "done" ? `, ${dueWords(item.dueOn, ctx.today).words}` : ""}${repeats(item) ? ", repeats" : ""}${p ? `, ${p.spoken}` : ""}${spokenTags(tags)}`}
       aria-describedby={KEYS_ID}
       className={cls}
       style={{
@@ -468,8 +482,10 @@ function BeamView({
         {repeats(item) && <RepeatMark className={styles.repeat} />}
         {p && <span className={styles.count}>{p.text}</span>}
         <time className={styles.clock} dateTime={minutesToDate(ctx, span.start).toISOString()}>
-          {resizing ? `${startClock} to ${endClock}` : startClock}
+          {resizing ? `${startClock} to ${endClock}` : event ? `${startClock}–${endClock}` : startClock}
         </time>
+        {over && <span className={styles.clock}>passed</span>}
+        {item.dueOn && state !== "done" && <DueMark dueOn={item.dueOn} today={ctx.today} className={styles.clock} />}
       </span>
       <ViewTransition name={`item-${item.id}`} share="morph" default="none">
         <Glyph type={item.type} state={state} justDone={justDone} className={styles.glyph} />
@@ -525,10 +541,34 @@ function spokenTags(tags: readonly string[] | undefined) {
   return spoken ? `, ${spoken}` : "";
 }
 
+/** Done items folded away under one quiet line that opens in place. */
+export function DoneFold({
+  count,
+  children,
+  listClassName = "mt-2 flex flex-wrap gap-2.5",
+}: {
+  count: number;
+  children: ReactNode;
+  listClassName?: string;
+}) {
+  return (
+    <details className="group">
+      <summary className="inline-flex min-h-9 cursor-pointer list-none items-center gap-1.5 rounded-md px-2 text-[13px] font-medium text-ink-3 hover:bg-hover hover:text-ink-2 pointer-coarse:min-h-11 [&::-webkit-details-marker]:hidden">
+        <svg viewBox="0 0 12 12" width={10} height={10} aria-hidden="true" className="transition-transform group-open:rotate-90 motion-reduce:transition-none">
+          <path d="M4 2l4 4-4 4" fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+        Done ({count})
+      </summary>
+      <ul className={listClassName}>{children}</ul>
+    </details>
+  );
+}
+
 function Chip({
   entry,
   count,
   tags,
+  today,
   selected,
   justDone,
   lifted,
@@ -540,6 +580,7 @@ function Chip({
   entry: TodayEntry;
   count: ChildCount | undefined;
   tags: readonly string[] | undefined;
+  today: LocalDate;
   selected: boolean;
   justDone: boolean;
   lifted: boolean;
@@ -550,13 +591,14 @@ function Chip({
 }) {
   const { item, state } = entry;
   const p = progress(count);
+  const due = item.dueOn && state !== "done" ? item.dueOn : null;
   return (
     <div
       data-item={item.id}
       role="button"
       tabIndex={0}
       aria-pressed={selected}
-      aria-label={`${item.title}, ${where}, ${STATE_WORD[state]}${repeats(item) ? ", repeats" : ""}${p ? `, ${p.spoken}` : ""}${spokenTags(tags)}`}
+      aria-label={`${item.title}, ${where}, ${STATE_WORD[state]}${due ? `, ${dueWords(due, today).words}` : ""}${repeats(item) ? ", repeats" : ""}${p ? `, ${p.spoken}` : ""}${spokenTags(tags)}`}
       aria-describedby={KEYS_ID}
       className={`${styles.chip} ${selected ? styles.selected : ""} ${state === "done" ? styles.done : ""} ${lifted ? styles.lifted : ""}`}
       onPointerDown={onPointerDown}
@@ -569,6 +611,7 @@ function Chip({
       <span className="min-w-0 truncate">{item.title}</span>
       {repeats(item) && <RepeatMark className="text-ink-3" />}
       {p && <span className={styles.count}>{p.text}</span>}
+      {due && <DueMark dueOn={due} today={today} className="text-xs text-ink-3" />}
       <RowTags tags={tags} max={2} className="whitespace-nowrap" />
     </div>
   );

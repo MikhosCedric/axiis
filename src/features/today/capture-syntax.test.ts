@@ -165,21 +165,21 @@ const landed = (day: string, start?: string, end?: string): Landed => ({
 
 describe("capturedLine", () => {
   it("says where the item went, in the field and in the palette", () => {
-    expect(capturedLine(base, "field", "24")).toBe("Captured. It is waiting for a time, below.");
-    expect(capturedLine(base, "palette", "24")).toBe("Captured “dentist”. It is waiting for a time on Today.");
+    expect(capturedLine(base, "field", "24")).toBe("Captured. It is in the Inbox, below.");
+    expect(capturedLine(base, "palette", "24")).toBe("Captured “dentist”. It is in the Inbox.");
     const planned = { ...base, landed: landed("tomorrow", "09:00"), tags: tags("health") };
     expect(capturedLine(planned, "field", "24")).toBe("Planned for tomorrow, 09:00, with #health.");
     expect(capturedLine(planned, "palette", "24")).toBe("Captured “dentist”. Planned for tomorrow, 09:00, with #health.");
     expect(capturedLine({ ...base, landed: landed("today", "22:00", "22:45") }, "field", "24")).toBe("Planned for today, 22:00 to 22:45.");
     expect(capturedLine({ ...base, landed: landed("today") }, "field", "24")).toBe("Planned for today.");
     expect(capturedLine({ ...base, tags: tags("a", "b", "c") }, "field", "24")).toBe(
-      "Captured with #a, #b and #c. It is waiting for a time, below.",
+      "Captured with #a, #b and #c. It is in the Inbox, below.",
     );
   });
 
   it("names tags that did not save, and speaks of a checklist's lines", () => {
     expect(capturedLine({ ...base, missed: tags("a", "b") }, "field", "24")).toBe(
-      "Captured. It is waiting for a time, below. The tags #a and #b did not save.",
+      "Captured. It is in the Inbox, below. The tags #a and #b did not save.",
     );
     expect(capturedLine({ ...base, missed: tags("a") }, "field", "24")).toMatch(/The tag #a did not save\.$/);
     expect(capturedLine({ ...base, type: "checklist" }, "field", "24")).toBe("Captured. It is open, ready for its lines.");
@@ -220,7 +220,7 @@ describe("firstCapturedLine", () => {
 
   it("sends an item with no day to the Inbox, and names tags that did not save", () => {
     expect(firstCapturedLine({ ...base, title: "buy milk", missed: tags("shop") }, "24")).toEqual({
-      text: "Buy milk is waiting, with no day yet. The tag #shop did not save.",
+      text: "Buy milk is in the Inbox, with no day yet. The tag #shop did not save.",
       link: { href: "/inbox", label: "See the Inbox" },
     });
   });

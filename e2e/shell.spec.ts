@@ -1,15 +1,16 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 
-test("the Score and Week trays are the Inbox's waiting pile and say so", async ({ page }) => {
+test("the Score and Week trays are the Inbox and link to it", async ({ page }) => {
   for (const path of ["/dev/score", "/dev/week"]) {
     await page.goto(path);
-    const tray = page.getByRole("region", { name: "Waiting", exact: true });
+    const tray = page.getByRole("region", { name: "Inbox", exact: true });
     await expect(tray).toContainText("No day yet.");
     await expect(tray.getByRole("link", { name: "Inbox" })).toHaveAttribute("href", "/inbox");
   }
   await page.goto("/dev/inbox");
-  await expect(page.getByRole("region", { name: "Waiting", exact: true })).toBeVisible();
+  await expect(page.getByRole("region", { name: "Items with no day", exact: true })).toBeVisible();
+  await expect(page.getByText("Captured, with no day yet. Plan each one when you are ready.")).toBeVisible();
 });
 
 test("the week's date field shows the focus ring", async ({ page }) => {
@@ -38,7 +39,7 @@ test.describe("the rail", () => {
     await expect(rail.getByRole("list", { name: "Plan" }).getByRole("link")).toHaveText(["Today", "Week", "Month", "Due"]);
     await expect(rail.getByRole("list", { name: "Capture" }).getByRole("link")).toHaveText(["Inbox"]);
     await expect(rail.getByRole("list", { name: "Library" }).getByRole("link")).toHaveText(["Lists", "Notes", "Tags"]);
-    await expect(rail.getByRole("link", { name: "Inbox" })).toHaveAttribute("title", "Waiting for a day");
+    await expect(rail.getByRole("link", { name: "Inbox" })).toHaveAttribute("title", "Captured, with no day yet");
     await expect(rail.getByRole("link", { name: "Month" })).toHaveAttribute("title", "The whole month at a glance");
     await expect(rail.getByRole("region", { name: "Open today, by area" }).getByRole("link")).toHaveCount(0);
     await expect(rail.getByRole("link", { name: "Search" })).toHaveCount(0);
@@ -145,7 +146,7 @@ test.describe("shell on a phone", () => {
     await expect(sheet.getByRole("list", { name: "Plan" }).getByRole("link")).toHaveText([/^Month/]);
     await expect(sheet.getByRole("link", { name: "Month", exact: true })).toHaveAccessibleDescription("The whole month at a glance");
     await expect(sheet.getByRole("list", { name: "Library" }).getByRole("link")).toHaveText([/^Lists/, /^Notes/, /^Tags/]);
-    await expect(sheet.getByRole("link", { name: "Lists", exact: true })).toHaveAccessibleDescription("Checklists");
+    await expect(sheet.getByRole("link", { name: "Lists", exact: true })).toHaveAccessibleDescription("Checklists and how far along each is");
     await expect(sheet.getByRole("list", { name: "Account" }).getByRole("listitem")).toHaveText([/Theme/, /^Settings/, /Sign out/]);
     for (const control of [
       sheet.getByRole("link", { name: "Search", exact: true }),

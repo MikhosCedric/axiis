@@ -1,6 +1,11 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { createContext, useContext, useEffect, useId, type ReactNode } from "react";
+import { TOUR_COOKIE } from "@/components/shell/cookies";
+import type { ItemType } from "@/domain/item";
+import { Glyph } from "@/features/today/glyph";
+import type { BeamState } from "@/features/today/model";
 import styles from "./palette.module.css";
 import { chordCaps, chordSpoken, HELP_KEY, SHORTCUTS, type Chord } from "./shortcuts";
 import { useIsMac } from "./use-is-mac";
@@ -101,8 +106,8 @@ function ScoreTopic({ id }: { id: string }) {
   return (
     <Topic id={id} title="Moving beams">
       <p>
-        Drag a beam along its staff to move it, or its right end to change its length. Drag it down to Waiting to clear
-        its day, or a waiting one up onto an area to give it a time.
+        Drag a beam along its staff to move it, or its right end to change its length. Drag it down to the Inbox to clear
+        its day, or one from the Inbox up onto an area to give it a time.
       </p>
       <p>On a touch screen, press and hold first, then drag. With a beam focused, the arrow keys do the same; see below.</p>
     </Topic>
@@ -113,7 +118,7 @@ function WeekTopic({ id }: { id: string }) {
   return (
     <Topic id={id} title="Moving between days">
       <p>
-        Drag an item to another day, or down to Waiting to clear its day. With an item focused, the arrow keys do the
+        Drag an item to another day, or down to the Inbox to clear its day. With an item focused, the arrow keys do the
         same; see below.
       </p>
     </Topic>
@@ -127,6 +132,79 @@ function MonthTopic({ id }: { id: string }) {
         Click a day, or press Enter on it, to open it. The arrow keys move between days, Page Up and Page Down change
         the month. Drag an item to another day to move it there. What you capture lands on the day in focus unless you
         name another. Jump to month goes to any month, as does typing one in the palette, such as “nov 2026”.
+      </p>
+    </Topic>
+  );
+}
+
+const KINDS: { type: ItemType; term: string; says: string }[] = [
+  { type: "task", term: "Task", says: "Something to do. A round head; it can move." },
+  { type: "event", term: "Event", says: "Something at a fixed time. Ticks at both ends; it says its whole time." },
+  { type: "checklist", term: "Checklist", says: "A list of small lines. A square head." },
+];
+
+const STATES: { state: BeamState; term: string; says: string }[] = [
+  { state: "planned", term: "Planned", says: "Dashed: still to come, or with no time yet." },
+  { state: "live", term: "Happening", says: "Solid green: its time is now." },
+  { state: "done", term: "Done", says: "Hollow. Done items fold into one Done line." },
+];
+
+const WORDS: [string, string][] = [
+  ["Inbox", "What you captured with no day yet. Nothing there is late."],
+  ["Any time", "On a day, at no particular hour."],
+  ["Passed", "Its time is over and it was never ticked."],
+  ["Due", "A deadline, apart from when you planned it. The flag fills once the day has come."],
+  ["Left over", "Planned for an earlier day and still open, shown below Today's plan."],
+];
+
+/** What every shape, line and word means, on every screen, and the way back into the tour. */
+function KeyTopic({ id, onClose }: { id: string; onClose: () => void }) {
+  const router = useRouter();
+  function replay() {
+    document.cookie = `${TOUR_COOKIE}=replay; path=/; max-age=31536000; samesite=lax`;
+    onClose();
+    router.push("/today");
+    router.refresh();
+  }
+  const row = "flex items-start gap-3 text-[13px]";
+  return (
+    <Topic id={id} title="What you see">
+      <ul aria-label="Kinds of item" className="space-y-1.5 pt-1">
+        {KINDS.map((k) => (
+          <li key={k.type} className={row}>
+            <Glyph type={k.type} state="planned" className="mt-0.5 !w-9" />
+            <span>
+              <span className="font-medium text-ink">{k.term}.</span> {k.says}
+            </span>
+          </li>
+        ))}
+      </ul>
+      <ul aria-label="Line forms" className="space-y-1.5 pt-2">
+        {STATES.map((s) => (
+          <li key={s.state} className={row}>
+            <Glyph type="task" state={s.state} className="mt-0.5 !w-9" />
+            <span>
+              <span className="font-medium text-ink">{s.term}.</span> {s.says}
+            </span>
+          </li>
+        ))}
+      </ul>
+      <dl className="grid gap-x-4 gap-y-1.5 pt-2 min-[480px]:grid-cols-[7.5rem_minmax(0,1fr)]">
+        {WORDS.map(([term, says]) => (
+          <div key={term} className="contents">
+            <dt className="text-[13px] font-medium text-ink">{term}</dt>
+            <dd className="mb-1.5 text-[13px] min-[480px]:mb-0">{says}</dd>
+          </div>
+        ))}
+      </dl>
+      <p className="pt-1">
+        <button
+          type="button"
+          onClick={replay}
+          className="rounded-lg border border-rule px-3 py-1.5 font-medium text-ink-2 hover:bg-hover hover:text-ink active:bg-press pointer-coarse:min-h-11"
+        >
+          Take the tour again
+        </button>
       </p>
     </Topic>
   );
@@ -165,6 +243,7 @@ export function GuideBody({ topics, onClose }: { topics: readonly GuideTopic[]; 
           const Body = TOPICS[t];
           return <Body key={t} id={`${id}-${t}`} />;
         })}
+        <KeyTopic id={`${id}-key`} onClose={onClose} />
         <section aria-labelledby={`${id}-keys`} className="pt-5 first:pt-4">
           <h3 id={`${id}-keys`} className="font-serif text-[17px] leading-tight font-medium">
             Keyboard shortcuts
