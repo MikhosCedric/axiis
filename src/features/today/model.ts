@@ -64,21 +64,3 @@ export function buildToday(
       .map(entry),
   };
 }
-
-export function summaryLine({ scheduled, waiting }: TodayView, isToday = true): string {
-  const open = scheduled.filter((e) => e.state !== "done").length;
-  const done = scheduled.length - open;
-  const waitingOpen = waiting.filter((e) => e.state !== "done").length;
-  if (scheduled.length === 0 && waitingOpen === 0) return "Nothing planned yet.";
-  const plan =
-    scheduled.length === 0
-      ? isToday
-        ? "Nothing has a time today"
-        : "Nothing has a time on this day"
-      : open === 0
-        ? isToday
-          ? "Everything planned for today is done"
-          : "Everything planned for this day is done"
-        : `${open} open${done ? `, ${done} done` : ""}${isToday ? " today" : ""}`;
-  return waitingOpen ? `${plan}. ${waitingOpen} waiting.` : `${plan}.`;
-}

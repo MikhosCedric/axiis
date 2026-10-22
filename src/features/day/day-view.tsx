@@ -20,8 +20,11 @@ import type { ActionResult } from "@/features/today/commands";
 import { formatDayHeading } from "@/features/today/format";
 import { formatClock } from "@/lib/clock";
 import { useClock } from "@/components/shell/clock-context";
-import { buildToday, stateOf, summaryLine } from "@/features/today/model";
-import { dayRangeFor, instantAt, localMinutes } from "@/lib/dates";
+import { buildToday, stateOf } from "@/features/today/model";
+import { dayRangeFor, instantAt, localMinutes, toLocalDate } from "@/lib/dates";
+import { FOCUS_COOKIE } from "@/components/shell/cookies";
+import { dayGlance, foldedWords } from "./glance";
+import { GlanceLine, NextUp } from "./next-up";
 import { seriesTimeOffer, type SeriesTimeOffer } from "./series-time";
 import { DAY_VIEW_PARAM, SELECTED_ITEM_PARAM, type DayData, type DayViewMode } from "./types";
 
@@ -86,6 +89,7 @@ export function DayView({
   nav,
   detail,
   leftover,
+  focus: focusSaved = false,
   actions = serverActions,
 }: {
   data: DayData;
@@ -94,6 +98,8 @@ export function DayView({
   detail?: ReactNode;
   /** What is still open from earlier days. Today's page passes it; no other day does. */
   leftover?: LeftoverData | null;
+  /** Focus, as this device last left it: today shows only Next up and folds the rest away. */
+  focus?: boolean;
   actions?: DayActions;
 }) {
   const { date, timeZone, areas, isToday, childCounts } = data;
@@ -128,6 +134,22 @@ export function DayView({
   );
   const nowMinutes = isToday ? localMinutes(now, date, timeZone) : null;
   const firstDay = data.firstDay && items.length === 0;
+  const glance = useMemo(() => dayGlance(view, date, toLocalDate(now, timeZone), now), [view, date, now, timeZone]);
+  const [focusOn, setFocus] = useState(focusSaved);
+  const focus = focusOn && isToday && !firstDay;
+
+  // A ticked item keeps its place for a moment, so the tick is seen, then folds in with the rest that are done.
+  useEffect(() => {
+    if (!justDone) return;
+    const id = window.setTimeout(() => setJustDone(null), 4000);
+    return () => window.clearTimeout(id);
+  }, [justDone]);
+
+  function toggleFocus() {
+    const next = !focusOn;
+    setFocus(next);
+    document.cookie = `${FOCUS_COOKIE}=${next ? "on" : "off"}; path=/; max-age=31536000; samesite=lax`;
+  }
   const areaName = (id: string | null | undefined) => areas.find((a) => a.id === id)?.name ?? "No area";
 
   function replaceParam(key: string, value: string | null) {
@@ -207,6 +229,22 @@ export function DayView({
     onToggleDone: toggleDone,
   };
 
+  /** The day itself, then what is left over from earlier days: today's plan comes before yesterday's. */
+  const rest = () => (
+    <>
+      {shownMode === "score" ? (
+        <ScoreView {...shared} date={date} nowMinutes={nowMinutes} firstDay={firstDay} onPlace={place} />
+      ) : (
+        <ListView {...shared} />
+      )}
+      {isToday && leftover && (
+        <div className="mt-7">
+          <LeftoverStrip data={leftover} onSelect={select} onStatus={(text, error) => setStatus({ text, error })} />
+        </div>
+      )}
+    </>
+  );
+
   return (
     <div className={selectedParam ? "min-[1180px]:grid min-[1180px]:grid-cols-[minmax(0,1fr)_328px]" : ""}>
       <div className="@container/page min-w-0 px-4 pt-6 pb-14 rail:px-9 rail:pt-8">
@@ -217,7 +255,7 @@ export function DayView({
             <h1 className="headline">
               <DayHeading date={date} />
             </h1>
-            <p className="page-summary">{summaryLine(view, isToday)}</p>
+            <GlanceLine glance={glance} timeZone={timeZone} />
           </div>
         </header>
 
@@ -256,18 +294,45 @@ export function DayView({
               </button>
             ))}
           </div>
+          {isToday && !firstDay && (
+            <button
+              type="button"
+              aria-pressed={focusOn}
+              onClick={toggleFocus}
+              title="Show only what is next and what is due today"
+              className={`rounded-lg border border-rule px-3.5 py-2 font-medium pointer-coarse:py-3 ${focusOn ? "border-ink bg-ink text-paper" : "text-ink-2 hover:bg-hover active:bg-press"}`}
+            >
+              Focus
+            </button>
+          )}
           <GuideButton topics={DAY_GUIDE} className="ml-auto" />
         </div>
 
-
-        {isToday && leftover && (
-          <LeftoverStrip data={leftover} onSelect={select} onStatus={(text, error) => setStatus({ text, error })} />
+        {isToday && !firstDay && (
+          <NextUp
+            entries={focus ? glance.focus : glance.next}
+            date={date}
+            timeZone={timeZone}
+            areas={areas}
+            justDone={justDone}
+            onSelect={select}
+            onToggleDone={toggleDone}
+          />
         )}
 
-        {shownMode === "score" ? (
-          <ScoreView {...shared} date={date} nowMinutes={nowMinutes} firstDay={firstDay} onPlace={place} />
+        {focus ? (
+          <details className="group border-y border-rule">
+            <summary className="flex min-h-11 cursor-pointer list-none items-center gap-2 py-2 font-medium text-ink-2 hover:text-ink [&::-webkit-details-marker]:hidden">
+              <svg viewBox="0 0 12 12" width={12} height={12} aria-hidden="true" className="transition-transform group-open:rotate-90 motion-reduce:transition-none">
+                <path d="M4 2l4 4-4 4" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              The whole day
+              <span className="font-normal text-ink-3">{foldedWords(glance, leftover?.total ?? 0)}</span>
+            </summary>
+            <div className="pt-3 pb-4">{rest()}</div>
+          </details>
         ) : (
-          <ListView {...shared} />
+          rest()
         )}
       </div>
 
