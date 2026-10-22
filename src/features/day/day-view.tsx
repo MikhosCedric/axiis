@@ -28,6 +28,7 @@ import { GlanceLine, NextUp } from "./next-up";
 import { Tour } from "./tour";
 import { seriesTimeOffer, type SeriesTimeOffer } from "./series-time";
 import { DAY_VIEW_PARAM, SELECTED_ITEM_PARAM, type DayData, type DayViewMode } from "./types";
+import { reach } from "@/lib/reach";
 
 /** The writes the day screen makes. Defaults to the server actions; the dev harness passes in-memory ones. */
 export type DayActions = {
@@ -192,7 +193,7 @@ export function DayView({
     const { schedule, areaId } = placement;
     startTransition(async () => {
       patch({ id: item.id, changes: areaId === undefined ? { schedule } : { schedule, areaId } });
-      const result = await actions.place(item.id, placement);
+      const result = await reach(actions.place(item.id, placement));
       const offer = seriesTimeOffer(item, placement, date, timeZone, data.cadences) ?? undefined;
       setStatus(result.ok ? { text: describe(item, placement), error: false, offer } : { text: result.error, error: true });
     });
@@ -202,7 +203,7 @@ export function DayView({
     setStatus(null);
     const at = formatClock(instantAt(date, offer.time.start, timeZone), timeZone, clock);
     startTransition(async () => {
-      const result = await actions.timeSeries(offer.id, offer.time);
+      const result = await reach(actions.timeSeries(offer.id, offer.time));
       setStatus(
         result.ok ? { text: `${offer.title} is at ${at} ${offer.cadence}.`, error: false } : { text: result.error, error: true },
       );
@@ -215,7 +216,7 @@ export function DayView({
     setJustDone(done ? item.id : null);
     startTransition(async () => {
       patch({ id: item.id, changes: { status: done ? "done" : "open", completedAt: done ? now : null } });
-      const result = await actions.setDone(item.id, done);
+      const result = await reach(actions.setDone(item.id, done));
       const after = stateOf({ ...item, status: done ? "done" : "open" }, now);
       setStatus(result.ok ? { text: `${item.title} is ${STATE_WORD[after]}.`, error: false } : { text: result.error, error: true });
     });

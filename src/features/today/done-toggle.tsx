@@ -4,6 +4,7 @@ import { useOptimistic, useState, useTransition } from "react";
 import type { ItemType } from "@/domain/item";
 import type { ActionResult } from "./commands";
 import { Glyph } from "./glyph";
+import { reach } from "@/lib/reach";
 
 export type SetDone = (id: string, done: boolean) => Promise<ActionResult>;
 
@@ -43,7 +44,7 @@ export function useDoneToggles(setDone: SetDone) {
     setJustDone(done ? id : null);
     startTransition(async () => {
       tick([id, done]);
-      const result = await setDone(id, done);
+      const result = await reach(setDone(id, done));
       setStatus(
         result.ok
           ? { text: done ? `${title} is done.` : `${title} is open again.`, error: false }
