@@ -30,17 +30,31 @@ A solo productivity web app. One connected set of items, shown through many view
 
 **Lists**: the view of every top-level checklist, open first, each with how many of its lines are done. A checklist's subtasks are called its lines there. A repeating checklist shows once, as its series.
 
-**Due**: the view of every open task and checklist that has a due date, soonest first, in three groups: past due, this week (today and the six days after) and later. Items done in the last day stay listed so a tick can be undone. A series never appears: a deadline on every occurrence would be the same date each time. Wording never counts days late.
+**Due**: the view of every open task and checklist that has a due date, soonest first, in three groups: Past due, This week (today and the six days after) and later. Items done in the last day stay listed so a tick can be undone. A series never appears: a deadline on every occurrence would be the same date each time. Wording never counts days late.
 
-**Left over**: open one-off tasks and checklists planned for a day before today (a day, or a time that began before today's start in the user's zone). Today names the first few above the Score and moves them to today one at a time or all at once; a timed one keeps its time of day. Series occurrences are not included, since they are not stored until touched.
+**Left over**: open one-off tasks and checklists planned for a day before today (a day, or a time that began before today's start in the user's zone). Today names the first few below the day and moves them to today one at a time or all at once; a timed one keeps its time of day. Series occurrences are not included, since they are not stored until touched.
 
 **Today**: the view of one local day: timed items in that day's range, day-only items on that date, and everything unscheduled.
 
 **Score**: the Today view drawn as parallel staves, one per area, sharing one hour axis. The signature view of Axiis.
 
-**Tray**: the "Waiting" list of open items with no day, under the Score and the Week. The same items make up the Inbox. Dragging an item from the tray onto a staff schedules it.
+**Inbox**: the one name for the pile of open items with no day, as a page (`/inbox`) and as the tray under the Score, the Week and the List. Captured, safe, and never late. Never "Waiting", "unplanned" or "unscheduled" on screen (`unscheduled` is the code's word for the schedule). Dragging an item from the tray onto a staff schedules it.
 
-**Capture**: adding an item from one line of text. A plain line lands unscheduled in the tray. On Today, Week, Month, the Inbox and the palette, a day, a time, a length and tags at the line's start or end plan and tag the new task ("dentist tomorrow 9:00 #health"); a checklist captured on Lists keeps its name as typed. Must take under two seconds.
+**Any time**: on a day, at no particular hour (a *day* schedule). Distinct from the Inbox, which has no day at all.
+
+**Passed**: an open timed item whose end is before now. Said in words ("passed") on the Score and counted, never coloured or counted as late.
+
+**At a glance**: the line under a day's, week's or month's title that says where it sits from today and how it stands: "Today · 3 of 10 done · now: Focus block · next: Design sync at 16:00 · 1 due", "This week · 3 days left · 15 open · 2 due · 4 in the Inbox".
+
+**Next up**: the one to three things at the top of Today: happening now, then the next by time, then what is due, then any time.
+
+**Focus**: a per-device switch on Today (cookie `focus`) that shows only now, the next three by time and what is due, and folds the rest of the day into one counted line.
+
+**Due mark**: the one quiet sign of a due date wherever an item is drawn: a small flag and words ("Due today", "Past due", "Due Tue"). The flag is filled once the date has come.
+
+**Tour**: four skippable steps on a new account's Today (capture, the Score, Inbox or Today, the Guide), remembered in the cookie `tour` and replayable from the Guide.
+
+**Capture**: adding an item from one line of text. A plain line lands in the Inbox. On Today, Week, Month, the Inbox and the palette, a day, a time, a length and tags at the line's start or end plan and tag the new task ("dentist tomorrow 9:00 #health"); a checklist captured on Lists keeps its name as typed. Must take under two seconds.
 
 **First day**: the state of an account that has never stored an item of any type or status, deleted ones included. The day screen draws example beams and leaves out what only explains items, until the first capture. An account that once had items never returns to it.
 

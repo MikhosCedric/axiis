@@ -33,7 +33,7 @@ export function requestHasFakeSession(request: NextRequest): boolean {
 /**
  * Server only. The in-memory account when this request carries the browser-test session, else null.
  * An `axiis-e2e-account` cookie picks another account: `empty` starts with no items, for first-day tests;
- * `areas` holds a few items in areas, for the area colour tests.
+ * `areas` holds a few items in areas, for the area colour tests; `busy` a full week around today, for the orientation tests.
  */
 export async function getFakeAccount(): Promise<FakeAccount | null> {
   if (process.env.AXIIS_E2E_BUILD === "1") {

@@ -106,13 +106,15 @@ signedIn.describe("a busy day", () => {
   }
 });
 
+// A new account sees the tour (readTour's unit test). Here it is asked for through the cookie the Guide writes,
+// on the busy account, since the shared empty account belongs to the first-day spec running alongside.
 signedIn.describe("the tour", () => {
   signedIn.beforeEach(async ({ page, request, baseURL }) => {
-    await useAccount(page, request, baseURL, "empty");
+    await useAccount(page, request, baseURL, "busy");
+    await page.context().addCookies([{ name: "tour", value: "replay", url: baseURL }]);
   });
 
-  signedIn("a new account gets four steps once, and the Guide brings them back", async ({ page, baseURL }) => {
-    await page.context().clearCookies({ name: "tour" });
+  signedIn("steps through four steps once, and the Guide brings them back", async ({ page, baseURL }) => {
     await page.goto("/today");
     const tour = page.getByRole("region", { name: "Capture first, sort later" });
     await expect(tour).toBeVisible();
@@ -120,11 +122,11 @@ signedIn.describe("the tour", () => {
     expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
 
     for (const title of ["The Score is your day", "Inbox or Today", "The Guide explains the rest"]) {
-      await page.getByRole("button", { name: "Next" }).click();
+      await page.getByRole("button", { name: "Next", exact: true }).click();
       await expect(page.getByRole("region", { name: title })).toBeVisible();
     }
     await expect(page.getByRole("button", { name: "Skip the tour" })).toHaveCount(0);
-    await page.getByRole("button", { name: "Done" }).click();
+    await page.getByRole("button", { name: "Done", exact: true }).click();
     await expect(page.getByRole("region", { name: "The Guide explains the rest" })).toHaveCount(0);
     await page.reload();
     await expect(page.getByRole("region", { name: "Capture first, sort later" })).toHaveCount(0);
