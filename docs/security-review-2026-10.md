@@ -4,7 +4,7 @@ A static review of the whole app surface on branch `launch-hardening` (2026-10-2
 
 | # | Severity | Finding | State |
 |---|---|---|---|
-| 1 | Critical | Next.js 16.4.0 has two advisories | Fixed in PR #81, not in this branch |
+| 1 | Critical | Next.js 16.4.0 has two advisories | Fixed by PR #81 (merged), merged into this branch |
 | 2 | Medium | Personal email in the public git history | Owner action, documented |
 | 3 | Medium | A save that cannot reach the server replaced the whole page | Fixed, except in the Today, Week and Month view files |
 | 4 | Medium | Supabase accepts a password sign-up the app never offers | Owner action, documented |
@@ -17,7 +17,7 @@ A static review of the whole app surface on branch `launch-hardening` (2026-10-2
 | 11 | Info | The Supabase project ref is in the docs | Accepted |
 
 ## 1. Next.js 16.4.0 advisories (Critical)
-`npm audit --omit=dev` reports GHSA-2464-fhr4-w9xw (remote code execution in the Image Optimization API when SVG files are used) and GHSA-p3m5-59mp-jv5r (denial of service through Server Actions) for `next` 16.0.0 to 16.4.0. CI's audit step fails on it, so this PR's `check` job is red until the fix lands. PR #81 (`fix-next-advisory`) bumps `next` to 16.4.2. Merge #81 before any deploy, then merge `main` into this branch. Axiis uses no `next/image`, but the optimizer route exists in every build, so do not wait on that.
+`npm audit --omit=dev` reports GHSA-2464-fhr4-w9xw (remote code execution in the Image Optimization API when SVG files are used) and GHSA-p3m5-59mp-jv5r (denial of service through Server Actions) for `next` 16.0.0 to 16.4.0. CI's audit step failed on it. PR #81 (`fix-next-advisory`, merged) bumped `next` and `eslint-config-next` to 16.4.2, and this branch now carries it; `npm audit --omit=dev` finds nothing.
 
 ## 2. Personal email in the public git history (Medium, privacy)
 `git log --format=%ae origin/main` shows a personal address on 386 commits, and the first three commits of this branch carry it too; later commits here use the GitHub noreply address. The repository is public, so the address is published. Fix going forward: the GitHub steps in `docs/launch-checklist.md` ("Keep my email addresses private", "Block command line pushes that expose my email", a noreply `user.email`). Removing it from history needs a rewrite of `main` and a force push, which breaks every clone and fork and cannot recall copies already made; that is the owner's call, and this review does not recommend it on its own.
