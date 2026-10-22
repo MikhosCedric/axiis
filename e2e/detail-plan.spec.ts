@@ -11,7 +11,7 @@ const status = (page: Page, text: string) => details(page).getByRole("status").f
 
 test("detail: a waiting task is planned for today, timed, and taken off its day again", async ({ page }) => {
   await page.goto(WAITING_TASK);
-  await expect(row(page, "When")).toContainText("Waiting for a time");
+  await expect(row(page, "When")).toContainText("No day yet, in the Inbox");
   await expect(details(page).getByRole("group", { name: "Time" })).toHaveCount(0);
 
   const planFor = details(page).getByRole("button", { name: "Plan for" });
@@ -41,7 +41,7 @@ test("detail: a waiting task is planned for today, timed, and taken off its day 
   await expect(details(page).getByRole("button", { name: "Today" })).toHaveAttribute("aria-pressed", "true");
   await details(page).getByRole("button", { name: "No day" }).click();
   await expect(status(page, "It has no day now.")).toBeVisible();
-  await expect(row(page, "When")).toContainText("Waiting for a time");
+  await expect(row(page, "When")).toContainText("No day yet, in the Inbox");
   await expect(planFor).toBeFocused();
   await expect(details(page).getByRole("group", { name: "Time" })).toHaveCount(0);
 });
@@ -64,7 +64,7 @@ test("detail: a day past 2200 is refused and the task keeps waiting", async ({ p
   await another.fill("9999-12-31");
   await details(page).getByRole("button", { name: "Plan", exact: true }).click();
   expect(await another.evaluate((el: HTMLInputElement) => el.validity.rangeOverflow)).toBe(true);
-  await expect(row(page, "When")).toContainText("Waiting for a time");
+  await expect(row(page, "When")).toContainText("No day yet, in the Inbox");
 });
 
 test("detail: a failed plan says so and leaves it waiting", async ({ page }) => {
@@ -73,7 +73,7 @@ test("detail: a failed plan says so and leaves it waiting", async ({ page }) => 
   await details(page).getByRole("button", { name: "Plan for" }).click();
   await details(page).getByRole("button", { name: "Tomorrow" }).click();
   await expect(status(page, "That change did not save. Try again.")).toBeVisible();
-  await expect(row(page, "When")).toContainText("Waiting for a time");
+  await expect(row(page, "When")).toContainText("No day yet, in the Inbox");
   await expect(details(page).getByRole("button", { name: "Plan for" })).toBeFocused();
 });
 

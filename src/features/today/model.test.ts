@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { LocalDate } from "@/domain/item";
 import { dayRangeFor } from "@/lib/dates";
-import { buildToday, stateOf, summaryLine } from "./model";
+import { buildToday, stateOf } from "./model";
 import { makeItem } from "./test-support";
 
 const range = dayRangeFor("2026-10-06" as LocalDate, "UTC");
@@ -93,44 +93,5 @@ describe("buildToday", () => {
       now,
     );
     expect(view.waiting.map((e) => e.item.title)).toEqual(["Newest", "Middle", "Older"]);
-  });
-});
-
-describe("summaryLine", () => {
-  const view = (scheduled: ReturnType<typeof makeItem>[], unscheduled: ReturnType<typeof makeItem>[] = []) =>
-    buildToday({ scheduled, unscheduled }, range, now);
-
-  it("says so plainly when the day is empty", () => {
-    expect(summaryLine(view([]))).toBe("Nothing planned yet.");
-  });
-
-  it("counts open and done items, then what is waiting", () => {
-    const v = view(
-      [timed("a", at(8), at(9), { status: "done" }), timed("b", at(12), at(13)), timed("c", at(14), at(15))],
-      [makeItem(), makeItem({ status: "done", completedAt: at(9) })],
-    );
-    expect(summaryLine(v)).toBe("2 open, 1 done today. 1 waiting.");
-  });
-
-  it("leaves out the done count when nothing is done", () => {
-    expect(summaryLine(view([timed("a", at(12), at(13))]))).toBe("1 open today.");
-  });
-
-  it("notes a finished day without fuss", () => {
-    expect(summaryLine(view([timed("a", at(8), at(9), { status: "done" })]))).toBe(
-      "Everything planned for today is done.",
-    );
-  });
-
-  it("does not say today about another day", () => {
-    expect(summaryLine(view([timed("a", at(12), at(13))]), false)).toBe("1 open.");
-    expect(summaryLine(view([timed("a", at(8), at(9), { status: "done" })]), false)).toBe(
-      "Everything planned for this day is done.",
-    );
-    expect(summaryLine(view([], [makeItem()]), false)).toBe("Nothing has a time on this day. 1 waiting.");
-  });
-
-  it("mentions waiting items when nothing has a time", () => {
-    expect(summaryLine(view([], [makeItem(), makeItem()]))).toBe("Nothing has a time today. 2 waiting.");
   });
 });

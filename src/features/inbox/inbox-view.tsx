@@ -11,7 +11,7 @@ import { GuideButton, type GuideTopic } from "@/features/palette/guide";
 import { CaptureField } from "@/features/today/capture-field";
 import type { ActionResult } from "@/features/today/commands";
 import { DoneToggle } from "@/features/today/done-toggle";
-import { WAITING } from "@/features/today/model";
+import { place } from "@/components/shell/places";
 import { RowTags } from "@/features/tags/row-tags";
 import { LAST_DATE } from "@/lib/dates";
 import { planAction } from "./actions";
@@ -132,7 +132,9 @@ export function InboxView({
           >
             Inbox
           </h1>
-          <p className="page-summary">{inboxSummary(shown)}</p>
+          <p className="page-summary">
+            {place("inbox").hint}. Plan each one when you are ready. {inboxSummary(shown)}
+          </p>
         </header>
 
         <div className="mt-6 mb-3 flex flex-wrap items-start gap-x-3 gap-y-1">
@@ -150,12 +152,10 @@ export function InboxView({
         </div>
 
         <section aria-labelledby="inbox-list-h">
-          <h2 id="inbox-list-h" className="font-serif text-lg font-medium">
-            {WAITING}
+          <h2 id="inbox-list-h" className="sr-only">
+            Items with no day
           </h2>
-          <p className="mt-1 border-b border-rule pb-2.5 text-[13px] text-ink-2">
-            Everything you captured without a day. Plan each one when you are ready.
-          </p>
+          <div className="border-b border-rule" />
           {shown.length ? (
             <ul>
               {shown.map((item) => (

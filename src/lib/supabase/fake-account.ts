@@ -6,6 +6,7 @@ import { memoryDeletionPort } from "@/lib/account/fake";
 import { fakeAreasRepo } from "@/lib/areas/fake";
 import { recurrenceToColumns, scheduleToColumns } from "@/lib/items/mappers";
 import { fakeNotesRepo, type NotesStore } from "@/lib/notes/fake";
+import { addDays, instantAt, localMinutes, toLocalDate } from "@/lib/dates";
 
 // Loaded only through getFakeAccount in ./fake-session, which a production build drops.
 
@@ -51,14 +52,81 @@ function areaFixtures(areas: Area[]): Item[] {
 }
 
 /**
- * Which in-memory account a request uses: the fixtures, one that has never stored an item, one whose items
- * sit in areas, or a copy of the fixtures for the account deletion tests.
+ * A busy week around the real today, in the server's own zone (the browser's, on one machine), for the orientation
+ * tests and for looking at a full day by hand: events and tasks on the Score, one happening now, some done, a few
+ * waiting, left over, past due and repeating.
  */
-export type FakeAccountKind = "fixtures" | "empty" | "areas" | "deletion";
+function busyFixtures(areas: Area[], now: Date): Item[] {
+  const zone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const today = toLocalDate(now, zone);
+  const [work, home, health] = areas.map((a) => a.id);
+  const at = (date: LocalDate, hh: number, mm = 0) => instantAt(date, hh * 60 + mm, zone);
+  const timed = (date: LocalDate, from: [number, number], to: [number, number]) =>
+    ({ kind: "timed", start: at(date, ...from), end: at(date, ...to) }) as const;
+  const day = (on: LocalDate) => ({ kind: "day", on }) as const;
+  const doneAt = (d: Date) => ({ status: "done" as const, completedAt: d });
+  const quarter = Math.floor(localMinutes(now, today, zone) / 15) * 15;
+  const live = { kind: "timed", start: instantAt(today, Math.max(0, quarter - 15), zone), end: instantAt(today, Math.min(1440, quarter + 45), zone) } as const;
+  const make = (n: number, over: Partial<Item>) => makeItem({ id: id(100 + n), createdAt: created, updatedAt: created, ...over });
+  return [
+    make(1, { title: "Morning run", areaId: health, schedule: timed(today, [7, 0], [7, 45]), ...doneAt(at(today, 7, 50)) }),
+    make(2, {
+      type: "event",
+      title: "Standup",
+      areaId: work,
+      schedule: timed(addDays(today, -14), [9, 30], [9, 45]),
+      recurrence: { kind: "series", rule: { freq: "weekly", interval: 1, byDay: ["MO", "TU", "WE", "TH", "FR"], end: { kind: "never" } } },
+    }),
+    make(3, { title: "Write the Q4 plan", areaId: work, schedule: timed(today, [10, 0], [11, 30]), ...doneAt(at(today, 11, 20)) }),
+    make(4, { type: "event", title: "Dentist", areaId: health, schedule: timed(today, [12, 30], [13, 15]) }),
+    make(5, { title: "Focus block", areaId: work, schedule: live }),
+    make(6, { type: "event", title: "Design sync", areaId: work, schedule: timed(today, [16, 0], [17, 0]) }),
+    make(7, { title: "Call the plumber", areaId: home, schedule: timed(today, [18, 0], [18, 15]) }),
+    make(8, { title: "Send the invoice", areaId: work, schedule: day(today), dueOn: today }),
+    make(9, { type: "checklist", title: "Groceries", areaId: home, schedule: day(today) }),
+    make(10, { title: "Milk", parentId: id(109), position: 0, ...doneAt(at(today, 8, 0)) }),
+    make(11, { title: "Eggs", parentId: id(109), position: 1 }),
+    make(12, { title: "Coffee", parentId: id(109), position: 2 }),
+    make(13, { title: "Water the plants", areaId: home, schedule: day(today), ...doneAt(at(today, 8, 10)) }),
+    make(14, { title: "Book flights to Lisbon", schedule: { kind: "unscheduled" } }),
+    make(15, { title: "Read the lease", areaId: home, schedule: { kind: "unscheduled" } }),
+    make(16, { title: "Pick a birthday gift", schedule: { kind: "unscheduled" }, dueOn: addDays(today, 4) }),
+    make(17, { title: "Return the library books", areaId: home, schedule: day(addDays(today, -3)) }),
+    make(18, { title: "File the expense report", areaId: work, schedule: day(addDays(today, -2)), dueOn: addDays(today, -1) }),
+    make(19, { type: "event", title: "Yoga", areaId: health, schedule: timed(addDays(today, 1), [18, 30], [19, 30]) }),
+    make(20, { title: "Prepare the board deck", areaId: work, schedule: day(addDays(today, 2)), dueOn: addDays(today, 3) }),
+    make(21, { type: "event", title: "Dinner with Sam", areaId: home, schedule: timed(addDays(today, 3), [19, 0], [21, 0]) }),
+    make(22, { title: "Renew the car insurance", areaId: home, schedule: day(addDays(today, 5)), dueOn: addDays(today, 9) }),
+    make(23, { type: "checklist", title: "Packing for Lisbon", schedule: { kind: "unscheduled" } }),
+    make(24, { title: "Passport", parentId: id(123), position: 0 }),
+    make(25, { title: "Adapter plug", parentId: id(123), position: 1 }),
+    make(26, { type: "note", title: "Q4 plan notes", body: gardenBody }),
+  ];
+}
+
+/**
+ * Which in-memory account a request uses: the fixtures, one that has never stored an item, one whose items sit
+ * in areas, a busy week, or a copy of the fixtures for the account deletion tests.
+ */
+export type FakeAccountKind = "fixtures" | "empty" | "areas" | "busy" | "deletion";
 
 function createAccount(kind: FakeAccountKind) {
-  const areas = fakeAreasRepo(["Work", "Home", "Health"]);
-  const items = kind === "fixtures" || kind === "deletion" ? fixtures() : kind === "areas" ? areaFixtures(areas.rows) : [];
+  const areas =
+    kind === "busy"
+      ? fakeAreasRepo([
+          { name: "Work", color: "slate" },
+          { name: "Home", color: "ochre" },
+          { name: "Health", color: "moss" },
+        ])
+      : fakeAreasRepo(["Work", "Home", "Health"]);
+  const items =
+    kind === "fixtures" || kind === "deletion"
+      ? fixtures()
+      : kind === "areas"
+        ? areaFixtures(areas.rows)
+        : kind === "busy"
+          ? busyFixtures(areas.rows, new Date())
+          : [];
   const fake = fakeRepo(items);
   fake.repo.listAreas = () => areas.repo.list();
   if (kind === "fixtures") fake.tag(id(1), "errands");

@@ -14,7 +14,7 @@ test.describe("capture field", () => {
     await page.goto("/dev/score");
     await capture(page, "Water the ferns");
     await expect(field(page)).toHaveValue("");
-    await expect(status(page)).toHaveText("Captured. It is waiting for a time, below.");
+    await expect(status(page)).toHaveText("Captured. It is in the Inbox, below.");
     await expect(page.locator("[data-captured]")).toContainText("Water the ferns");
     await expect(page.locator("[data-captured]")).toHaveCount(0, { timeout: 5_000 });
   });
@@ -64,7 +64,7 @@ test.describe("capture field", () => {
   test("Week: a capture rings its chip in the tray", async ({ page }) => {
     await page.goto("/dev/week");
     await capture(page, "Sort the receipts");
-    await expect(status(page)).toHaveText("Captured. It is waiting for a time, below.");
+    await expect(status(page)).toHaveText("Captured. It is in the Inbox, below.");
     await expect(page.locator("[data-captured]")).toContainText("Sort the receipts");
   });
 

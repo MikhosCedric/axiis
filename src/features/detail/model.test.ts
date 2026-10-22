@@ -88,13 +88,13 @@ describe("buildDetail", () => {
     expect(done.item.done).toBe(true);
     expect(done.item.areaId).toBe(work.id);
     expect(done.areas).toEqual([{ id: work.id, name: "Work", color: null }]);
-    expect(done.when).toBe("Waiting for a time");
+    expect(done.when).toBe("No day yet, in the Inbox");
   });
 });
 
 describe("describeWhen", () => {
   it("names an unscheduled item and a day-only plan", () => {
-    expect(describeWhen({ kind: "unscheduled" }, "UTC", "24")).toBe("Waiting for a time");
+    expect(describeWhen({ kind: "unscheduled" }, "UTC", "24")).toBe("No day yet, in the Inbox");
     expect(describeWhen({ kind: "day", on: "2026-10-06" as LocalDate }, "UTC", "24")).toBe("Tuesday 6 October");
   });
 
