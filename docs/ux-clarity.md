@@ -25,14 +25,22 @@ Heuristics, scored 0 to 4 on the signed-in day screens: visibility of system sta
 
 ## What changed
 
-Each is its own commit on `ux-clarity`.
+On `ux-clarity` (PR #82), one commit per step:
 
-- **Where am I.** Today and every day open on an at-a-glance line under the date: where the day is ("Today", "Tomorrow", "3 days ago"), how far through it you are ("3 of 8 done") and what is next ("next: Design sync at 16:00"), or "Nothing left today". A thin ruled line under it fills in Ink as items are done, line-form, not a donut. The Week and the Month say the same for their span ("This week · 2 days left · 5 open · 2 due").
-- **Next up.** The top of Today names the next one to three things (happening now first, then the next times, then due today), each with its done tick.
-- **Focus.** A Focus switch on Today shows only Now, Next and what is due today; the rest of the day, the Inbox, left over and done fold into counted lines that open in place. It is kept per device in the `focus` cookie, like Density.
-- **Done folds away.** Done items in Any time and the Inbox tray fold into one quiet "Done (n)" line.
-- **Types and states read at a glance.** The printed key also names the shapes (task, event, checklist), events say their whole time on a beam and a row, and a timed item whose time has passed while still open says so in quiet words. Due today and past due carry one quiet "due" mark wherever an item is drawn.
-- **One vocabulary.** The pile with no day is the Inbox everywhere; "Waiting" is gone. Any time means on a day, at no hour. Due's first group is "Past due".
-- **Orientation.** Inbox, Due and Lists say what they are for under their title. A four-step tour (capture, the Score, Inbox and Today, the Guide) runs once on a new account, can be skipped, and can be replayed from the Guide.
+- **Where am I.** Today and every day open on an at-a-glance line under the date: where the day is ("Today", "Tomorrow", "3 days ago"), how much is done, what is happening and what is next ("Today · 3 of 10 done · now: Focus block · next: Design sync at 16:00 · 1 due"), or "Nothing left today", over a ruled progress line (dashed to do, solid done, as on Lists). The Week and the Month say the same for their span ("This week · 3 days left · 15 open · 2 due · 4 in the Inbox", "This month · 9 days left · …", "Next week", "2 months ago").
+- **Next up.** The top of Today names the next one to three things (happening now, then the next by time, then what is due, then any time), each with its done tick. At 375 it is on the first screen (about 430px down, where the first item used to be about 700px down).
+- **Focus.** A Focus toggle on Today keeps Next up with everything happening, the next three by time and everything due, and folds the Score or List, the Inbox tray and left over into one line that counts them ("The whole day · 6 more planned · 4 in the Inbox · 2 left over · 3 done"). Kept per device in the `focus` cookie.
+- **Done folds away.** Done items in Any time, the Inbox tray and the List fold into one quiet "Done (n)"; a just-ticked one stays for four seconds. A Month day lists open marks before done ones.
+- **Kinds and states.** The printed key also shows the shapes (Task, Event, Checklist). An event says its whole time on the Score and the Week; a task its start. An open timed item whose time is over says "passed". One due mark (a small flag and words) on beams, chips, List rows, Week rows and Next up.
+- **Past and today on the Week.** Past days are a step quieter; today is an Ink disc, as on the Month. The left-over strip moved below the day.
+- **One vocabulary.** The pile with no day is the Inbox everywhere; "Waiting" is gone from the screen. Due's first group is "Past due". Inbox, Due and Lists say what they are for under their title.
+- **Orientation.** A four-step tour (capture, the Score, Inbox or Today, the Guide) on a new account's Today, skippable, remembered in the `tour` cookie, and replayable from the Guide's new "What you see" section, which explains every shape, line form and word.
 
-What was left out, and why, is listed in `docs/PROGRESS.md` under this branch's log entry.
+## Left out, and why
+
+- **The Week on a phone still starts at Monday.** Scrolling to today would hide the at-a-glance line, which is now where a phone reader learns where the week stands. A collapsed "earlier this week" group is the better fix and needs its own look.
+- **No "passed" mark on Week rows or List rows.** The Score and the glance count say it; adding it to every row would add a word to most of a busy afternoon.
+- **The Due page keeps its own longer date words** ("Was due Thursday 22 October") rather than the due mark; it is the one page about deadlines, so the full date earns its room.
+- **Focus folds by count, not by group.** One "The whole day" disclosure holds the Score, the Inbox tray and left over; separate counted groups for each would mean a second rendering of each part.
+- **No per-type colour.** The No-Type-Hue Rule stands: kinds are told apart by shape, the key and words.
+
