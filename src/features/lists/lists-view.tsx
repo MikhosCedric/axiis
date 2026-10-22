@@ -3,6 +3,8 @@
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useId, useOptimistic, useTransition, type ReactNode } from "react";
 import { AreaLabel } from "@/components/area-mark";
+import { ProgressLine } from "@/components/progress-line";
+import { place } from "@/components/shell/places";
 import { SELECTED_ITEM_PARAM } from "@/features/day/types";
 import { DetailAside } from "@/features/detail/detail-aside";
 import { CaptureField } from "@/features/today/capture-field";
@@ -55,7 +57,9 @@ export function ListsView({
     <div className={selectedParam ? "min-[1180px]:grid min-[1180px]:grid-cols-[minmax(0,1fr)_328px]" : ""}>
       <div className="min-w-0 px-4 pt-6 pb-14 rail:px-9 rail:pt-8">
         <h1 className="headline">Lists</h1>
-        <p className="page-summary">{listsSummary(data.rows)}</p>
+        <p className="page-summary">
+          {place("lists").hint}. {listsSummary(data.rows)}
+        </p>
 
         <div className="mt-6 mb-3">
           <CaptureField
@@ -162,19 +166,5 @@ function ListRowView({
         </p>
       </div>
     </li>
-  );
-}
-
-/**
- * Progress in line form: the part still to do is dashed, like anything
- * planned, and the part done is solid. Decorative, since the words beside it
- * say the same.
- */
-function ProgressLine({ share }: { share: number }) {
-  return (
-    <span aria-hidden="true" className="relative block h-0.5 w-20 flex-none">
-      <span className="absolute inset-x-0 top-1/2 border-t border-dashed border-current opacity-60" />
-      <span className="absolute inset-y-0 left-0 rounded-full bg-current" style={{ width: `${share * 100}%` }} />
-    </span>
   );
 }

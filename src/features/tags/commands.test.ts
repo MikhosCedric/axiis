@@ -197,9 +197,9 @@ describe("reading tags", () => {
     const data = await loadTagged(w.repo, "DEEP", TZ, "24");
     expect(data?.tag.name).toBe("deep");
     expect(data?.rows.map((r) => [r.title, r.done, r.tags, r.when])).toEqual([
-      ["Write the brief", false, ["home"], "Waiting for a time"],
+      ["Write the brief", false, ["home"], "No day yet, in the Inbox"],
       ["Standup", false, [], "Repeats every day"],
-      ["Old one", true, [], "Waiting for a time"],
+      ["Old one", true, [], "No day yet, in the Inbox"],
     ]);
     expect(await loadTagged(w.repo, "nothing", TZ, "24")).toBeNull();
   });

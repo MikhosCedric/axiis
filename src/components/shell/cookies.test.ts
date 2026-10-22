@@ -1,5 +1,25 @@
 import { describe, expect, it } from "vitest";
-import { CLOCK_SETTINGS, clockCookieValue, readClock, readDensity, readTheme } from "./cookies";
+import { CLOCK_SETTINGS, clockCookieValue, readClock, readDensity, readFocus, readTheme, readTour } from "./cookies";
+
+describe("readFocus", () => {
+  it("is on only when the device saved it on", () => {
+    expect(readFocus("on")).toBe(true);
+    expect(readFocus("off")).toBe(false);
+    expect(readFocus(undefined)).toBe(false);
+    expect(readFocus("On")).toBe(false);
+  });
+});
+
+describe("readTour", () => {
+  it("shows on a new account until finished, and on any account when asked for again", () => {
+    expect(readTour(undefined, true)).toBe(true);
+    expect(readTour("done", true)).toBe(false);
+    expect(readTour(undefined, false)).toBe(false);
+    expect(readTour("replay", false)).toBe(true);
+    expect(readTour("replay", true)).toBe(true);
+    expect(readTour("bogus", false)).toBe(false);
+  });
+});
 
 describe("readDensity", () => {
   it("reads compact, and treats anything else as spacious", () => {

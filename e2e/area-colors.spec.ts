@@ -87,7 +87,7 @@ signedIn.describe("area colours", () => {
     const budget = page.locator(`[data-item="${BUDGET}"]`);
     await expect(dot(budget)).toHaveAttribute("data-area-color", "clay");
     await expect(dot(page.getByRole("button", { name: /^Water the ferns, any time, Home/ }))).toHaveAttribute("data-area-color", "moss");
-    await expect(dot(page.getByRole("button", { name: /^Sort the receipts, waiting, Work/ }))).toHaveAttribute("data-area-color", "clay");
+    await expect(dot(page.getByRole("button", { name: /^Sort the receipts, in the Inbox, Work/ }))).toHaveAttribute("data-area-color", "clay");
 
     await budget.click();
     const details = page.getByRole("complementary", { name: "Details" });

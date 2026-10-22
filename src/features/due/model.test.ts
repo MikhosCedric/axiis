@@ -27,9 +27,9 @@ describe("dueGroup", () => {
     expect(dueGroup(d("2026-10-15"), today)).toBe("later");
   });
 
-  it("labels the groups without dating a debt", () => {
-    expect(Object.values(GROUP_LABEL)).toEqual(["Earlier", "This week", "Later"]);
-    for (const label of Object.values(GROUP_LABEL)) expect(label).not.toMatch(/\b(due|late|overdue|missed|past)\b/i);
+  it("labels the groups plainly, never counting days late or saying overdue", () => {
+    expect(Object.values(GROUP_LABEL)).toEqual(["Past due", "This week", "Later"]);
+    for (const label of Object.values(GROUP_LABEL)) expect(label).not.toMatch(/\b(late|overdue|missed|\d+)\b/i);
   });
 });
 

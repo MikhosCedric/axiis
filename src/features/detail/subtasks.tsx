@@ -71,7 +71,7 @@ export function Subtasks({
 
   function lift(id: string) {
     addField.current?.focus();
-    write({ kind: "remove", id }, () => actions.promote(id), "Now a task of its own, waiting for a time.");
+    write({ kind: "remove", id }, () => actions.promote(id), "Now a task of its own, in the Inbox.");
   }
 
   function remove(id: string) {

@@ -4,16 +4,16 @@ import { WAITING_LIMIT } from "@/lib/items/repo";
 export const TITLE_MAX = 500;
 
 /**
- * The one name for open items with no day, on the Score, the Week, the List view, the Inbox and the detail panel.
- * Not "unplanned": a waiting item is drawn with the dashed planned line.
+ * The one name for the pile of open items with no day: the Inbox page, and the tray under the Score, the Week and the List.
+ * Never "Waiting" or "unplanned" on screen. An item there is drawn with the dashed planned line.
  */
-export const WAITING = "Waiting";
+export const INBOX = "Inbox";
 
 /** The tray with nothing in it. Things under "Any time" have a day, so this must not claim everything has one. */
-export const EMPTY_TRAY = "Nothing is waiting. What you capture lands here first.";
+export const EMPTY_TRAY = "The Inbox is empty. What you capture lands here first.";
 
 /** Under a tray whose read hit `WAITING_LIMIT`, so older waiting items are not shown. */
-export const TRAY_FULL = `Showing the newest ${WAITING_LIMIT} waiting. Plan a few to see older ones.`;
+export const TRAY_FULL = `Showing the newest ${WAITING_LIMIT} in the Inbox. Plan a few to see older ones.`;
 
 /** How an item reads on the day: dashed planned, solid live beam, hollow done. */
 export type BeamState = "planned" | "live" | "done";
@@ -63,22 +63,4 @@ export function buildToday(
       .sort(NEWEST_FIRST)
       .map(entry),
   };
-}
-
-export function summaryLine({ scheduled, waiting }: TodayView, isToday = true): string {
-  const open = scheduled.filter((e) => e.state !== "done").length;
-  const done = scheduled.length - open;
-  const waitingOpen = waiting.filter((e) => e.state !== "done").length;
-  if (scheduled.length === 0 && waitingOpen === 0) return "Nothing planned yet.";
-  const plan =
-    scheduled.length === 0
-      ? isToday
-        ? "Nothing has a time today"
-        : "Nothing has a time on this day"
-      : open === 0
-        ? isToday
-          ? "Everything planned for today is done"
-          : "Everything planned for this day is done"
-        : `${open} open${done ? `, ${done} done` : ""}${isToday ? " today" : ""}`;
-  return waitingOpen ? `${plan}. ${waitingOpen} waiting.` : `${plan}.`;
 }
