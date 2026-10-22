@@ -2,6 +2,7 @@ import type { ShownItem, ItemPatch, LocalDate, Schedule, SpanRange } from "@/dom
 import { buildToday, type TodayEntry } from "@/features/today/model";
 import { addDays, dayRangeFor, instantAt, localMinutes, toLocalDate } from "@/lib/dates";
 import { RANGE_LIMIT } from "@/lib/items/repo";
+import { spanLine } from "@/features/day/glance";
 
 /** First day of the week, as `Date#getUTCDay` numbers it (0 is Sunday). One place, so it can become a setting. */
 export const WEEK_STARTS_ON = 1;
@@ -111,11 +112,18 @@ export function readDropZone(raw: string | undefined, days: LocalDate[]): Destin
   return days.find((d) => d === raw) ?? null;
 }
 
-export function weekSummary(week: WeekDay[], waiting: TodayEntry[]): string {
-  const open = week.reduce((n, d) => n + d.entries.filter((e) => e.state !== "done").length, 0);
-  const waitingOpen = waiting.filter((e) => e.state !== "done").length;
-  const plan = open === 0 ? "Nothing open across the week" : `${open} open across the week`;
-  return waitingOpen ? `${plan}. ${waitingOpen} waiting.` : `${plan}.`;
+/**
+ * Where the week stands: "This week · 3 days left · 5 open · 2 due · 4 in the Inbox". Open counts what is
+ * planned on its days; due counts open items, planned in it or in the Inbox, that fall due on one of its days.
+ */
+export function weekSummary(week: WeekDay[], inbox: TodayEntry[], today: LocalDate): string {
+  const first = week[0].date;
+  const last = week[week.length - 1].date;
+  const planned = week.flatMap((d) => d.entries).filter((e) => e.state !== "done");
+  const inboxOpen = inbox.filter((e) => e.state !== "done");
+  const due = [...planned, ...inboxOpen].filter((e) => e.item.dueOn !== null && e.item.dueOn >= first && e.item.dueOn <= last).length;
+  const line = spanLine({ first, last, noun: "week", open: planned.length, due }, today);
+  return inboxOpen.length ? `${line} · ${inboxOpen.length} in the Inbox` : line;
 }
 
 const dayMonth = new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "long", timeZone: "UTC" });
