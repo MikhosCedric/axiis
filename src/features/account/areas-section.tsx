@@ -8,6 +8,7 @@ import { ConfirmDelete } from "@/features/detail/confirm-delete";
 import type { ActionResult } from "@/features/today/commands";
 import { AREA_LIMIT, AREA_NAME_MAX, moved, type MoveDirection } from "./commands";
 import { ArrowIcon } from "./icons";
+import { reach } from "@/lib/reach";
 
 export type AreaActions = {
   add(name: string): Promise<ActionResult>;
@@ -65,7 +66,7 @@ export function AreasSection({ areas, actions }: { areas: Area[]; actions: AreaA
     setError(null);
     startTransition(async () => {
       if (optimistic) change(optimistic);
-      const result = await work();
+      const result = await reach(work());
       if (!result.ok) setError(result.error);
     });
   }
@@ -265,7 +266,7 @@ function AddArea({ onAdd, onError }: { onAdd: AreaActions["add"]; onError: (mess
     if (!name) return;
     onError(null);
     startAdding(async () => {
-      const result = await onAdd(name);
+      const result = await reach(onAdd(name));
       if (result.ok) setValue("");
       else onError(result.error);
     });

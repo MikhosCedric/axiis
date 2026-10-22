@@ -6,6 +6,7 @@ import { useEffect, useState, useTransition } from "react";
 import { AreaMark } from "@/components/area-mark";
 import { PlusIcon, SearchIcon } from "./icons";
 import type { NoteRow, NotesActions } from "./model";
+import { reach } from "@/lib/reach";
 
 const FILTER_DELAY_MS = 250;
 
@@ -40,7 +41,7 @@ export function NotesList({
   function newNote() {
     setError(null);
     startCreate(async () => {
-      const result = await create();
+      const result = await reach(create());
       if (result.ok) router.push(`${basePath}/${result.id}`);
       else setError(result.error);
     });

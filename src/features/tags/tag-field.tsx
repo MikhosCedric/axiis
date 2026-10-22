@@ -6,6 +6,7 @@ import { parseTagName, sameTag, TAG_NAME_MAX, type TagName } from "@/domain/tag"
 import { CloseIcon } from "@/features/detail/icons";
 import type { ActionResult } from "@/features/today/commands";
 import { suggestTags, tagHref } from "./model";
+import { reach } from "@/lib/reach";
 
 type Change = { kind: "add" | "remove"; name: TagName };
 
@@ -48,7 +49,7 @@ export function TagField({
     setStatus("");
     startTransition(async () => {
       change(c);
-      const result = await (c.kind === "add" ? add : remove)(itemId, c.name);
+      const result = await reach((c.kind === "add" ? add : remove)(itemId, c.name));
       setStatus(result.ok ? done : result.error);
     });
   }

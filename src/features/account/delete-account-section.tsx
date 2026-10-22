@@ -3,6 +3,7 @@
 import { useId, useState, useTransition, type FormEvent } from "react";
 import type { ActionResult } from "@/features/today/commands";
 import { DELETE_PHRASE, DELETION_GRACE_DAYS, isDeletePhrase } from "./commands";
+import { reach } from "@/lib/reach";
 
 /** On success the real action redirects to the sign-in page and never returns. */
 export type DeleteAccountAction = (phrase: string) => Promise<ActionResult>;
@@ -40,7 +41,7 @@ function Scheduled({ actions, deletesOn }: { actions: DeletionActions; deletesOn
     if (pending) return;
     setMessage(null);
     startChange(async () => {
-      const result = await action();
+      const result = await reach(action());
       if (!result.ok) setMessage(result.error);
     });
   }
@@ -93,7 +94,7 @@ function DeleteNow({ action }: { action: DeleteAccountAction }) {
     }
     setMessage(null);
     startDeleting(async () => {
-      const result = await action(phrase);
+      const result = await reach(action(phrase));
       setMessage(result.ok ? "Your account is deleted. Taking you to the sign-in page." : result.error);
     });
   }

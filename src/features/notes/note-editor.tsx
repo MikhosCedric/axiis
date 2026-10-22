@@ -11,6 +11,7 @@ import { Connected } from "./connected";
 import { NOTE_TITLE_MAX } from "./doc";
 import type { NotesActions, NoteView } from "./model";
 import { RichText } from "./rich-text";
+import { reach } from "@/lib/reach";
 
 const EMPTY_DOC = { type: "doc", content: [{ type: "paragraph" }] };
 
@@ -79,7 +80,7 @@ export function NoteEditor({ view, actions, basePath = "/notes" }: { view: NoteV
     setStatus(null);
     startTransition(async () => {
       setAreaId(next);
-      const result = await actions.setArea(note.id, next);
+      const result = await reach(actions.setArea(note.id, next));
       if (!result.ok) setStatus(result.error);
     });
   }
@@ -89,7 +90,7 @@ export function NoteEditor({ view, actions, basePath = "/notes" }: { view: NoteV
     autosave.dispose();
     setStatus(null);
     startTransition(async () => {
-      const result = await actions.remove(note.id);
+      const result = await reach(actions.remove(note.id));
       if (result.ok) router.push(basePath);
       else {
         deleted.current = false;
