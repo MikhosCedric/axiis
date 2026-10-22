@@ -92,11 +92,13 @@ export default function PrivacyPage() {
       <h2>Keeping, exporting and deleting</h2>
       <p>
         When you delete an item, it disappears everywhere in the app. It stays in the database, marked as deleted,
-        until your account is deleted.
+        for 30 days, and is then removed for good.
       </p>
       <p>
-        You can export all your data as a file, and delete your account, at any time from the Settings page. Deleting
-        your account removes it and everything in it at once, and that cannot be undone. If you cannot sign in, write
+        You can export all your data as a file, and delete your account, at any time from the Settings page. When you
+        delete your account, Axiis waits 14 days first. Until then you can sign in as usual and undo it. After that
+        the account and everything in it is removed, and that cannot be undone. If you would rather not wait, Delete
+        now in Settings removes it all at once. If you cannot sign in, write
         to <Blank>Contact email</Blank> and we will help within <Blank>Response time, such as 30 days</Blank>.
       </p>
 

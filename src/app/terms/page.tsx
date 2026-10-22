@@ -64,8 +64,8 @@ export default function TermsPage() {
       <h2>Ending</h2>
       <p>
         You can stop using Axiis at any time. Delete your account from the Settings page and it, with everything in
-        it, is removed at once. If you cannot sign in, write to <Blank>Contact email</Blank> and we will do it for
-        you.
+        it, is removed 14 days later, unless you undo it before then. Delete now removes it at once. If you cannot
+        sign in, write to <Blank>Contact email</Blank> and we will do it for you.
       </p>
 
       <h2>Changes</h2>

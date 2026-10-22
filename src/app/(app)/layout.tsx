@@ -2,11 +2,14 @@ import type { ReactNode } from "react";
 import { NavRail } from "@/components/shell/nav-rail";
 import { PageTransition } from "@/components/shell/page-transition";
 import { TimeZoneSync } from "@/components/shell/time-zone-sync";
+import { undoDeletionAction } from "@/features/account/actions";
+import { DeletionBanner } from "@/features/account/deletion-banner";
+import { getDeletionDay } from "@/features/account/deletion-day";
 import { getRailAreas, getTodayDate } from "@/features/day/server";
 import { PaletteProvider } from "@/features/palette/palette";
 
 export default async function AppLayout({ children }: { children: ReactNode }) {
-  const [today, areas] = await Promise.all([getTodayDate(), getRailAreas()]);
+  const [today, areas, deletesOn] = await Promise.all([getTodayDate(), getRailAreas(), getDeletionDay()]);
 
   return (
     <PaletteProvider today={today}>
@@ -14,6 +17,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
         <NavRail today={today} areas={areas} />
         {/* On a phone the places bar is fixed to the bottom, so the page ends above it. */}
         <main id="main" className="min-w-0 overflow-x-clip max-rail:pb-[calc(4rem+env(safe-area-inset-bottom))]">
+          {deletesOn && <DeletionBanner deletesOn={deletesOn} undo={undoDeletionAction} />}
           <PageTransition>{children}</PageTransition>
         </main>
         <TimeZoneSync />

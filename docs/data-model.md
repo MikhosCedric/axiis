@@ -97,6 +97,16 @@ Signup is open and PostgREST takes writes straight from the browser's session, s
 - `hasAnyItem` counts deleted rows as stored, so an account whose every item was deleted and purged sees the first-day examples again.
 - Areas are not purged: their cap of 100 already leaves room to churn against 12 live ones.
 
+## Account deletion (migrations 0002 and 0010; 0010 not yet applied)
+
+`account_deletions (user_id uuid primary key references auth.users on delete cascade, requested_at timestamptz)`: one row while an account waits 14 days for deletion.
+
+- Row Level Security: an `authenticated` user may select, insert and delete only their own row. There is no update grant, so a request is made or withdrawn, never moved. `anon` has nothing.
+- `requested_at` is stamped `now()` by a `before insert` trigger, so a client cannot backdate its request into the purge window.
+- `purge_due_accounts()` is `security definer` with `set search_path = ''`. It deletes from `auth.users` up to 50 accounts whose request is 14 or more days old, oldest first, so every public table cascades as for `delete_my_account`, and returns how many. Execute is revoked from `public`, `anon` and `authenticated` and granted to `service_role`; the owner schedules it with pg_cron (`docs/launch-checklist.md`, Account deletion purge).
+- `delete_my_account()` ("Delete now") is unchanged and removes the row by cascade.
+- The app reads the row on every signed-in page (`getDeletionRequest`, `src/lib/account/`) for the banner. A failed read counts as no request, so pages still render before 0010 is applied. Asking twice is an insert that ignores the duplicate, so the first date stands. Not part of the export.
+
 ## Rate limits (migration 0007, not yet applied to the hosted project)
 
 The quotas bound how much an account holds, not how fast it adds rows. Every server action can be bypassed by calling PostgREST with the same session, so the throttle is in the database.

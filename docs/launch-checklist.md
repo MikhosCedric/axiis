@@ -80,8 +80,20 @@ What the code already bounds: migration `0007_rate_limits` caps how fast an acco
 ## Support and recovery
 - [ ] A support email address that someone reads, on the production domain (for example `support@<domain>`). The quota message tells users to "write to support", and the privacy policy and terms need a contact.
 - [ ] A written recovery policy for someone who lost access to their email. Axiis signs in only by email link or Google, so whoever controls the address controls the account. Decide what proof, if any, moves an account to a new address, or say plainly that it cannot be done; put the answer in the terms.
-- [ ] Decide on an undo window for account deletion. Today `delete_my_account` removes everything at once and nothing can bring it back. Either keep that and say so on the deletion screen and in the privacy policy, or build a grace period (mark the account, purge after N days) before launch.
+- [ ] Account deletion waits 14 days (migration `0010_account_deletion_grace`). Schedule its purge as "Account deletion purge" below says, the same day the code ships: until the job runs, nobody who asked is deleted, and the privacy policy promises 14 days.
 - [ ] Decide what support does when an account reaches a quota (`docs/data-model.md`, Quotas): purge its old soft-deleted rows, or raise the cap for it.
+
+## Account deletion purge
+"Delete my account in 14 days" in Settings adds a row to `account_deletions`; the account keeps working and every signed-in page shows "Your account is scheduled for deletion on <day>. Undo". Undo deletes the row. "Delete now" (typed phrase) still calls `delete_my_account` at once. Nothing deletes a scheduled account until the owner schedules `purge_due_accounts()`, which removes up to 50 accounts whose request is 14 or more days old, through the same cascade. Only `postgres` (its owner) and `service_role` may execute it.
+
+Use pg_cron, inside the database. A Vercel cron would need the service-role key in Vercel and a public route that can delete accounts; pg_cron needs neither.
+1. [ ] Apply `supabase/migrations/0010_account_deletion_grace.sql` with `apply_migration`, after review, and before deploying the code that uses it. Without the table, "Delete my account in 14 days" says it did not save and the banner never shows; "Delete now" still works. Run `get_advisors` after; expect no new item.
+2. [ ] Check the grants in the SQL editor: `select grantee from information_schema.routine_privileges where routine_schema = 'public' and routine_name = 'purge_due_accounts';` lists only `postgres` and `service_role`.
+3. [ ] Database, Extensions: enable `pg_cron`.
+4. [ ] In the SQL editor (it runs as `postgres`, which the job then runs as): `select cron.schedule('purge-due-accounts', '17 * * * *', $$select public.purge_due_accounts()$$);` That is hourly at 17 past. At 50 a run, that is 1,200 accounts a day.
+5. [ ] Check: `select jobname, schedule, active from cron.job;` shows the job active. After the next 17 past, `select status, return_message, start_time from cron.job_run_details where jobid = (select jobid from cron.job where jobname = 'purge-due-accounts') order by start_time desc limit 3;` shows `succeeded`.
+6. [ ] End to end with a throwaway account (never a real one): sign in, Settings, "Delete my account in 14 days", copy its id from Authentication, Users, then in the SQL editor `update public.account_deletions set requested_at = now() - interval '15 days' where user_id = '<that id>';` and `select public.purge_due_accounts();` returns `1`, and the user is gone from Authentication, Users.
+- To stop it: `select cron.unschedule('purge-due-accounts');` Requests stay in the table and are purged once a job runs again.
 
 ## Final pass
 - [ ] Open the landing, privacy and terms pages on a phone and a desktop, in light and dark.
