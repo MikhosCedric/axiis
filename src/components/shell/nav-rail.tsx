@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useId, useRef, useState, type ReactNode } from "react";
+import { AreaLabel } from "@/components/area-mark";
+import type { AreaColor } from "@/domain/area-color";
 import type { LocalDate } from "@/domain/item";
 import { useOpenPalette } from "@/features/palette/palette";
 import { useIsMac } from "@/features/palette/use-is-mac";
@@ -25,7 +27,7 @@ import styles from "./nav.module.css";
 import { place, PLACE_GROUPS, PLACES, type Place, type PlaceId } from "./places";
 import { ThemeToggle } from "./theme-toggle";
 
-export type NavArea = { id: string; name: string; open: number };
+export type NavArea = { id: string; name: string; color: AreaColor | null; open: number };
 
 const ICONS: Record<PlaceId, ReactNode> = {
   today: <TodayIcon />,
@@ -144,7 +146,7 @@ function AreaReadout({ areas }: { areas: NavArea[] }) {
       <ul className="grid">
         {areas.map((a) => (
           <li key={a.id} className="flex items-center gap-2.5 px-2 py-1 text-[13px] text-ink-3">
-            <span className="min-w-0 truncate">{a.name}</span>
+            <AreaLabel name={a.name} color={a.color} />
             <span className="sr-only">, {a.open} open today</span>
             {a.open > 0 && (
               <span

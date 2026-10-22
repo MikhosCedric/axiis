@@ -7,6 +7,7 @@ import {
   moveAreaAction,
   removeAreaAction,
   renameAreaAction,
+  setAreaColorAction,
 } from "@/features/account/actions";
 import { SettingsView } from "@/features/account/settings-view";
 import { deleteTagAction, renameTagAction } from "@/features/tags/actions";
@@ -38,7 +39,7 @@ export default async function SettingsPage() {
     <SettingsView
       email={email}
       areas={areas}
-      areaActions={{ add: addAreaAction, rename: renameAreaAction, remove: removeAreaAction, move: moveAreaAction }}
+      areaActions={{ add: addAreaAction, rename: renameAreaAction, remove: removeAreaAction, move: moveAreaAction, color: setAreaColorAction }}
       tags={tags}
       tagActions={{ rename: renameTagAction, remove: deleteTagAction }}
       deleteAccount={deleteAccountAction}

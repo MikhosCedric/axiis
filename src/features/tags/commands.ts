@@ -193,7 +193,7 @@ export async function loadTagged(repo: ItemsRepo, rawName: unknown, timeZone: st
   if (!tag) return null;
   const [items, areas] = await Promise.all([repo.listTagged(tag.id), repo.listAreas()]);
   const tags = await repo.tagsForItems(items.map((i) => i.id));
-  const areaName = new Map<string, string>(areas.map((a) => [a.id, a.name]));
+  const areaOf = new Map(areas.map((a) => [a.id as string, a]));
   return {
     tag: { id: tag.id, name: tag.name },
     rows: items.map((item) => ({
@@ -203,7 +203,8 @@ export async function loadTagged(repo: ItemsRepo, rawName: unknown, timeZone: st
       done: item.status === "done",
       repeats: repeats(item),
       when: whenOf(item, timeZone, clock),
-      area: item.areaId ? (areaName.get(item.areaId) ?? null) : null,
+      area: areaOf.get(item.areaId ?? "")?.name ?? null,
+      areaColor: areaOf.get(item.areaId ?? "")?.color ?? null,
       tags: byName(tags[item.id] ?? [])
         .map((t) => t.name)
         .filter((n) => !sameTag(n, tag.name)),

@@ -164,8 +164,8 @@ describe("buildMonth", () => {
   });
 
   it("orders a day's day-only items by area, then timed ones by start, and sends at most three", () => {
-    const home: Area = { id: "a-home" as AreaId, name: "Home", position: 1 };
-    const work: Area = { id: "a-work" as AreaId, name: "Work", position: 0 };
+    const home: Area = { id: "a-home" as AreaId, name: "Home", position: 1, color: null };
+    const work: Area = { id: "a-work" as AreaId, name: "Work", position: 0, color: "slate" };
     const on = { kind: "day" as const, on: d("2026-10-20") };
     const items = [
       timed("2026-10-20", 600, 660, "UTC", { title: "Ten" }),
@@ -176,10 +176,10 @@ describe("buildMonth", () => {
     ];
     const c = cell(build("2026-10", items, { areas: [home, work] }), "2026-10-20");
     expect(c.marks).toHaveLength(MARKS_PER_DAY);
-    expect(c.marks.map((m) => [m.title, m.area])).toEqual([
-      ["Work thing", "Work"],
-      ["Home thing", "Home"],
-      ["No area", null],
+    expect(c.marks.map((m) => [m.title, m.area, m.areaColor])).toEqual([
+      ["Work thing", "Work", "slate"],
+      ["Home thing", "Home", null],
+      ["No area", null, null],
     ]);
     expect(c.more).toBe(2);
   });

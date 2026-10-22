@@ -13,9 +13,9 @@ const id = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, "0")
 const areaId = (n: number) => `00000000-0000-4000-9000-${String(n).padStart(12, "0")}` as AreaId;
 
 export const AREAS: Area[] = [
-  { id: areaId(1), name: "Work", position: 0 },
-  { id: areaId(2), name: "Home", position: 1 },
-  { id: areaId(3), name: "Health", position: 2 },
+  { id: areaId(1), name: "Work", position: 0, color: null },
+  { id: areaId(2), name: "Home", position: 1, color: null },
+  { id: areaId(3), name: "Health", position: 2, color: null },
 ];
 
 const t = (text: string, marks?: DocNode["marks"]): DocNode => ({ type: "text", text, ...(marks && { marks }) });

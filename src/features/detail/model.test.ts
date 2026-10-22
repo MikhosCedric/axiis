@@ -87,7 +87,7 @@ describe("buildDetail", () => {
     const done = buildDetail({ ...base, areas: [work], item: makeItem({ status: "done", areaId: work.id }) });
     expect(done.item.done).toBe(true);
     expect(done.item.areaId).toBe(work.id);
-    expect(done.areas).toEqual([{ id: work.id, name: "Work" }]);
+    expect(done.areas).toEqual([{ id: work.id, name: "Work", color: null }]);
     expect(done.when).toBe("Waiting for a time");
   });
 });

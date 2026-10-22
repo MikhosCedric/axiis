@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { Area, AreaId } from "@/domain/item";
 import { exampleBeams } from "./first-day";
 
-const areas = (...names: string[]): Area[] => names.map((name, position) => ({ id: `area-${name}` as AreaId, name, position }));
+const areas = (...names: string[]): Area[] => names.map((name, position) => ({ id: `area-${name}` as AreaId, name, position, color: null }));
 const shown = (list: Area[]) => exampleBeams(list).map((b) => [b.areaId.slice(5), b.title, b.span.start, b.span.end]);
 
 describe("exampleBeams", () => {

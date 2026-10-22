@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { startTransition, useEffect, useId, useOptimistic, useRef, useState } from "react";
+import { AreaMark } from "@/components/area-mark";
 import type { AreaId, ItemType } from "@/domain/item";
 import type { ActionResult } from "@/features/today/commands";
 import { ConfirmDelete } from "./confirm-delete";
@@ -335,7 +336,7 @@ export function DetailSheet({
           <dt className="text-[13px] text-ink-3">
             <label htmlFor={areaFieldId}>Area</label>
           </dt>
-          <dd>
+          <dd className="flex items-center gap-1">
             <select id={areaFieldId} value={areaId ?? ""} onChange={(e) => changeArea(e.target.value)} className={field}>
               <option value="">None</option>
               {view.areas.map((a) => (
@@ -344,6 +345,7 @@ export function DetailSheet({
                 </option>
               ))}
             </select>
+            <AreaMark color={view.areas.find((a) => a.id === areaId)?.color ?? null} />
           </dd>
 
           {repeat.kind === "unavailable" && (

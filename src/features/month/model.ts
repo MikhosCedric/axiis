@@ -1,3 +1,4 @@
+import type { AreaColor } from "@/domain/area-color";
 import { repeats, type Area, type ItemType, type LocalDate, type ShownItem, type SpanRange } from "@/domain/item";
 import { occurrenceKey } from "@/domain/item-key";
 import { stateOf, type BeamState } from "@/features/today/model";
@@ -133,6 +134,7 @@ export type MonthMark = {
   /** "09:30" or "9:30 AM" on the day it starts, "to 01:00" on a later day it runs into, null for a day-only or due mark. */
   time: string | null;
   area: string | null;
+  areaColor: AreaColor | null;
   repeats: boolean;
   /** Due on this day. */
   due: boolean;
@@ -186,6 +188,7 @@ export function buildMonth(input: {
       type: item.type,
       state: stateOf(item, now),
       area: area?.name ?? null,
+      areaColor: area?.color ?? null,
       repeats: repeats(item),
       areaRank: area?.position ?? Infinity,
     };
