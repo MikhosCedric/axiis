@@ -16,6 +16,7 @@ import { RowTags } from "@/features/tags/row-tags";
 import { LAST_DATE } from "@/lib/dates";
 import { planAction } from "./actions";
 import { dayWords, inboxRows, inboxSummary, planDate, type InboxData, type PlanFor } from "./model";
+import { reach } from "@/lib/reach";
 
 /** The writes the inbox makes. Defaults to the server actions; the dev harness passes in-memory ones. */
 export type InboxActions = {
@@ -91,7 +92,7 @@ export function InboxView({
     startTransition(async () => {
       if (done) setDoneHere((list) => [...list, { ...item, status: "done", completedAt: new Date() }]);
       else change({ kind: "reopen", id: item.id });
-      const result = await actions.setDone(item.id, done);
+      const result = await reach(actions.setDone(item.id, done));
       if (!result.ok) {
         if (done) setDoneHere((list) => list.filter((i) => i.id !== item.id));
         setStatus({ text: result.error, error: true });
@@ -110,7 +111,7 @@ export function InboxView({
     refocus.current = next ? `[data-open="${next.id}"]` : "";
     startTransition(async () => {
       change({ kind: "hide", id: item.id });
-      const result = await actions.plan(item.id, when);
+      const result = await reach(actions.plan(item.id, when));
       if (!result.ok) refocus.current = `[data-plan="${item.id}"]`;
       setStatus(
         result.ok

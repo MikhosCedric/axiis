@@ -6,6 +6,7 @@ import { useId, useState, useTransition } from "react";
 import { PlusIcon } from "@/features/notes/icons";
 import type { ConnectedRow } from "@/features/notes/model";
 import type { DetailActions } from "./model";
+import { reach } from "@/lib/reach";
 
 /** Notes linked to the selected item, with a way to start a new one already linked. */
 export function LinkedNotes({ itemId, notes, actions }: { itemId: string; notes: ConnectedRow[]; actions: DetailActions }) {
@@ -17,7 +18,7 @@ export function LinkedNotes({ itemId, notes, actions }: { itemId: string; notes:
   function newNote() {
     setError(null);
     start(async () => {
-      const result = await actions.newLinkedNote(itemId);
+      const result = await reach(actions.newLinkedNote(itemId));
       if (result.ok) router.push(`/notes/${result.id}`);
       else setError(result.error);
     });

@@ -51,6 +51,7 @@ import {
   type Destination,
 } from "./model";
 import { useWeekDrag, type WeekDragPreview } from "./use-week-drag";
+import { reach } from "@/lib/reach";
 
 /** The writes the week makes. Defaults to the server actions; the dev harness passes in-memory ones. */
 export type WeekActions = {
@@ -145,7 +146,7 @@ export function WeekView({
     setStatus(null);
     startTransition(async () => {
       patch({ id: item.id, changes: moveTo(item, to, timeZone) });
-      const result = await actions.move(item.id, to);
+      const result = await reach(actions.move(item.id, to));
       setStatus(result.ok ? { text: describe(item, to), error: false } : { text: result.error, error: true });
     });
   }
@@ -156,7 +157,7 @@ export function WeekView({
     setJustDone(done ? item.id : null);
     startTransition(async () => {
       patch({ id: item.id, changes: { status: done ? "done" : "open", completedAt: done ? now : null } });
-      const result = await actions.setDone(item.id, done);
+      const result = await reach(actions.setDone(item.id, done));
       const after = stateOf({ ...item, status: done ? "done" : "open" }, now);
       setStatus(result.ok ? { text: `${item.title} is ${STATE_WORD[after]}.`, error: false } : { text: result.error, error: true });
     });

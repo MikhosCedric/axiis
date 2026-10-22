@@ -5,11 +5,16 @@ import { resolveAuthRedirect } from "@/lib/auth/redirect";
 import { contentSecurityPolicy, newNonce } from "@/lib/csp";
 import { requestHasFakeSession } from "@/lib/supabase/fake-session";
 import { updateSession } from "@/lib/supabase/session";
+import { turnstileSiteKey } from "@/lib/turnstile";
 
 export async function proxy(request: NextRequest) {
   // Next reads the nonce from the request's CSP header and stamps its own scripts; the layout reads x-nonce for its inline one.
   const nonce = newNonce();
-  const policy = contentSecurityPolicy(nonce, { development: process.env.NODE_ENV === "development" });
+  const policy = contentSecurityPolicy(nonce, {
+    development: process.env.NODE_ENV === "development",
+    // Only the sign-in page carries the CAPTCHA, so only it opens Cloudflare's origin.
+    turnstile: turnstileSiteKey() !== null && request.nextUrl.pathname === "/login",
+  });
   request.headers.set("x-nonce", nonce);
   request.headers.set("content-security-policy", policy);
 

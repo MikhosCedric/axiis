@@ -75,6 +75,16 @@ export function SettingsHarness() {
     );
   }
 
+  const [deletesOn, setDeletesOn] = useState<string | null>(null);
+  function fakeSchedule(day: string | null) {
+    return async (): Promise<ActionResult> => {
+      await pause();
+      if (failing) return { ok: false, error: "That change did not save. Try again." };
+      setDeletesOn(day);
+      return { ok: true };
+    };
+  }
+
   return (
     <div>
       <SettingsView
@@ -84,7 +94,8 @@ export function SettingsHarness() {
         tags={tags}
         tagActions={tagActions}
         tagHref={harnessTagHref}
-        deleteAccount={fakeDelete}
+        deletion={{ schedule: fakeSchedule("Friday 6 November"), undo: fakeSchedule(null), deleteNow: fakeDelete }}
+        deletesOn={deletesOn}
       />
       <aside className="mx-4 mb-10 max-w-[640px] border-t border-rule pt-4 text-ink-2 rail:mx-9">
         <p>
