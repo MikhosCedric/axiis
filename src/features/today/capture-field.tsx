@@ -8,6 +8,7 @@ import { captureAction as serverCapture } from "./actions";
 import type { ActionResult, CaptureResult } from "./commands";
 import { CAPTURE_EXAMPLES, CAPTURE_LEAD, capturedLine, firstCapturedLine, parseCapture, previewWords } from "./capture-syntax";
 import { TITLE_MAX } from "./model";
+import { reach } from "@/lib/reach";
 
 /** How long a new item wears the accent ring once it shows up. */
 const MARK_MS = 2400;
@@ -117,7 +118,7 @@ export function CaptureField({
     // The answer lands after a refresh that ends the first day, so remember whether this was it.
     const first = firstDay;
     startTransition(async () => {
-      const result = await captureAction(title);
+      const result = await reach(captureAction(title));
       if (!result.ok) {
         setValue((current) => current || title);
         setStatus({ text: result.error, error: true });

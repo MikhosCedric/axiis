@@ -62,3 +62,34 @@ signedIn("a save that cannot reach the server says so and keeps the page", async
   await expect(page.getByRole("heading", { level: 1, name: "Settings" })).toBeVisible();
   await context.setOffline(false);
 });
+
+signedIn("a capture that cannot reach the server keeps the typed words and says so", async ({ page, context }) => {
+  await page.goto("/today");
+  const field = page.locator("#capture");
+  await expect(field).toBeVisible();
+  await page.waitForLoadState("networkidle");
+
+  await context.setOffline(true);
+  await field.fill("call the bank about the card");
+  await field.press("Enter");
+  await expect(page.locator("#capture-status")).toHaveText("Could not reach Axiis. Check your connection and try again.");
+  await expect(field).toHaveValue("call the bank about the card");
+  await expect(page.getByRole("heading", { level: 1, name: "This page did not load." })).toHaveCount(0);
+  await context.setOffline(false);
+});
+
+signedIn("a done tick that cannot reach the server puts the item back and says so", async ({ page, context }) => {
+  await page.goto("/tags/errands");
+  const tick = page.getByRole("checkbox", { name: "Done: Renew passport" });
+  await expect(tick).toBeVisible();
+  await page.waitForLoadState("networkidle");
+
+  await context.setOffline(true);
+  await tick.focus();
+  await page.keyboard.press("Space");
+  await expect(page.getByRole("status").filter({ hasText: "Could not reach Axiis" })).toHaveText(
+    "Could not reach Axiis. Check your connection and try again.",
+  );
+  await expect(tick).not.toBeChecked();
+  await context.setOffline(false);
+});
