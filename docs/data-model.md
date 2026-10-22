@@ -63,10 +63,10 @@ How the app uses them (`src/domain/tag.ts`, `src/features/tags/`):
 - A name is stored as typed but trimmed, with runs of spaces collapsed and a leading `#` dropped, 1 to 32 characters. Two names are one tag when they match without case. Limits: 10 tags per item, 200 per user, checked by the commands.
 - Tags are hard-deleted. Deleting a tag removes its `item_tags` rows by cascade and never touches an item. Rename changes the one `tags` row.
 - A series carries the tags for all its occurrences. An override of a live series has no tag rows of its own; it shows and edits the series' (`tagOwner`). See `docs/recurrence.md`.
-- Open counts count live items whose status is `open`. They come from `tag_open_counts()` (migration 0008, not yet applied to the hosted project): a `security invoker` SQL function that groups the caller's `item_tags` joined to open, live items and returns one `(tag_id, open)` row per tag that has any, so a read is one request of at most 500 rows (the tag cap) however many items are tagged. Row Level Security still applies; the `user_id` filters let it use `item_tags_user_tag` and the items primary key. Execute is granted to `authenticated` only. The detail panel orders its tag suggestions by these counts, and the Tags page shows them. A tag's page lists live items that are not dropped, open first, then newest, at most 200.
+- Open counts count live items whose status is `open`. They come from `tag_open_counts()` (migration 0008): a `security invoker` SQL function that groups the caller's `item_tags` joined to open, live items and returns one `(tag_id, open)` row per tag that has any, so a read is one request of at most 500 rows (the tag cap) however many items are tagged. Row Level Security still applies; the `user_id` filters let it use `item_tags_user_tag` and the items primary key. Execute is granted to `authenticated` only. The detail panel orders its tag suggestions by these counts, and the Tags page shows them. A tag's page lists live items that are not dropped, open first, then newest, at most 200.
 - Search reads `#name` words as a filter: words narrow the text hits to items carrying every named tag, or an override whose series carries them; tags alone list every item carrying them.
 
-## Quotas (migration 0006, not yet applied to the hosted project)
+## Quotas (migration 0006)
 
 Signup is open and PostgREST takes writes straight from the browser's session, so the database caps how much one account can hold. Where the app has its own limit, the cap sits well above it, so only a script writing to PostgREST directly reaches it. Items and links have no app limit: 20,000 items is about 11 years at five a day, subtasks and moved occurrences included.
 
@@ -85,7 +85,7 @@ Signup is open and PostgREST takes writes straight from the browser's session, s
 - Only inserts are checked. Updates, soft deletes, and account deletion with its cascades are untouched. The migration adds `items (user_id, parent_id) where parent_id is not null`, so deleting an account with 20,000 items no longer scans the table once per item for the parent foreign key.
 - The note body cap drops from 2 MB to 512 KB of jsonb (`items_body_size`). The editor refuses more than 200 KB of JSON (`BODY_MAX_BYTES`), which measured at most 1.5 times larger as jsonb.
 
-## Purge (migration 0008, not yet applied to the hosted project)
+## Purge (migration 0008)
 
 `purge_deleted_items()` hard-deletes up to 500 of the caller's items soft-deleted more than 30 days ago, oldest first, and returns how many went. `deleteItem` calls it (`ItemsRepo.purgeDeleted`) after every delete, and ignores a failure, so a delete never fails because of it and the app works before 0008 is applied.
 
@@ -97,7 +97,17 @@ Signup is open and PostgREST takes writes straight from the browser's session, s
 - `hasAnyItem` counts deleted rows as stored, so an account whose every item was deleted and purged sees the first-day examples again.
 - Areas are not purged: their cap of 100 already leaves room to churn against 12 live ones.
 
-## Rate limits (migration 0007, not yet applied to the hosted project)
+## Account deletion (migrations 0002 and 0010; 0010 not yet applied)
+
+`account_deletions (user_id uuid primary key references auth.users on delete cascade, requested_at timestamptz)`: one row while an account waits 14 days for deletion.
+
+- Row Level Security: an `authenticated` user may select, insert and delete only their own row. There is no update grant, so a request is made or withdrawn, never moved. `anon` has nothing.
+- `requested_at` is stamped `now()` by a `before insert` trigger, so a client cannot backdate its request into the purge window.
+- `purge_due_accounts()` is `security definer` with `set search_path = ''`. It deletes from `auth.users` up to 50 accounts whose request is 14 or more days old, oldest first, so every public table cascades as for `delete_my_account`, and returns how many. Execute is revoked from `public`, `anon` and `authenticated` and granted to `service_role`; the owner schedules it with pg_cron (`docs/launch-checklist.md`, Account deletion purge).
+- `delete_my_account()` ("Delete now") is unchanged and removes the row by cascade.
+- The app reads the row on every signed-in page (`getDeletionRequest`, `src/lib/account/`) for the banner. A failed read counts as no request, so pages still render before 0010 is applied. Asking twice is an insert that ignores the duplicate, so the first date stands. Not part of the export.
+
+## Rate limits (migration 0007)
 
 The quotas bound how much an account holds, not how fast it adds rows. Every server action can be bypassed by calling PostgREST with the same session, so the throttle is in the database.
 

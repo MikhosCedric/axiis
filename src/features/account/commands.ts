@@ -134,3 +134,38 @@ export async function deleteAccount(port: AccountPort, rawPhrase: unknown): Prom
   await port.signOut().catch(() => undefined);
   return { ok: true };
 }
+
+/** Days between asking for deletion and the purge (migration 0010, `purge_due_accounts`). */
+export const DELETION_GRACE_DAYS = 14;
+
+/** A deletion request in `account_deletions`: one row per account, made or withdrawn, never moved. */
+export type DeletionPort = {
+  /** When the signed-in user asked for deletion, or null if they have not. */
+  requestedAt(): Promise<Date | null>;
+  /** Asks for deletion. Asking again keeps the first request's time. */
+  request(): Promise<void>;
+  withdraw(): Promise<void>;
+};
+
+/** The earliest moment the purge deletes an account asked for at `requestedAt`. */
+export function deletionDue(requestedAt: Date): Date {
+  return new Date(requestedAt.getTime() + DELETION_GRACE_DAYS * 24 * 60 * 60 * 1000);
+}
+
+export async function scheduleDeletion(port: DeletionPort): Promise<ActionResult> {
+  try {
+    await port.request();
+    return { ok: true };
+  } catch {
+    return { ok: false, error: "Your account was not scheduled for deletion, and nothing has changed. Try again in a moment." };
+  }
+}
+
+export async function undoDeletion(port: DeletionPort): Promise<ActionResult> {
+  try {
+    await port.withdraw();
+    return { ok: true };
+  } catch {
+    return { ok: false, error: "The deletion was not undone yet. Try again in a moment." };
+  }
+}

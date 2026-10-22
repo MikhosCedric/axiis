@@ -8,6 +8,7 @@ import { GlyphCheckbox } from "./glyph-checkbox";
 import { LiftIcon } from "./icons";
 import { InlineTitle } from "./inline-title";
 import { progressLine, type DetailActions, type DetailSubtask } from "./model";
+import { reach } from "@/lib/reach";
 
 /** A pending row has a client id until the server render brings the real one. */
 type Row = { id: string; title: string; done: boolean; pending?: true };
@@ -56,7 +57,7 @@ export function Subtasks({
     setStatus(null);
     startTransition(async () => {
       change(optimistic);
-      const result = await save();
+      const result = await reach(save());
       setStatus(result.ok ? (done ?? null) : result.error);
       if (!result.ok) setOffer(false);
     });
@@ -87,7 +88,7 @@ export function Subtasks({
     setStatus(null);
     startTransition(async () => {
       change({ kind: "add", row: { id: `pending:${crypto.randomUUID()}`, title, done: false, pending: true } });
-      const result = await actions.addSubtask(parentId, title);
+      const result = await reach(actions.addSubtask(parentId, title));
       if (!result.ok) {
         setDraft((current) => current || title);
         setStatus(result.error);

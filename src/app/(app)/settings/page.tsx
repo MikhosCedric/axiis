@@ -7,8 +7,11 @@ import {
   moveAreaAction,
   removeAreaAction,
   renameAreaAction,
+  scheduleDeletionAction,
   setAreaColorAction,
+  undoDeletionAction,
 } from "@/features/account/actions";
+import { getDeletionDay } from "@/features/account/deletion-day";
 import { SettingsView } from "@/features/account/settings-view";
 import { deleteTagAction, renameTagAction } from "@/features/tags/actions";
 import { loadTagIndex } from "@/features/tags/commands";
@@ -29,10 +32,11 @@ async function signedInEmail(): Promise<string | null> {
 
 export default async function SettingsPage() {
   const saved = await cookies();
-  const [email, areas, tags] = await Promise.all([
+  const [email, areas, tags, deletesOn] = await Promise.all([
     signedInEmail(),
     getAreasRepo().then((repo) => repo.list()),
     getItemsRepo().then(loadTagIndex),
+    getDeletionDay(),
   ]);
 
   return (
@@ -42,7 +46,8 @@ export default async function SettingsPage() {
       areaActions={{ add: addAreaAction, rename: renameAreaAction, remove: removeAreaAction, move: moveAreaAction, color: setAreaColorAction }}
       tags={tags}
       tagActions={{ rename: renameTagAction, remove: deleteTagAction }}
-      deleteAccount={deleteAccountAction}
+      deletion={{ schedule: scheduleDeletionAction, undo: undoDeletionAction, deleteNow: deleteAccountAction }}
+      deletesOn={deletesOn}
       theme={readTheme(saved.get(THEME_COOKIE)?.value)}
       density={readDensity(saved.get(DENSITY_COOKIE)?.value)}
       clock={readClock(saved.get(CLOCK_COOKIE)?.value)}

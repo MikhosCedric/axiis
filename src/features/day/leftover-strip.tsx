@@ -6,6 +6,7 @@ import type { ActionResult } from "@/features/today/commands";
 import { Glyph } from "@/features/today/glyph";
 import { moveLeftoverAction } from "./leftover-actions";
 import { leftoverHeading, type LeftoverData } from "./leftover-model";
+import { reach } from "@/lib/reach";
 
 const button =
   "rounded-md px-2.5 py-1 font-medium text-ink-2 hover:bg-hover active:bg-press hover:text-ink pointer-coarse:min-h-11 disabled:opacity-50";
@@ -33,7 +34,7 @@ export function LeftoverStrip({
 
   function run(work: () => Promise<ActionResult>, said: string) {
     startTransition(async () => {
-      const result = await work();
+      const result = await reach(work());
       if (result.ok) onStatus(said, false);
       else onStatus(result.error, true);
     });

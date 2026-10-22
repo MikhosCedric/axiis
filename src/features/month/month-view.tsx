@@ -31,6 +31,7 @@ import { useWeekDrag, type WeekDragPreview } from "@/features/week/use-week-drag
 import { addDays } from "@/lib/dates";
 import { captureOnAction } from "./actions";
 import type { MonthData } from "./load";
+import { reach } from "@/lib/reach";
 import {
   anchorOf,
   countWords,
@@ -152,7 +153,7 @@ export function MonthView({
     setStatus(null);
     startTransition(async () => {
       move({ key: mark.key, from: mark.from, to });
-      const result = await moveAction(mark.key, to);
+      const result = await reach(moveAction(mark.key, to));
       setStatus(result.ok ? { text: `${mark.title} is on ${formatDayHeading(to)}.`, error: false } : { text: result.error, error: true });
     });
   }

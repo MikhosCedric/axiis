@@ -4,7 +4,7 @@ import type { Clock } from "@/lib/clock";
 import type { TagSummary } from "@/domain/tag";
 import { TagsSection, type TagActions } from "@/features/tags/tags-section";
 import { AreasSection, type AreaActions } from "./areas-section";
-import { DeleteAccountSection, type DeleteAccountAction } from "./delete-account-section";
+import { DeleteAccountSection, type DeletionActions } from "./delete-account-section";
 import { DisplaySection } from "./display-section";
 
 export const EXPORT_PATH = "/settings/export";
@@ -24,7 +24,8 @@ export function SettingsView({
   tags,
   tagActions,
   tagHref,
-  deleteAccount,
+  deletion,
+  deletesOn = null,
   theme = "system",
   density = "spacious",
   clock = { setting: "auto", clock: "24" },
@@ -35,7 +36,9 @@ export function SettingsView({
   tags: TagSummary[];
   tagActions: TagActions;
   tagHref?: (name: string) => string;
-  deleteAccount: DeleteAccountAction;
+  deletion: DeletionActions;
+  /** The day a scheduled deletion falls due, or null when none is scheduled. */
+  deletesOn?: string | null;
   /** The theme and density saved on this device. */
   theme?: Theme;
   density?: Density;
@@ -103,7 +106,7 @@ export function SettingsView({
           </section>
 
           <div className="border-t border-rule pt-10">
-            <DeleteAccountSection action={deleteAccount} />
+            <DeleteAccountSection actions={deletion} deletesOn={deletesOn} />
           </div>
         </div>
       </div>

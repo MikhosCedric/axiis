@@ -2,11 +2,21 @@
 
 import { refresh } from "next/cache";
 import { redirect } from "next/navigation";
+import { getDeletionPort } from "@/lib/account";
 import { getAreasRepo } from "@/lib/areas";
 import { endFakeSession, getFakeAccount } from "@/lib/supabase/fake-session";
 import { createClient } from "@/lib/supabase/server";
 import type { ActionResult } from "@/features/today/commands";
-import { addArea, deleteAccount, moveArea, removeArea, renameArea, setAreaColor } from "./commands";
+import {
+  addArea,
+  deleteAccount,
+  moveArea,
+  removeArea,
+  renameArea,
+  scheduleDeletion,
+  setAreaColor,
+  undoDeletion,
+} from "./commands";
 
 // The repo is bound to the signed-in user's session and RLS scopes every
 // write, so a direct POST without a session cannot touch anyone's rows.
@@ -36,7 +46,16 @@ export async function moveAreaAction(id: string, direction: string): Promise<Act
   return refreshed(await moveArea(await getAreasRepo(), id, direction));
 }
 
-/** Deletes the signed-in user's account and everything in it, then sends them to the sign-in page. */
+/** Asks for the account to be deleted in 14 days. The account keeps working, and every page offers Undo. */
+export async function scheduleDeletionAction(): Promise<ActionResult> {
+  return refreshed(await scheduleDeletion(await getDeletionPort()));
+}
+
+export async function undoDeletionAction(): Promise<ActionResult> {
+  return refreshed(await undoDeletion(await getDeletionPort()));
+}
+
+/** "Delete now": deletes the signed-in user's account and everything in it, then sends them to the sign-in page. */
 export async function deleteAccountAction(phrase: string): Promise<ActionResult> {
   const fake = await getFakeAccount();
   if (fake) {
