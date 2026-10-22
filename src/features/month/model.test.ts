@@ -206,6 +206,17 @@ describe("buildMonth", () => {
     expect(b.due).toBe(3);
   });
 
+  it("shows a day's open marks before its done ones, so the three shown are what is still to do", () => {
+    const on = d("2026-10-14");
+    const b = build("2026-10", [
+      makeItem({ title: "Done first", schedule: { kind: "day", on }, position: 0, status: "done", completedAt: new Date("2026-10-14T09:00:00Z") }),
+      ...["A", "B", "C"].map((title, i) => makeItem({ title, schedule: { kind: "day", on }, position: i + 1 })),
+    ]);
+    const cell = b.cells.find((c) => c.date === on)!;
+    expect(cell.marks.map((m) => m.title)).toEqual(["A", "B", "C"]);
+    expect(cell.more).toBe(1);
+  });
+
   it("counts open items that start in the month, not the days around it", () => {
     const b = build("2026-10", [
       makeItem({ schedule: { kind: "day", on: d("2026-10-02") } }),
@@ -214,8 +225,9 @@ describe("buildMonth", () => {
       timed("2026-10-31", 23 * 60, 25 * 60),
     ]);
     expect(b.open).toBe(2);
-    expect(monthSummary(b.open, b.due)).toBe("2 open this month.");
-    expect(monthSummary(0, 1)).toBe("Nothing open this month. 1 due.");
+    expect(monthSummary(ym("2026-10"), d("2026-10-23"), b.open, b.due)).toBe("This month · 9 days left · 2 open");
+    expect(monthSummary(ym("2026-10"), d("2026-10-31"), 0, 1)).toBe("This month · Last day · Nothing open · 1 due");
+    expect(monthSummary(ym("2026-11"), d("2026-10-23"), 3, 0)).toBe("Next month · 3 open");
   });
 
   it("draws state by line form: done and live are told apart from planned", () => {

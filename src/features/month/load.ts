@@ -38,11 +38,12 @@ export async function loadMonth(repo: ItemsRepo, month: YearMonth, now: Date, ti
     clock,
     now,
   });
+  const today = toLocalDate(now, timeZone);
   return {
     month,
-    today: toLocalDate(now, timeZone),
+    today,
     cells,
-    summary: monthSummary(open, dueCount),
+    summary: monthSummary(month, today, open, dueCount),
     full: stored.length >= RANGE_LIMIT || due.length >= RANGE_LIMIT,
   };
 }
