@@ -134,7 +134,8 @@ export function DayView({
   );
   const nowMinutes = isToday ? localMinutes(now, date, timeZone) : null;
   const firstDay = data.firstDay && items.length === 0;
-  const glance = useMemo(() => dayGlance(view, date, toLocalDate(now, timeZone), now), [view, date, now, timeZone]);
+  const today = toLocalDate(now, timeZone);
+  const glance = useMemo(() => dayGlance(view, date, today, now), [view, date, today, now]);
   const [focusOn, setFocus] = useState(focusSaved);
   const focus = focusOn && isToday && !firstDay;
 
@@ -176,7 +177,7 @@ export function DayView({
 
   function describe(item: ShownItem, placement: Placement) {
     const s = placement.schedule;
-    if (s.kind === "unscheduled") return `${item.title} is waiting, with no day.`;
+    if (s.kind === "unscheduled") return `${item.title} is in the Inbox, with no day.`;
     if (s.kind === "day") return `${item.title} is on this day, at any time.`;
     const area = areaName(placement.areaId === undefined ? item.areaId : placement.areaId);
     return `${item.title}, ${formatClock(s.start, timeZone, clock)} to ${formatClock(s.end, timeZone, clock)}, ${area}.`;
@@ -218,6 +219,7 @@ export function DayView({
 
   const shared = {
     view,
+    today,
     waitingFull: data.waitingFull,
     areas,
     timeZone,

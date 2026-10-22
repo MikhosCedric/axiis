@@ -35,7 +35,7 @@ import { dueWords } from "@/features/today/due";
 import { GuideButton, type GuideTopic } from "@/features/palette/guide";
 import { LineLegend } from "@/features/today/line-legend";
 import { SameInInbox } from "@/features/inbox/same-in-inbox";
-import { buildToday, EMPTY_TRAY, stateOf, TRAY_FULL, WAITING, type TodayEntry } from "@/features/today/model";
+import { buildToday, EMPTY_TRAY, stateOf, TRAY_FULL, INBOX, type TodayEntry } from "@/features/today/model";
 import { dayRangeFor } from "@/lib/dates";
 import { moveAction } from "./actions";
 import type { WeekData } from "./load";
@@ -134,7 +134,7 @@ export function WeekView({
   }
 
   function describe(item: ShownItem, to: Destination) {
-    if (to === "tray") return `${item.title} is waiting, with no day.`;
+    if (to === "tray") return `${item.title} is in the Inbox, with no day.`;
     const s = moveTo(item, to, timeZone).schedule;
     const at = s.kind === "timed" ? ` at ${formatClock(s.start, timeZone, clock)}` : "";
     return `${item.title} is on ${formatDayHeading(to)}${at}.`;
@@ -258,7 +258,7 @@ export function WeekView({
         {/* Every item's description. Seen in the Guide; here only for screen readers. */}
         <p id={KEYS_ID} className="sr-only">
           Drag an item to another day, or down to the tray to clear its day. With an item focused, Left and Right move it
-          a day, Backspace sends it to the tray, Space marks it done and Enter opens it. On a waiting item, Up gives it a
+          a day, Backspace sends it to the tray, Space marks it done and Enter opens it. On an item in the Inbox, Up gives it a
           day. The bracket keys change the week and T comes back to this one.
         </p>
         <LineLegend now={false} />
@@ -271,7 +271,7 @@ export function WeekView({
           }`}
         >
           <h2 id="week-tray-h" className="font-serif text-lg leading-tight font-medium">
-            {WAITING}
+            {INBOX}
           </h2>
           <p className="mt-1 mb-3.5 text-[13px] text-ink-3">
             No day yet. Drag one onto a day to plan it for that day. Drag a planned item back here to clear its day.{" "}
@@ -406,7 +406,7 @@ function ItemRow({
         ? "Any time"
         : null;
   const spokenTime =
-    s.kind === "timed" ? `${formatClock(s.start, timeZone, clock)} to ${formatClock(s.end, timeZone, clock)}` : (time ?? "waiting");
+    s.kind === "timed" ? `${formatClock(s.start, timeZone, clock)} to ${formatClock(s.end, timeZone, clock)}` : (time ?? "in the Inbox");
   const tagged = tagLine(tags ?? [], 2);
   const due = item.dueOn && state !== "done" ? dueWords(item.dueOn, today).words : null;
   const label = [item.title, spokenTime, area?.name, STATE_WORD[state], due, repeats(item) && "repeats", tagged.spoken].filter(Boolean).join(", ");

@@ -2,14 +2,16 @@
 
 import { ViewTransition } from "react";
 import { AreaLabel } from "@/components/area-mark";
-import { repeats, type Area, type ShownItem } from "@/domain/item";
+import { repeats, type Area, type LocalDate, type ShownItem } from "@/domain/item";
+import { DueMark } from "@/features/today/due-mark";
+import { DoneFold } from "./score-view";
 import { RepeatMark } from "@/features/today/repeat-mark";
 import { RowTags } from "@/features/tags/row-tags";
 import { formatClock } from "@/lib/clock";
 import { useClock } from "@/components/shell/clock-context";
 import { Glyph } from "@/features/today/glyph";
 import { SameInInbox } from "@/features/inbox/same-in-inbox";
-import { EMPTY_TRAY, TRAY_FULL, WAITING,type BeamState, type TodayEntry, type TodayView } from "@/features/today/model";
+import { EMPTY_TRAY, TRAY_FULL, INBOX,type BeamState, type TodayEntry, type TodayView } from "@/features/today/model";
 import type { ChildCount } from "@/lib/items/repo";
 
 const TITLE_WEIGHT: Record<BeamState, string> = {
@@ -20,6 +22,7 @@ const TITLE_WEIGHT: Record<BeamState, string> = {
 
 export function ListView({
   view,
+  today,
   waitingFull,
   areas,
   timeZone,
@@ -31,6 +34,8 @@ export function ListView({
   onToggleDone,
 }: {
   view: TodayView;
+  /** The real today, for due marks. */
+  today: LocalDate;
   waitingFull: boolean;
   areas: Area[];
   timeZone: string;
@@ -68,7 +73,7 @@ export function ListView({
               </span>
             </>
           ) : (
-            <span className={quiet}>{s.kind === "day" ? "Any time" : WAITING}</span>
+            <span className={quiet}>{s.kind === "day" ? "Any time" : INBOX}</span>
           )}
         </span>
         <label className="relative grid h-8 w-12 cursor-pointer place-items-center rounded-md hover:bg-hover active:bg-press has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-accent">
@@ -109,11 +114,29 @@ export function ListView({
             </span>
           )}
           <RowTags tags={tags[item.id]} selected={selected} />
+          {item.dueOn && state !== "done" && <DueMark dueOn={item.dueOn} today={today} className={`ml-2 text-xs ${quiet}`} />}
         </button>
         <span className={`pr-1 text-[13px] max-rail:hidden ${quiet}`}>
           {area && <AreaLabel name={area.name} color={area.color} />}
         </span>
       </li>
+    );
+  };
+
+  /** Open rows, then the done ones folded under one quiet line. A row just ticked or open in the panel stays put. */
+  const rows = (entries: TodayEntry[]) => {
+    const done = entries.filter((e) => e.state === "done" && e.item.id !== justDone && e.item.id !== selectedId);
+    return (
+      <>
+        <ul>{entries.filter((e) => !done.includes(e)).map(row)}</ul>
+        {done.length > 0 && (
+          <div className="pt-2">
+            <DoneFold count={done.length} listClassName="mt-1">
+              {done.map(row)}
+            </DoneFold>
+          </div>
+        )}
+      </>
     );
   };
 
@@ -124,16 +147,16 @@ export function ListView({
       </h2>
       <h3 className="border-b border-rule pb-2.5 font-serif text-lg font-medium">Planned</h3>
       {view.scheduled.length ? (
-        <ul>{view.scheduled.map(row)}</ul>
+        rows(view.scheduled)
       ) : (
         <p className="py-3 text-ink-2">Nothing has a time yet.</p>
       )}
-      <h3 className="mt-10 font-serif text-lg font-medium">{WAITING}</h3>
+      <h3 className="mt-10 font-serif text-lg font-medium">{INBOX}</h3>
       <p className="mt-1 border-b border-rule pb-2.5 text-[13px] text-ink-2">
         Captured and safe, with no day yet. Plan these when you are ready. <SameInInbox />
       </p>
       {view.waiting.length ? (
-        <ul>{view.waiting.map(row)}</ul>
+        rows(view.waiting)
       ) : (
         <p className="py-3 text-ink-2">{EMPTY_TRAY}</p>
       )}

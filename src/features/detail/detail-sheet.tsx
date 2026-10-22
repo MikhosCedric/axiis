@@ -400,7 +400,7 @@ export function DetailSheet({
                 () => actions.promote(item.id),
                 () => {
                   setPromoted(true);
-                  setStatus("Now a task of its own, waiting for a time.");
+                  setStatus("Now a task of its own, in the Inbox.");
                 },
               )
             }

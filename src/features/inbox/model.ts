@@ -52,6 +52,6 @@ export function inboxRows(saved: readonly Item[], doneHere: readonly Item[]): It
 
 export function inboxSummary(rows: readonly Item[]): string {
   const open = rows.filter((i) => i.status !== "done").length;
-  if (open === 0) return rows.length ? "Everything here is done." : "Nothing is waiting.";
-  return open === 1 ? "1 item waiting." : `${open} items waiting.`;
+  if (open === 0) return rows.length ? "Everything here is done." : "Nothing here now.";
+  return open === 1 ? "1 to plan." : `${open} to plan.`;
 }
