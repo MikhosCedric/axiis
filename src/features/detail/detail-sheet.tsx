@@ -26,6 +26,7 @@ import { formatDayHeading } from "@/features/today/format";
 import { useClock } from "@/components/shell/clock-context";
 import { formatMinutes } from "@/lib/clock";
 import { TagField } from "@/features/tags/tag-field";
+import { reach } from "@/lib/reach";
 
 const TYPE_WORD: Record<ItemType, string> = { task: "Task", event: "Event", note: "Note", checklist: "Checklist" };
 const EVENT_NEEDS_TIME = "An event needs a time. Add one under Time.";
@@ -85,7 +86,7 @@ export function DetailSheet({
     setStatus(null);
     setNeedsTime(false);
     startTransition(async () => {
-      const result = await save();
+      const result = await reach(save());
       if (result.ok) after?.();
       else setStatus(result.error);
     });

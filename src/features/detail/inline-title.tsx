@@ -3,6 +3,7 @@
 import { startTransition, useOptimistic, useState } from "react";
 import type { ActionResult } from "@/features/today/commands";
 import { TITLE_MAX } from "@/features/today/model";
+import { reach } from "@/lib/reach";
 
 /**
  * A title that reads as text and edits in place. Enter or leaving the field
@@ -36,7 +37,7 @@ export function InlineTitle({
     onError(null);
     startTransition(async () => {
       setShown(next);
-      const result = await onSave(next);
+      const result = await reach(onSave(next));
       if (!result.ok) {
         onError(result.error);
         setDraft((d) => (d === null ? null : value));

@@ -6,6 +6,7 @@ import { parseTagName, TAG_NAME_MAX, type TagId, type TagName, type TagSummary }
 import { ConfirmDelete } from "@/features/detail/confirm-delete";
 import type { ActionResult } from "@/features/today/commands";
 import { openCount, tagHref } from "./model";
+import { reach } from "@/lib/reach";
 
 export type TagActions = {
   rename(id: string, name: string): Promise<ActionResult>;
@@ -38,7 +39,7 @@ export function TagsSection({
     setError(null);
     startTransition(async () => {
       change(optimistic);
-      const result = await work();
+      const result = await reach(work());
       if (!result.ok) setError(result.error);
     });
   }

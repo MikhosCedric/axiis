@@ -5,6 +5,7 @@ import { startTransition, useEffect, useId, useOptimistic, useRef, useState } fr
 import type { ActionResult } from "@/features/today/commands";
 import { LinkIcon, UnlinkIcon } from "./icons";
 import { TYPE_WORD, type ConnectedRow, type NotesActions, type SearchRow } from "./model";
+import { reach } from "@/lib/reach";
 
 const SEARCH_DELAY_MS = 200;
 
@@ -127,7 +128,7 @@ export function Connected({ noteId, rows, actions }: { noteId: string; rows: Con
     setStatus(null);
     startTransition(async () => {
       change(optimistic);
-      const result = await save();
+      const result = await reach(save());
       setStatus(result.ok ? done : result.error);
     });
   }

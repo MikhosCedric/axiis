@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import type { ActionResult } from "@/features/today/commands";
+import { reach } from "@/lib/reach";
 
 /** Shown at the top of every signed-in page while the account waits for deletion. */
 export function DeletionBanner({ deletesOn, undo }: { deletesOn: string; undo: () => Promise<ActionResult> }) {
@@ -20,7 +21,7 @@ export function DeletionBanner({ deletesOn, undo }: { deletesOn: string; undo: (
         onClick={() => {
           if (pending) return;
           startUndo(async () => {
-            const result = await undo();
+            const result = await reach(undo());
             setMessage(result.ok ? null : result.error);
           });
         }}
