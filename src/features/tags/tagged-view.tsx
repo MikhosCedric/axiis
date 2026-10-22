@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useOptimistic, useTransition, type ReactNode } from "react";
+import { AreaLabel } from "@/components/area-mark";
 import { SELECTED_ITEM_PARAM } from "@/features/day/types";
 import { DetailAside } from "@/features/detail/detail-aside";
 import { setDoneAction } from "@/features/today/actions";
@@ -110,7 +111,7 @@ export function TaggedView({
                     {meta.length > 0 && (
                       <p className={`mt-0.5 flex flex-wrap gap-x-2 text-xs ${selected ? "text-ink-2" : "text-ink-3"}`}>
                         {row.when && <span className="tabular">{row.when}</span>}
-                        {row.area && <span>{row.area}</span>}
+                        {row.area && <AreaLabel name={row.area} color={row.areaColor} />}
                         {others.shown && (
                           <span>
                             <span aria-hidden="true">{others.shown}</span>

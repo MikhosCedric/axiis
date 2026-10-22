@@ -233,7 +233,18 @@ describe("patchToUpdate", () => {
 
 describe("areaFromRow", () => {
   it("parses an area and rejects a bad id", () => {
-    expect(areaFromRow({ id: AREA_ID, name: "Work", position: 1 })).toEqual({ id: AREA_ID, name: "Work", position: 1 });
-    expect(() => areaFromRow({ id: "nope", name: "Work", position: 1 })).toThrow();
+    expect(areaFromRow({ id: AREA_ID, name: "Work", position: 1, color: null })).toEqual({
+      id: AREA_ID,
+      name: "Work",
+      position: 1,
+      color: null,
+    });
+    expect(() => areaFromRow({ id: "nope", name: "Work", position: 1, color: null })).toThrow();
+  });
+
+  it("reads a palette colour and rejects anything else", () => {
+    expect(areaFromRow({ id: AREA_ID, name: "Work", position: 1, color: "moss" }).color).toBe("moss");
+    expect(() => areaFromRow({ id: AREA_ID, name: "Work", position: 1, color: "red" })).toThrow();
+    expect(() => areaFromRow({ id: AREA_ID, name: "Work", position: 1 })).toThrow();
   });
 });

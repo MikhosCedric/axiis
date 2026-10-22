@@ -9,6 +9,7 @@ import {
   moved,
   removeArea,
   renameArea,
+  setAreaColor,
   type AccountPort,
 } from "./commands";
 
@@ -105,6 +106,43 @@ describe("renameArea", () => {
     const [work] = await repo.list();
     await removeArea(repo, work.id);
     expect(await renameArea(repo, work.id, "Job")).toEqual({ ok: false, error: "That area is not here any more." });
+  });
+});
+
+describe("setAreaColor", () => {
+  const colors = async (repo: ReturnType<typeof fakeAreasRepo>["repo"]) => (await repo.list()).map((a) => a.color);
+
+  it("sets a palette colour on one area and clears it with null", async () => {
+    const { repo } = fakeAreasRepo(["Work", "Home"]);
+    const [work] = await repo.list();
+    expect(await setAreaColor(repo, work.id, "moss")).toEqual({ ok: true });
+    expect(await colors(repo)).toEqual(["moss", null]);
+    expect(await setAreaColor(repo, work.id, null)).toEqual({ ok: true });
+    expect(await colors(repo)).toEqual([null, null]);
+  });
+
+  it.each(["red", "Moss", "", "verdigris", "#964b2c", undefined, 3, { color: "moss" }])("refuses %j", async (color) => {
+    const { repo } = fakeAreasRepo([{ name: "Work", color: "clay" }]);
+    const [work] = await repo.list();
+    expect(await setAreaColor(repo, work.id, color)).toEqual({ ok: false, error: "That colour is not one Axiis offers." });
+    expect(await colors(repo)).toEqual(["clay"]);
+  });
+
+  it("refuses an id that is not a live area", async () => {
+    const { repo } = fakeAreasRepo(["Work"]);
+    const [work] = await repo.list();
+    await removeArea(repo, work.id);
+    for (const id of [...BAD_IDS, work.id]) {
+      expect(await setAreaColor(repo, id, "plum")).toEqual({ ok: false, error: "That area is not here any more." });
+    }
+  });
+
+  it("keeps the colour through a rename and a move", async () => {
+    const { repo } = fakeAreasRepo(["Work", { name: "Home", color: "ochre" }]);
+    const home = (await repo.list())[1];
+    await renameArea(repo, home.id, "House");
+    await moveArea(repo, home.id, "up");
+    expect((await repo.list())[0]).toMatchObject({ name: "House", color: "ochre" });
   });
 });
 

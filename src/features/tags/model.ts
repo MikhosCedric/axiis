@@ -1,3 +1,4 @@
+import type { AreaColor } from "@/domain/area-color";
 import type { ItemId, ItemType } from "@/domain/item";
 import { byName, parseTagName, sameTag, type TagName, type TagSummary } from "@/domain/tag";
 import { rank } from "@/features/palette/rank";
@@ -18,6 +19,7 @@ export type TaggedRow = {
   /** When it happens, null for a note. */
   when: string | null;
   area: string | null;
+  areaColor: AreaColor | null;
   /** Its other tags. */
   tags: TagName[];
 };

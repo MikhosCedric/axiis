@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
+import type { AreaColor } from "@/domain/area-color";
 import type { Area, AreaId } from "@/domain/item";
 import { AREA_COLUMNS, areaFromRow } from "@/lib/items/mappers";
 import type { AreasRepo } from "./repo";
@@ -39,14 +40,22 @@ export class SupabaseAreasRepo implements AreasRepo {
   }
 
   async rename(id: AreaId, name: string): Promise<Area> {
+    return this.update("rename", id, { name });
+  }
+
+  async setColor(id: AreaId, color: AreaColor | null): Promise<Area> {
+    return this.update("setColor", id, { color });
+  }
+
+  private async update(operation: string, id: AreaId, patch: { name: string } | { color: AreaColor | null }): Promise<Area> {
     const result = await this.db
       .from("areas")
-      .update({ name })
+      .update(patch)
       .eq("id", id)
       .is("deleted_at", null)
       .select(AREA_COLUMNS)
       .single();
-    return unwrap("rename", result, areaFromRow);
+    return unwrap(operation, result, areaFromRow);
   }
 
   async softDelete(id: AreaId): Promise<void> {

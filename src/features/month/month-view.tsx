@@ -14,6 +14,7 @@ import {
   type PointerEvent as ReactPointerEvent,
   type ReactNode,
 } from "react";
+import { AreaLabel, AreaMark } from "@/components/area-mark";
 import type { LocalDate } from "@/domain/item";
 import { dayHref } from "@/features/day/nav";
 import { SELECTED_ITEM_PARAM } from "@/features/day/types";
@@ -485,6 +486,7 @@ function MarkButton({
         mark.movable ? "cursor-grab touch-manipulation" : "cursor-pointer"
       } ${selected ? "bg-accent-wash ring-1 ring-accent" : ""} ${lifted ? "opacity-35" : ""}`}
     >
+      {variant === "cell" && <AreaMark color={mark.areaColor} done={mark.state === "done"} size={6} />}
       <span aria-hidden="true" className={variant === "cell" ? "w-[22px] flex-none overflow-hidden" : "w-9 flex-none"}>
         <Glyph type={mark.type} state={mark.state} className={variant === "cell" ? "!w-[30px] origin-left scale-[0.72]" : "!w-9"} />
       </span>
@@ -492,7 +494,9 @@ function MarkButton({
       {mark.due && <span className="flex-none text-ink-3">{mark.time ? "· due" : "Due"}</span>}
       <span className={`min-w-0 truncate ${TITLE[mark.state]}`}>{mark.title}</span>
       {mark.repeats && <RepeatMark className="text-ink-3" />}
-      {variant === "row" && mark.area && <span className="ml-auto flex-none text-xs text-ink-3">{mark.area}</span>}
+      {variant === "row" && mark.area && (
+        <AreaLabel name={mark.area} color={mark.areaColor} className="ml-auto flex-none text-xs text-ink-3" />
+      )}
     </div>
   );
 }

@@ -1,5 +1,6 @@
 // zod/mini: the settings sections import this module's constants, and classic zod ships every locale with it.
 import * as z from "zod/mini";
+import { AREA_COLORS } from "@/domain/area-color";
 import { idSchema, type AreaId } from "@/domain/item";
 import type { AreasRepo } from "@/lib/areas/repo";
 import { saveFailure } from "@/lib/quota";
@@ -20,6 +21,7 @@ export type AccountPort = {
 
 const nameSchema = z.string().check(z.trim(), z.minLength(1), z.maxLength(AREA_NAME_MAX));
 const directionSchema = z.enum(["up", "down"]);
+const colorSchema = z.nullable(z.enum(AREA_COLORS));
 const phraseSchema = z.string().check(z.trim(), z.refine((s) => s === DELETE_PHRASE));
 
 const NAME_ERROR = `An area name needs 1 to ${AREA_NAME_MAX} characters.`;
@@ -69,6 +71,19 @@ export async function renameArea(repo: AreasRepo, rawId: unknown, rawName: unkno
     const clash = areas.find((a) => a.id !== id && sameName(a.name, name.data));
     if (clash) return { ok: false, error: taken(clash.name) };
     await repo.rename(id, name.data);
+  });
+}
+
+/** Sets an area's colour to a palette name, or clears it with null. */
+export async function setAreaColor(repo: AreasRepo, rawId: unknown, rawColor: unknown): Promise<ActionResult> {
+  const id = parseAreaId(rawId);
+  if (!id) return { ok: false, error: MISSING };
+  const color = colorSchema.safeParse(rawColor);
+  if (!color.success) return { ok: false, error: "That colour is not one Axiis offers." };
+  return attempt(async () => {
+    const self = (await repo.list()).find((a) => a.id === id);
+    if (!self) return { ok: false, error: MISSING };
+    if (self.color !== color.data) await repo.setColor(id, color.data);
   });
 }
 

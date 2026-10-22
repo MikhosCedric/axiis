@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import type { Area } from "@/domain/item";
 import type { TagSummary } from "@/domain/tag";
 import type { AreaActions } from "@/features/account/areas-section";
-import { addArea, deleteAccount, moveArea, removeArea, renameArea } from "@/features/account/commands";
+import { addArea, deleteAccount, moveArea, removeArea, renameArea, setAreaColor } from "@/features/account/commands";
 import { SettingsView } from "@/features/account/settings-view";
 import { deleteTag, loadTagIndex, renameTag } from "@/features/tags/commands";
 import type { TagActions } from "@/features/tags/tags-section";
@@ -18,7 +18,7 @@ const pause = () => new Promise((resolve) => setTimeout(resolve, 450));
 export function SettingsHarness() {
   const [{ repo, initial }] = useState(() => {
     const fake = fakeAreasRepo(["Work", "Home", "Health", "A longer area name that runs to forty"]);
-    return { repo: fake.repo, initial: fake.rows.map(({ id, name, position }): Area => ({ id, name, position })) };
+    return { repo: fake.repo, initial: fake.rows.map(({ id, name, position, color }): Area => ({ id, name, position, color })) };
   });
   const [areas, setAreas] = useState(initial);
   const [failing, setFailing] = useState(false);
@@ -39,6 +39,7 @@ export function SettingsHarness() {
     rename: fake(renameArea),
     remove: fake(removeArea),
     move: fake(moveArea),
+    color: fake(setAreaColor),
   };
 
   const [tags, setTags] = useState<TagSummary[]>([]);

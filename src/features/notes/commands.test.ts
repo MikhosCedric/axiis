@@ -85,8 +85,8 @@ describe("listNoteRows", () => {
     w.store.bodyText.set(older.id, "\nFirst line\nsecond line");
     const rows = await listNoteRows(w.notes, w.items, null, NOW, TZ, "24");
     expect(rows).toEqual([
-      { id: newer.id, title: "Untitled note", firstLine: "", areaName: null, edited: "Edited today, 11:05" },
-      { id: older.id, title: "Older", firstLine: "First line", areaName: "Home", edited: "Edited 30 Sept" },
+      { id: newer.id, title: "Untitled note", firstLine: "", areaName: null, areaColor: null, edited: "Edited today, 11:05" },
+      { id: older.id, title: "Older", firstLine: "First line", areaName: "Home", areaColor: null, edited: "Edited 30 Sept" },
     ]);
   });
 

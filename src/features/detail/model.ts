@@ -1,3 +1,4 @@
+import type { AreaColor } from "@/domain/area-color";
 import { isStored, repeats, type Area, type AreaId, type Item, type ItemId, type ItemType, type LocalDate, type Schedule, type ShownItem } from "@/domain/item";
 import { occurrenceKey, type ItemKey } from "@/domain/item-key";
 import type { Rule, RuleEnd } from "@/domain/recurrence";
@@ -120,7 +121,7 @@ export type DetailView = {
   time: TimeOfDay | null;
   /** The deadline, and whether the panel may set or clear it. */
   due: { on: LocalDate | null; editable: boolean };
-  areas: { id: AreaId; name: string }[];
+  areas: { id: AreaId; name: string; color: AreaColor | null }[];
   nesting: Nesting;
   repeat: RepeatView;
   /** The stored item linked notes and tags attach to. Notes and tags on any occurrence attach to its series. */
@@ -276,7 +277,7 @@ export function buildDetail(input: {
     today,
     time: timeOf(item.schedule, timeZone),
     due: { on: item.dueOn, editable: takesDue(item) },
-    areas: areas.map((a) => ({ id: a.id, name: a.name })),
+    areas: areas.map((a) => ({ id: a.id, name: a.name, color: a.color })),
     nesting,
     repeat: repeatView(item, series, subtasks, skipped, timeZone, today),
     notesFor: series?.id ?? (isStored(item) ? item.id : item.recurrence.seriesId),

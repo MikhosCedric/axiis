@@ -10,6 +10,8 @@ import {
   type KeyboardEvent,
   type PointerEvent as ReactPointerEvent,
 } from "react";
+import { AreaMark } from "@/components/area-mark";
+import type { AreaColor } from "@/domain/area-color";
 import { repeats, type Area, type LocalDate, type ShownItem } from "@/domain/item";
 import { RepeatMark } from "@/features/today/repeat-mark";
 import { tagLine } from "@/features/tags/model";
@@ -142,6 +144,7 @@ export function ScoreView({
   const width = axisWidth(axis);
   const totalHeight = staves.reduce((h, s) => h + s.height + 1, 0);
   const areaName = (item: ShownItem) => staves.find((s) => s.areaId === item.areaId)?.name ?? "No area";
+  const colorOf = (item: ShownItem) => staves.find((s) => s.areaId === item.areaId)?.color ?? null;
 
   function syncAxis() {
     if (ticks.current && scroller.current) ticks.current.style.transform = `translateX(${-scroller.current.scrollLeft}px)`;
@@ -218,7 +221,8 @@ export function ScoreView({
                     selected={selectedId === entry.item.id}
                     justDone={justDone === entry.item.id}
                     lifted={preview?.item.id === entry.item.id && preview.kind !== "resize"}
-                    where="any time"
+                    where={entry.item.areaId ? `any time, ${areaName(entry.item)}` : "any time"}
+                    color={colorOf(entry.item)}
                     onPointerDown={(e) => start(e, "place", entry.item)}
                     onKeyDown={(e) => keyDown(e, entry.item)}
                   />
@@ -276,6 +280,7 @@ export function ScoreView({
                 className="sticky left-0 z-[4] w-[var(--lw)] flex-none border-r border-rule bg-paper px-2 py-3.5 rail:px-3"
               >
                 <span className="block font-serif text-base leading-tight font-medium [overflow-wrap:anywhere] rail:text-[19px]">
+                  <AreaMark color={staff.color} className="mr-1.5 mb-[0.15em] align-middle" />
                   {staff.name}
                 </span>
                 {!firstDay && staff.open > 0 && <span className="mt-1 block text-xs text-ink-3 tabular">{staff.open} open</span>}
@@ -370,6 +375,7 @@ export function ScoreView({
                       justDone={justDone === entry.item.id}
                       lifted={preview?.item.id === entry.item.id && preview.kind !== "resize"}
                       where={entry.item.areaId ? `waiting, ${areaName(entry.item)}` : "waiting"}
+                      color={colorOf(entry.item)}
                       onPointerDown={(e) => start(e, "place", entry.item)}
                       onKeyDown={(e) => keyDown(e, entry.item)}
                     />
@@ -457,6 +463,7 @@ function BeamView({
       onKeyDown={onKeyDown}
     >
       <span className={styles.label} style={{ maxWidth: labelWidth(beam.free) }} title={item.title}>
+        <AreaMark color={staff.color} done={state === "done"} className="mr-1.5 mb-px align-middle" />
         {item.title}
         {repeats(item) && <RepeatMark className={styles.repeat} />}
         {p && <span className={styles.count}>{p.text}</span>}
@@ -526,6 +533,7 @@ function Chip({
   justDone,
   lifted,
   where,
+  color,
   onPointerDown,
   onKeyDown,
 }: {
@@ -536,6 +544,7 @@ function Chip({
   justDone: boolean;
   lifted: boolean;
   where: string;
+  color: AreaColor | null;
   onPointerDown: (e: ReactPointerEvent<HTMLElement>) => void;
   onKeyDown: (e: KeyboardEvent<HTMLElement>) => void;
 }) {
@@ -556,6 +565,7 @@ function Chip({
       <ViewTransition name={`item-${item.id}`} share="morph" default="none">
         <Glyph type={item.type} state={state} justDone={justDone} className={styles.glyph} />
       </ViewTransition>
+      <AreaMark color={color} done={state === "done"} />
       <span className="min-w-0 truncate">{item.title}</span>
       {repeats(item) && <RepeatMark className="text-ink-3" />}
       {p && <span className={styles.count}>{p.text}</span>}

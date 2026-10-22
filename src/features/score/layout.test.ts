@@ -195,6 +195,16 @@ describe("layoutScore", () => {
     expect(score.staves[2].beams.map((b) => b.value.item.title)).toEqual(["Orphan", "Dentist"]);
   });
 
+  it("gives each staff its area's colour, and No area none", () => {
+    const view = buildToday({ scheduled: [timed("Orphan", at(9), at(10))], unscheduled: [] }, range, now);
+    const score = layoutScore({ view, areas: [{ ...work, color: "clay" }, home], date, timeZone: zone, now: 640 });
+    expect(score.staves.map((s) => [s.name, s.color])).toEqual([
+      ["Work", "clay"],
+      ["Home", null],
+      [NO_AREA, null],
+    ]);
+  });
+
   it("shows a No area staff when there are no areas at all, so there is somewhere to drop", () => {
     const score = layoutScore({ view: { scheduled: [], waiting: [] }, areas: [], date, timeZone: zone, now: null });
     expect(score.staves.map((s) => s.name)).toEqual([NO_AREA]);

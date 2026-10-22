@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState, useTransition } from "react";
+import { AreaMark } from "@/components/area-mark";
 import { PlusIcon, SearchIcon } from "./icons";
 import type { NoteRow, NotesActions } from "./model";
 
@@ -99,6 +100,7 @@ export function NotesList({
                 <span className="block truncate font-medium text-ink">{r.title}</span>
                 {r.firstLine && <span className="mt-0.5 block truncate text-ink-2">{r.firstLine}</span>}
                 <span className="mt-1 block text-[13px] text-ink-3 tabular">
+                  <AreaMark color={r.areaColor} className="mr-1.5 mb-px align-middle" />
                   {r.areaName ? `${r.areaName}, ${r.edited.charAt(0).toLowerCase()}${r.edited.slice(1)}` : r.edited}
                 </span>
               </Link>

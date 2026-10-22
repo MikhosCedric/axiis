@@ -13,6 +13,7 @@ const areaRow = z
     id: z.string(),
     name: z.string(),
     position: z.number(),
+    color: z.string().nullable(),
     created_at: timestamp,
     updated_at: timestamp,
     deleted_at: optionalTimestamp,
@@ -21,6 +22,7 @@ const areaRow = z
     id: r.id,
     name: r.name,
     position: r.position,
+    color: r.color,
     createdAt: r.created_at,
     updatedAt: r.updated_at,
     deletedAt: r.deleted_at,
@@ -87,7 +89,7 @@ const itemTagRow = z
  * neither skips nor repeats a row. Soft-deleted rows are included: they are still the user's data.
  */
 export const EXPORT_TABLES = {
-  areas: { columns: "id,name,position,created_at,updated_at,deleted_at", orderBy: ["id"] },
+  areas: { columns: "id,name,position,color,created_at,updated_at,deleted_at", orderBy: ["id"] },
   items: {
     columns:
       "id,type,title,body,status,area_id,parent_id,position,start_at,end_at,scheduled_on,due_on,rrule,series_id,original_on,completed_at,created_at,updated_at,deleted_at",

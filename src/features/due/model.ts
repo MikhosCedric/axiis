@@ -1,3 +1,4 @@
+import type { AreaColor } from "@/domain/area-color";
 import type { ItemId, ItemType, LocalDate } from "@/domain/item";
 import { formatDayIn } from "@/features/today/format";
 
@@ -19,6 +20,7 @@ export type DueRow = {
   /** When it is planned, null when it has no day. */
   when: string | null;
   area: string | null;
+  areaColor: AreaColor | null;
 };
 
 /** Everything the Due page needs, loaded on the server and serializable to the client. */

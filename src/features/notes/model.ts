@@ -1,3 +1,4 @@
+import type { AreaColor } from "@/domain/area-color";
 import type { AreaId, Item, ItemId, ItemType } from "@/domain/item";
 import { toLocalDate } from "@/lib/dates";
 import type { ActionResult } from "@/features/today/commands";
@@ -7,7 +8,14 @@ import { SELECTED_ITEM_PARAM } from "@/features/day/types";
 export type Created = { ok: true; id: string } | { ok: false; error: string };
 
 /** A note in the list, formatted for the user's zone. */
-export type NoteRow = { id: ItemId; title: string; firstLine: string; areaName: string | null; edited: string };
+export type NoteRow = {
+  id: ItemId;
+  title: string;
+  firstLine: string;
+  areaName: string | null;
+  areaColor: AreaColor | null;
+  edited: string;
+};
 
 /** An item on the other end of a link. `backlink` means the link was made from that item. */
 export type ConnectedRow = {

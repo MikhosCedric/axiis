@@ -12,7 +12,7 @@ export function seedWeek(shown: LocalDate, now: Date, timeZone: string): { items
   seq = 0;
   const days = weekOf(shown);
   const [work, home, health] = ["Work", "Home", "Health"].map(
-    (name, position): Area => ({ id: id() as AreaId, name, position }),
+    (name, position): Area => ({ id: id() as AreaId, name, position, color: null }),
   );
   const item = (over: Partial<Item>) => makeItem({ id: id() as ItemId, ...over });
   const timed = (day: number, title: string, area: Area | null, h: number, m: number, minutes: number, over: Partial<Item> = {}) =>

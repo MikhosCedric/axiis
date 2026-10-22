@@ -96,7 +96,7 @@ export function PaletteHarness({ today, nav }: { today: LocalDate; nav: boolean 
   return (
     <PaletteProvider today={today} actions={actions}>
       <div className="min-h-dvh rail:grid rail:grid-cols-[216px_minmax(0,1fr)]">
-        {nav && <NavRail today={today} areas={AREAS.map((a, i) => ({ id: a.id, name: a.name, open: i + 1 }))} />}
+        {nav && <NavRail today={today} areas={AREAS.map((a, i) => ({ id: a.id, name: a.name, color: a.color, open: i + 1 }))} />}
         <main className="min-w-0 px-4 py-6 rail:px-9">
           <Hydrated />
           <h1 className="mb-2 font-serif text-2xl font-semibold">Palette harness</h1>

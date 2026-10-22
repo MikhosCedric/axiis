@@ -1,6 +1,7 @@
 "use client";
 
 import { ViewTransition } from "react";
+import { AreaLabel } from "@/components/area-mark";
 import { repeats, type Area, type ShownItem } from "@/domain/item";
 import { RepeatMark } from "@/features/today/repeat-mark";
 import { RowTags } from "@/features/tags/row-tags";
@@ -41,11 +42,12 @@ export function ListView({
   onToggleDone: (item: ShownItem) => void;
 }) {
   const clock = useClock();
-  const areaName = new Map<string, string>(areas.map((a) => [a.id, a.name]));
+  const areaOf = new Map(areas.map((a) => [a.id as string, a]));
   const row = ({ item, state }: TodayEntry) => {
     const count = childCounts[item.id];
     const s = item.schedule;
     const selected = selectedId === item.id;
+    const area = item.areaId ? areaOf.get(item.areaId) : undefined;
     // The quietest ink is too faint to read on the accent wash of a selected row.
     const quiet = selected ? "text-ink-2" : "text-ink-3";
     return (
@@ -109,7 +111,7 @@ export function ListView({
           <RowTags tags={tags[item.id]} selected={selected} />
         </button>
         <span className={`pr-1 text-[13px] max-rail:hidden ${quiet}`}>
-          {item.areaId ? (areaName.get(item.areaId) ?? "") : ""}
+          {area && <AreaLabel name={area.name} color={area.color} />}
         </span>
       </li>
     );

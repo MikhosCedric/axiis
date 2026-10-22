@@ -8,8 +8,8 @@ const id = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, "0")
 const areaId = (n: number) => `00000000-0000-4000-9000-${String(n).padStart(12, "0")}` as AreaId;
 
 const AREAS: Area[] = [
-  { id: areaId(1), name: "Work", position: 0 },
-  { id: areaId(2), name: "Home", position: 1 },
+  { id: areaId(1), name: "Work", position: 0, color: null },
+  { id: areaId(2), name: "Home", position: 1, color: null },
 ];
 
 function fixtures(): Item[] {
