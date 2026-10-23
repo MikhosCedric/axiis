@@ -31,9 +31,16 @@ Ranked by how often the job comes up times how much it costs each time.
 
 ## What changed
 
-On `ux-navigation`, one commit per step:
+On `ux-navigation` (PR #83), one commit per step, matching the ranks above:
 
-- See the log entry in `docs/PROGRESS.md` (2026-10-23, navigation) for the list of what landed and its tests.
+- **Clearing the Inbox (1, 4).** Plan for offers Today, Tomorrow, Next week and Another day. J and K or the arrows move between titles; 1, 2 and 3 plan the one in focus and focus moves to the next, 4 opens its date field. A plan or a tick shows the undo note at the page's foot (six seconds, Ctrl Z or ⌘Z too); Undo puts a planned item back with no day. An Inbox emptied on the visit says "All planned."
+- **The panel, Escape and Back (2).** Opening an item adds a history entry, switching items replaces it, and closing steps back over it, so Back closes the panel and Forward reopens it. Escape closes it from any screen unless a field, a dialog or a drag used the key. Every screen picks its item through one hook.
+- **One switch for three spans (3).** Day, Week and Month are one segmented control, first in the steps row of all three views, keeping the date in focus. On a phone Previous and Next shrink to chevrons so the switch and the pair stay on one row.
+- **Capture everywhere (5).** C opens the palette, which captures, on every page with no capture field of its own.
+- **A palette that remembers (6).** With nothing typed it lists the last four days, weeks, months, notes or tags opened in this browser, shows each place's G key, and suggests what to type.
+- **Today on a phone's Week (7).** A "Jump to today" link above the days when today is later in the week.
+
+Before and after captures of Today, Week, Month and the Inbox (choices open, undo note showing) at 1440 and 375 in both themes sit in the agent's scratchpad, as for `ux-clarity`.
 
 ## Left out, and why
 
