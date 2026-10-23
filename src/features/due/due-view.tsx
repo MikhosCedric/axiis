@@ -1,11 +1,10 @@
 "use client";
 
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useOptimistic, useTransition, type ReactNode } from "react";
+import type { ReactNode } from "react";
 import { AreaLabel } from "@/components/area-mark";
 import { place } from "@/components/shell/places";
-import { SELECTED_ITEM_PARAM } from "@/features/day/types";
 import { DetailAside } from "@/features/detail/detail-aside";
+import { useItemSelection } from "@/features/detail/use-item-selection";
 import { setDoneAction } from "@/features/today/actions";
 import { DoneToggle, useDoneToggles, type SetDone } from "@/features/today/done-toggle";
 import { FilterChips } from "@/features/filter/filter-chip";
@@ -28,22 +27,8 @@ export function DueView({
   /** Defaults to the server action; the dev harness passes an in-memory one. */
   setDone?: SetDone;
 }) {
-  const router = useRouter();
-  const pathname = usePathname();
-  const params = useSearchParams();
-  const selectedParam = params.get(SELECTED_ITEM_PARAM);
-  const [selectedId, setSelectedId] = useOptimistic(selectedParam);
-  const [, startTransition] = useTransition();
+  const { selectedParam, selectedId, select } = useItemSelection();
   const ticks = useDoneToggles(setDone);
-
-  function select(id: string) {
-    startTransition(() => {
-      setSelectedId(id);
-      const next = new URLSearchParams(params.toString());
-      next.set(SELECTED_ITEM_PARAM, id);
-      router.replace(`${pathname}?${next.toString()}`, { scroll: false });
-    });
-  }
 
   const rows = data.rows.map((r) => ({ ...r, done: ticks.isDone(r.id, r.done) }));
 

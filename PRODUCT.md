@@ -49,3 +49,4 @@ None. No copy, data, testimonials, logos, or assets exist. Future work must not 
 3. Calm by default: no guilt badges, no clutter. Every screen says where you are and what is next before it shows everything there is.
 4. One model, many views: never make the user pick a type before they can write.
 5. Your data is yours: export and delete anytime.
+6. Every place is a step from every other, and a change can be taken back where it was made: the same switch and steps on every calendar view, Back and Escape close what they opened, C captures from any page, and moving something out of sight offers Undo.

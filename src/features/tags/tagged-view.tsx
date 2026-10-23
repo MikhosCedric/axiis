@@ -1,11 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useOptimistic, useTransition, type ReactNode } from "react";
+import type { ReactNode } from "react";
 import { AreaLabel, AreaMark } from "@/components/area-mark";
-import { SELECTED_ITEM_PARAM } from "@/features/day/types";
 import { DetailAside } from "@/features/detail/detail-aside";
+import { useItemSelection } from "@/features/detail/use-item-selection";
 import { setDoneAction } from "@/features/today/actions";
 import { DoneToggle, useDoneToggles, type SetDone } from "@/features/today/done-toggle";
 import { Glyph } from "@/features/today/glyph";
@@ -26,22 +25,8 @@ export function TaggedView({
   /** Defaults to the server action; the dev harness passes an in-memory one. */
   setDone?: SetDone;
 }) {
-  const router = useRouter();
-  const pathname = usePathname();
-  const params = useSearchParams();
-  const selectedParam = params.get(SELECTED_ITEM_PARAM);
-  const [selectedId, setSelectedId] = useOptimistic(selectedParam);
-  const [, startTransition] = useTransition();
+  const { selectedParam, selectedId, select } = useItemSelection();
   const ticks = useDoneToggles(setDone);
-
-  function select(id: string) {
-    startTransition(() => {
-      setSelectedId(id);
-      const next = new URLSearchParams(params.toString());
-      next.set(SELECTED_ITEM_PARAM, id);
-      router.replace(`${pathname}?${next.toString()}`, { scroll: false });
-    });
-  }
 
   return (
     <div className={selectedParam ? "min-[1180px]:grid min-[1180px]:grid-cols-[minmax(0,1fr)_328px]" : ""}>

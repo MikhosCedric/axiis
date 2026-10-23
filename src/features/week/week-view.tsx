@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   Fragment,
   useEffect,
@@ -20,8 +19,8 @@ import { RepeatMark } from "@/features/today/repeat-mark";
 import { tagLine } from "@/features/tags/model";
 import { selectedIn, type ItemKey } from "@/domain/item-key";
 import { dayHref } from "@/features/day/nav";
-import { SELECTED_ITEM_PARAM } from "@/features/day/types";
 import { DetailAside } from "@/features/detail/detail-aside";
+import { useItemSelection } from "@/features/detail/use-item-selection";
 import { STATE_WORD } from "@/features/score/score-view";
 import { captureAction, setDoneAction } from "@/features/today/actions";
 import { CaptureField } from "@/features/today/capture-field";
@@ -96,11 +95,7 @@ export function WeekView({
 }) {
   const clock = useClock();
   const { days, today, timeZone, areas } = data;
-  const router = useRouter();
-  const pathname = usePathname();
-  const params = useSearchParams();
-  const selectedParam = params.get(SELECTED_ITEM_PARAM);
-  const [selectedId, setSelectedId] = useOptimistic(selectedParam);
+  const { selectedParam, selectedId, select } = useItemSelection();
   const [, startTransition] = useTransition();
   const [status, setStatus] = useState<{ text: string; error: boolean } | null>(null);
   const [justDone, setJustDone] = useState<string | null>(null);
@@ -129,16 +124,6 @@ export function WeekView({
   const areaOf = (item: ShownItem) => areas.find((a) => a.id === item.areaId) ?? null;
   const shownSelected = selectedIn(items, selectedId);
 
-  function select(id: string | null) {
-    startTransition(() => {
-      setSelectedId(id);
-      const next = new URLSearchParams(params.toString());
-      if (id === null) next.delete(SELECTED_ITEM_PARAM);
-      else next.set(SELECTED_ITEM_PARAM, id);
-      const query = next.toString();
-      router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
-    });
-  }
 
   function describe(item: ShownItem, to: Destination) {
     if (to === "tray") return `${item.title} is in the Inbox, with no day.`;
@@ -192,6 +177,7 @@ export function WeekView({
       e.preventDefault();
       toggleDone(item);
     } else if (e.key === "Escape") {
+      e.preventDefault();
       select(null);
     } else {
       const to = keyDestination(item, days, today, timeZone, e.key);
@@ -251,6 +237,18 @@ export function WeekView({
           <h2 id="week-h" className="sr-only">
             Days
           </h2>
+          {/* Stacked on a phone, today can be several screens down; the week opens at Monday so its glance line stays in view. */}
+          {days.includes(today) && today !== days[0] && (
+            <a
+              href={`#day-${today}`}
+              className="-ml-2 mb-2 inline-flex min-h-11 items-center gap-1.5 rounded-md px-2 font-medium text-ink-2 hover:bg-hover hover:text-ink active:bg-press @min-[50rem]:hidden"
+            >
+              <svg viewBox="0 0 18 18" width={16} height={16} aria-hidden="true" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
+                <path d="M9 3v11M4.5 9.5L9 14l4.5-4.5" />
+              </svg>
+              Jump to today, {weekdayName(today, "long")}
+            </a>
+          )}
           <div className="grid border-y border-rule @min-[50rem]:grid-cols-7">
             {week.map(({ date, entries }) => (
               <DayColumn key={date} date={date} today={today} over={preview?.over === date} empty={entries.length === 0}>

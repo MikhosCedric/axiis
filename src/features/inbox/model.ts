@@ -1,6 +1,7 @@
 import type { Area, Item, LocalDate } from "@/domain/item";
 import type { TagColors, TagName } from "@/domain/tag";
 import { formatDayHeading } from "@/features/today/format";
+import { WEEK_LENGTH, weekOf } from "@/features/week/model";
 import { addDays, parseLocalDate } from "@/lib/dates";
 import type { ChildCount } from "@/lib/items/repo";
 
@@ -32,6 +33,32 @@ export function planDate(when: PlanFor, today: LocalDate): LocalDate {
   if (when === "today") return today;
   if (when === "tomorrow") return addDays(today, 1);
   return when;
+}
+
+/** A one-tap choice under "Plan for", and the digit that makes it on the row in focus. */
+export type QuickPlan = { key: "1" | "2" | "3"; label: string; when: PlanFor };
+
+/** The digit that moves focus to the date field, for any other day. */
+export const PICK_KEY = "4";
+
+/** Today, Tomorrow, and the first day of next week, in that order. */
+export function quickPlans(today: LocalDate): QuickPlan[] {
+  return [
+    { key: "1", label: "Today", when: "today" },
+    { key: "2", label: "Tomorrow", when: "tomorrow" },
+    { key: "3", label: "Next week", when: addDays(weekOf(today)[0], WEEK_LENGTH) },
+  ];
+}
+
+/** What a key does on an Inbox row: move to the row below or above, plan it, or pick a day for it. */
+export type RowKey = { move: 1 | -1 } | { plan: PlanFor } | { pick: true };
+
+export function rowKey(key: string, today: LocalDate): RowKey | null {
+  if (key === "j" || key === "ArrowDown") return { move: 1 };
+  if (key === "k" || key === "ArrowUp") return { move: -1 };
+  if (key === PICK_KEY) return { pick: true };
+  const quick = quickPlans(today).find((q) => q.key === key);
+  return quick ? { plan: quick.when } : null;
 }
 
 /** "today", "tomorrow" or "Thursday 8 October", for a sentence about where an item went. */

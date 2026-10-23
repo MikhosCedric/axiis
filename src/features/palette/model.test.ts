@@ -24,6 +24,25 @@ describe("paletteSections", () => {
     expect(labels("   ")).toEqual({ go: ["Today", "Week", "Month", "Due", "Inbox", "Lists", "Notes", "Tags", "Search", "Settings", "Guide"] });
   });
 
+  it("puts the pages visited lately before every page when nothing is typed, and names each page's G key", () => {
+    const recent = [
+      { href: "/notes/a", title: "Garden notes" },
+      { href: "/week/2026-11-02", title: "Week of 2 November 2026" },
+    ];
+    const sections = paletteSections("", today, "24", idle, null, recent);
+    expect(sections.map((s) => [s.id, s.label])).toEqual([
+      ["recent", "Recent"],
+      ["go", "Go to"],
+    ]);
+    expect(sections[0].commands).toEqual([
+      { kind: "go", id: "recent-/notes/a", label: "Garden notes", href: "/notes/a" },
+      { kind: "go", id: "recent-/week/2026-11-02", label: "Week of 2 November 2026", href: "/week/2026-11-02" },
+    ]);
+    expect(sections[1].commands.find((c) => c.label === "Inbox")).toMatchObject({ go: "i" });
+    expect(sections[1].commands.find((c) => c.label === "Search")).toMatchObject({ go: "s" });
+    expect(paletteSections("garden", today, "24", idle, null, recent).map((s) => s.id)).not.toContain("recent");
+  });
+
   it("says in a few words what each page and the Guide hold", () => {
     const go = paletteSections("", today, "24", idle)[0].commands;
     expect(go.find((c) => c.label === "Inbox")).toMatchObject({ hint: "Captured, with no day yet" });
