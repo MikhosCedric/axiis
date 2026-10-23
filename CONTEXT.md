@@ -20,7 +20,9 @@ A solo productivity web app. One connected set of items, shown through many view
 
 **Override**: a stored item that stands in for one occurrence, with its own title, schedule, area and status. Made the first time that occurrence is changed. A skipped occurrence is an override that is dropped; restoring it opens that override again. Never "exception" in the UI.
 
-**Tag**: a short label the user puts on any item, shown as `#name`. One item can carry several and one tag spans every area. Matched without case. On a series, the tag belongs to every occurrence. Never "label" or "category" in the UI.
+**Tag**: a short label the user puts on any item, shown as `#name`. One item can carry several and one tag spans every area. Matched without case. On a series, the tag belongs to every occurrence. A tag may have a **Colour** from the same palette as areas, or None, shown as a dot before its `#name`. Never "label" or "category" in the UI.
+
+**Filter**: a page narrowed to one area, one tag, or both, held in the address (`?area=<id>`, `?tag=<name>`). Said on screen as "Showing only Work" with a way out, and in every count ("1 of 2 done in Work"). Chosen from the rail's areas, A then a digit, or the palette. A filter is a lens on a view, never a view or a saved search of its own. Items do not carry a colour of their own.
 
 **Link**: a typed edge between two items, such as a note referencing a task. Backlinks are links read in reverse.
 
