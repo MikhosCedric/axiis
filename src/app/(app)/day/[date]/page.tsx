@@ -7,6 +7,7 @@ import { getDay, getTodayDate } from "@/features/day/server";
 import { DetailPanel } from "@/features/detail/detail-panel";
 import { filterDay } from "@/features/filter/apply";
 import { getFilter } from "@/features/filter/server";
+import { TagColorsProvider } from "@/features/tags/tag-colors";
 import { parseLocalDate } from "@/lib/dates";
 
 export async function generateMetadata({ params }: PageProps<"/day/[date]">): Promise<Metadata> {
@@ -21,12 +22,14 @@ export default async function DayPage({ params, searchParams }: PageProps<"/day/
   const { mode, itemId } = readDayQuery(await searchParams);
   const [data, today, filter] = await Promise.all([getDay(date), getTodayDate(), getFilter(searchParams, true)]);
   return (
-    <DayView
-      data={filterDay(data, filter)}
-      filter={filter}
-      mode={mode}
-      nav={<DayNav date={date} today={today} mode={mode} />}
-      detail={<DetailPanel itemId={itemId} />}
-    />
+    <TagColorsProvider value={data.tagColors}>
+      <DayView
+        data={filterDay(data, filter)}
+        filter={filter}
+        mode={mode}
+        nav={<DayNav date={date} today={today} mode={mode} />}
+        detail={<DetailPanel itemId={itemId} />}
+      />
+    </TagColorsProvider>
   );
 }

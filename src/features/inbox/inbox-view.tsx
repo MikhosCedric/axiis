@@ -13,7 +13,6 @@ import type { ActionResult } from "@/features/today/commands";
 import { DoneToggle } from "@/features/today/done-toggle";
 import { place } from "@/components/shell/places";
 import { RowTags } from "@/features/tags/row-tags";
-import { TagColorsProvider } from "@/features/tags/tag-colors";
 import { FilterChips } from "@/features/filter/filter-chip";
 import { NO_FILTER, scopePrefix, type ViewFilter } from "@/features/filter/model";
 import { LAST_DATE } from "@/lib/dates";
@@ -128,77 +127,75 @@ export function InboxView({
   }
 
   return (
-    <TagColorsProvider value={data.tagColors}>
-      <div className={selectedParam ? "min-[1180px]:grid min-[1180px]:grid-cols-[minmax(0,1fr)_328px]" : ""}>
-        <div className="min-w-0 px-4 pt-6 pb-14 rail:px-9 rail:pt-8">
-          <header>
-            <h1
-              ref={heading}
-              tabIndex={-1}
-              className="headline outline-none"
-            >
-              Inbox
-            </h1>
-            <p className="page-summary">
-              {place("inbox").hint}. Plan each one when you are ready. {scopePrefix(filter)}
-              {inboxSummary(shown)}
-            </p>
-            <FilterChips filter={filter} className="mt-2.5" />
-          </header>
+    <div className={selectedParam ? "min-[1180px]:grid min-[1180px]:grid-cols-[minmax(0,1fr)_328px]" : ""}>
+      <div className="min-w-0 px-4 pt-6 pb-14 rail:px-9 rail:pt-8">
+        <header>
+          <h1
+            ref={heading}
+            tabIndex={-1}
+            className="headline outline-none"
+          >
+            Inbox
+          </h1>
+          <p className="page-summary">
+            {place("inbox").hint}. Plan each one when you are ready. {scopePrefix(filter)}
+            {inboxSummary(shown)}
+          </p>
+          <FilterChips filter={filter} className="mt-2.5" />
+        </header>
 
-          <div className="mt-6 mb-3 flex flex-wrap items-start gap-x-3 gap-y-1">
-            <div className="min-w-0 flex-[1_1_280px] rail:max-w-[440px]">
-              <CaptureField
-                captureAction={actions.capture}
-                screenStatus={
-                  <p role="status" className={status?.error ? "font-medium text-ink" : "text-ink-2"}>
-                    {status?.text}
-                  </p>
-                }
-              />
-            </div>
-            <GuideButton topics={INBOX_GUIDE} className="ml-auto" />
+        <div className="mt-6 mb-3 flex flex-wrap items-start gap-x-3 gap-y-1">
+          <div className="min-w-0 flex-[1_1_280px] rail:max-w-[440px]">
+            <CaptureField
+              captureAction={actions.capture}
+              screenStatus={
+                <p role="status" className={status?.error ? "font-medium text-ink" : "text-ink-2"}>
+                  {status?.text}
+                </p>
+              }
+            />
           </div>
-
-          <section aria-labelledby="inbox-list-h">
-            <h2 id="inbox-list-h" className="sr-only">
-              Items with no day
-            </h2>
-            <div className="border-b border-rule" />
-            {shown.length ? (
-              <ul>
-                {shown.map((item) => (
-                  <InboxRow
-                    key={item.id}
-                    item={item}
-                    today={today}
-                    area={item.areaId ? (areaOf.get(item.areaId) ?? null) : null}
-                    count={childCounts[item.id]}
-                    tags={data.tags[item.id]}
-                    selected={selectedId === item.id}
-                    justDone={justDone === item.id}
-                    planning={planning === item.id}
-                    onSelect={() => select(item.id)}
-                    onToggleDone={() => toggleDone(item)}
-                    onPlanning={(open) => setPlanning(open ? item.id : null)}
-                    onPlan={(when) => plan(item, when)}
-                  />
-                ))}
-              </ul>
-            ) : (
-              <p className="py-3 text-ink-2">
-                Anything you capture without a day lands here, safe until you plan it.
-              </p>
-            )}
-            {data.full && (
-              <p className="mt-3 text-[13px] text-ink-3">Showing the newest {data.items.length}. Plan a few to see older ones.</p>
-            )}
-          </section>
+          <GuideButton topics={INBOX_GUIDE} className="ml-auto" />
         </div>
 
-        {selectedParam && <DetailAside pending={selectedId !== selectedParam}>{detail}</DetailAside>}
+        <section aria-labelledby="inbox-list-h">
+          <h2 id="inbox-list-h" className="sr-only">
+            Items with no day
+          </h2>
+          <div className="border-b border-rule" />
+          {shown.length ? (
+            <ul>
+              {shown.map((item) => (
+                <InboxRow
+                  key={item.id}
+                  item={item}
+                  today={today}
+                  area={item.areaId ? (areaOf.get(item.areaId) ?? null) : null}
+                  count={childCounts[item.id]}
+                  tags={data.tags[item.id]}
+                  selected={selectedId === item.id}
+                  justDone={justDone === item.id}
+                  planning={planning === item.id}
+                  onSelect={() => select(item.id)}
+                  onToggleDone={() => toggleDone(item)}
+                  onPlanning={(open) => setPlanning(open ? item.id : null)}
+                  onPlan={(when) => plan(item, when)}
+                />
+              ))}
+            </ul>
+          ) : (
+            <p className="py-3 text-ink-2">
+              Anything you capture without a day lands here, safe until you plan it.
+            </p>
+          )}
+          {data.full && (
+            <p className="mt-3 text-[13px] text-ink-3">Showing the newest {data.items.length}. Plan a few to see older ones.</p>
+          )}
+        </section>
       </div>
-    </TagColorsProvider>
+
+      {selectedParam && <DetailAside pending={selectedId !== selectedParam}>{detail}</DetailAside>}
+    </div>
   );
 }
 

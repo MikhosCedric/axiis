@@ -9,6 +9,7 @@ import { DetailPanel } from "@/features/detail/detail-panel";
 import { loadLeftover } from "@/features/day/leftover";
 import { filterDay } from "@/features/filter/apply";
 import { getFilter } from "@/features/filter/server";
+import { TagColorsProvider } from "@/features/tags/tag-colors";
 import { getItemsRepo } from "@/lib/items";
 
 export const metadata: Metadata = { title: "Today" };
@@ -23,15 +24,17 @@ export default async function TodayPage({ searchParams }: PageProps<"/today">) {
     cookies(),
   ]);
   return (
-    <DayView
-      data={filterDay(data, filter)}
-      filter={filter}
-      leftover={leftover}
-      mode={mode}
-      focus={readFocus(jar.get(FOCUS_COOKIE)?.value)}
-      tour={readTour(jar.get(TOUR_COOKIE)?.value, data.firstDay)}
-      nav={<DayNav date={today} today={today} mode={mode} />}
-      detail={<DetailPanel itemId={itemId} />}
-    />
+    <TagColorsProvider value={data.tagColors}>
+      <DayView
+        data={filterDay(data, filter)}
+        filter={filter}
+        leftover={leftover}
+        mode={mode}
+        focus={readFocus(jar.get(FOCUS_COOKIE)?.value)}
+        tour={readTour(jar.get(TOUR_COOKIE)?.value, data.firstDay)}
+        nav={<DayNav date={today} today={today} mode={mode} />}
+        detail={<DetailPanel itemId={itemId} />}
+      />
+    </TagColorsProvider>
   );
 }

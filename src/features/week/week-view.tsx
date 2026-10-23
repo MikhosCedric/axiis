@@ -54,7 +54,6 @@ import { useWeekDrag, type WeekDragPreview } from "./use-week-drag";
 import { reach } from "@/lib/reach";
 import { FilterChips, useKeepFilter } from "@/features/filter/filter-chip";
 import { NO_FILTER, scopeWords, type ViewFilter } from "@/features/filter/model";
-import { TagColorsProvider } from "@/features/tags/tag-colors";
 
 /** The writes the week makes. Defaults to the server actions; the dev harness passes in-memory ones. */
 export type WeekActions = {
@@ -219,105 +218,103 @@ export function WeekView({
   );
 
   return (
-    <TagColorsProvider value={data.tagColors}>
-      <div className={selectedParam ? "min-[1180px]:grid min-[1180px]:grid-cols-[minmax(0,1fr)_328px]" : ""}>
-        <div className="@container/page min-w-0 px-4 pt-6 pb-14 rail:px-9 rail:pt-8">
-          <header className="page-head">
-            {/* A server element can arrive late as a lazy chunk, which React then checks for a key among its siblings. */}
-            <Fragment key="nav">{nav}</Fragment>
-            <div className="min-w-0">
-              <h1 className="headline">
-                {formatWeekHeading(days)}
-              </h1>
-              <p className="page-summary">{weekSummary(week, waiting, today, scopeWords(filter))}</p>
-              <FilterChips filter={filter} className="mt-2.5" />
-            </div>
-          </header>
-
-          <div className="mt-6 mb-3 flex flex-wrap items-start gap-x-3 gap-y-1">
-            <div className="min-w-0 flex-[1_1_280px] rail:max-w-[440px]">
-              <CaptureField
-                captureAction={actions.capture}
-                screenStatus={
-                  <p role="status" className={status?.error ? "font-medium text-ink" : "text-ink-2"}>
-                    {status?.text}
-                  </p>
-                }
-              />
-            </div>
-            <GuideButton topics={WEEK_GUIDE} className="ml-auto" />
+    <div className={selectedParam ? "min-[1180px]:grid min-[1180px]:grid-cols-[minmax(0,1fr)_328px]" : ""}>
+      <div className="@container/page min-w-0 px-4 pt-6 pb-14 rail:px-9 rail:pt-8">
+        <header className="page-head">
+          {/* A server element can arrive late as a lazy chunk, which React then checks for a key among its siblings. */}
+          <Fragment key="nav">{nav}</Fragment>
+          <div className="min-w-0">
+            <h1 className="headline">
+              {formatWeekHeading(days)}
+            </h1>
+            <p className="page-summary">{weekSummary(week, waiting, today, scopeWords(filter))}</p>
+            <FilterChips filter={filter} className="mt-2.5" />
           </div>
+        </header>
 
-          <section aria-labelledby="week-h" className="@container">
-            <h2 id="week-h" className="sr-only">
-              Days
-            </h2>
-            <div className="grid border-y border-rule @min-[50rem]:grid-cols-7">
-              {week.map(({ date, entries }) => (
-                <DayColumn key={date} date={date} today={today} over={preview?.over === date} empty={entries.length === 0}>
-                  {entries.map((e) => (
-                    <li key={e.item.id}>{row(e, "row")}</li>
-                  ))}
-                </DayColumn>
-              ))}
-            </div>
-            {data.weekFull && <p className="mt-2 text-[13px] text-ink-3">{WEEK_FULL}</p>}
-          </section>
-
-          {/* Every item's description. Seen in the Guide; here only for screen readers. */}
-          <p id={KEYS_ID} className="sr-only">
-            Drag an item to another day, or down to the tray to clear its day. With an item focused, Left and Right move it
-            a day, Backspace sends it to the tray, Space marks it done and Enter opens it. On an item in the Inbox, Up gives it a
-            day. The bracket keys change the week and T comes back to this one.
-          </p>
-          <LineLegend now={false} />
-
-          <section
-            data-drop="tray"
-            aria-labelledby="week-tray-h"
-            className={`mt-7 rounded-lg px-3 pt-2 pb-3 -mx-3 transition-colors ${
-              preview?.over === "tray" ? "bg-accent-wash outline-2 outline-dashed outline-accent" : ""
-            }`}
-          >
-            <h2 id="week-tray-h" className="font-serif text-lg leading-tight font-medium">
-              {INBOX}
-            </h2>
-            <p className="mt-1 mb-3.5 text-[13px] text-ink-3">
-              No day yet. Drag one onto a day to plan it for that day. Drag a planned item back here to clear its day.{" "}
-              <SameInInbox />
-            </p>
-            {waiting.length ? (
-              <ul className="flex flex-wrap gap-2.5">
-                {waiting.map((e) => (
-                  <li key={e.item.id} className="min-w-0">
-                    {row(e, "chip")}
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className="text-[13px] text-ink-3">{EMPTY_TRAY}</p>
-            )}
-            {data.waitingFull && <p className="mt-3 text-[13px] text-ink-3">{TRAY_FULL}</p>}
-          </section>
-
-          <div
-            ref={fly}
-            hidden={!preview}
-            aria-hidden="true"
-            className="pointer-events-none fixed top-0 left-0 z-50 flex max-w-[28ch] items-center gap-2 rounded-md border border-rule bg-sheet px-2.5 py-1.5 shadow-lift"
-          >
-            {preview && (
-              <>
-                <Glyph type={preview.item.type} state="planned" className="!w-9" />
-                <span className="truncate font-medium">{preview.item.title}</span>
-              </>
-            )}
+        <div className="mt-6 mb-3 flex flex-wrap items-start gap-x-3 gap-y-1">
+          <div className="min-w-0 flex-[1_1_280px] rail:max-w-[440px]">
+            <CaptureField
+              captureAction={actions.capture}
+              screenStatus={
+                <p role="status" className={status?.error ? "font-medium text-ink" : "text-ink-2"}>
+                  {status?.text}
+                </p>
+              }
+            />
           </div>
+          <GuideButton topics={WEEK_GUIDE} className="ml-auto" />
         </div>
 
-        {selectedParam && <DetailAside pending={selectedId !== selectedParam}>{detail}</DetailAside>}
+        <section aria-labelledby="week-h" className="@container">
+          <h2 id="week-h" className="sr-only">
+            Days
+          </h2>
+          <div className="grid border-y border-rule @min-[50rem]:grid-cols-7">
+            {week.map(({ date, entries }) => (
+              <DayColumn key={date} date={date} today={today} over={preview?.over === date} empty={entries.length === 0}>
+                {entries.map((e) => (
+                  <li key={e.item.id}>{row(e, "row")}</li>
+                ))}
+              </DayColumn>
+            ))}
+          </div>
+          {data.weekFull && <p className="mt-2 text-[13px] text-ink-3">{WEEK_FULL}</p>}
+        </section>
+
+        {/* Every item's description. Seen in the Guide; here only for screen readers. */}
+        <p id={KEYS_ID} className="sr-only">
+          Drag an item to another day, or down to the tray to clear its day. With an item focused, Left and Right move it
+          a day, Backspace sends it to the tray, Space marks it done and Enter opens it. On an item in the Inbox, Up gives it a
+          day. The bracket keys change the week and T comes back to this one.
+        </p>
+        <LineLegend now={false} />
+
+        <section
+          data-drop="tray"
+          aria-labelledby="week-tray-h"
+          className={`mt-7 rounded-lg px-3 pt-2 pb-3 -mx-3 transition-colors ${
+            preview?.over === "tray" ? "bg-accent-wash outline-2 outline-dashed outline-accent" : ""
+          }`}
+        >
+          <h2 id="week-tray-h" className="font-serif text-lg leading-tight font-medium">
+            {INBOX}
+          </h2>
+          <p className="mt-1 mb-3.5 text-[13px] text-ink-3">
+            No day yet. Drag one onto a day to plan it for that day. Drag a planned item back here to clear its day.{" "}
+            <SameInInbox />
+          </p>
+          {waiting.length ? (
+            <ul className="flex flex-wrap gap-2.5">
+              {waiting.map((e) => (
+                <li key={e.item.id} className="min-w-0">
+                  {row(e, "chip")}
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-[13px] text-ink-3">{EMPTY_TRAY}</p>
+          )}
+          {data.waitingFull && <p className="mt-3 text-[13px] text-ink-3">{TRAY_FULL}</p>}
+        </section>
+
+        <div
+          ref={fly}
+          hidden={!preview}
+          aria-hidden="true"
+          className="pointer-events-none fixed top-0 left-0 z-50 flex max-w-[28ch] items-center gap-2 rounded-md border border-rule bg-sheet px-2.5 py-1.5 shadow-lift"
+        >
+          {preview && (
+            <>
+              <Glyph type={preview.item.type} state="planned" className="!w-9" />
+              <span className="truncate font-medium">{preview.item.title}</span>
+            </>
+          )}
+        </div>
       </div>
-    </TagColorsProvider>
+
+      {selectedParam && <DetailAside pending={selectedId !== selectedParam}>{detail}</DetailAside>}
+    </div>
   );
 }
 

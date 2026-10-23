@@ -6,6 +6,7 @@ import { loadInbox } from "@/features/inbox/commands";
 import { InboxView } from "@/features/inbox/inbox-view";
 import { filterInbox } from "@/features/filter/apply";
 import { getFilter } from "@/features/filter/server";
+import { TagColorsProvider } from "@/features/tags/tag-colors";
 import { getItemsRepo } from "@/lib/items";
 
 export const metadata: Metadata = { title: "Inbox" };
@@ -16,5 +17,9 @@ export default async function InboxPage({ searchParams }: PageProps<"/inbox">) {
     getItemsRepo().then(async (repo) => loadInbox(repo, getNow(), await getTimeZone())),
     getFilter(searchParams, true),
   ]);
-  return <InboxView data={filterInbox(data, filter)} filter={filter} detail={<DetailPanel itemId={itemId} />} />;
+  return (
+    <TagColorsProvider value={data.tagColors}>
+      <InboxView data={filterInbox(data, filter)} filter={filter} detail={<DetailPanel itemId={itemId} />} />
+    </TagColorsProvider>
+  );
 }
