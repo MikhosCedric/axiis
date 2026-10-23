@@ -27,6 +27,14 @@ export function isAreaColor(value: unknown): value is AreaColor {
   return typeof value === "string" && known.has(value);
 }
 
+/**
+ * Whether to suggest colours: two or more areas, and none coloured yet. One area needs
+ * nothing to tell it apart, and someone who has picked a colour has found the picker.
+ */
+export function wantsColorNudge(areas: readonly { color: AreaColor | null }[]): boolean {
+  return areas.length >= 2 && areas.every((a) => a.color === null);
+}
+
 /** The name a person reads, in a picker or a label. */
 export function areaColorLabel(color: AreaColor | null): string {
   return color === null ? "None" : color.charAt(0).toUpperCase() + color.slice(1);

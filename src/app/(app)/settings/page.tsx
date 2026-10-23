@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { cookies } from "next/headers";
-import { CLOCK_COOKIE, DENSITY_COOKIE, readClock, readDensity, readTheme, THEME_COOKIE } from "@/components/shell/cookies";
+import { CLOCK_COOKIE, COLOR_HINT_COOKIE, DENSITY_COOKIE, readClock, readDensity, readTheme, THEME_COOKIE } from "@/components/shell/cookies";
 import {
   addAreaAction,
   deleteAccountAction,
@@ -51,6 +51,7 @@ export default async function SettingsPage() {
       theme={readTheme(saved.get(THEME_COOKIE)?.value)}
       density={readDensity(saved.get(DENSITY_COOKIE)?.value)}
       clock={readClock(saved.get(CLOCK_COOKIE)?.value)}
+      colorHint={saved.get(COLOR_HINT_COOKIE)?.value !== "off"}
     />
   );
 }
