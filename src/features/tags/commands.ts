@@ -15,6 +15,8 @@ import {
   type Tag,
   type TagName,
   type TagSummary,
+  tagColors,
+  type TagColors,
 } from "@/domain/tag";
 import { resolveKey } from "@/lib/items/occurrences";
 import { TAGGED_LIMIT, type ItemsRepo } from "@/lib/items/repo";
@@ -158,16 +160,17 @@ export async function deleteTag(repo: ItemsRepo, rawId: unknown): Promise<Action
 }
 
 /**
- * The tag names each shown item wears, keyed by the id it is shown with, read
- * in one request however many items there are. `liveSeries` are the ids of the
- * series still there, so an override of one wears the series' tags.
+ * The tag names each shown item wears, keyed by the id it is shown with, and the
+ * colour of each coloured one, read in one request however many items there are.
+ * `liveSeries` are the ids of the series still there, so an override of one wears
+ * the series' tags.
  */
 export async function tagsOfShown(
   repo: ItemsRepo,
   shown: readonly ShownItem[],
   liveSeries: Iterable<ItemId>,
-): Promise<Record<string, TagName[]>> {
-  if (shown.length === 0) return {};
+): Promise<{ names: Record<string, TagName[]>; colors: TagColors }> {
+  if (shown.length === 0) return { names: {}, colors: {} };
   const live = new Set<string>(liveSeries);
   const owners = new Map(shown.map((i) => [i.id as string, tagOwner(i, live)]));
   const byOwner = await repo.tagsForItems([...new Set(owners.values())]);
@@ -176,7 +179,7 @@ export async function tagsOfShown(
     const tags = byOwner[owner];
     if (tags?.length) names[id] = byName(tags).map((t) => t.name);
   }
-  return names;
+  return { names, colors: tagColors(Object.values(byOwner).flat()) };
 }
 
 /** Every tag by name, with how many open items carry it. */

@@ -29,6 +29,9 @@ import { Tour } from "./tour";
 import { seriesTimeOffer, type SeriesTimeOffer } from "./series-time";
 import { DAY_VIEW_PARAM, SELECTED_ITEM_PARAM, type DayData, type DayViewMode } from "./types";
 import { reach } from "@/lib/reach";
+import { FilterChips } from "@/features/filter/filter-chip";
+import { NO_FILTER, scopeWords, type ViewFilter } from "@/features/filter/model";
+import { TagColorsProvider } from "@/features/tags/tag-colors";
 
 /** The writes the day screen makes. Defaults to the server actions; the dev harness passes in-memory ones. */
 export type DayActions = {
@@ -93,6 +96,7 @@ export function DayView({
   leftover,
   focus: focusSaved = false,
   tour = false,
+  filter = NO_FILTER,
   actions = serverActions,
 }: {
   data: DayData;
@@ -105,6 +109,8 @@ export function DayView({
   focus?: boolean;
   /** Show the getting-started tour: a new account, or the Guide asked for it again. */
   tour?: boolean;
+  /** What the page narrowed its data to; the data passed in is already narrowed. */
+  filter?: ViewFilter;
   actions?: DayActions;
 }) {
   const { date, timeZone, areas, isToday, childCounts } = data;
@@ -253,99 +259,102 @@ export function DayView({
   );
 
   return (
-    <div className={selectedParam ? "min-[1180px]:grid min-[1180px]:grid-cols-[minmax(0,1fr)_328px]" : ""}>
-      <div className="@container/page min-w-0 px-4 pt-6 pb-14 rail:px-9 rail:pt-8">
-        <header className="page-head">
-          {/* A server element can arrive late as a lazy chunk, which React then checks for a key among its siblings. */}
-          <Fragment key="nav">{nav}</Fragment>
-          <div className="min-w-0">
-            <h1 className="headline">
-              <DayHeading date={date} />
-            </h1>
-            <GlanceLine glance={glance} timeZone={timeZone} />
-          </div>
-        </header>
+    <TagColorsProvider value={data.tagColors}>
+      <div className={selectedParam ? "min-[1180px]:grid min-[1180px]:grid-cols-[minmax(0,1fr)_328px]" : ""}>
+        <div className="@container/page min-w-0 px-4 pt-6 pb-14 rail:px-9 rail:pt-8">
+          <header className="page-head">
+            {/* A server element can arrive late as a lazy chunk, which React then checks for a key among its siblings. */}
+            <Fragment key="nav">{nav}</Fragment>
+            <div className="min-w-0">
+              <h1 className="headline">
+                <DayHeading date={date} />
+              </h1>
+              <GlanceLine glance={glance} timeZone={timeZone} scope={scopeWords(filter)} />
+              <FilterChips filter={filter} className="mt-2.5" />
+            </div>
+          </header>
 
-        <div className="mt-6 mb-3 flex flex-wrap items-start gap-x-3 gap-y-1">
-          <div className="min-w-0 flex-[1_1_280px] rail:max-w-[440px]">
-            <CaptureField
-              captureAction={actions.capture}
-              firstDay={firstDay}
-              screenStatus={
-                <p role="status" className={status?.error ? "font-medium text-ink" : "text-ink-2"}>
-                  {status?.text}
-                  {status?.offer && " "}
-                  {status?.offer && (
-                    <button
-                      type="button"
-                      onClick={() => timeSeries(status.offer!)}
-                      className="-mx-1 rounded px-1 font-medium text-ink underline decoration-rule underline-offset-2 hover:bg-hover active:bg-press hover:decoration-ink"
-                    >
-                      Same time {status.offer.cadence}
-                    </button>
-                  )}
-                </p>
-              }
-            />
-          </div>
-          <div role="group" aria-label="View" className="inline-flex overflow-hidden rounded-lg border border-rule">
-            {MODES.map(({ mode: m, label }) => (
+          <div className="mt-6 mb-3 flex flex-wrap items-start gap-x-3 gap-y-1">
+            <div className="min-w-0 flex-[1_1_280px] rail:max-w-[440px]">
+              <CaptureField
+                captureAction={actions.capture}
+                firstDay={firstDay}
+                screenStatus={
+                  <p role="status" className={status?.error ? "font-medium text-ink" : "text-ink-2"}>
+                    {status?.text}
+                    {status?.offer && " "}
+                    {status?.offer && (
+                      <button
+                        type="button"
+                        onClick={() => timeSeries(status.offer!)}
+                        className="-mx-1 rounded px-1 font-medium text-ink underline decoration-rule underline-offset-2 hover:bg-hover active:bg-press hover:decoration-ink"
+                      >
+                        Same time {status.offer.cadence}
+                      </button>
+                    )}
+                  </p>
+                }
+              />
+            </div>
+            <div role="group" aria-label="View" className="inline-flex overflow-hidden rounded-lg border border-rule">
+              {MODES.map(({ mode: m, label }) => (
+                <button
+                  key={m}
+                  type="button"
+                  aria-pressed={shownMode === m}
+                  onClick={() => switchMode(m)}
+                  className={`px-3.5 py-2 font-medium pointer-coarse:py-3 ${shownMode === m ? "bg-ink text-paper" : "text-ink-2 hover:bg-hover active:bg-press"}`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+            {isToday && !firstDay && (
               <button
-                key={m}
                 type="button"
-                aria-pressed={shownMode === m}
-                onClick={() => switchMode(m)}
-                className={`px-3.5 py-2 font-medium pointer-coarse:py-3 ${shownMode === m ? "bg-ink text-paper" : "text-ink-2 hover:bg-hover active:bg-press"}`}
+                aria-pressed={focusOn}
+                onClick={toggleFocus}
+                title="Show only what is next and what is due today"
+                className={`rounded-lg border border-rule px-3.5 py-2 font-medium pointer-coarse:py-3 ${focusOn ? "border-ink bg-ink text-paper" : "text-ink-2 hover:bg-hover active:bg-press"}`}
               >
-                {label}
+                Focus
               </button>
-            ))}
+            )}
+            <GuideButton topics={DAY_GUIDE} className="ml-auto" />
           </div>
+
+          {isToday && tour && <Tour />}
+
           {isToday && !firstDay && (
-            <button
-              type="button"
-              aria-pressed={focusOn}
-              onClick={toggleFocus}
-              title="Show only what is next and what is due today"
-              className={`rounded-lg border border-rule px-3.5 py-2 font-medium pointer-coarse:py-3 ${focusOn ? "border-ink bg-ink text-paper" : "text-ink-2 hover:bg-hover active:bg-press"}`}
-            >
-              Focus
-            </button>
+            <NextUp
+              entries={focus ? glance.focus : glance.next}
+              date={date}
+              timeZone={timeZone}
+              areas={areas}
+              justDone={justDone}
+              onSelect={select}
+              onToggleDone={toggleDone}
+            />
           )}
-          <GuideButton topics={DAY_GUIDE} className="ml-auto" />
+
+          {focus ? (
+            <details className="group border-y border-rule">
+              <summary className="flex min-h-11 cursor-pointer list-none items-center gap-2 py-2 font-medium text-ink-2 hover:text-ink [&::-webkit-details-marker]:hidden">
+                <svg viewBox="0 0 12 12" width={12} height={12} aria-hidden="true" className="transition-transform group-open:rotate-90 motion-reduce:transition-none">
+                  <path d="M4 2l4 4-4 4" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+                The whole day
+                <span className="font-normal text-ink-3">{foldedWords(glance, leftover?.total ?? 0)}</span>
+              </summary>
+              <div className="pt-3 pb-4">{rest()}</div>
+            </details>
+          ) : (
+            rest()
+          )}
         </div>
 
-        {isToday && tour && <Tour />}
-
-        {isToday && !firstDay && (
-          <NextUp
-            entries={focus ? glance.focus : glance.next}
-            date={date}
-            timeZone={timeZone}
-            areas={areas}
-            justDone={justDone}
-            onSelect={select}
-            onToggleDone={toggleDone}
-          />
-        )}
-
-        {focus ? (
-          <details className="group border-y border-rule">
-            <summary className="flex min-h-11 cursor-pointer list-none items-center gap-2 py-2 font-medium text-ink-2 hover:text-ink [&::-webkit-details-marker]:hidden">
-              <svg viewBox="0 0 12 12" width={12} height={12} aria-hidden="true" className="transition-transform group-open:rotate-90 motion-reduce:transition-none">
-                <path d="M4 2l4 4-4 4" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-              The whole day
-              <span className="font-normal text-ink-3">{foldedWords(glance, leftover?.total ?? 0)}</span>
-            </summary>
-            <div className="pt-3 pb-4">{rest()}</div>
-          </details>
-        ) : (
-          rest()
-        )}
+        {selectedParam && <DetailAside pending={selectedId !== selectedParam}>{detail}</DetailAside>}
       </div>
-
-      {selectedParam && <DetailAside pending={selectedId !== selectedParam}>{detail}</DetailAside>}
-    </div>
+    </TagColorsProvider>
   );
 }

@@ -7,6 +7,8 @@ import { readDayQuery } from "@/features/day/nav";
 import { getDay, getTimeZone, getTodayDate } from "@/features/day/server";
 import { DetailPanel } from "@/features/detail/detail-panel";
 import { loadLeftover } from "@/features/day/leftover";
+import { filterDay } from "@/features/filter/apply";
+import { getFilter } from "@/features/filter/server";
 import { getItemsRepo } from "@/lib/items";
 
 export const metadata: Metadata = { title: "Today" };
@@ -14,14 +16,16 @@ export const metadata: Metadata = { title: "Today" };
 export default async function TodayPage({ searchParams }: PageProps<"/today">) {
   const today = await getTodayDate();
   const { mode, itemId } = readDayQuery(await searchParams);
+  const filter = await getFilter(searchParams, true);
   const [data, leftover, jar] = await Promise.all([
     getDay(today),
-    getItemsRepo().then(async (repo) => loadLeftover(repo, today, await getTimeZone())),
+    getItemsRepo().then(async (repo) => loadLeftover(repo, today, await getTimeZone(), filter)),
     cookies(),
   ]);
   return (
     <DayView
-      data={data}
+      data={filterDay(data, filter)}
+      filter={filter}
       leftover={leftover}
       mode={mode}
       focus={readFocus(jar.get(FOCUS_COOKIE)?.value)}

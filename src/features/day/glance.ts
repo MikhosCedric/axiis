@@ -82,14 +82,15 @@ export function dayGlance(view: TodayView, date: LocalDate, today: LocalDate, no
 /**
  * The at-a-glance line: "Today · 3 of 8 done · now: Focus block · next: Design sync at 16:00",
  * or "Nothing left today" once everything is done. `at` writes a time on the reader's clock.
+ * `scope` names a filter after the count (" in Work"), so a filtered day never reads as the whole day.
  */
-export function glanceLine(g: DayGlance, at: (d: Date) => string): string {
+export function glanceLine(g: DayGlance, at: (d: Date) => string, scope = ""): string {
   const parts = [g.when];
   const isToday = g.when === "Today";
-  if (g.total === 0) parts.push(isToday ? "Nothing planned" : "Nothing planned on this day");
-  else if (g.done === g.total) parts.push(isToday ? "Nothing left today" : `All ${g.total} done`);
+  if (g.total === 0) parts.push(isToday ? `Nothing planned${scope}` : `Nothing planned${scope} on this day`);
+  else if (g.done === g.total) parts.push(isToday ? `Nothing left${scope} today` : `All ${g.total} done${scope}`);
   else {
-    parts.push(`${g.done} of ${g.total} done`);
+    parts.push(`${g.done} of ${g.total} done${scope}`);
     if (g.live.length) parts.push(`now: ${g.live.map((e) => e.item.title).join(", ")}`);
     const n = g.nextTimed;
     if (n && n.item.schedule.kind === "timed") parts.push(`next: ${n.item.title} at ${at(n.item.schedule.start)}`);
@@ -113,9 +114,13 @@ export function foldedWords(g: DayGlance, leftover: number): string {
  * The at-a-glance line of a week or a month: "This week · 2 days left · 5 open · 2 due".
  * Days left counts today. A span wholly past or ahead says where it is from today instead.
  */
-export function spanLine(span: { first: LocalDate; last: LocalDate; noun: "week" | "month"; open: number; due: number }, today: LocalDate): string {
+export function spanLine(
+  span: { first: LocalDate; last: LocalDate; noun: "week" | "month"; open: number; due: number },
+  today: LocalDate,
+  scope = "",
+): string {
   const { first, last, noun, open, due } = span;
-  const counts = [open ? `${open} open` : "Nothing open", ...(due ? [`${due} due`] : [])];
+  const counts = [open ? `${open} open${scope}` : `Nothing open${scope}`, ...(due ? [`${due} due`] : [])];
   if (today < first || today > last) return [relativeSpan(first, today, noun), ...counts].join(" · ");
   const left = Math.round((utcMidnight(last) - utcMidnight(today)) / 86_400_000) + 1;
   return [`This ${noun}`, left === 1 ? "Last day" : `${left} days left`, ...counts].join(" · ");

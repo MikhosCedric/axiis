@@ -8,6 +8,8 @@ import { SELECTED_ITEM_PARAM } from "@/features/day/types";
 import { DetailAside } from "@/features/detail/detail-aside";
 import { setDoneAction } from "@/features/today/actions";
 import { DoneToggle, useDoneToggles, type SetDone } from "@/features/today/done-toggle";
+import { FilterChips } from "@/features/filter/filter-chip";
+import { NO_FILTER, scopePrefix, type ViewFilter } from "@/features/filter/model";
 import { dueSummary, GROUP_LABEL, inGroup, type DueData, type DueGroup, type DueRow } from "./model";
 
 const GROUPS: DueGroup[] = ["past", "week", "later"];
@@ -16,10 +18,13 @@ const GROUPS: DueGroup[] = ["past", "week", "later"];
 export function DueView({
   data,
   detail,
+  filter = NO_FILTER,
   setDone = setDoneAction,
 }: {
   data: DueData;
   detail?: ReactNode;
+  /** What the page narrowed its rows to; the rows passed in are already narrowed. */
+  filter?: ViewFilter;
   /** Defaults to the server action; the dev harness passes an in-memory one. */
   setDone?: SetDone;
 }) {
@@ -47,8 +52,10 @@ export function DueView({
       <div className="min-w-0 px-4 pt-6 pb-14 rail:px-9 rail:pt-8">
         <h1 className="headline">Due</h1>
         <p className="page-summary">
-          {place("due").hint}. {dueSummary(rows)}
+          {place("due").hint}. {scopePrefix(filter)}
+          {dueSummary(rows)}
         </p>
+        <FilterChips filter={filter} className="mt-2.5" />
         <p role="status" className={`mt-4 min-h-5 text-[13px] ${ticks.status?.error ? "font-medium text-ink" : "text-ink-2"}`}>
           {ticks.status?.text}
         </p>
