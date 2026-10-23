@@ -10,6 +10,7 @@ export type Handler =
   | "global"
   | "dialog"
   | "go"
+  | "area"
   | "day-nav"
   | "capture"
   | "score-item"
@@ -30,6 +31,10 @@ export const GO_KEY = "g";
 /** How long the key after G is waited for, in milliseconds. */
 export const GO_WINDOW_MS = 1500;
 
+export const AREA_KEY = "a";
+/** How many areas the A keys reach, one per digit. */
+export const AREA_KEYS_MAX = 9;
+
 /** Where G followed by a key goes. */
 export const GO_PLACES = PLACES.flatMap((p) => (p.go ? [{ key: p.go, label: p.label, href: p.href }] : []));
 
@@ -47,6 +52,13 @@ export const SHORTCUTS: ShortcutGroup[] = [
   {
     where: "Go to a page",
     shortcuts: GO_PLACES.map((p) => ({ chords: [k(GO_KEY)], then: k(p.key), does: `Go to ${p.label}`, handler: "go" as const })),
+  },
+  {
+    where: "Show one area",
+    shortcuts: [
+      { chords: [k(AREA_KEY)], then: k("1"), does: `Show only the first area, through ${AREA_KEYS_MAX} for the ninth, in the rail's order`, handler: "area" },
+      { chords: [k(AREA_KEY)], then: k("0"), does: "Show all areas again", handler: "area" },
+    ],
   },
   {
     where: "Today, Week and Month",
@@ -132,6 +144,21 @@ export function goShortcut(waiting: boolean, e: KeyPress): GoStep {
   if (!waiting) return key === GO_KEY ? "wait" : null;
   const place = GO_PLACES.find((p) => p.key === key);
   return place ? { href: place.href } : null;
+}
+
+export type AreaStep = "wait" | { index: number | null } | null;
+
+/**
+ * The area sequence: A, then a digit. 1 to 9 pick that area in the rail's order
+ * (`count` areas exist), 0 shows every area again. Like G, never while typing or
+ * with a modifier held, and any other key ends the wait.
+ */
+export function areaShortcut(waiting: boolean, e: KeyPress, count: number): AreaStep {
+  if (e.isComposing || e.defaultPrevented || e.altKey || e.ctrlKey || e.metaKey || e.typing) return null;
+  if (!waiting) return e.key.toLowerCase() === AREA_KEY && count > 0 ? "wait" : null;
+  if (e.key === "0") return { index: null };
+  const n = /^[1-9]$/.test(e.key) ? Number(e.key) : 0;
+  return n >= 1 && n <= Math.min(count, AREA_KEYS_MAX) ? { index: n - 1 } : null;
 }
 
 /**
