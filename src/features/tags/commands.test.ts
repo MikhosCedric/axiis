@@ -199,12 +199,13 @@ describe("reading tags", () => {
     const repo = { ...w.repo, tagsForItems: (ids: Parameters<typeof w.repo.tagsForItems>[0]) => (reads++, w.repo.tagsForItems(ids)) };
     const occurrence = { ...w.series, id: w.key("2026-10-07"), recurrence: { kind: "occurrence" as const, seriesId: w.series.id, originalOn: d("2026-10-07") } };
 
+    await setTagColor(w.repo, w.tags.find((t) => t.name === "Deep")!.id, "slate");
     expect(await tagsOfShown(repo, [w.task, w.note, occurrence, orphan], [w.series.id])).toEqual({
-      [w.task.id]: ["Deep", "home"],
-      [occurrence.id]: ["focus"],
+      names: { [w.task.id]: ["Deep", "home"], [occurrence.id]: ["focus"] },
+      colors: { deep: "slate" },
     });
     expect(reads).toBe(1);
-    expect(await tagsOfShown(repo, [], [])).toEqual({});
+    expect(await tagsOfShown(repo, [], [])).toEqual({ names: {}, colors: {} });
     expect(reads).toBe(1);
   });
 

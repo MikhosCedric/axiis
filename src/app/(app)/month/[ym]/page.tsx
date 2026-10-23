@@ -7,6 +7,7 @@ import { formatMonthHeading, parseYearMonth } from "@/features/month/model";
 import { MonthNav } from "@/features/month/month-nav";
 import { MonthView } from "@/features/month/month-view";
 import { getMonth } from "@/features/month/server";
+import { getFilter } from "@/features/filter/server";
 
 export async function generateMetadata({ params }: PageProps<"/month/[ym]">): Promise<Metadata> {
   const month = parseYearMonth((await params).ym);
@@ -18,6 +19,7 @@ export default async function MonthPage({ params, searchParams }: PageProps<"/mo
   const month = parseYearMonth((await params).ym);
   if (!month) notFound();
   const { itemId } = readDayQuery(await searchParams);
-  const [data, today] = await Promise.all([getMonth(month), getTodayDate()]);
-  return <MonthView data={data} nav={<MonthNav month={data.month} today={today} />} detail={<DetailPanel itemId={itemId} />} />;
+  const filter = await getFilter(searchParams, false);
+  const [data, today] = await Promise.all([getMonth(month, filter), getTodayDate()]);
+  return <MonthView data={data} filter={filter} nav={<MonthNav month={data.month} today={today} />} detail={<DetailPanel itemId={itemId} />} />;
 }

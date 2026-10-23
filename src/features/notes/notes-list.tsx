@@ -7,6 +7,8 @@ import { AreaMark } from "@/components/area-mark";
 import { PlusIcon, SearchIcon } from "./icons";
 import type { NoteRow, NotesActions } from "./model";
 import { reach } from "@/lib/reach";
+import { FilterChips, useKeepFilter } from "@/features/filter/filter-chip";
+import { NO_FILTER, type ViewFilter } from "@/features/filter/model";
 
 const FILTER_DELAY_MS = 250;
 
@@ -16,13 +18,17 @@ export function NotesList({
   query,
   create,
   basePath = "/notes",
+  filter = NO_FILTER,
 }: {
   rows: NoteRow[];
   query: string;
   create: NotesActions["create"];
   basePath?: string;
+  /** What the page narrowed its rows to; the rows passed in are already narrowed. */
+  filter?: ViewFilter;
 }) {
   const router = useRouter();
+  const keep = useKeepFilter();
   const pathname = usePathname();
   const [draft, setDraft] = useState(query);
   const [error, setError] = useState<string | null>(null);
@@ -33,10 +39,10 @@ export function NotesList({
     const q = draft.trim();
     if (q === query.trim()) return;
     const timer = setTimeout(() => {
-      startFilter(() => router.replace(q ? `${pathname}?q=${encodeURIComponent(q)}` : pathname, { scroll: false }));
+      startFilter(() => router.replace(keep(q ? `${pathname}?q=${encodeURIComponent(q)}` : pathname), { scroll: false }));
     }, FILTER_DELAY_MS);
     return () => clearTimeout(timer);
-  }, [draft, query, pathname, router]);
+  }, [draft, query, pathname, router, keep]);
 
   function newNote() {
     setError(null);
@@ -61,6 +67,7 @@ export function NotesList({
           New note
         </button>
       </div>
+      <FilterChips filter={filter} className="mt-2.5" />
 
       <form role="search" action={pathname} onSubmit={(e) => e.preventDefault()} className="mt-6">
         <label htmlFor="notes-search" className="sr-only">

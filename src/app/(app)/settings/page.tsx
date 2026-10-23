@@ -13,7 +13,7 @@ import {
 } from "@/features/account/actions";
 import { getDeletionDay } from "@/features/account/deletion-day";
 import { SettingsView } from "@/features/account/settings-view";
-import { deleteTagAction, renameTagAction } from "@/features/tags/actions";
+import { deleteTagAction, renameTagAction, setTagColorAction } from "@/features/tags/actions";
 import { loadTagIndex } from "@/features/tags/commands";
 import { getAreasRepo } from "@/lib/areas";
 import { getItemsRepo } from "@/lib/items";
@@ -45,7 +45,7 @@ export default async function SettingsPage() {
       areas={areas}
       areaActions={{ add: addAreaAction, rename: renameAreaAction, remove: removeAreaAction, move: moveAreaAction, color: setAreaColorAction }}
       tags={tags}
-      tagActions={{ rename: renameTagAction, remove: deleteTagAction }}
+      tagActions={{ rename: renameTagAction, remove: deleteTagAction, color: setTagColorAction }}
       deletion={{ schedule: scheduleDeletionAction, undo: undoDeletionAction, deleteNow: deleteAccountAction }}
       deletesOn={deletesOn}
       theme={readTheme(saved.get(THEME_COOKIE)?.value)}

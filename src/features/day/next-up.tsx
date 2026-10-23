@@ -11,13 +11,13 @@ import { formatClock } from "@/lib/clock";
 import { glanceLine, type DayGlance } from "./glance";
 
 /** The line under a day's date: where the day is, how far through it you are and what comes next, with a ruled progress line. */
-export function GlanceLine({ glance, timeZone }: { glance: DayGlance; timeZone: string }) {
+export function GlanceLine({ glance, timeZone, scope }: { glance: DayGlance; timeZone: string; scope?: string }) {
   const clock = useClock();
   const share = glance.total ? glance.done / glance.total : 0;
   return (
     <>
       <p className="page-summary" data-glance>
-        {glanceLine(glance, (d) => formatClock(d, timeZone, clock))}
+        {glanceLine(glance, (d) => formatClock(d, timeZone, clock), scope)}
       </p>
       {glance.total > 0 && <ProgressLine share={share} className="mt-2.5 w-40 text-ink-2" />}
     </>

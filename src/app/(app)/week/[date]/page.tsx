@@ -7,6 +7,8 @@ import { weekOf, weekTitle } from "@/features/week/model";
 import { getWeek } from "@/features/week/server";
 import { WeekNav } from "@/features/week/week-nav";
 import { WeekView } from "@/features/week/week-view";
+import { filterWeek } from "@/features/filter/apply";
+import { getFilter } from "@/features/filter/server";
 import { parseLocalDate } from "@/lib/dates";
 
 export async function generateMetadata({ params }: PageProps<"/week/[date]">): Promise<Metadata> {
@@ -19,6 +21,6 @@ export default async function WeekPage({ params, searchParams }: PageProps<"/wee
   const date = parseLocalDate((await params).date);
   if (!date) notFound();
   const { itemId } = readDayQuery(await searchParams);
-  const [data, today] = await Promise.all([getWeek(date), getTodayDate()]);
-  return <WeekView data={data} nav={<WeekNav days={data.days} today={today} />} detail={<DetailPanel itemId={itemId} />} />;
+  const [data, today, filter] = await Promise.all([getWeek(date), getTodayDate(), getFilter(searchParams, true)]);
+  return <WeekView data={filterWeek(data, filter)} filter={filter} nav={<WeekNav days={data.days} today={today} />} detail={<DetailPanel itemId={itemId} />} />;
 }

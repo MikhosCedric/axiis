@@ -1,5 +1,5 @@
 import type { AreaColor } from "@/domain/area-color";
-import type { ItemId, ItemType, LocalDate } from "@/domain/item";
+import type { AreaId, ItemId, ItemType, LocalDate } from "@/domain/item";
 import { formatDayIn } from "@/features/today/format";
 
 export const DUE_PATH = "/due";
@@ -19,6 +19,7 @@ export type DueRow = {
   group: DueGroup;
   /** When it is planned, null when it has no day. */
   when: string | null;
+  areaId: AreaId | null;
   area: string | null;
   areaColor: AreaColor | null;
 };

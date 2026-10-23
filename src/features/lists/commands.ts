@@ -18,6 +18,7 @@ export async function loadLists(repo: ItemsRepo, timeZone: string, clock: Clock)
       repeats: repeats(item),
       // A series always has a schedule, so "no day" only ever hides a plain checklist's.
       when: item.schedule.kind === "unscheduled" ? null : whenOf(item, timeZone, clock),
+      areaId: item.areaId,
       area: areaOf.get(item.areaId ?? "")?.name ?? null,
       areaColor: areaOf.get(item.areaId ?? "")?.color ?? null,
       progress: repeats(item) ? null : (counts[item.id] ?? { done: 0, total: 0 }),
