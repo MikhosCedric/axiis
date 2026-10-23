@@ -10,7 +10,8 @@ import { area, fakeRepo, makeItem } from "@/features/today/test-support";
 import { loadInbox } from "@/features/inbox/commands";
 import { loadWeek } from "@/features/week/load";
 import { filterDay, filterInbox, filterRows, filterWeek } from "./apply";
-import { filterWords, keeps, NO_FILTER, readFilter, scopePrefix, scopeWords, withFilter, type ViewFilter } from "./model";
+import { areaSection } from "@/features/palette/model";
+import { areaHref, filterable, filterWords, keeps, NO_FILTER, readFilter, scopePrefix, scopeWords, withFilter, type ViewFilter } from "./model";
 
 const work = { ...area("Work"), color: "slate" as const };
 const home = area("Home");
@@ -62,6 +63,41 @@ describe("withFilter", () => {
     expect(withFilter("/week?area=a1&item=x", { area: null })).toBe("/week?item=x");
     expect(withFilter("/week?area=a1", { area: null, tag: null })).toBe("/week");
     expect(withFilter("/month?area=a1", {})).toBe("/month?area=a1");
+  });
+});
+
+describe("areaHref", () => {
+  it("narrows the page you are on, keeping its own parameters and dropping the open item", () => {
+    expect(areaHref("/week/2026-10-05", "item=x&tag=deep", "a1")).toBe("/week/2026-10-05?tag=deep&area=a1");
+    expect(areaHref("/day/2026-10-08", "view=list&area=a0", "a1")).toBe("/day/2026-10-08?view=list&area=a1");
+    expect(areaHref("/inbox", "area=a1", null)).toBe("/inbox");
+  });
+
+  it("goes to Today from a page that cannot be narrowed, leaving that page's parameters behind", () => {
+    for (const path of ["/settings", "/tags/deep", "/notes/abc", "/search"]) {
+      expect(areaHref(path, "q=x", "a1")).toBe("/today?area=a1");
+    }
+    expect(["/today", "/month", "/month/2026-11", "/due", "/lists", "/notes"].every(filterable)).toBe(true);
+  });
+});
+
+describe("areaSection", () => {
+  const areas = [work, home];
+  const here = { pathname: "/week", query: "area=" + work.id };
+
+  it("offers each matching area and, while one is shown, every area again, by prefix or substring only", () => {
+    const labels = (input: string) => areaSection(input, areas, here).flatMap((s) => s.commands.map((c) => c.label));
+    expect(labels("")).toEqual([]);
+    expect(labels("wor")).toEqual(["Show only Work"]);
+    expect(labels("show")).toEqual(["Show only Work", "Show only Home", "Show all areas"]);
+    expect(labels("area")).toEqual(["Show only Work", "Show only Home", "Show all areas"]);
+    expect(labels("wk")).toEqual([]);
+    expect(areaSection("show", areas, { pathname: "/week", query: "" })[0].commands.map((c) => c.label)).not.toContain("Show all areas");
+  });
+
+  it("links each choice to this page, narrowed or widened", () => {
+    const [section] = areaSection("show", areas, here);
+    expect(section.commands.map((c) => (c.kind === "go" ? c.href : null))).toEqual([`/week?area=${work.id}`, `/week?area=${home.id}`, "/week"]);
   });
 });
 

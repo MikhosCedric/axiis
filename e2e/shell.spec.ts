@@ -32,7 +32,7 @@ test("the Tags index starts at the same left edge as Lists", async ({ page }) =>
 test.describe("the rail", () => {
   test.use({ viewport: { width: 1280, height: 800 } });
 
-  test("groups its places under Plan, Capture and Library, each with a hint, and heads Areas as a readout", async ({ page }) => {
+  test("groups its places under Plan, Capture and Library, each with a hint, and lists the areas as filters", async ({ page }) => {
     await page.goto("/dev/palette");
     const rail = page.getByRole("navigation", { name: "Primary" });
     await expect(rail.getByRole("heading")).toHaveText(["Plan", "Capture", "Library", "Open today, by area"]);
@@ -41,7 +41,9 @@ test.describe("the rail", () => {
     await expect(rail.getByRole("list", { name: "Library" }).getByRole("link")).toHaveText(["Lists", "Notes", "Tags"]);
     await expect(rail.getByRole("link", { name: "Inbox" })).toHaveAttribute("title", "Captured, with no day yet");
     await expect(rail.getByRole("link", { name: "Month" })).toHaveAttribute("title", "The whole month at a glance");
-    await expect(rail.getByRole("region", { name: "Open today, by area" }).getByRole("link")).toHaveCount(0);
+    const areas = rail.getByRole("region", { name: "Open today, by area" }).getByRole("link");
+    await expect(areas).toHaveText([/^Work/, /^Home/, /^Health/]);
+    await expect(areas.first()).toHaveAttribute("title", "Show only Work (A then 1)");
     await expect(rail.getByRole("link", { name: "Search" })).toHaveCount(0);
   });
 
