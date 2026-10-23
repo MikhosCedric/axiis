@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { startTransition, useEffect, useId, useOptimistic, useRef, useState } from "react";
 import { AreaMark } from "@/components/area-mark";
 import type { AreaId, ItemType } from "@/domain/item";
@@ -14,6 +13,7 @@ import { RepeatMark } from "@/features/today/repeat-mark";
 import { InlineTitle } from "./inline-title";
 import { LinkedNotes } from "./linked-notes";
 import { useItemHref } from "./item-href";
+import { useItemSelection } from "./use-item-selection";
 import { planOptions, TYPE_CHOICES, type TypeChoice, type DetailActions, type DetailView, type Scope, type SkippedDate } from "./model";
 import { PlanRow } from "./plan-row";
 import { startsRepeating } from "./repeat";
@@ -37,15 +37,34 @@ const field =
 const iconButton = "grid size-8 pointer-coarse:size-11 place-items-center rounded-md text-ink-2 hover:bg-hover active:bg-press hover:text-ink";
 const textButton = "-ml-2 inline-flex items-center gap-2 rounded-md px-2 py-1 font-medium text-ink-2 hover:bg-hover active:bg-press hover:text-ink";
 
+/** A link to this page with no item, so it opens in a new tab too; a plain click closes the panel through history. */
+function CloseDetails() {
+  const itemHref = useItemHref();
+  const { select } = useItemSelection();
+  return (
+    <Link
+      href={itemHref(null)}
+      onClick={(e) => {
+        if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
+        e.preventDefault();
+        select(null);
+      }}
+      aria-label="Close details"
+      title="Close (Esc)"
+      aria-keyshortcuts="Escape"
+      className={`ml-auto ${iconButton}`}
+    >
+      <CloseIcon />
+    </Link>
+  );
+}
+
 /** Shown when the URL names an item that was deleted or never existed. */
 export function MissingItem() {
-  const itemHref = useItemHref();
   return (
     <div className="flex items-center gap-3 text-ink-2">
       <p>That item is not here any more.</p>
-      <Link href={itemHref(null)} aria-label="Close details" title="Close" className={`ml-auto ${iconButton}`}>
-        <CloseIcon />
-      </Link>
+      <CloseDetails />
     </div>
   );
 }
@@ -64,7 +83,7 @@ export function DetailSheet({
   const clock = useClock();
   const { item, nesting, repeat } = view;
   const itemHref = useItemHref();
-  const router = useRouter();
+  const { select } = useItemSelection();
   const [done, setDone] = useOptimistic(item.done);
   const [areaId, setAreaId] = useOptimistic(item.areaId);
   const [type, setType] = useOptimistic(item.type);
@@ -125,7 +144,7 @@ export function DetailSheet({
     );
   }
 
-  const close = () => router.replace(itemHref(null), { scroll: false });
+  const close = () => select(null);
   const subtaskCount = nesting.kind === "holds-subtasks" ? nesting.subtasks.length : 0;
   const word = TYPE_WORD[item.type].toLowerCase();
   const isSeries = repeat.kind === "series";
@@ -161,9 +180,7 @@ export function DetailSheet({
           ) : (
             <span className="text-[13px] text-ink-3">Part of an item that is gone</span>
           ))}
-        <Link href={itemHref(null)} aria-label="Close details" title="Close" className={`ml-auto ${iconButton}`}>
-          <CloseIcon />
-        </Link>
+        <CloseDetails />
       </div>
 
       <div className="flex items-start gap-1.5">
