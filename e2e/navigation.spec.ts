@@ -21,13 +21,22 @@ signedIn.beforeEach(async ({ page, request, baseURL }) => {
   ]);
 });
 
+/** Opens a page and waits until React has hydrated it, since every key these tests press is a listener React attaches. */
+async function open(page: Page, path: string) {
+  await page.goto(path);
+  await page.waitForFunction(() => {
+    const main = document.getElementById("main");
+    return main !== null && Object.keys(main).some((k) => k.startsWith("__react"));
+  });
+}
+
 const details = (page: Page) => page.getByRole("complementary", { name: "Details" });
 const title = (page: Page, name: string) =>
   page.getByRole("region", { name: "Items with no day" }).getByRole("button", { name, exact: true });
 
 signedIn.describe("clearing the Inbox", () => {
   signedIn("the keyboard plans the item in focus and moves on, and Ctrl Z takes the plan back", async ({ page }) => {
-    await page.goto("/inbox");
+    await open(page, "/inbox");
     await title(page, "Book flights to Lisbon").focus();
     await page.keyboard.press("2");
     await expect(page.getByRole("status").filter({ hasText: "Book flights to Lisbon is planned for tomorrow." })).toBeVisible();
@@ -48,7 +57,7 @@ signedIn.describe("clearing the Inbox", () => {
   });
 
   signedIn("Undo on the note takes a plan back, and 4 opens the date field", async ({ page }) => {
-    await page.goto("/inbox");
+    await open(page, "/inbox");
     await page.getByRole("button", { name: "Plan for: Read the lease" }).click();
     const choices = page.getByRole("group", { name: "Plan Read the lease for" });
     await expect(choices.getByRole("button")).toHaveText(["Today1", "Tomorrow2", "Next week3", "Plan"]);
@@ -66,7 +75,7 @@ signedIn.describe("clearing the Inbox", () => {
   });
 
   signedIn("planning the last item says the Inbox is clear", async ({ page }) => {
-    await page.goto("/inbox");
+    await open(page, "/inbox");
     const plans = page.getByRole("button", { name: /^Plan for: / });
     await expect(plans).toHaveCount(4);
     await page.locator("[data-open]").first().focus();
@@ -80,12 +89,12 @@ signedIn.describe("clearing the Inbox", () => {
 
 signedIn.describe("the palette as a way around", () => {
   signedIn("C opens it where a page has no capture field, and it offers the pages visited lately with each place's key", async ({ page }) => {
-    await page.goto("/day/2030-01-02");
+    await open(page, "/day/2030-01-02");
     await expect(page).toHaveTitle("Wednesday 2 January 2030 · Axiis");
     // The visit is written a beat after the title, so wait for it to land before leaving.
     await expect.poll(() => page.evaluate(() => localStorage.getItem("axiis-recent") ?? "")).toContain("/day/2030-01-02");
 
-    await page.goto("/due");
+    await open(page, "/due");
     const palette = page.getByRole("dialog", { name: "Search and commands" });
     await expect(async () => {
       await page.keyboard.press("c");
@@ -102,7 +111,7 @@ signedIn.describe("the palette as a way around", () => {
   });
 
   signedIn("C on a page with a capture field still goes to that field", async ({ page }) => {
-    await page.goto("/inbox");
+    await open(page, "/inbox");
     // The key is wired once the page hydrates, so press until it is.
     await expect(async () => {
       await page.locator("h1").click();
@@ -113,9 +122,42 @@ signedIn.describe("the palette as a way around", () => {
   });
 });
 
+signedIn.describe("the Week on a phone", () => {
+  signedIn.use({ viewport: { width: 375, height: 812 } });
+
+  signedIn("opens at Monday with a link down to today", async ({ page }) => {
+    await open(page, "/week");
+    const today = page.locator("h3", { hasText: "Today" });
+    const jump = page.getByRole("link", { name: /^Jump to today, \w+day$/ });
+    const monday = (await page.locator("h3").first().textContent())?.includes("Today");
+    if (monday) {
+      await expect(jump).toHaveCount(0);
+      return;
+    }
+    await expect(page.locator(".page-summary").first()).toBeInViewport();
+    await jump.click();
+    await expect(today).toBeInViewport();
+  });
+
+  signedIn("Previous and Next keep their names when they shrink to chevrons", async ({ page }) => {
+    await open(page, "/week");
+    const steps = page.getByRole("navigation", { name: "Week" });
+    await expect(steps.getByRole("link", { name: /^Previous week, / })).toBeVisible();
+    await expect(steps.getByRole("link", { name: /^Next week, / })).toBeVisible();
+    for (const link of await steps.getByRole("link").all()) {
+      const box = await link.boundingBox();
+      expect(box!.width).toBeGreaterThanOrEqual(44);
+    }
+    const group = steps.getByRole("group", { name: "Day, week or month" });
+    await expect(group.getByRole("link")).toHaveText(["Day", "Week", "Month"]);
+    const [switchBox, previousBox] = [await group.boundingBox(), await steps.getByRole("link", { name: /^Previous week/ }).boundingBox()];
+    expect(Math.abs(switchBox!.y - previousBox!.y)).toBeLessThan(2);
+  });
+});
+
 signedIn.describe("the detail panel and history", () => {
   signedIn("Escape closes the panel from a list page and focus goes back to the row", async ({ page }) => {
-    await page.goto("/inbox");
+    await open(page, "/inbox");
     const row = page.getByRole("button", { name: "Book flights to Lisbon", exact: true });
     await row.click();
     await expect(details(page)).toBeVisible();
@@ -128,8 +170,8 @@ signedIn.describe("the detail panel and history", () => {
   });
 
   signedIn("Back closes the panel, Forward opens it again, and switching items does not add steps", async ({ page }) => {
-    await page.goto("/due");
-    await page.goto("/inbox");
+    await open(page, "/due");
+    await open(page, "/inbox");
     await page.getByRole("button", { name: "Book flights to Lisbon", exact: true }).click();
     await expect(details(page)).toBeVisible();
     await page.getByRole("button", { name: "Read the lease", exact: true }).click();
@@ -150,16 +192,19 @@ signedIn.describe("the detail panel and history", () => {
   });
 
   signedIn("a link with ?item= opens the panel, and closing it stays on the page", async ({ page }) => {
-    await page.goto("/inbox");
+    await open(page, "/inbox");
     await page.getByRole("button", { name: "Pick a birthday gift", exact: true }).click();
     await expect(page).toHaveURL(/[?&]item=/);
     const url = page.url();
 
-    await page.goto("/today");
-    await page.goto(url);
+    await open(page, "/today");
+    await open(page, url);
     await expect(details(page).getByRole("textbox", { name: "Title" })).toHaveValue("Pick a birthday gift");
-    await page.keyboard.press("Escape");
-    await expect(details(page)).toBeHidden();
+    // The panel is drawn on the server; Escape is heard once the page hydrates, so press until it is.
+    await expect(async () => {
+      await page.keyboard.press("Escape");
+      await expect(details(page)).toBeHidden({ timeout: 500 });
+    }).toPass();
     await expect(page).toHaveURL(/\/inbox$/);
   });
 });

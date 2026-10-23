@@ -230,6 +230,18 @@ export function WeekView({
           <h2 id="week-h" className="sr-only">
             Days
           </h2>
+          {/* Stacked on a phone, today can be several screens down; the week opens at Monday so its glance line stays in view. */}
+          {days.includes(today) && today !== days[0] && (
+            <a
+              href={`#day-${today}`}
+              className="-ml-2 mb-2 inline-flex min-h-11 items-center gap-1.5 rounded-md px-2 font-medium text-ink-2 hover:bg-hover hover:text-ink active:bg-press @min-[50rem]:hidden"
+            >
+              <svg viewBox="0 0 18 18" width={16} height={16} aria-hidden="true" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
+                <path d="M9 3v11M4.5 9.5L9 14l4.5-4.5" />
+              </svg>
+              Jump to today, {weekdayName(today, "long")}
+            </a>
+          )}
           <div className="grid border-y border-rule @min-[50rem]:grid-cols-7">
             {week.map(({ date, entries }) => (
               <DayColumn key={date} date={date} today={today} over={preview?.over === date} empty={entries.length === 0}>
