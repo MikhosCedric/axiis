@@ -4,13 +4,14 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, type ChangeEvent, type KeyboardEvent as ReactKeyboardEvent } from "react";
 import type { LocalDate } from "@/domain/item";
-import { dayHref, isTypingTarget, shortcutAction } from "@/features/day/nav";
+import { isTypingTarget, shortcutAction } from "@/features/day/nav";
 import { FIRST_DATE, LAST_DATE, parseLocalDate } from "@/lib/dates";
 import { anchorDay, formatWeekHeading, weekHref, weekNavTarget, weekOf } from "./model";
+import { spanHrefs } from "./span";
 import { SpanSwitch } from "./span-switch";
 
 const step =
-  "inline-flex h-9 pointer-coarse:h-11 flex-none items-center gap-1.5 rounded-md border border-rule px-3 font-medium text-ink hover:bg-hover active:bg-press";
+  "inline-flex h-9 min-w-11 pointer-coarse:h-11 flex-none items-center justify-center gap-1.5 rounded-md border border-rule px-3 font-medium text-ink hover:bg-hover active:bg-press";
 
 function Chevron({ back }: { back?: boolean }) {
   return (
@@ -51,16 +52,16 @@ export function WeekNav({ days, today }: { days: LocalDate[]; today: LocalDate }
 
   return (
     <nav aria-label="Week" className="flex flex-wrap items-center gap-2">
-      <SpanSwitch current="week" dayHref={dayHref(anchorDay(days, today), today, "score")} weekHref={weekHref(start, today)} />
+      <SpanSwitch current="week" hrefs={spanHrefs(anchorDay(days, today), today)} />
       {/* One pair, so Previous and Next never wrap apart. */}
       <span className="inline-flex flex-none">
         <Link href={weekHref(previous, today)} className={`${step} rounded-r-none`} aria-keyshortcuts="[" title="Previous week ( [ )">
           <Chevron back />
-          <span aria-hidden="true">Previous</span>
+          <span aria-hidden="true" className="max-rail:hidden">Previous</span>
           <span className="sr-only">Previous week, {formatWeekHeading(weekOf(previous))}</span>
         </Link>
         <Link href={weekHref(next, today)} className={`${step} -ml-px rounded-l-none`} aria-keyshortcuts="]" title="Next week ( ] )">
-          <span aria-hidden="true">Next</span>
+          <span aria-hidden="true" className="max-rail:hidden">Next</span>
           <Chevron />
           <span className="sr-only">Next week, {formatWeekHeading(weekOf(next))}</span>
         </Link>

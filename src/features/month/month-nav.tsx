@@ -5,11 +5,13 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
 import type { LocalDate } from "@/domain/item";
 import { isTypingTarget, shortcutAction } from "@/features/day/nav";
+import { spanHrefs } from "@/features/week/span";
+import { SpanSwitch } from "@/features/week/span-switch";
 import { MonthPicker } from "./month-picker";
-import { formatMonthHeading, monthHref, monthNavTarget, monthOf, type YearMonth } from "./model";
+import { anchorOf, formatMonthHeading, monthHref, monthNavTarget, monthOf, type YearMonth } from "./model";
 
 const step =
-  "inline-flex h-9 pointer-coarse:h-11 flex-none items-center gap-1.5 rounded-md border border-rule px-3 font-medium text-ink hover:bg-hover active:bg-press";
+  "inline-flex h-9 min-w-11 pointer-coarse:h-11 flex-none items-center justify-center gap-1.5 rounded-md border border-rule px-3 font-medium text-ink hover:bg-hover active:bg-press";
 
 function Chevron({ back }: { back?: boolean }) {
   return (
@@ -66,15 +68,16 @@ export function MonthNav({ month, today }: { month: YearMonth; today: LocalDate 
 
   return (
     <nav aria-label="Month" className="flex flex-wrap items-center gap-2">
+      <SpanSwitch current="month" hrefs={spanHrefs(anchorOf(month, today), today)} />
       {/* One pair, so Previous and Next never wrap apart. */}
       <span className="inline-flex flex-none">
         <StepLink href={monthHref(previous, today)} className={`${step} rounded-r-none`} aria-keyshortcuts="[" title="Previous month ( [ )">
           <Chevron back />
-          <span aria-hidden="true">Previous</span>
+          <span aria-hidden="true" className="max-rail:hidden">Previous</span>
           <span className="sr-only">Previous month, {formatMonthHeading(previous)}</span>
         </StepLink>
         <StepLink href={monthHref(next, today)} className={`${step} -ml-px rounded-l-none`} aria-keyshortcuts="]" title="Next month ( ] )">
-          <span aria-hidden="true">Next</span>
+          <span aria-hidden="true" className="max-rail:hidden">Next</span>
           <Chevron />
           <span className="sr-only">Next month, {formatMonthHeading(next)}</span>
         </StepLink>
