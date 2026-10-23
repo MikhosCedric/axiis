@@ -6,6 +6,7 @@ import type { ShownItem } from "@/domain/item";
 import { selectedIn, type ItemKey } from "@/domain/item-key";
 import { setTimeAction } from "@/features/detail/actions";
 import { DetailAside } from "@/features/detail/detail-aside";
+import { useItemSelection } from "@/features/detail/use-item-selection";
 import type { TimeOfDay } from "@/features/detail/model";
 import { GuideButton, type GuideTopic } from "@/features/palette/guide";
 import { placeAction } from "@/features/score/actions";
@@ -27,7 +28,7 @@ import { dayGlance, foldedWords } from "./glance";
 import { GlanceLine, NextUp } from "./next-up";
 import { Tour } from "./tour";
 import { seriesTimeOffer, type SeriesTimeOffer } from "./series-time";
-import { DAY_VIEW_PARAM, SELECTED_ITEM_PARAM, type DayData, type DayViewMode } from "./types";
+import { DAY_VIEW_PARAM, type DayData, type DayViewMode } from "./types";
 import { reach } from "@/lib/reach";
 
 /** The writes the day screen makes. Defaults to the server actions; the dev harness passes in-memory ones. */
@@ -112,8 +113,7 @@ export function DayView({
   const clock = useClock();
   const pathname = usePathname();
   const params = useSearchParams();
-  const selectedParam = params.get(SELECTED_ITEM_PARAM);
-  const [selectedId, setSelectedId] = useOptimistic(selectedParam);
+  const { selectedParam, selectedId, select } = useItemSelection();
   const shownMode = mode;
   const [, startTransition] = useTransition();
   const [status, setStatus] = useState<Status | null>(null);
@@ -164,13 +164,6 @@ export function DayView({
     else next.set(key, value);
     const query = next.toString();
     router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
-  }
-
-  function select(id: string | null) {
-    startTransition(() => {
-      setSelectedId(id);
-      replaceParam(SELECTED_ITEM_PARAM, id);
-    });
   }
 
   function switchMode(next: DayViewMode) {

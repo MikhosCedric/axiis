@@ -1,11 +1,10 @@
 "use client";
 
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useId, useMemo, useOptimistic, useRef, useState, useTransition, type FormEvent, type ReactNode, type RefObject } from "react";
 import { AreaLabel } from "@/components/area-mark";
 import type { Area, Item, LocalDate } from "@/domain/item";
-import { SELECTED_ITEM_PARAM } from "@/features/day/types";
 import { DetailAside } from "@/features/detail/detail-aside";
+import { useItemSelection } from "@/features/detail/use-item-selection";
 import { captureAction, setDoneAction } from "@/features/today/actions";
 import { GuideButton, type GuideTopic } from "@/features/palette/guide";
 import { CaptureField } from "@/features/today/capture-field";
@@ -44,11 +43,7 @@ export function InboxView({
   actions?: InboxActions;
 }) {
   const { today, areas, childCounts } = data;
-  const router = useRouter();
-  const pathname = usePathname();
-  const params = useSearchParams();
-  const selectedParam = params.get(SELECTED_ITEM_PARAM);
-  const [selectedId, setSelectedId] = useOptimistic(selectedParam);
+  const { selectedParam, selectedId, select } = useItemSelection();
   const [, startTransition] = useTransition();
   const [status, setStatus] = useState<{ text: string; error: boolean } | null>(null);
   const [justDone, setJustDone] = useState<string | null>(null);
@@ -72,17 +67,6 @@ export function InboxView({
     refocus.current = null;
     el.focus();
   });
-
-  function select(id: string | null) {
-    startTransition(() => {
-      setSelectedId(id);
-      const next = new URLSearchParams(params.toString());
-      if (id === null) next.delete(SELECTED_ITEM_PARAM);
-      else next.set(SELECTED_ITEM_PARAM, id);
-      const query = next.toString();
-      router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
-    });
-  }
 
   function toggleDone(item: Item) {
     const done = item.status !== "done";
