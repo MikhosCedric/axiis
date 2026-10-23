@@ -77,8 +77,8 @@ const linkRow = z
   .transform((r) => ({ id: r.id, fromId: r.from_id, toId: r.to_id, kind: r.kind, createdAt: r.created_at, updatedAt: r.updated_at }));
 
 const tagRow = z
-  .object({ id: z.string(), name: z.string(), created_at: timestamp, updated_at: timestamp })
-  .transform((r) => ({ id: r.id, name: r.name, createdAt: r.created_at, updatedAt: r.updated_at }));
+  .object({ id: z.string(), name: z.string(), color: z.string().nullable(), created_at: timestamp, updated_at: timestamp })
+  .transform((r) => ({ id: r.id, name: r.name, color: r.color, createdAt: r.created_at, updatedAt: r.updated_at }));
 
 const itemTagRow = z
   .object({ item_id: z.string(), tag_id: z.string(), created_at: timestamp, updated_at: timestamp })
@@ -96,7 +96,7 @@ export const EXPORT_TABLES = {
     orderBy: ["id"],
   },
   links: { columns: "id,from_id,to_id,kind,created_at,updated_at", orderBy: ["id"] },
-  tags: { columns: "id,name,created_at,updated_at", orderBy: ["id"] },
+  tags: { columns: "id,name,color,created_at,updated_at", orderBy: ["id"] },
   item_tags: { columns: "item_id,tag_id,created_at,updated_at", orderBy: ["item_id", "tag_id"] },
 } as const;
 

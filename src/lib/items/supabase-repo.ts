@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
+import { AREA_COLORS, type AreaColor } from "@/domain/area-color";
 import {
   ITEM_STATUSES,
   type Area,
@@ -63,8 +64,11 @@ const rowList = z.array(z.unknown());
 const itemList = (raw: unknown) => rowList.parse(raw).map(itemFromRow);
 const childRow = z.object({ parent_id: z.uuid(), status: z.enum(ITEM_STATUSES) });
 
-const TAG_COLUMNS = "id,name";
-const tagRow = z.object({ id: z.uuid(), name: z.string() }).transform((r): Tag => ({ id: r.id as TagId, name: r.name as TagName }));
+/** `color` needs migration 0011; deploy after it is applied, or every tag read fails. */
+const TAG_COLUMNS = "id,name,color";
+const tagRow = z
+  .object({ id: z.uuid(), name: z.string(), color: z.enum(AREA_COLORS).nullable() })
+  .transform((r): Tag => ({ id: r.id as TagId, name: r.name as TagName, color: r.color }));
 const tagList = (raw: unknown) => z.array(tagRow).parse(raw);
 const itemTagRow = z.object({ item_id: z.uuid(), tags: tagRow });
 const COUNT_PAGE = 1000;
@@ -393,6 +397,11 @@ export class SupabaseItemsRepo implements ItemsRepo {
   async renameTag(tagId: TagId, name: TagName): Promise<Tag> {
     const result = await this.db.from("tags").update({ name }).eq("id", tagId).select(TAG_COLUMNS).single();
     return unwrap("renameTag", result, tagRow.parse);
+  }
+
+  async setTagColor(tagId: TagId, color: AreaColor | null): Promise<Tag> {
+    const result = await this.db.from("tags").update({ color }).eq("id", tagId).select(TAG_COLUMNS).single();
+    return unwrap("setTagColor", result, tagRow.parse);
   }
 
   async deleteTag(tagId: TagId): Promise<void> {

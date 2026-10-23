@@ -5,7 +5,7 @@ import { occurrenceKey } from "@/domain/item-key";
 import { TAGS_PER_ITEM, TAGS_PER_USER } from "@/domain/tag";
 import { setDone } from "@/features/today/commands";
 import { area, fakeRepo, makeItem } from "@/features/today/test-support";
-import { addTag, deleteTag, loadTagged, loadTagIndex, removeTag, renameTag, tagsOfShown } from "./commands";
+import { addTag, deleteTag, loadTagged, loadTagIndex, removeTag, renameTag, setTagColor, tagsOfShown } from "./commands";
 
 const TZ = "UTC";
 const d = (s: string) => s as LocalDate;
@@ -153,6 +153,39 @@ describe("renameTag and deleteTag", () => {
     expect(w.namesOn(w.note)).toEqual(["home"]);
     expect(w.items).toHaveLength(3);
     expect(await deleteTag(w.repo, "not an id")).toEqual({ ok: false, error: "That tag is not here any more." });
+  });
+});
+
+describe("setTagColor", () => {
+  it("starts every tag with no colour, sets a palette colour on one tag and clears it with null", async () => {
+    const w = world();
+    w.tag(w.task.id, "deep", "home");
+    expect(w.tags.map((t) => t.color)).toEqual([null, null]);
+    expect(await setTagColor(w.repo, w.tags[0].id, "indigo")).toEqual({ ok: true });
+    expect(w.tags.map((t) => t.color)).toEqual(["indigo", null]);
+    expect(await setTagColor(w.repo, w.tags[0].id, null)).toEqual({ ok: true });
+    expect(w.tags.map((t) => t.color)).toEqual([null, null]);
+  });
+
+  it.each(["red", "Moss", "", "verdigris", "#485320", undefined, 3])("refuses %j and keeps the colour", async (color) => {
+    const w = world();
+    w.tag(w.task.id, "deep");
+    await setTagColor(w.repo, w.tags[0].id, "moss");
+    expect(await setTagColor(w.repo, w.tags[0].id, color)).toEqual({ ok: false, error: "That colour is not one Axiis offers." });
+    expect(w.tags[0].color).toBe("moss");
+  });
+
+  it("refuses a tag that is not there, and keeps the colour through a rename", async () => {
+    const w = world();
+    w.tag(w.task.id, "deep");
+    const id = w.tags[0].id;
+    await setTagColor(w.repo, id, "mauve");
+    await renameTag(w.repo, id, "Focus");
+    expect(w.tags[0]).toMatchObject({ name: "Focus", color: "mauve" });
+    await deleteTag(w.repo, id);
+    for (const gone of [id, "not an id"]) {
+      expect(await setTagColor(w.repo, gone, "plum")).toEqual({ ok: false, error: "That tag is not here any more." });
+    }
   });
 });
 
