@@ -11,7 +11,7 @@ Same-user integrity is enforced structurally, not by trigger: `items` has `uniqu
 ### `areas`
 The user's parts of life (Work, Home, Health). `id`, `name`, `position double precision`, `color text null`, `deleted_at`. `unique (user_id, id)`.
 
-`color` (migration 0009) is a palette name or null for None. The check `areas_color_palette` allows only `clay`, `ochre`, `moss`, `sage`, `slate`, `plum`, `rose` and `stone`, the names in `AREA_COLORS` (`src/domain/area-color.ts`). The database stores the name, never a hex value; the colours are design tokens (DESIGN.md, Colour for Areas). `setAreaColor` in `src/features/account/commands.ts` sets and clears it, and the export carries it.
+`color` (migration 0009, palette widened by 0011) is a palette name or null for None. The check `areas_color_palette` allows only `clay`, `terracotta`, `ochre`, `mustard`, `moss`, `sage`, `slate`, `indigo`, `plum`, `mauve`, `rose` and `stone`, the names in `AREA_COLORS` (`src/domain/area-color.ts`). 0011 drops and re-adds the check with the larger set; every name 0009 allowed is still allowed, so no stored row breaks it. The database stores the name, never a hex value; the colours are design tokens (DESIGN.md, Colour for Areas). `setAreaColor` in `src/features/account/commands.ts` sets and clears it, and the export carries it.
 
 ### `items`
 | column | type | notes |
@@ -57,13 +57,14 @@ Indexes (all partial on `deleted_at is null`): `(user_id, start_at)`, `(user_id,
 A typed edge between two items, so notes reference tasks and backlinks work. `id`, `from_id`, `to_id`, `kind` (enum `link_kind`: `reference`). Composite FKs to items for both ends, `on delete cascade`. `unique (from_id, to_id, kind)`, `check (from_id <> to_id)`.
 
 ### `tags`, `item_tags`
-`tags`: `id`, `name`, `unique (user_id, lower(name))`. `item_tags`: `(item_id, tag_id)` primary key, composite FKs for same-user integrity, `on delete cascade`.
+`tags`: `id`, `name`, `color text null`, `unique (user_id, lower(name))`. `color` (migration 0011) takes the same palette names as `areas.color` under the check `tags_color_palette`, or null for none, the default for every tag, including one made by capture; `setTagColor` in `src/features/tags/commands.ts` sets and clears it, and the export carries it. `item_tags`: `(item_id, tag_id)` primary key, composite FKs for same-user integrity, `on delete cascade`.
 
 How the app uses them (`src/domain/tag.ts`, `src/features/tags/`):
 - A name is stored as typed but trimmed, with runs of spaces collapsed and a leading `#` dropped, 1 to 32 characters. Two names are one tag when they match without case. Limits: 10 tags per item, 200 per user, checked by the commands.
 - Tags are hard-deleted. Deleting a tag removes its `item_tags` rows by cascade and never touches an item. Rename changes the one `tags` row.
 - A series carries the tags for all its occurrences. An override of a live series has no tag rows of its own; it shows and edits the series' (`tagOwner`). See `docs/recurrence.md`.
 - Open counts count live items whose status is `open`. They come from `tag_open_counts()` (migration 0008): a `security invoker` SQL function that groups the caller's `item_tags` joined to open, live items and returns one `(tag_id, open)` row per tag that has any, so a read is one request of at most 500 rows (the tag cap) however many items are tagged. Row Level Security still applies; the `user_id` filters let it use `item_tags_user_tag` and the items primary key. Execute is granted to `authenticated` only. The detail panel orders its tag suggestions by these counts, and the Tags page shows them. A tag's page lists live items that are not dropped, open first, then newest, at most 200.
+- Every read of a tag row selects its colour (`TAG_COLUMNS`), so the tag lines a day, the Week and the Inbox already read carry their colours with no further request.
 - Search reads `#name` words as a filter: words narrow the text hits to items carrying every named tag, or an override whose series carries them; tags alone list every item carrying them.
 
 ## Quotas (migration 0006)

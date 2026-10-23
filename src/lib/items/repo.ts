@@ -1,4 +1,5 @@
 import type { Area, DayRange, Item, ItemId, ItemPatch, LocalDate, NewItem, SpanRange } from "@/domain/item";
+import type { AreaColor } from "@/domain/area-color";
 import type { Tag, TagId, TagName, TagSummary } from "@/domain/tag";
 
 /** Most live series one user can have read at once. */
@@ -140,6 +141,8 @@ export interface ItemsRepo {
   /** Takes a tag off an item. A tag that is not on it counts as taken off. */
   removeTag(itemId: ItemId, tagId: TagId): Promise<void>;
   renameTag(tagId: TagId, name: TagName): Promise<Tag>;
+  /** Null clears it back to none. */
+  setTagColor(tagId: TagId, color: AreaColor | null): Promise<Tag>;
   /** Deletes the tag and takes it off every item. The items stay as they are. A tag already gone counts as deleted. */
   deleteTag(tagId: TagId): Promise<void>;
 }

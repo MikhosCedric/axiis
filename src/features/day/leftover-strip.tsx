@@ -46,9 +46,12 @@ export function LeftoverStrip({
         <h2 id="leftover-h" className="text-[13px] font-semibold text-ink-2">
           {leftoverHeading(data.total)}
         </h2>
-        <button type="button" disabled={pending} onClick={() => run(moveAll, "Moved to today.")} className={`${button} -ml-2 sm:ml-auto`}>
-          Move {data.total === 1 ? "it" : "all"} to today
-        </button>
+        {/* Moving all would move what the filter hides too, so a filtered strip moves one at a time. */}
+        {!data.filtered && (
+          <button type="button" disabled={pending} onClick={() => run(moveAll, "Moved to today.")} className={`${button} -ml-2 sm:ml-auto`}>
+            Move {data.total === 1 ? "it" : "all"} to today
+          </button>
+        )}
       </div>
       <ul className="mt-1">
         {data.rows.map((row) => (

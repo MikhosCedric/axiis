@@ -1,5 +1,5 @@
 import type { Area, Item, LocalDate, ShownItem } from "@/domain/item";
-import type { TagName } from "@/domain/tag";
+import type { TagColors, TagName } from "@/domain/tag";
 import { tagsOfShown } from "@/features/tags/commands";
 import { dayRangeFor, toLocalDate } from "@/lib/dates";
 import { loadOccurrences } from "@/lib/items/occurrences";
@@ -24,6 +24,8 @@ export type WeekData = {
   waitingFull: boolean;
   /** Tag names on everything shown, by the id it is shown with. An occurrence wears its series' tags. */
   tags: Record<string, TagName[]>;
+  /** The colour of each coloured tag shown, by `tagKey`. */
+  tagColors: TagColors;
 };
 
 export async function loadWeek(repo: ItemsRepo, date: LocalDate, now: Date, timeZone: string): Promise<WeekData> {
@@ -38,6 +40,7 @@ export async function loadWeek(repo: ItemsRepo, date: LocalDate, now: Date, time
     repo.listForDay(dayRangeFor(today, timeZone)),
   ]);
   const scheduled = [...stored, ...occurrences];
+  const tags = await tagsOfShown(repo, [...scheduled, ...waiting.unscheduled], series.map((s) => s.id));
   return {
     timeZone,
     days,
@@ -48,6 +51,7 @@ export async function loadWeek(repo: ItemsRepo, date: LocalDate, now: Date, time
     unscheduled: waiting.unscheduled,
     weekFull: stored.length >= RANGE_LIMIT,
     waitingFull: waiting.unscheduled.length >= WAITING_LIMIT,
-    tags: await tagsOfShown(repo, [...scheduled, ...waiting.unscheduled], series.map((s) => s.id)),
+    tags: tags.names,
+    tagColors: tags.colors,
   };
 }

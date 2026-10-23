@@ -3,6 +3,7 @@ import type { Clock } from "@/lib/clock";
 import { toLocalDate } from "@/lib/dates";
 import { loadOccurrences } from "@/lib/items/occurrences";
 import { RANGE_LIMIT, type ItemsRepo } from "@/lib/items/repo";
+import { keeps, NO_FILTER, scopeWords, type ViewFilter } from "@/features/filter/model";
 import { buildMonth, monthGrid, monthRange, monthSummary, type MonthCell, type YearMonth } from "./model";
 
 /** Everything the month screen draws, worked out on the server. Each day carries at most `MARKS_PER_DAY` marks. */
@@ -19,7 +20,14 @@ export type MonthData = {
  * One bounded read of everything planned across the grid, one of what falls
  * due in it, and the series expanded once over the same span. No read per day.
  */
-export async function loadMonth(repo: ItemsRepo, month: YearMonth, now: Date, timeZone: string, clock: Clock): Promise<MonthData> {
+export async function loadMonth(
+  repo: ItemsRepo,
+  month: YearMonth,
+  now: Date,
+  timeZone: string,
+  clock: Clock,
+  filter: ViewFilter = NO_FILTER,
+): Promise<MonthData> {
   const days = monthGrid(month);
   const span = monthRange(days, timeZone);
   const [areas, stored, { occurrences }, due] = await Promise.all([
@@ -28,11 +36,13 @@ export async function loadMonth(repo: ItemsRepo, month: YearMonth, now: Date, ti
     loadOccurrences(repo, span, timeZone),
     repo.listDueIn(days[0], span.toDate),
   ]);
+  // A filter narrows what is drawn before the marks are counted, so "+3 more" counts only what it keeps.
+  const kept = (item: { areaId: string | null }) => keeps(filter, item, undefined);
   const { cells, open, due: dueCount } = buildMonth({
     month,
     days,
-    scheduled: [...stored, ...occurrences],
-    due,
+    scheduled: [...stored, ...occurrences].filter(kept),
+    due: due.filter(kept),
     areas,
     timeZone,
     clock,
@@ -43,7 +53,7 @@ export async function loadMonth(repo: ItemsRepo, month: YearMonth, now: Date, ti
     month,
     today,
     cells,
-    summary: monthSummary(month, today, open, dueCount),
+    summary: monthSummary(month, today, open, dueCount, scopeWords(filter)),
     full: stored.length >= RANGE_LIMIT || due.length >= RANGE_LIMIT,
   };
 }

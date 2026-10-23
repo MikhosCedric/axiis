@@ -106,9 +106,9 @@ function busyFixtures(areas: Area[], now: Date): Item[] {
 
 /**
  * Which in-memory account a request uses: the fixtures, one that has never stored an item, one whose items sit
- * in areas, a busy week, or a copy of the fixtures for the account deletion tests.
+ * in areas, the same again with a tag for the filter tests, a busy week, or a copy of the fixtures for the account deletion tests.
  */
-export type FakeAccountKind = "fixtures" | "empty" | "areas" | "busy" | "deletion";
+export type FakeAccountKind = "fixtures" | "empty" | "areas" | "filters" | "busy" | "deletion";
 
 function createAccount(kind: FakeAccountKind) {
   const areas =
@@ -122,7 +122,7 @@ function createAccount(kind: FakeAccountKind) {
   const items =
     kind === "fixtures" || kind === "deletion"
       ? fixtures()
-      : kind === "areas"
+      : kind === "areas" || kind === "filters"
         ? areaFixtures(areas.rows)
         : kind === "busy"
           ? busyFixtures(areas.rows, new Date())
@@ -130,6 +130,8 @@ function createAccount(kind: FakeAccountKind) {
   const fake = fakeRepo(items);
   fake.repo.listAreas = () => areas.repo.list();
   if (kind === "fixtures") fake.tag(id(1), "errands");
+  // One tag across two areas, for the tag colour and tag filter tests.
+  if (kind === "filters") for (const each of [id(22), id(23)]) fake.tag(each, "errands");
   const notesStore: NotesStore = { items, bodyText: new Map(), links: [] };
   for (const i of items) if (i.type === "note") notesStore.bodyText.set(i.id, bodyText(i.body as DocNode | null));
 
@@ -158,7 +160,7 @@ function createAccount(kind: FakeAccountKind) {
       })),
     links: () =>
       notesStore.links.map((l) => ({ id: l.id, from_id: l.fromId, to_id: l.toId, kind: "reference", created_at: at(created), updated_at: at(created) })),
-    tags: () => fake.tags.map((t) => ({ id: t.id, name: t.name, created_at: at(created), updated_at: at(created) })),
+    tags: () => fake.tags.map((t) => ({ id: t.id, name: t.name, color: t.color, created_at: at(created), updated_at: at(created) })),
     item_tags: () =>
       fake.itemTags.map((l) => ({ item_id: l.itemId, tag_id: l.tagId, created_at: at(created), updated_at: at(created) })),
   };

@@ -31,7 +31,7 @@ describe("suggestTags", () => {
 
 describe("byUse", () => {
   it("puts the tags with most open items first, ties by name", () => {
-    const t = (name: string, open: number) => ({ id: name as TagId, name: name as TagName, open });
+    const t = (name: string, open: number) => ({ id: name as TagId, name: name as TagName, color: null, open });
     expect(byUse([t("home", 1), t("deep", 4), t("Admin", 1), t("zen", 0)])).toEqual(["deep", "Admin", "home", "zen"]);
   });
 });
