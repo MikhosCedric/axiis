@@ -6,8 +6,8 @@ import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { AreaMark } from "@/components/area-mark";
 import type { AreaColor } from "@/domain/area-color";
 import type { LocalDate } from "@/domain/item";
-import { useKeepFilter } from "@/features/filter/filter-chip";
-import { AREA_PARAM, areaHref, filterable } from "@/features/filter/model";
+import { useKeepFilter } from "@/features/filter/keep-filter";
+import { AREA_PARAM, areaHref, filterable } from "@/features/filter/href";
 import { useOpenPalette } from "@/features/palette/palette";
 import { useIsMac } from "@/features/palette/use-is-mac";
 import {

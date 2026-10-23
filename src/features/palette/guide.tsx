@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { createContext, useContext, useEffect, useId, type ReactNode } from "react";
-import { Swatch } from "@/components/color-picker";
+import { AreaMark } from "@/components/area-mark";
 import { TOUR_COOKIE } from "@/components/shell/cookies";
 import type { ItemType } from "@/domain/item";
 import { Glyph } from "@/features/today/glyph";
@@ -202,7 +202,7 @@ function KeyTopic({ id, onClose }: { id: string; onClose: () => void }) {
       <ul aria-label="What the colours mean" className="space-y-1.5 pt-1.5">
         <li className={row}>
           <span className="mt-1 grid w-9 flex-none justify-items-center">
-            <Swatch color="slate" size={10} />
+            <AreaMark color="slate" size={10} />
           </span>
           <span>
             <span className="font-medium text-ink">A dot.</span> The area or tag it belongs to, in the colour you gave it in
@@ -211,7 +211,7 @@ function KeyTopic({ id, onClose }: { id: string; onClose: () => void }) {
         </li>
         <li className={row}>
           <span className="mt-1 grid w-9 flex-none justify-items-center">
-            <Swatch color={null} size={10} />
+            <span aria-hidden="true" className="size-2.5 rounded-full border-[1.5px] border-dashed border-ink-3" />
           </span>
           <span>
             <span className="font-medium text-ink">None.</span> No colour is set, so no dot is drawn. Nothing is wrong or missing.

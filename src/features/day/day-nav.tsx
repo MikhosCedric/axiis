@@ -6,7 +6,7 @@ import { useEffect, useRef, useState, type ChangeEvent, type KeyboardEvent as Re
 import type { LocalDate } from "@/domain/item";
 import { formatDayHeading } from "@/features/today/format";
 import { weekHref } from "@/features/week/model";
-import { useKeepFilter } from "@/features/filter/filter-chip";
+import { useKeepFilter } from "@/features/filter/keep-filter";
 import { SpanSwitch } from "@/features/week/span-switch";
 import { FIRST_DATE, LAST_DATE, parseLocalDate } from "@/lib/dates";
 import { dayHref, isTypingTarget, navTarget, shortcutAction } from "./nav";

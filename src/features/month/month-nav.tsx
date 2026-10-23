@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
 import type { LocalDate } from "@/domain/item";
 import { isTypingTarget, shortcutAction } from "@/features/day/nav";
-import { useKeepFilter } from "@/features/filter/filter-chip";
+import { useKeepFilter } from "@/features/filter/keep-filter";
 import { MonthPicker } from "./month-picker";
 import { formatMonthHeading, monthHref, monthNavTarget, monthOf, type YearMonth } from "./model";
 
