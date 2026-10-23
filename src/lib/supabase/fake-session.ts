@@ -33,7 +33,7 @@ export function requestHasFakeSession(request: NextRequest): boolean {
 /**
  * Server only. The in-memory account when this request carries the browser-test session, else null.
  * An `axiis-e2e-account` cookie picks another account: `empty` starts with no items, for first-day tests;
- * `areas` holds a few items in areas, for the area colour tests; `busy` a full week around today, for the
+ * `areas` holds a few items in areas, for the area colour tests; `filters` the same with `#errands` on two of them, for the filter tests; `busy` a full week around today, for the
  * orientation tests; `deletion` is the fixtures again, kept apart for the account deletion tests.
  */
 export async function getFakeAccount(): Promise<FakeAccount | null> {
@@ -41,7 +41,7 @@ export async function getFakeAccount(): Promise<FakeAccount | null> {
     const jar = await cookies();
     if (!isFakeSession(jar.get("axiis-e2e-session")?.value)) return null;
     const kind = jar.get("axiis-e2e-account")?.value;
-    const picked = kind === "empty" || kind === "areas" || kind === "busy" || kind === "deletion" ? kind : "fixtures";
+    const picked = kind === "empty" || kind === "areas" || kind === "filters" || kind === "busy" || kind === "deletion" ? kind : "fixtures";
     return (await import("./fake-account")).fakeAccount(picked);
   }
   return null;
