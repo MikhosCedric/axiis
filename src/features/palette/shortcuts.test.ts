@@ -46,7 +46,7 @@ const answers: Record<Handler, (chord: Chord) => boolean> = {
     source("day/day-nav.tsx").includes("shortcutAction(") &&
     source("week/week-nav.tsx").includes("shortcutAction(") &&
     source("month/month-nav.tsx").includes("shortcutAction("),
-  capture: (c) => names("today/capture-field.tsx", c.key),
+  capture: (c) => names("today/capture-field.tsx", c.key) && source("palette/palette.tsx").includes("e.key === CAPTURE_KEY"),
   "score-item": (c) =>
     names("score/score-view.tsx", c.key) ||
     [beam, waiting].some((item) => keyPlacement(ctx, item, [null, work], { key: c.key, shiftKey: !!c.shift }) !== null),

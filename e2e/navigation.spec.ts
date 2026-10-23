@@ -78,6 +78,41 @@ signedIn.describe("clearing the Inbox", () => {
   });
 });
 
+signedIn.describe("the palette as a way around", () => {
+  signedIn("C opens it where a page has no capture field, and it offers the pages visited lately with each place's key", async ({ page }) => {
+    await page.goto("/day/2030-01-02");
+    await expect(page).toHaveTitle("Wednesday 2 January 2030 · Axiis");
+    // The visit is written a beat after the title, so wait for it to land before leaving.
+    await expect.poll(() => page.evaluate(() => localStorage.getItem("axiis-recent") ?? "")).toContain("/day/2030-01-02");
+
+    await page.goto("/due");
+    const palette = page.getByRole("dialog", { name: "Search and commands" });
+    await expect(async () => {
+      await page.keyboard.press("c");
+      await expect(palette).toBeVisible({ timeout: 500 });
+    }).toPass();
+    await palette.getByRole("combobox").fill("");
+    await expect(palette.getByRole("combobox")).toBeFocused();
+    await expect(palette.getByRole("group", { name: "Recent" }).getByRole("option")).toHaveText(["Wednesday 2 January 2030"]);
+    await expect(palette.getByRole("option", { name: "Inbox, Captured, with no day yet" })).toContainText("GI");
+    await expect(palette.getByRole("status")).toHaveText("Try “next friday”, “nov 3”, a #tag, or a line to capture.");
+
+    await palette.getByRole("option", { name: "Wednesday 2 January 2030" }).click();
+    await expect(page).toHaveURL(/\/day\/2030-01-02$/);
+  });
+
+  signedIn("C on a page with a capture field still goes to that field", async ({ page }) => {
+    await page.goto("/inbox");
+    // The key is wired once the page hydrates, so press until it is.
+    await expect(async () => {
+      await page.locator("h1").click();
+      await page.keyboard.press("c");
+      await expect(page.getByLabel("Capture anything")).toBeFocused({ timeout: 500 });
+    }).toPass();
+    await expect(page.getByRole("dialog", { name: "Search and commands" })).toBeHidden();
+  });
+});
+
 signedIn.describe("the detail panel and history", () => {
   signedIn("Escape closes the panel from a list page and focus goes back to the row", async ({ page }) => {
     await page.goto("/inbox");
