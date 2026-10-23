@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { AREA_COLORS, areaColorLabel, isAreaColor } from "./area-color";
+import { AREA_COLORS, areaColorLabel, isAreaColor, wantsColorNudge } from "./area-color";
 
 const css = readFileSync(join(__dirname, "../app/globals.css"), "utf8");
 const migration = readFileSync(join(__dirname, "../../supabase/migrations/0011_colors.sql"), "utf8");
@@ -125,6 +125,14 @@ describe("isAreaColor and areaColorLabel", () => {
 
   it("keeps every name 0009 allowed, so no stored area breaks the larger check", () => {
     for (const name of ["clay", "ochre", "moss", "sage", "slate", "plum", "rose", "stone"]) expect(isAreaColor(name)).toBe(true);
+  });
+
+  it("suggests colours only to two or more areas with none coloured", () => {
+    const none = { color: null };
+    expect(wantsColorNudge([none, none])).toBe(true);
+    expect(wantsColorNudge([none])).toBe(false);
+    expect(wantsColorNudge([])).toBe(false);
+    expect(wantsColorNudge([none, { color: "moss" }])).toBe(false);
   });
 
   it("names None and each colour in sentence case", () => {
