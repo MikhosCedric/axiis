@@ -144,7 +144,7 @@ test.describe("shell on a phone", () => {
     const more = nav.getByRole("button", { name: "More" });
     await more.click();
     const sheet = page.getByRole("dialog", { name: "More" });
-    await expect(sheet.getByRole("heading")).toHaveText(["Plan", "Library", "Account"]);
+    await expect(sheet.getByRole("heading")).toHaveText(["Plan", "Library", "Open today, by area", "Account"]);
     await expect(sheet.getByRole("list", { name: "Plan" }).getByRole("link")).toHaveText([/^Month/]);
     await expect(sheet.getByRole("link", { name: "Month", exact: true })).toHaveAccessibleDescription("The whole month at a glance");
     await expect(sheet.getByRole("list", { name: "Library" }).getByRole("link")).toHaveText([/^Lists/, /^Notes/, /^Tags/]);
@@ -159,6 +159,8 @@ test.describe("shell on a phone", () => {
       sheet.getByRole("link", { name: "Settings", exact: true }),
       sheet.getByRole("button", { name: "Sign out" }),
     ]) {
+      // With the areas above it, Account can sit just past the fold on a short phone; the sheet scrolls to it.
+      await control.scrollIntoViewIfNeeded();
       await expect(control).toBeInViewport({ ratio: 1 });
       expect((await control.boundingBox())!.height).toBeGreaterThanOrEqual(44);
     }

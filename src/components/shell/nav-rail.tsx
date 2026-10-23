@@ -93,7 +93,7 @@ function Rail({ pathname, today, areas }: { pathname: string; today: LocalDate; 
           <h2 id="areas-h" className={`mx-2 mb-2 ${overline}`}>
             Open today, by area
           </h2>
-          <AreaLinks areas={areas} row="px-2 py-1 text-[13px] pointer-coarse:min-h-11" />
+          <AreaLinks areas={areas} />
         </section>
       )}
 
@@ -161,12 +161,16 @@ const areaHere =
  * (or Today, from a page that cannot be narrowed); choosing it again shows every area. Set smaller and
  * lighter than the places, since it is a lens on them rather than a place of its own.
  */
-function AreaLinks({ areas, row, onGo }: { areas: NavArea[]; row: string; onGo?: () => void }) {
+function AreaLinks({ areas, chips = false, onGo }: { areas: NavArea[]; chips?: boolean; onGo?: () => void }) {
   const pathname = usePathname();
   const query = useSearchParams().toString();
   const shown = new URLSearchParams(query).get(AREA_PARAM);
+  const look = (here: boolean) =>
+    chips
+      ? `inline-flex min-h-11 items-center gap-2 rounded-full border px-3.5 text-[15px] ${here ? "border-ink font-semibold text-ink shadow-[inset_0_0_0_1px_var(--ink)]" : "border-rule text-ink-2 hover:bg-hover hover:text-ink active:bg-press"}`
+      : `flex items-center gap-2.5 rounded-md px-2 py-1 text-[13px] pointer-coarse:min-h-11 ${here ? areaHere : "text-ink-2 hover:bg-hover hover:text-ink active:bg-press"}`;
   return (
-    <ul className="grid gap-0.5">
+    <ul className={chips ? "flex flex-wrap gap-2 px-5 pt-1 pb-1" : "grid gap-0.5"}>
       {areas.map((a, i) => {
         const here = shown === a.id && filterable(pathname);
         const keys = i < 9 ? ` (A then ${i + 1})` : "";
@@ -174,20 +178,22 @@ function AreaLinks({ areas, row, onGo }: { areas: NavArea[]; row: string; onGo?:
           <li key={a.id}>
             <Link
               href={areaHref(pathname, query, here ? null : a.id)}
+              // The same page under another filter: prefetching it would draw a hidden copy of the page for each area.
+              prefetch={false}
               aria-current={here ? "true" : undefined}
               title={here ? "Show all areas (A then 0)" : `Show only ${a.name}${keys}`}
               onClick={onGo}
-              className={`flex items-center gap-2.5 rounded-md ${row} ${here ? areaHere : "text-ink-2 hover:bg-hover hover:text-ink active:bg-press"}`}
+              className={look(here)}
             >
-              {/* An area with no colour keeps the dot's room, so every name starts at one edge. */}
+              {/* In the rail an area with no colour keeps the dot's room, so every name starts at one edge. */}
               <span className="inline-flex min-w-0 items-center gap-1.5">
-                {a.color ? <AreaMark color={a.color} /> : <span aria-hidden="true" className="size-2 flex-none" />}
+                {a.color ? <AreaMark color={a.color} /> : !chips && <span aria-hidden="true" className="size-2 flex-none" />}
                 <span className="truncate">{a.name}</span>
               </span>
               <span className="sr-only">
                 , {a.open} open today{here ? ", shown alone; choose again to show every area" : ""}
               </span>
-              {a.open > 0 && (
+              {a.open > 0 && !chips && (
                 <span
                   aria-hidden="true"
                   title={`${a.open} open today`}
@@ -384,9 +390,7 @@ function PhoneBar({ pathname, today, areas }: { pathname: string; today: LocalDa
         {areas.length > 0 && (
           <div className="mt-3 border-t border-rule-soft pt-3">
             <h2 className={`mx-5 mb-1 ${overline}`}>Open today, by area</h2>
-            <div className="px-2">
-              <AreaLinks areas={areas} row={`${sheetRow} py-2`} onGo={close} />
-            </div>
+            <AreaLinks areas={areas} chips onGo={close} />
           </div>
         )}
         <SheetSection heading="Account">
