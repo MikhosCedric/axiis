@@ -32,7 +32,8 @@ import { addDays } from "@/lib/dates";
 import { captureOnAction } from "./actions";
 import type { MonthData } from "./load";
 import { reach } from "@/lib/reach";
-import { FilterChips, useKeepFilter } from "@/features/filter/filter-chip";
+import { FilterChips } from "@/features/filter/filter-chip";
+import { useKeepFilter } from "@/features/filter/keep-filter";
 import { NO_FILTER, type ViewFilter } from "@/features/filter/model";
 import {
   anchorOf,

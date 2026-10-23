@@ -7,7 +7,7 @@ import type { LocalDate } from "@/domain/item";
 import { dayHref, isTypingTarget, shortcutAction } from "@/features/day/nav";
 import { FIRST_DATE, LAST_DATE, parseLocalDate } from "@/lib/dates";
 import { anchorDay, formatWeekHeading, weekHref, weekNavTarget, weekOf } from "./model";
-import { useKeepFilter } from "@/features/filter/filter-chip";
+import { useKeepFilter } from "@/features/filter/keep-filter";
 import { SpanSwitch } from "./span-switch";
 
 const step =

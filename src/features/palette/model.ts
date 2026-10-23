@@ -9,7 +9,7 @@ import { parseCapture, previewWords } from "@/features/today/capture-syntax";
 import { formatDayIn } from "@/features/today/format";
 import { formatMonthHeading, monthHref } from "@/features/month/model";
 import { completeDatePhrase, parseDatePhrase, parseMonthPhrase } from "./date-phrase";
-import { AREA_PARAM, areaHref } from "@/features/filter/model";
+import { AREA_PARAM, areaHref } from "@/features/filter/href";
 import { matchTier, rank } from "./rank";
 
 /** An item the palette can act on: a search result, or the item the screen has selected (already open, so no link). */

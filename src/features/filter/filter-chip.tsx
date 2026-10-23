@@ -2,23 +2,11 @@
 
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
-import { useCallback } from "react";
 import { AreaMark } from "@/components/area-mark";
 import type { AreaColor } from "@/domain/area-color";
 import { useTagColor } from "@/features/tags/tag-colors";
-import { AREA_PARAM, TAG_PARAM, withFilter, type ViewFilter } from "./model";
-
-/**
- * Keeps the address's filter on a link to another view, so moving a day, a week or
- * a month, or switching between them, stays inside the same area or tag. The
- * values pass through as they are; the page that receives them checks them.
- */
-export function useKeepFilter(): (href: string) => string {
-  const params = useSearchParams();
-  const area = params.get(AREA_PARAM) ?? undefined;
-  const tag = params.get(TAG_PARAM) ?? undefined;
-  return useCallback((href: string) => (area || tag ? withFilter(href, { area, tag }) : href), [area, tag]);
-}
+import { AREA_PARAM, TAG_PARAM } from "./href";
+import type { ViewFilter } from "./model";
 
 /** This page's address with one filter value removed. An open item stays open: the wider view holds it too. */
 function useWithout(key: "area" | "tag"): string {

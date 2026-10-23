@@ -42,7 +42,7 @@ import {
 import { GuideBody, GuideContext, Kbd, type GuideTopic } from "./guide";
 import styles from "./palette.module.css";
 import { areaShortcut, globalShortcut, goShortcut, GO_WINDOW_MS } from "./shortcuts";
-import { areaHref } from "@/features/filter/model";
+import { areaHref } from "@/features/filter/href";
 
 
 /** The writes and reads the palette makes. Server actions in the app, in-memory fakes in the dev harness. */

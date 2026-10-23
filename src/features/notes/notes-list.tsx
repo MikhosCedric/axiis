@@ -7,7 +7,8 @@ import { AreaMark } from "@/components/area-mark";
 import { PlusIcon, SearchIcon } from "./icons";
 import type { NoteRow, NotesActions } from "./model";
 import { reach } from "@/lib/reach";
-import { FilterChips, useKeepFilter } from "@/features/filter/filter-chip";
+import { FilterChips } from "@/features/filter/filter-chip";
+import { useKeepFilter } from "@/features/filter/keep-filter";
 import { NO_FILTER, type ViewFilter } from "@/features/filter/model";
 
 const FILTER_DELAY_MS = 250;

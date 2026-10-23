@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useId, useLayoutEffect, useRef, useState, type KeyboardEvent } from "react";
 import type { LocalDate } from "@/domain/item";
 import { FIRST_DATE, LAST_DATE } from "@/lib/dates";
-import { useKeepFilter } from "@/features/filter/filter-chip";
+import { useKeepFilter } from "@/features/filter/keep-filter";
 import { formatMonthHeading, monthHref, monthOf, pickerStep, stepYear, type YearMonth } from "./model";
 
 const SHORT = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];

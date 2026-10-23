@@ -11,7 +11,8 @@ import { loadInbox } from "@/features/inbox/commands";
 import { loadWeek } from "@/features/week/load";
 import { filterDay, filterInbox, filterRows, filterWeek } from "./apply";
 import { areaSection } from "@/features/palette/model";
-import { areaHref, filterable, filterWords, keeps, NO_FILTER, readFilter, scopePrefix, scopeWords, withFilter, type ViewFilter } from "./model";
+import { areaHref, filterable, withFilter } from "./href";
+import { filterWords, keeps, NO_FILTER, readFilter, scopePrefix, scopeWords, type ViewFilter } from "./model";
 
 const work = { ...area("Work"), color: "slate" as const };
 const home = area("Home");

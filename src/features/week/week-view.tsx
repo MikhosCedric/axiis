@@ -52,7 +52,8 @@ import {
 } from "./model";
 import { useWeekDrag, type WeekDragPreview } from "./use-week-drag";
 import { reach } from "@/lib/reach";
-import { FilterChips, useKeepFilter } from "@/features/filter/filter-chip";
+import { FilterChips } from "@/features/filter/filter-chip";
+import { useKeepFilter } from "@/features/filter/keep-filter";
 import { NO_FILTER, scopeWords, type ViewFilter } from "@/features/filter/model";
 
 /** The writes the week makes. Defaults to the server actions; the dev harness passes in-memory ones. */
