@@ -16,6 +16,8 @@ export type Handler =
   | "score-item"
   | "week-item"
   | "month-grid"
+  | "inbox"
+  | "undo"
   | "inline-edit"
   | "confirm-delete"
   | "note-editor"
@@ -28,6 +30,8 @@ export type ShortcutGroup = { where: string; shortcuts: Shortcut[] };
 export const PALETTE_KEY = "k";
 export const HELP_KEY = "?";
 export const GO_KEY = "g";
+/** Goes to the page's capture field, or opens the palette to capture where a page has none. */
+export const CAPTURE_KEY = "c";
 /** How long the key after G is waited for, in milliseconds. */
 export const GO_WINDOW_MS = 1500;
 
@@ -47,6 +51,8 @@ export const SHORTCUTS: ShortcutGroup[] = [
       { chords: [k(PALETTE_KEY, { mod: true })], does: "Search, jump to a page or date, or capture", handler: "global" },
       { chords: [k(HELP_KEY)], does: "Open the Guide: this page, then every shortcut", handler: "global" },
       { chords: [k("Escape")], does: "Close search or this list", handler: "dialog" },
+      { chords: [k(CAPTURE_KEY)], does: "Capture: the page's capture field, or search where a page has none", handler: "capture" },
+      { chords: [k("z", { mod: true })], does: "Undo the change just made, while its note shows", handler: "undo" },
     ],
   },
   {
@@ -66,8 +72,18 @@ export const SHORTCUTS: ShortcutGroup[] = [
       { chords: [k("[")], does: "Previous day, week or month", handler: "day-nav" },
       { chords: [k("]")], does: "Next day, week or month", handler: "day-nav" },
       { chords: [k("t")], does: "Back to today, this week or this month", handler: "day-nav" },
-      { chords: [k("c")], does: "Go to the capture field", handler: "capture" },
       { chords: [k("Escape")], does: "Leave the capture field", handler: "capture" },
+    ],
+  },
+  {
+    where: "The Inbox",
+    shortcuts: [
+      { chords: [k("j"), k("ArrowDown")], does: "The next item", handler: "inbox" },
+      { chords: [k("k"), k("ArrowUp")], does: "The item before", handler: "inbox" },
+      { chords: [k("1")], does: "Plan it for today", handler: "inbox" },
+      { chords: [k("2")], does: "Plan it for tomorrow", handler: "inbox" },
+      { chords: [k("3")], does: "Plan it for next week", handler: "inbox" },
+      { chords: [k("4")], does: "Plan it for another day", handler: "inbox" },
     ],
   },
   {

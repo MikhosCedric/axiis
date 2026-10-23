@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, type ChangeEvent, type KeyboardEvent as ReactKeyboardEvent } from "react";
 import type { LocalDate } from "@/domain/item";
 import { formatDayHeading } from "@/features/today/format";
-import { weekHref } from "@/features/week/model";
+import { keepSpans, spanHrefs } from "@/features/week/span";
 import { useKeepFilter } from "@/features/filter/keep-filter";
 import { SpanSwitch } from "@/features/week/span-switch";
 import { FIRST_DATE, LAST_DATE, parseLocalDate } from "@/lib/dates";
@@ -13,7 +13,7 @@ import { dayHref, isTypingTarget, navTarget, shortcutAction } from "./nav";
 import type { DayViewMode } from "./types";
 
 const step =
-  "inline-flex h-9 pointer-coarse:h-11 flex-none items-center gap-1.5 rounded-md border border-rule px-3 font-medium text-ink hover:bg-hover active:bg-press";
+  "inline-flex h-9 min-w-11 pointer-coarse:h-11 flex-none items-center justify-center gap-1.5 rounded-md border border-rule px-3 font-medium text-ink hover:bg-hover active:bg-press";
 
 function Chevron({ back }: { back?: boolean }) {
   return (
@@ -53,16 +53,16 @@ export function DayNav({ date, today, mode }: { date: LocalDate; today: LocalDat
 
   return (
     <nav aria-label="Day" className="flex flex-wrap items-center gap-2">
-      <SpanSwitch current="day" dayHref={keep(dayHref(date, today, mode))} weekHref={keep(weekHref(date, today))} />
+      <SpanSwitch current="day" hrefs={keepSpans(spanHrefs(date, today, mode), keep)} />
       {/* One pair, so Previous and Next never wrap apart. */}
       <span className="inline-flex flex-none">
         <Link href={keep(dayHref(previous, today, mode))} className={`${step} rounded-r-none`} aria-keyshortcuts="[" title="Previous day ( [ )">
           <Chevron back />
-          <span aria-hidden="true">Previous</span>
+          <span aria-hidden="true" className="max-rail:hidden">Previous</span>
           <span className="sr-only">Previous day, {formatDayHeading(previous)}</span>
         </Link>
         <Link href={keep(dayHref(next, today, mode))} className={`${step} -ml-px rounded-l-none`} aria-keyshortcuts="]" title="Next day ( ] )">
-          <span aria-hidden="true">Next</span>
+          <span aria-hidden="true" className="max-rail:hidden">Next</span>
           <Chevron />
           <span className="sr-only">Next day, {formatDayHeading(next)}</span>
         </Link>

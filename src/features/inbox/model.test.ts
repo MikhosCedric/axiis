@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { LocalDate } from "@/domain/item";
 import { makeItem } from "@/features/today/test-support";
-import { dayWords, inboxRows, inboxSummary, parsePlanFor, planDate } from "./model";
+import { dayWords, inboxRows, inboxSummary, parsePlanFor, planDate, quickPlans, rowKey } from "./model";
 
 const d = (s: string) => s as LocalDate;
 const TODAY = d("2026-12-31");
@@ -61,5 +61,23 @@ describe("inboxSummary", () => {
     expect(inboxSummary([done])).toBe("Everything here is done.");
     expect(inboxSummary([open, done])).toBe("1 to plan.");
     expect(inboxSummary([open, open])).toBe("2 to plan.");
+  });
+});
+
+describe("quick plans and row keys", () => {
+  it("offers today, tomorrow and the Monday of next week, from a Thursday and from a Sunday", () => {
+    expect(quickPlans(TODAY).map((q) => [q.key, q.label, planDate(q.when, TODAY)])).toEqual([
+      ["1", "Today", "2026-12-31"],
+      ["2", "Tomorrow", "2027-01-01"],
+      ["3", "Next week", "2027-01-04"],
+    ]);
+    expect(planDate(quickPlans(d("2027-01-03"))[2].when, d("2027-01-03"))).toBe("2027-01-04");
+  });
+
+  it("moves with j, k and the arrows, plans with 1 to 3 and picks a day with 4", () => {
+    expect(["j", "ArrowDown", "k", "ArrowUp"].map((k) => rowKey(k, TODAY))).toEqual([{ move: 1 }, { move: 1 }, { move: -1 }, { move: -1 }]);
+    expect(["1", "2", "3"].map((k) => rowKey(k, TODAY))).toEqual([{ plan: "today" }, { plan: "tomorrow" }, { plan: "2027-01-04" }]);
+    expect(rowKey("4", TODAY)).toEqual({ pick: true });
+    expect(["5", "J", "Enter", " ", "x"].map((k) => rowKey(k, TODAY))).toEqual([null, null, null, null, null]);
   });
 });

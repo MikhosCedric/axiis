@@ -11,6 +11,7 @@ import { formatMonthHeading, monthHref } from "@/features/month/model";
 import { completeDatePhrase, parseDatePhrase, parseMonthPhrase } from "./date-phrase";
 import { AREA_PARAM, areaHref } from "@/features/filter/href";
 import { matchTier, rank } from "./rank";
+import type { Visit } from "./recent";
 
 /** An item the palette can act on: a search result, or the item the screen has selected (already open, so no link). */
 export type Target = { key: string; title: string; type: ItemType; done: boolean; href: string | null };
@@ -24,14 +25,14 @@ export type Act =
   | { do: "ask-tag" };
 
 export type Command =
-  | { kind: "go"; id: string; label: string; href: string; hint?: string }
+  | { kind: "go"; id: string; label: string; href: string; hint?: string; go?: string }
   | { kind: "help"; id: string; label: string; hint: string }
   | { kind: "date"; id: string; label: string; href: string }
   | { kind: "capture"; id: string; label: string; title: string }
   | { kind: "open"; id: string; label: string; detail: string; target: Target }
   | { kind: "act"; id: string; label: string; act: Act };
 
-export type SectionId = "selected" | "go" | "areas" | "dates" | "capture" | "find" | "act";
+export type SectionId = "selected" | "recent" | "go" | "areas" | "dates" | "capture" | "find" | "act";
 export type Section = { id: SectionId; label: string; commands: Command[] };
 
 /** Search runs on the server, so its rows arrive later than the typing that asked for them. */
@@ -44,7 +45,7 @@ export type Find =
 export const FIND_MIN = 2;
 export const FIND_MAX = 6;
 
-type Destination = { label: string; href: string | null; hint: string; also: readonly string[] };
+type Destination = { label: string; href: string | null; hint: string; also: readonly string[]; go?: string | null };
 
 /** Every page, then the Guide, which opens a dialog rather than a page. */
 const DESTINATIONS: Destination[] = [
@@ -65,21 +66,32 @@ function dateLabel(date: LocalDate, today: LocalDate): string {
 /**
  * What the palette offers for `input`, in order: pages, a date, capture, then
  * search results once they are back for this very input. With nothing typed,
- * the item the screen has selected comes first. Empty sections are left out.
+ * the item the screen has selected comes first, then the pages visited lately.
+ * Empty sections are left out. A page with a G key names it.
  */
-export function paletteSections(input: string, today: LocalDate, clock: Clock, find: Find, selected: Target | null = null): Section[] {
+export function paletteSections(
+  input: string,
+  today: LocalDate,
+  clock: Clock,
+  find: Find,
+  selected: Target | null = null,
+  recent: readonly Visit[] = [],
+): Section[] {
   const text = input.trim();
   const places = rank(DESTINATIONS, text, (p) => [p.label, ...p.also]);
   const go: Command[] = places.map((p) =>
     p.href === null
       ? { kind: "help", id: "help", label: p.label, hint: p.hint }
-      : { kind: "go", id: `go-${p.label.toLowerCase()}`, label: p.label, href: p.href, hint: p.hint },
+      : { kind: "go", id: `go-${p.label.toLowerCase()}`, label: p.label, href: p.href, hint: p.hint, ...(p.go ? { go: p.go } : {}) },
   );
   if (!text) {
     const pick: Section[] = selected
       ? [{ id: "selected", label: "Selected", commands: [{ kind: "open", id: "selected", label: selected.title, detail: "", target: selected }] }]
       : [];
-    return [...pick, { id: "go", label: "Go to", commands: go }];
+    const lately: Section[] = recent.length
+      ? [{ id: "recent", label: "Recent", commands: recent.map((v) => ({ kind: "go", id: `recent-${v.href}`, label: v.title, href: v.href })) }]
+      : [];
+    return [...pick, ...lately, { id: "go", label: "Go to", commands: go }];
   }
 
   const tag = text.startsWith("#") ? parseTagName(text) : null;

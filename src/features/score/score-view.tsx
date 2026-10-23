@@ -192,6 +192,7 @@ export function ScoreView({
       e.preventDefault();
       onToggleDone(item);
     } else if (e.key === "Escape") {
+      e.preventDefault();
       onSelect(null);
     } else if (!e.altKey && !e.ctrlKey && !e.metaKey) {
       const placement = keyPlacement(ctx, item, score.areaOrder, e);

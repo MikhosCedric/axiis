@@ -34,7 +34,36 @@ export function TimeZoneSync() {
         changed = true;
       }
     }
-    if (changed) router.refresh();
+    if (!changed) return;
+    return afterStreamedReveal(() => router.refresh());
   }, [router]);
   return null;
+}
+
+/** How long to wait for the streamed page to be revealed before refreshing anyway. */
+const REVEAL_WAIT_MS = 3000;
+
+/**
+ * Runs `then` once the whole document has been parsed and React has moved every
+ * streamed part into place (its hidden `S:` holders are gone). A refresh sent
+ * earlier lands while a part is still waiting to be revealed; React then
+ * draws that part afresh and the hidden holder is left behind for good, a
+ * second copy of the page under the body. Returns a cancel.
+ */
+function afterStreamedReveal(then: () => void): () => void {
+  let frame = 0;
+  const giveUp = performance.now() + REVEAL_WAIT_MS;
+  const pending = () => document.querySelector('body > div[hidden][id^="S:"]') !== null;
+  const look = () => {
+    if (pending() && performance.now() < giveUp) frame = requestAnimationFrame(look);
+    else then();
+  };
+  // The whole document has been parsed once it is no longer "loading", so every streamed part has arrived.
+  const start = () => look();
+  if (document.readyState !== "loading") start();
+  else document.addEventListener("DOMContentLoaded", start, { once: true });
+  return () => {
+    cancelAnimationFrame(frame);
+    document.removeEventListener("DOMContentLoaded", start);
+  };
 }

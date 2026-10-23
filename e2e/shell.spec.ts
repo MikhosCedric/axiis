@@ -127,7 +127,7 @@ test.describe("shell on a phone", () => {
     };
     await page.goto("/dev/score");
     await atLeastThumb(page.getByRole("group", { name: "View" }).getByRole("button"));
-    await atLeastThumb(page.getByRole("group", { name: "Day or week" }).getByRole("link"));
+    await atLeastThumb(page.getByRole("group", { name: "Day, week or month" }).getByRole("link"));
     await page.goto("/");
     await atLeastThumb(page.getByRole("banner").getByRole("link", { name: "Sign in" }));
     await atLeastThumb(page.getByRole("navigation", { name: "Site" }).getByRole("link"));

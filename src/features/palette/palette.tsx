@@ -41,7 +41,8 @@ import {
 } from "./model";
 import { GuideBody, GuideContext, Kbd, type GuideTopic } from "./guide";
 import styles from "./palette.module.css";
-import { areaShortcut, globalShortcut, goShortcut, GO_WINDOW_MS } from "./shortcuts";
+import { parseVisits, RECENT_KEY, remember, visitTitle, worthRemembering, type Visit } from "./recent";
+import { areaShortcut, CAPTURE_KEY, globalShortcut, goShortcut, GO_KEY, GO_WINDOW_MS } from "./shortcuts";
 import { areaHref } from "@/features/filter/href";
 
 
@@ -65,6 +66,36 @@ const serverActions: PaletteActions = {
   tag: addTagAction,
 };
 const SEARCH_DELAY_MS = 180;
+/** How long after a change of page its title is read, since the new title is written a beat after the address. */
+const TITLE_DELAY_MS = 400;
+/** What the empty palette suggests typing. */
+export const EMPTY_HINT = "Try “next friday”, “nov 3”, a #tag, or a line to capture.";
+
+function readVisits(): Visit[] {
+  try {
+    return parseVisits(window.localStorage.getItem(RECENT_KEY));
+  } catch {
+    return [];
+  }
+}
+
+/** Remembers each page this browser opens that is not a place, so the palette can offer it again. */
+function useRememberVisits() {
+  const pathname = usePathname();
+  useEffect(() => {
+    if (!worthRemembering(pathname)) return;
+    const timer = window.setTimeout(() => {
+      const title = visitTitle(document.title);
+      if (!title) return;
+      try {
+        window.localStorage.setItem(RECENT_KEY, JSON.stringify(remember(readVisits(), { href: pathname, title })));
+      } catch {
+        // Storage is off or full: the palette simply has nothing recent to offer.
+      }
+    }, TITLE_DELAY_MS);
+    return () => window.clearTimeout(timer);
+  }, [pathname]);
+}
 
 type Open = "palette" | "help" | null;
 
@@ -101,6 +132,7 @@ export function PaletteProvider({
     return () => setTopics((current) => (current === next ? NO_TOPICS : current));
   }, []);
   const guide = useMemo(() => ({ open: () => setOpen("help"), show }), [show]);
+  useRememberVisits();
 
   useEffect(() => {
     let goTimer: ReturnType<typeof setTimeout> | undefined;
@@ -141,6 +173,13 @@ export function PaletteProvider({
         e.preventDefault();
         const id = pick.index === null ? null : areas[pick.index].id;
         router.push(areaHref(window.location.pathname, window.location.search.slice(1), id));
+        return;
+      }
+      // C goes to the page's capture field where it has one (that field takes the key); anywhere else the palette captures.
+      if (e.key === CAPTURE_KEY && !press.altKey && !press.ctrlKey && !press.metaKey && !press.typing && !e.defaultPrevented) {
+        if (document.getElementById("capture") || document.querySelector("dialog[open]")) return;
+        e.preventDefault();
+        setOpen("palette");
         return;
       }
       const action = globalShortcut(press);
@@ -286,6 +325,8 @@ function PaletteBody({
   const [selected, setSelected] = useState<Target | null>(null);
   // The item whose actions are listed; null while searching.
   const [target, setTarget] = useState<Target | null>(null);
+  // Read once as the palette opens; the page it is opened on is not offered back.
+  const [recent] = useState(() => readVisits().filter((v) => v.href !== window.location.pathname));
   const searched = useRef("");
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
@@ -304,12 +345,14 @@ function PaletteBody({
     };
   }, [actions]);
 
-  const sections = target ? actSections(input, target) : withAreas(paletteSections(input, today, clock, find, selected), areaSection(input, areas, { pathname, query }));
+  const sections = target
+    ? actSections(input, target)
+    : withAreas(paletteSections(input, today, clock, find, selected, recent), areaSection(input, areas, { pathname, query }));
   const commands = sections.flatMap((s) => s.commands);
   const current = commands.length ? Math.min(active, commands.length - 1) : -1;
   const optionId = (c: Command) => `${id}-${c.id}`;
   const activeId = current >= 0 ? optionId(commands[current]) : undefined;
-  const status = note ?? findStatus(input, find);
+  const status = note ?? findStatus(input, find) ?? (target || input.trim() ? null : EMPTY_HINT);
 
   useEffect(() => {
     if (activeId) document.getElementById(activeId)?.scrollIntoView({ block: "nearest" });
@@ -526,10 +569,19 @@ function PaletteBody({
 
 function CommandLine({ command }: { command: Command }) {
   if ((command.kind === "go" || command.kind === "help") && command.hint) {
+    const go = command.kind === "go" ? command.go : undefined;
     return (
       <>
         <span className="min-w-0 flex-none truncate text-ink">{command.label}</span>
         <span className="min-w-0 flex-1 truncate text-right text-[13px] text-ink-3">{command.hint}</span>
+        <span aria-hidden="true" className="flex w-12 flex-none justify-end gap-1 text-ink-3 max-rail:hidden">
+          {go && (
+            <>
+              <Kbd>{GO_KEY.toUpperCase()}</Kbd>
+              <Kbd>{go.toUpperCase()}</Kbd>
+            </>
+          )}
+        </span>
       </>
     );
   }

@@ -9,6 +9,7 @@ import { loadInbox, planItem } from "@/features/inbox/commands";
 import { InboxView, type InboxActions } from "@/features/inbox/inbox-view";
 import type { InboxData } from "@/features/inbox/model";
 import { captureTask, setDone, type ActionResult } from "@/features/today/commands";
+import { moveItem } from "@/features/week/commands";
 import { fakeRepo, tagByTitle } from "@/features/today/test-support";
 import { INBOX_TAGS } from "./fixture";
 import type { ItemsRepo } from "@/lib/items/repo";
@@ -38,6 +39,7 @@ export function InboxHarness({ items, areas, initial }: { items: Item[]; areas: 
   const actions: InboxActions = {
     setDone: (id, done) => run((repo) => setDone(repo, id, done, data.timeZone)),
     plan: (id, when) => run((repo) => planItem(repo, id, when, new Date(), data.timeZone)),
+    unplan: (id) => run((repo) => moveItem(repo, id, "tray", data.timeZone)),
     capture: (title) => run((repo) => captureTask(repo, title, new Date(), data.timeZone)),
   };
 

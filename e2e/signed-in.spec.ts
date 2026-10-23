@@ -25,7 +25,11 @@ signedIn.describe("signed in", () => {
 
   signedIn("G then a letter goes to a page, and a lone letter does not", async ({ page }) => {
     await page.goto("/today");
-    await page.getByRole("heading", { level: 1 }).first().waitFor();
+    // The heading is drawn on the server; the keys are a listener React attaches once it has hydrated the page.
+    await page.waitForFunction(() => {
+      const main = document.getElementById("main");
+      return main !== null && Object.keys(main).some((k) => k.startsWith("__react"));
+    });
     await page.keyboard.press("i");
     await expect(page).toHaveURL("/today");
     await page.keyboard.press("g");

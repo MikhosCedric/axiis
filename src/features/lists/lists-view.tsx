@@ -1,12 +1,11 @@
 "use client";
 
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useId, useOptimistic, useTransition, type ReactNode } from "react";
+import { useId, type ReactNode } from "react";
 import { AreaLabel } from "@/components/area-mark";
 import { ProgressLine } from "@/components/progress-line";
 import { place } from "@/components/shell/places";
-import { SELECTED_ITEM_PARAM } from "@/features/day/types";
 import { DetailAside } from "@/features/detail/detail-aside";
+import { useItemSelection } from "@/features/detail/use-item-selection";
 import { CaptureField } from "@/features/today/capture-field";
 import type { CaptureResult } from "@/features/today/commands";
 import { setDoneAction } from "@/features/today/actions";
@@ -34,22 +33,8 @@ export function ListsView({
   capture?: (title: string) => Promise<CaptureResult>;
   setDone?: SetDone;
 }) {
-  const router = useRouter();
-  const pathname = usePathname();
-  const params = useSearchParams();
-  const selectedParam = params.get(SELECTED_ITEM_PARAM);
-  const [selectedId, setSelectedId] = useOptimistic(selectedParam);
-  const [, startTransition] = useTransition();
+  const { selectedParam, selectedId, select } = useItemSelection();
   const ticks = useDoneToggles(setDone);
-
-  function select(id: string) {
-    startTransition(() => {
-      setSelectedId(id);
-      const next = new URLSearchParams(params.toString());
-      next.set(SELECTED_ITEM_PARAM, id);
-      router.replace(`${pathname}?${next.toString()}`, { scroll: false });
-    });
-  }
 
   // A new checklist opens beside the list at once, since its lines are the next thing to write.
   async function captureAndOpen(title: string): Promise<CaptureResult> {

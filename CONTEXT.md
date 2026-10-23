@@ -56,6 +56,12 @@ A solo productivity web app. One connected set of items, shown through many view
 
 **Tour**: four skippable steps on a new account's Today (capture, the Score, Inbox or Today, the Guide), remembered in the cookie `tour` and replayable from the Guide.
 
+**Span**: which of the three calendar views a page is, Day, Week or Month, chosen with one switch that keeps the date in focus. Never "zoom" or "mode" on screen (`mode` is the code's word for Score or List).
+
+**Undo note**: the one floating note that says what a change just did and offers Undo for six seconds (Ctrl Z or ⌘Z too). Never "toast" or "snackbar" on screen.
+
+**Recent**: the palette's list of the last few pages this browser opened that are not places (a day, a week, a month, a note, a tag). Kept per browser, never on the server.
+
 **Capture**: adding an item from one line of text. A plain line lands in the Inbox. On Today, Week, Month, the Inbox and the palette, a day, a time, a length and tags at the line's start or end plan and tag the new task ("dentist tomorrow 9:00 #health"); a checklist captured on Lists keeps its name as typed. Must take under two seconds.
 
 **First day**: the state of an account that has never stored an item of any type or status, deleted ones included. The day screen draws example beams and leaves out what only explains items, until the first capture. An account that once had items never returns to it.

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import {
   Fragment,
   useEffect,
@@ -17,8 +17,8 @@ import {
 import { AreaLabel, AreaMark } from "@/components/area-mark";
 import type { LocalDate } from "@/domain/item";
 import { dayHref } from "@/features/day/nav";
-import { SELECTED_ITEM_PARAM } from "@/features/day/types";
 import { DetailAside } from "@/features/detail/detail-aside";
+import { useItemSelection } from "@/features/detail/use-item-selection";
 import { GuideButton, type GuideTopic } from "@/features/palette/guide";
 import { CaptureField } from "@/features/today/capture-field";
 import { formatDayHeading } from "@/features/today/format";
@@ -114,10 +114,7 @@ export function MonthView({
   const { month, today } = data;
   const router = useRouter();
   const keep = useKeepFilter();
-  const pathname = usePathname();
-  const params = useSearchParams();
-  const selectedParam = params.get(SELECTED_ITEM_PARAM);
-  const [selected, setSelected] = useOptimistic(selectedParam);
+  const { selectedParam, selectedId: selected, select } = useItemSelection();
   const [, startTransition] = useTransition();
   const [status, setStatus] = useState<{ text: string; error: boolean } | null>(null);
   const [preview, setPreview] = useState<WeekDragPreview<MonthMark & { from: LocalDate }> | null>(null);
@@ -143,17 +140,6 @@ export function MonthView({
     focusActive.current = false;
     grid.current?.querySelector<HTMLElement>(`[data-date="${arrived ?? active}"]`)?.focus();
   });
-
-  function select(key: string | null) {
-    startTransition(() => {
-      setSelected(key);
-      const next = new URLSearchParams(params.toString());
-      if (key === null) next.delete(SELECTED_ITEM_PARAM);
-      else next.set(SELECTED_ITEM_PARAM, key);
-      const query = next.toString();
-      router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
-    });
-  }
 
   function drop(mark: MonthMark & { from: LocalDate }, to: Destination) {
     if (to === "tray" || to === mark.from) return;
@@ -192,6 +178,7 @@ export function MonthView({
       return;
     }
     if (e.key === "Escape" && selectedParam) {
+      e.preventDefault();
       select(null);
       return;
     }
@@ -215,6 +202,7 @@ export function MonthView({
       e.stopPropagation();
       select(mark.key);
     } else if (e.key === "Escape") {
+      e.preventDefault();
       e.stopPropagation();
       select(null);
     }
