@@ -1,9 +1,23 @@
 /**
- * The colours an area can carry. Each name is a design token (`--area-<name>` in
- * globals.css) and a value of the `areas_color_palette` check in migration 0009,
- * so adding one means all three. Null, shown as None, is the ink look.
+ * The colours an area or a tag can carry, in picker order (warm to cool, then the neutral).
+ * Each name is a design token (`--area-<name>` in globals.css) and a value of the
+ * `areas_color_palette` and `tags_color_palette` checks in migration 0011, so adding one
+ * means all three. Null, shown as None, is the ink look.
  */
-export const AREA_COLORS = ["clay", "ochre", "moss", "sage", "slate", "plum", "rose", "stone"] as const;
+export const AREA_COLORS = [
+  "clay",
+  "terracotta",
+  "ochre",
+  "mustard",
+  "moss",
+  "sage",
+  "slate",
+  "indigo",
+  "plum",
+  "mauve",
+  "rose",
+  "stone",
+] as const;
 
 export type AreaColor = (typeof AREA_COLORS)[number];
 
