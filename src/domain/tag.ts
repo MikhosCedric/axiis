@@ -1,3 +1,4 @@
+import type { AreaColor } from "./area-color";
 import { idSchema, type ItemId, type ShownItem } from "./item";
 
 export type TagId = string & { readonly __brand: "TagId" };
@@ -9,7 +10,8 @@ export type TagId = string & { readonly __brand: "TagId" };
  */
 export type TagName = string & { readonly __brand: "TagName" };
 
-export type Tag = { id: TagId; name: TagName };
+/** `color` is a name from the area palette, or null for none, the default. */
+export type Tag = { id: TagId; name: TagName; color: AreaColor | null };
 
 /** A tag with how many open items carry it. Deleted items do not count; done and dropped ones are not open. */
 export type TagSummary = Tag & { open: number };

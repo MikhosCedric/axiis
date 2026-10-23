@@ -1,3 +1,5 @@
+import * as z from "zod/mini";
+import { AREA_COLORS } from "@/domain/area-color";
 import type { Clock } from "@/lib/clock";
 import { repeats, type Item, type ItemId, type ShownItem } from "@/domain/item";
 import { parseItemKey, type ParsedItemKey } from "@/domain/item-key";
@@ -133,6 +135,21 @@ export async function renameTag(repo: ItemsRepo, rawId: unknown, rawName: unknow
   });
 }
 
+const colorSchema = z.nullable(z.enum(AREA_COLORS));
+
+/** Sets a tag's colour to a palette name, or clears it with null. */
+export async function setTagColor(repo: ItemsRepo, rawId: unknown, rawColor: unknown): Promise<ActionResult> {
+  const id = parseTagId(rawId);
+  if (!id) return { ok: false, error: MISSING_TAG };
+  const color = colorSchema.safeParse(rawColor);
+  if (!color.success) return { ok: false, error: "That colour is not one Axiis offers." };
+  return attempt(async () => {
+    const self = (await repo.listTagNames()).find((t) => t.id === id);
+    if (!self) return { ok: false, error: MISSING_TAG };
+    if (self.color !== color.data) await repo.setTagColor(id, color.data);
+  });
+}
+
 /** Deletes a tag and takes it off every item. No item is deleted. */
 export async function deleteTag(repo: ItemsRepo, rawId: unknown): Promise<ActionResult> {
   const id = parseTagId(rawId);
@@ -195,7 +212,7 @@ export async function loadTagged(repo: ItemsRepo, rawName: unknown, timeZone: st
   const tags = await repo.tagsForItems(items.map((i) => i.id));
   const areaOf = new Map(areas.map((a) => [a.id as string, a]));
   return {
-    tag: { id: tag.id, name: tag.name },
+    tag: { id: tag.id, name: tag.name, color: tag.color },
     rows: items.map((item) => ({
       id: item.id,
       type: item.type,
