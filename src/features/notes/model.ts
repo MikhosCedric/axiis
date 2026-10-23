@@ -12,6 +12,7 @@ export type NoteRow = {
   id: ItemId;
   title: string;
   firstLine: string;
+  areaId: AreaId | null;
   areaName: string | null;
   areaColor: AreaColor | null;
   edited: string;

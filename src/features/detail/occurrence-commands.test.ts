@@ -5,6 +5,7 @@ import type { Rule } from "@/domain/recurrence";
 import { placeItem } from "@/features/score/commands";
 import { setDone } from "@/features/today/commands";
 import { area, fakeRepo, makeItem } from "@/features/today/test-support";
+import { setTagColor } from "@/features/tags/commands";
 import { moveItem } from "@/features/week/commands";
 import { loadOccurrences } from "@/lib/items/occurrences";
 import { DATE_RANGE_ERROR } from "@/lib/dates";
@@ -556,14 +557,20 @@ describe("loadDetail for repeating items", () => {
     w.items.push(other);
     w.tag(w.series.id, "work", "Daily");
     w.tag(other.id, "home");
+    await setTagColor(w.repo, w.tags.find((t) => t.name === "home")!.id, "ochre");
     const occurrence = { kind: "occurrence" as const, seriesId: w.series.id, originalOn: d("2026-10-07") };
-    expect((await loadDetail(w.repo, occurrence, NOW, TZ, "24"))?.tags).toEqual({ on: ["Daily", "work"], known: ["Daily", "home", "work"] });
+    expect((await loadDetail(w.repo, occurrence, NOW, TZ, "24"))?.tags).toEqual({
+      on: ["Daily", "work"],
+      known: ["Daily", "home", "work"],
+      colors: { home: "ochre" },
+    });
     await renameItem(w.repo, w.key("2026-10-07"), "Short one", TZ);
     expect((await loadDetail(w.repo, occurrence, NOW, TZ, "24"))?.tags.on).toEqual(["Daily", "work"]);
     w.tag(other.id, "work");
     expect((await loadDetail(w.repo, { kind: "item", id: other.id as ItemId }, NOW, TZ, "24"))?.tags).toEqual({
       on: ["home", "work"],
       known: ["work", "Daily", "home"],
+      colors: { home: "ochre" },
     });
   });
 

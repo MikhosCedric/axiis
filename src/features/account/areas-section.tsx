@@ -1,8 +1,9 @@
 "use client";
 
 import { startTransition, useEffect, useId, useOptimistic, useRef, useState, useTransition, type FormEvent } from "react";
-import { AreaMark } from "@/components/area-mark";
-import { AREA_COLORS, areaColorLabel, type AreaColor } from "@/domain/area-color";
+import { ColorPicker, SwatchButton } from "@/components/color-picker";
+import { COLOR_HINT_COOKIE } from "@/components/shell/cookies";
+import { wantsColorNudge, type AreaColor } from "@/domain/area-color";
 import type { Area, AreaId } from "@/domain/item";
 import { ConfirmDelete } from "@/features/detail/confirm-delete";
 import type { ActionResult } from "@/features/today/commands";
@@ -46,8 +47,9 @@ function apply(areas: Area[], change: Change): Area[] {
 const iconButton =
   "grid size-8 pointer-coarse:size-11 place-items-center rounded-md text-ink-3 hover:bg-hover active:bg-press hover:text-ink aria-disabled:cursor-default aria-disabled:opacity-35 aria-disabled:hover:bg-transparent aria-disabled:hover:text-ink-3";
 
-export function AreasSection({ areas, actions }: { areas: Area[]; actions: AreaActions }) {
+export function AreasSection({ areas, actions, colorHint = false }: { areas: Area[]; actions: AreaActions; colorHint?: boolean }) {
   const [shown, change] = useOptimistic(areas, apply);
+  const [hint, setHint] = useState(colorHint);
   const [error, setError] = useState<string | null>(null);
   const prefix = useId();
   const refocus = useRef<{ id: AreaId; direction: MoveDirection } | null>(null);
@@ -86,6 +88,21 @@ export function AreasSection({ areas, actions }: { areas: Area[]; actions: AreaA
       <p className="mt-1.5 max-w-[60ch] text-ink-2">
         Each area is a staff on the Score. Removing one keeps its items; they show under No area.
       </p>
+      {hint && wantsColorNudge(shown) && (
+        <p data-color-hint className="mt-3 flex max-w-[60ch] flex-wrap items-center gap-x-3 gap-y-1 rounded-lg border border-rule-soft bg-sheet px-3 py-2 text-[13px] text-ink-2 [--ground:var(--sheet)]">
+          <span className="min-w-0 flex-1">Give your areas a colour to tell them apart at a glance. The swatch on each row picks one.</span>
+          <button
+            type="button"
+            onClick={() => {
+              setHint(false);
+              document.cookie = `${COLOR_HINT_COOKIE}=off; path=/; max-age=31536000; samesite=lax`;
+            }}
+            className="-mr-1 rounded-md px-2 py-1 font-medium text-ink-2 hover:bg-hover hover:text-ink active:bg-press pointer-coarse:min-h-11"
+          >
+            Not now
+          </button>
+        </p>
+      )}
 
       {shown.length > 0 ? (
         <ul className="mt-4 border-t border-rule">
@@ -100,17 +117,14 @@ export function AreasSection({ areas, actions }: { areas: Area[]; actions: AreaA
                 onError={setError}
               />
               <span className="group/actions flex items-center">
-                <button
-                  type="button"
-                  aria-expanded={picking === area.id}
-                  aria-controls={`${prefix}-colors-${area.id}`}
-                  aria-label={`Colour for ${area.name}: ${areaColorLabel(area.color)}`}
-                  title="Colour"
-                  onClick={() => setPicking((open) => (open === area.id ? null : area.id))}
-                  className={`${iconButton} group-has-[[role=group]]/actions:hidden aria-expanded:bg-press`}
-                >
-                  <Swatch color={area.color} size={12} />
-                </button>
+                <SwatchButton
+                  name={area.name}
+                  color={area.color}
+                  open={picking === area.id}
+                  controls={`${prefix}-colors-${area.id}`}
+                  onToggle={() => setPicking((open) => (open === area.id ? null : area.id))}
+                  className="group-has-[[role=group]]/actions:hidden"
+                />
                 {(["up", "down"] as const).map((direction) => {
                   const atEnd = direction === "up" ? index === 0 : index === shown.length - 1;
                   return (
@@ -138,7 +152,8 @@ export function AreasSection({ areas, actions }: { areas: Area[]; actions: AreaA
               {picking === area.id && (
                 <ColorPicker
                   id={`${prefix}-colors-${area.id}`}
-                  area={area}
+                  name={area.name}
+                  color={area.color}
                   onPick={(color) => run({ kind: "color", id: area.id, color }, () => actions.color(area.id, color))}
                 />
               )}
@@ -159,49 +174,6 @@ export function AreasSection({ areas, actions }: { areas: Area[]; actions: AreaA
         <p className="text-ink-2">You have {AREA_LIMIT} areas, the most Axiis keeps. Remove one to add another.</p>
       )}
     </section>
-  );
-}
-
-/** A colour's dot, or for None a dashed empty ring, so None reads as a choice rather than a gap. */
-function Swatch({ color, size }: { color: AreaColor | null; size: number }) {
-  return color ? (
-    <AreaMark color={color} size={size} />
-  ) : (
-    <span aria-hidden="true" className="rounded-full border-[1.5px] border-dashed border-ink-3" style={{ width: size, height: size }} />
-  );
-}
-
-/**
- * One area's colours as a native radio group, None first: arrow keys move and choose, Tab leaves.
- * The chosen swatch is ringed in ink (selection is ink, not verdigris); focus keeps the global ring.
- */
-function ColorPicker({ id, area, onPick }: { id: string; area: Area; onPick: (color: AreaColor | null) => void }) {
-  const name = useId();
-  return (
-    <fieldset id={id} className="col-span-2 mt-1 mb-2 flex flex-wrap items-center gap-1 px-1">
-      <legend className="sr-only">Colour for {area.name}</legend>
-      {[null, ...AREA_COLORS].map((color) => (
-        <label
-          key={color ?? "none"}
-          title={areaColorLabel(color)}
-          className="relative grid size-8 cursor-pointer place-items-center rounded-full hover:bg-hover has-checked:shadow-[inset_0_0_0_1.5px_var(--ink)] has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-accent pointer-coarse:size-11"
-        >
-          <input
-            type="radio"
-            name={name}
-            value={color ?? ""}
-            checked={area.color === color}
-            onChange={() => onPick(color)}
-            className="absolute inset-0 m-0 size-full cursor-pointer appearance-none rounded-full opacity-0"
-          />
-          <span className="sr-only">{areaColorLabel(color)}</span>
-          <Swatch color={color} size={16} />
-        </label>
-      ))}
-      <span aria-hidden="true" className="ml-2 text-[13px] text-ink-2">
-        {areaColorLabel(area.color)}
-      </span>
-    </fieldset>
   );
 }
 

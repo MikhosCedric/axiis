@@ -6,6 +6,8 @@ export const DENSITY_COOKIE = "density";
 export const CLOCK_COOKIE = "clock";
 export const FOCUS_COOKIE = "focus";
 export const TOUR_COOKIE = "tour";
+/** "off" once the suggestion to colour areas is dismissed. */
+export const COLOR_HINT_COOKIE = "colour-hint";
 
 /**
  * Whether Today shows the tour: on a new account until it is finished or skipped ("done"), and on any

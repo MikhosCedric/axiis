@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useOptimistic, useTransition, type ReactNode } from "react";
-import { AreaLabel } from "@/components/area-mark";
+import { AreaLabel, AreaMark } from "@/components/area-mark";
 import { SELECTED_ITEM_PARAM } from "@/features/day/types";
 import { DetailAside } from "@/features/detail/detail-aside";
 import { setDoneAction } from "@/features/today/actions";
@@ -50,6 +50,7 @@ export function TaggedView({
           All tags
         </Link>
         <h1 className="mt-2 headline break-words">
+          <AreaMark color={data.tag.color} size={14} className="mr-3 align-[0.12em]" />
           <span aria-hidden="true" className="text-ink-3">
             #
           </span>

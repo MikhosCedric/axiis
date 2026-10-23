@@ -11,7 +11,7 @@ import { TITLE_MAX } from "@/features/today/model";
 import { DAY_MINUTES } from "@/features/score/layout";
 import { buildDetail, firstDay, retypable, subtaskPolicy, takesDue, TYPE_CHOICES, type DetailView, type Scope, type TimeOfDay } from "./model";
 import { firstOccurrence, repeatSchema, ruleFor } from "./repeat";
-import { byName } from "@/domain/tag";
+import { byName, tagColors } from "@/domain/tag";
 import { byUse } from "@/features/tags/model";
 import { saveFailure } from "@/lib/quota";
 
@@ -115,7 +115,7 @@ export async function loadDetail(
   const on = byName((await repo.tagsForItems([owner as ItemId]))[owner] ?? []).map((t) => t.name);
   const today = toLocalDate(now, timeZone);
   const skipped = overrides.flatMap((o) => (o.status === "dropped" && o.recurrence.kind === "override" ? [o.recurrence.originalOn] : []));
-  return buildDetail({ item, series, areas, subtasks, parent, timeZone, clock, today, skipped, tags: { on, known: byUse(known) } });
+  return buildDetail({ item, series, areas, subtasks, parent, timeZone, clock, today, skipped, tags: { on, known: byUse(known), colors: tagColors(known) } });
 }
 
 export async function renameItem(

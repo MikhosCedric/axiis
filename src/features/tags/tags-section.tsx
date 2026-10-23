@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { startTransition, useId, useOptimistic, useState } from "react";
+import { ColorPicker, SwatchButton } from "@/components/color-picker";
+import type { AreaColor } from "@/domain/area-color";
 import { parseTagName, TAG_NAME_MAX, type TagId, type TagName, type TagSummary } from "@/domain/tag";
 import { ConfirmDelete } from "@/features/detail/confirm-delete";
 import type { ActionResult } from "@/features/today/commands";
@@ -11,14 +13,23 @@ import { reach } from "@/lib/reach";
 export type TagActions = {
   rename(id: string, name: string): Promise<ActionResult>;
   remove(id: string): Promise<ActionResult>;
+  color(id: string, color: AreaColor | null): Promise<ActionResult>;
 };
 
-type Change = { kind: "rename"; id: TagId; name: TagName } | { kind: "remove"; id: TagId };
+type Change =
+  | { kind: "rename"; id: TagId; name: TagName }
+  | { kind: "color"; id: TagId; color: AreaColor | null }
+  | { kind: "remove"; id: TagId };
 
 function apply(tags: TagSummary[], change: Change): TagSummary[] {
-  return change.kind === "rename"
-    ? tags.map((t) => (t.id === change.id ? { ...t, name: change.name } : t))
-    : tags.filter((t) => t.id !== change.id);
+  switch (change.kind) {
+    case "rename":
+      return tags.map((t) => (t.id === change.id ? { ...t, name: change.name } : t));
+    case "color":
+      return tags.map((t) => (t.id === change.id ? { ...t, color: change.color } : t));
+    case "remove":
+      return tags.filter((t) => t.id !== change.id);
+  }
 }
 
 /** Every tag, renamed in place or deleted. Tags are added from an item, so there is no add here. */
@@ -34,6 +45,7 @@ export function TagsSection({
   const [shown, change] = useOptimistic(tags, apply);
   const [error, setError] = useState<string | null>(null);
   const prefix = useId();
+  const [picking, setPicking] = useState<TagId | null>(null);
 
   function run(optimistic: Change, work: () => Promise<ActionResult>) {
     setError(null);
@@ -50,7 +62,7 @@ export function TagsSection({
         Tags
       </h2>
       <p className="mt-1.5 max-w-[60ch] text-ink-2">
-        Renaming a tag renames it on every item. Deleting one takes it off its items and keeps the items.
+        Renaming a tag renames it on every item. A colour shows as a dot beside the tag wherever it appears. Deleting one takes it off its items and keeps the items.
       </p>
 
       {shown.length > 0 ? (
@@ -58,12 +70,19 @@ export function TagsSection({
           {shown.map((tag) => (
             <li
               key={tag.id}
-              className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-x-1 border-b border-rule-soft py-1"
+              className="grid grid-cols-[minmax(0,1fr)_auto_auto_auto] items-center gap-x-1 border-b border-rule-soft py-1"
             >
               <TagName
                 tag={tag}
                 onSave={(name) => run({ kind: "rename", id: tag.id, name }, () => actions.rename(tag.id, name))}
                 onError={setError}
+              />
+              <SwatchButton
+                name={`#${tag.name}`}
+                color={tag.color}
+                open={picking === tag.id}
+                controls={`${prefix}-colors-${tag.id}`}
+                onToggle={() => setPicking((open) => (open === tag.id ? null : tag.id))}
               />
               <Link
                 href={hrefFor(tag.name)}
@@ -78,6 +97,14 @@ export function TagsSection({
                 prompt={`Delete #${tag.name}? Its items stay.`}
                 onConfirm={() => run({ kind: "remove", id: tag.id }, () => actions.remove(tag.id))}
               />
+              {picking === tag.id && (
+                <ColorPicker
+                  id={`${prefix}-colors-${tag.id}`}
+                  name={`#${tag.name}`}
+                  color={tag.color}
+                  onPick={(color) => run({ kind: "color", id: tag.id, color }, () => actions.color(tag.id, color))}
+                />
+              )}
             </li>
           ))}
         </ul>

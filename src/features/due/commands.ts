@@ -31,6 +31,7 @@ export async function loadDue(repo: ItemsRepo, now: Date, timeZone: string, cloc
           due: dueWords(item.dueOn, today, done),
           group: dueGroup(item.dueOn, today),
           when: item.schedule.kind === "unscheduled" ? null : whenOf(item, timeZone, clock),
+          areaId: item.areaId,
           area: areaOf.get(item.areaId ?? "")?.name ?? null,
           areaColor: areaOf.get(item.areaId ?? "")?.color ?? null,
         },

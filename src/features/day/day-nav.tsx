@@ -6,6 +6,7 @@ import { useEffect, useRef, useState, type ChangeEvent, type KeyboardEvent as Re
 import type { LocalDate } from "@/domain/item";
 import { formatDayHeading } from "@/features/today/format";
 import { weekHref } from "@/features/week/model";
+import { useKeepFilter } from "@/features/filter/keep-filter";
 import { SpanSwitch } from "@/features/week/span-switch";
 import { FIRST_DATE, LAST_DATE, parseLocalDate } from "@/lib/dates";
 import { dayHref, isTypingTarget, navTarget, shortcutAction } from "./nav";
@@ -24,6 +25,7 @@ function Chevron({ back }: { back?: boolean }) {
 
 export function DayNav({ date, today, mode }: { date: LocalDate; today: LocalDate; mode: DayViewMode }) {
   const router = useRouter();
+  const keep = useKeepFilter();
   const previous = navTarget("previous", date, today);
   const next = navTarget("next", date, today);
 
@@ -43,32 +45,32 @@ export function DayNav({ date, today, mode }: { date: LocalDate; today: LocalDat
       const to = navTarget(action, date, today);
       if (to === date) return;
       e.preventDefault();
-      router.push(dayHref(to, today, mode));
+      router.push(keep(dayHref(to, today, mode)));
     }
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
-  }, [router, date, today, mode]);
+  }, [router, date, today, mode, keep]);
 
   return (
     <nav aria-label="Day" className="flex flex-wrap items-center gap-2">
-      <SpanSwitch current="day" dayHref={dayHref(date, today, mode)} weekHref={weekHref(date, today)} />
+      <SpanSwitch current="day" dayHref={keep(dayHref(date, today, mode))} weekHref={keep(weekHref(date, today))} />
       {/* One pair, so Previous and Next never wrap apart. */}
       <span className="inline-flex flex-none">
-        <Link href={dayHref(previous, today, mode)} className={`${step} rounded-r-none`} aria-keyshortcuts="[" title="Previous day ( [ )">
+        <Link href={keep(dayHref(previous, today, mode))} className={`${step} rounded-r-none`} aria-keyshortcuts="[" title="Previous day ( [ )">
           <Chevron back />
           <span aria-hidden="true">Previous</span>
           <span className="sr-only">Previous day, {formatDayHeading(previous)}</span>
         </Link>
-        <Link href={dayHref(next, today, mode)} className={`${step} -ml-px rounded-l-none`} aria-keyshortcuts="]" title="Next day ( ] )">
+        <Link href={keep(dayHref(next, today, mode))} className={`${step} -ml-px rounded-l-none`} aria-keyshortcuts="]" title="Next day ( ] )">
           <span aria-hidden="true">Next</span>
           <Chevron />
           <span className="sr-only">Next day, {formatDayHeading(next)}</span>
         </Link>
       </span>
-      <DatePicker date={date} onPick={(picked) => router.push(dayHref(picked, today, mode))} />
+      <DatePicker date={date} onPick={(picked) => router.push(keep(dayHref(picked, today, mode)))} />
       {date !== today && (
         <Link
-          href={dayHref(today, today, mode)}
+          href={keep(dayHref(today, today, mode))}
           aria-keyshortcuts="t"
           title="Back to today ( T )"
           className="inline-flex h-9 pointer-coarse:h-11 items-center rounded-md border border-rule px-3 font-medium text-ink hover:bg-hover active:bg-press"

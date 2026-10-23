@@ -1,6 +1,6 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   createContext,
   useCallback,
@@ -29,17 +29,20 @@ import { describeItemAction } from "./actions";
 import {
   actedLine,
   actSections,
+  areaSection,
   findQuery,
   findStatus,
   paletteSections,
   type Act,
   type Command,
   type Find,
+  type Section,
   type Target,
 } from "./model";
 import { GuideBody, GuideContext, Kbd, type GuideTopic } from "./guide";
 import styles from "./palette.module.css";
-import { globalShortcut, goShortcut, GO_WINDOW_MS } from "./shortcuts";
+import { areaShortcut, globalShortcut, goShortcut, GO_WINDOW_MS } from "./shortcuts";
+import { areaHref } from "@/features/filter/href";
 
 
 /** The writes and reads the palette makes. Server actions in the app, in-memory fakes in the dev harness. */
@@ -74,12 +77,19 @@ export function useOpenPalette(): () => void {
 
 const NO_TOPICS: readonly GuideTopic[] = [];
 
+/** An area the palette and the A keys can narrow a page to, in the rail's order. */
+export type PaletteArea = { id: string; name: string };
+
+const NO_AREAS: readonly PaletteArea[] = [];
+
 export function PaletteProvider({
   today,
+  areas = NO_AREAS,
   actions = serverActions,
   children,
 }: {
   today: LocalDate;
+  areas?: readonly PaletteArea[];
   actions?: PaletteActions;
   children: ReactNode;
 }) {
@@ -94,6 +104,7 @@ export function PaletteProvider({
 
   useEffect(() => {
     let goTimer: ReturnType<typeof setTimeout> | undefined;
+    let areaTimer: ReturnType<typeof setTimeout> | undefined;
     function onKey(e: KeyboardEvent) {
       const target = e.target as HTMLElement | null;
       const press = {
@@ -118,6 +129,20 @@ export function PaletteProvider({
         router.push(step.href);
         return;
       }
+      // A, then a digit: the page narrowed to that area, or 0 for every area.
+      const pick = areaShortcut(areaTimer !== undefined, press, areas.length);
+      clearTimeout(areaTimer);
+      areaTimer = undefined;
+      if (pick === "wait") {
+        areaTimer = setTimeout(() => (areaTimer = undefined), GO_WINDOW_MS);
+        return;
+      }
+      if (pick) {
+        e.preventDefault();
+        const id = pick.index === null ? null : areas[pick.index].id;
+        router.push(areaHref(window.location.pathname, window.location.search.slice(1), id));
+        return;
+      }
       const action = globalShortcut(press);
       if (!action) return;
       e.preventDefault();
@@ -126,9 +151,10 @@ export function PaletteProvider({
     document.addEventListener("keydown", onKey);
     return () => {
       clearTimeout(goTimer);
+      clearTimeout(areaTimer);
       document.removeEventListener("keydown", onKey);
     };
-  }, [router]);
+  }, [router, areas]);
 
   return (
     <OpenPalette.Provider value={() => setOpen("palette")}>
@@ -136,6 +162,7 @@ export function PaletteProvider({
       <Modal open={open === "palette"} onClose={() => setOpen(null)} label="Search and commands">
         <PaletteBody
           today={today}
+          areas={areas}
           actions={actions}
           onClose={() => setOpen(null)}
           onHelp={() => setOpen("help")}
@@ -222,6 +249,12 @@ function Modal({
   );
 }
 
+/** The area choices go straight after the pages, before dates, capture and search. */
+function withAreas(sections: Section[], areas: Section[]): Section[] {
+  const at = sections.findIndex((s) => s.id === "go") + 1;
+  return [...sections.slice(0, at), ...areas, ...sections.slice(at)];
+}
+
 function restoreFocus(opener: { current: HTMLElement | null }) {
   const back = opener.current;
   opener.current = null;
@@ -230,17 +263,21 @@ function restoreFocus(opener: { current: HTMLElement | null }) {
 
 function PaletteBody({
   today,
+  areas,
   actions,
   onClose,
   onHelp,
 }: {
   today: LocalDate;
+  areas: readonly PaletteArea[];
   actions: PaletteActions;
   onClose: () => void;
   onHelp: () => void;
 }) {
   const router = useRouter();
   const clock = useClock();
+  const pathname = usePathname();
+  const query = useSearchParams().toString();
   const id = useId();
   const [input, setInput] = useState("");
   const [find, setFind] = useState<Find>({ status: "idle" });
@@ -267,7 +304,7 @@ function PaletteBody({
     };
   }, [actions]);
 
-  const sections = target ? actSections(input, target) : paletteSections(input, today, clock, find, selected);
+  const sections = target ? actSections(input, target) : withAreas(paletteSections(input, today, clock, find, selected), areaSection(input, areas, { pathname, query }));
   const commands = sections.flatMap((s) => s.commands);
   const current = commands.length ? Math.min(active, commands.length - 1) : -1;
   const optionId = (c: Command) => `${id}-${c.id}`;

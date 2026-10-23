@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useId, useLayoutEffect, useRef, useState, type KeyboardEvent } from "react";
 import type { LocalDate } from "@/domain/item";
 import { FIRST_DATE, LAST_DATE } from "@/lib/dates";
+import { useKeepFilter } from "@/features/filter/keep-filter";
 import { formatMonthHeading, monthHref, monthOf, pickerStep, stepYear, type YearMonth } from "./model";
 
 const SHORT = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -31,6 +32,7 @@ function Chevron({ back }: { back?: boolean }) {
 export function MonthPicker({ month, today, className }: { month: YearMonth; today: LocalDate; className: string }) {
   const id = useId();
   const router = useRouter();
+  const keep = useKeepFilter();
   const trigger = useRef<HTMLButtonElement>(null);
   const panel = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState(false);
@@ -73,7 +75,7 @@ export function MonthPicker({ month, today, className }: { month: YearMonth; tod
 
   function go(to: YearMonth) {
     panel.current?.hidePopover();
-    if (to !== month) router.push(monthHref(to, today));
+    if (to !== month) router.push(keep(monthHref(to, today)));
   }
 
   function onKeyDown(e: KeyboardEvent<HTMLButtonElement>) {
