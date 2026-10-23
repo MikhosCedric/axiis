@@ -1,0 +1,17 @@
+# What a CLI deploy leaves out. Git deploys skip these anyway; the CLI uploads the whole folder,
+# including agent worktrees and test output, and fails above 15,000 files.
+.git
+.claude
+.impeccable
+.next
+.next-e2e
+node_modules
+e2e
+tests
+docs
+supabase
+test-results
+playwright-report
+blob-report
+coverage
+*.log
