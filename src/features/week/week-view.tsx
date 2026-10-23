@@ -51,6 +51,9 @@ import {
 } from "./model";
 import { useWeekDrag, type WeekDragPreview } from "./use-week-drag";
 import { reach } from "@/lib/reach";
+import { FilterChips } from "@/features/filter/filter-chip";
+import { useKeepFilter } from "@/features/filter/keep-filter";
+import { NO_FILTER, scopeWords, type ViewFilter } from "@/features/filter/model";
 
 /** The writes the week makes. Defaults to the server actions; the dev harness passes in-memory ones. */
 export type WeekActions = {
@@ -80,11 +83,14 @@ export function WeekView({
   data,
   nav,
   detail,
+  filter = NO_FILTER,
   actions = serverActions,
 }: {
   data: WeekData;
   nav?: ReactNode;
   detail?: ReactNode;
+  /** What the page narrowed its data to; the data passed in is already narrowed. */
+  filter?: ViewFilter;
   actions?: WeekActions;
 }) {
   const clock = useClock();
@@ -208,7 +214,8 @@ export function WeekView({
             <h1 className="headline">
               {formatWeekHeading(days)}
             </h1>
-            <p className="page-summary">{weekSummary(week, waiting, today)}</p>
+            <p className="page-summary">{weekSummary(week, waiting, today, scopeWords(filter))}</p>
+            <FilterChips filter={filter} className="mt-2.5" />
           </div>
         </header>
 
@@ -324,6 +331,7 @@ function DayColumn({
   children: ReactNode;
 }) {
   const isToday = date === today;
+  const keep = useKeepFilter();
   // Days already gone are set a step quieter, so the eye finds today and what is still ahead.
   const past = date < today;
   const headingId = `day-${date}`;
@@ -337,7 +345,7 @@ function DayColumn({
     >
       <h3 id={headingId} className="px-2 pt-3 pb-2">
         <Link
-          href={dayHref(date, today, "score")}
+          href={keep(dayHref(date, today, "score"))}
           title={`Open ${formatDayHeading(date)}`}
           className="group inline-flex items-baseline gap-1.5 rounded tap-y"
         >

@@ -1,11 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { useEffect, useId, useRef, useState, type ReactNode } from "react";
-import { AreaLabel } from "@/components/area-mark";
+import { AreaMark } from "@/components/area-mark";
 import type { AreaColor } from "@/domain/area-color";
 import type { LocalDate } from "@/domain/item";
+import { useKeepFilter } from "@/features/filter/keep-filter";
+import { AREA_PARAM, areaHref, filterable } from "@/features/filter/href";
 import { useOpenPalette } from "@/features/palette/palette";
 import { useIsMac } from "@/features/palette/use-is-mac";
 import {
@@ -54,13 +56,19 @@ const quiet = `${base} text-ink-2 hover:bg-hover hover:text-ink active:bg-press`
 const current = `${base} relative bg-sheet text-ink font-semibold [--ground:var(--sheet)] shadow-[0_1px_2px_rgb(14_12_10/0.08),inset_0_0_0_1px_var(--rule-soft)] before:absolute before:inset-y-2 before:left-0 before:w-[3px] before:rounded-full before:bg-ink`;
 const overline = "text-xs font-semibold tracking-[0.06em] text-ink-3 uppercase";
 
+/** A place's link, keeping the page's area or tag filter when that place can show one. */
+function usePlaceHref(): (href: string) => string {
+  const keep = useKeepFilter();
+  return (href) => (filterable(href) ? keep(href) : href);
+}
+
 export function NavRail({ today, areas }: { today: LocalDate; areas: NavArea[] }) {
   const pathname = usePathname();
   return (
     <>
       <PhoneHeader />
       <Rail pathname={pathname} today={today} areas={areas} />
-      <PhoneBar pathname={pathname} today={today} />
+      <PhoneBar pathname={pathname} today={today} areas={areas} />
     </>
   );
 }
@@ -80,7 +88,14 @@ function Rail({ pathname, today, areas }: { pathname: string; today: LocalDate; 
         ))}
       </div>
 
-      {areas.length > 0 && <AreaReadout areas={areas} />}
+      {areas.length > 0 && (
+        <section aria-labelledby="areas-h" className="border-t border-rule-soft pt-4">
+          <h2 id="areas-h" className={`mx-2 mb-2 ${overline}`}>
+            Open today, by area
+          </h2>
+          <AreaLinks areas={areas} />
+        </section>
+      )}
 
       <AccountMenu settingsHere={SETTINGS.here(pathname, today)} />
     </nav>
@@ -89,6 +104,7 @@ function Rail({ pathname, today, areas }: { pathname: string; today: LocalDate; 
 
 function PlaceList({ heading, places, pathname, today }: { heading: string; places: Place[]; pathname: string; today: LocalDate }) {
   const id = useId();
+  const hrefOf = usePlaceHref();
   return (
     <div>
       <h2 id={id} className={`mx-2 mb-1.5 ${overline}`}>
@@ -100,7 +116,7 @@ function PlaceList({ heading, places, pathname, today }: { heading: string; plac
           return (
             <li key={p.id}>
               <Link
-                href={p.href}
+                href={hrefOf(p.href)}
                 title={p.hint}
                 aria-current={here ? "page" : undefined}
                 className={`${here ? current : quiet} pointer-coarse:min-h-11`}
@@ -136,30 +152,60 @@ function SearchField() {
   );
 }
 
-/** How many open items each area has today: a readout, not links, so it is set smaller and lighter than the places. */
-function AreaReadout({ areas }: { areas: NavArea[] }) {
+/** The area a page is narrowed to: a raised sheet with the ink tick, like the current place. */
+const areaHere =
+  "relative bg-sheet text-ink font-semibold [--ground:var(--sheet)] shadow-[inset_0_0_0_1px_var(--rule-soft)] before:absolute before:inset-y-1.5 before:left-0 before:w-[3px] before:rounded-full before:bg-ink";
+
+/**
+ * Each area with how many items it has open today. Choosing one narrows the page you are on to it
+ * (or Today, from a page that cannot be narrowed); choosing it again shows every area. Set smaller and
+ * lighter than the places, since it is a lens on them rather than a place of its own.
+ */
+function AreaLinks({ areas, chips = false, onGo }: { areas: NavArea[]; chips?: boolean; onGo?: () => void }) {
+  const pathname = usePathname();
+  const query = useSearchParams().toString();
+  const shown = new URLSearchParams(query).get(AREA_PARAM);
+  const look = (here: boolean) =>
+    chips
+      ? `inline-flex min-h-11 items-center gap-2 rounded-full border px-3.5 text-[15px] ${here ? "border-ink font-semibold text-ink shadow-[inset_0_0_0_1px_var(--ink)]" : "border-rule text-ink-2 hover:bg-hover hover:text-ink active:bg-press"}`
+      : `flex items-center gap-2.5 rounded-md px-2 py-1 text-[13px] pointer-coarse:min-h-11 ${here ? areaHere : "text-ink-2 hover:bg-hover hover:text-ink active:bg-press"}`;
   return (
-    <section aria-labelledby="areas-h" className="border-t border-rule-soft pt-4">
-      <h2 id="areas-h" className={`mx-2 mb-2 ${overline}`}>
-        Open today, by area
-      </h2>
-      <ul className="grid">
-        {areas.map((a) => (
-          <li key={a.id} className="flex items-center gap-2.5 px-2 py-1 text-[13px] text-ink-3">
-            <AreaLabel name={a.name} color={a.color} />
-            <span className="sr-only">, {a.open} open today</span>
-            {a.open > 0 && (
-              <span
-                aria-hidden="true"
-                title={`${a.open} open today`}
-                className="ml-auto h-1.5 flex-none rounded-full bg-ink-3 opacity-55"
-                style={{ width: Math.min(8 + a.open * 7, 72) }}
-              />
-            )}
+    <ul className={chips ? "flex flex-wrap gap-2 px-5 pt-1 pb-1" : "grid gap-0.5"}>
+      {areas.map((a, i) => {
+        const here = shown === a.id && filterable(pathname);
+        const keys = i < 9 ? ` (A then ${i + 1})` : "";
+        return (
+          <li key={a.id}>
+            <Link
+              href={areaHref(pathname, query, here ? null : a.id)}
+              // The same page under another filter: prefetching it would draw a hidden copy of the page for each area.
+              prefetch={false}
+              aria-current={here ? "true" : undefined}
+              title={here ? "Show all areas (A then 0)" : `Show only ${a.name}${keys}`}
+              onClick={onGo}
+              className={look(here)}
+            >
+              {/* In the rail an area with no colour keeps the dot's room, so every name starts at one edge. */}
+              <span className="inline-flex min-w-0 items-center gap-1.5">
+                {a.color ? <AreaMark color={a.color} /> : !chips && <span aria-hidden="true" className="size-2 flex-none" />}
+                <span className="truncate">{a.name}</span>
+              </span>
+              <span className="sr-only">
+                , {a.open} open today{here ? ", shown alone; choose again to show every area" : ""}
+              </span>
+              {a.open > 0 && !chips && (
+                <span
+                  aria-hidden="true"
+                  title={`${a.open} open today`}
+                  className="ml-auto h-1.5 flex-none rounded-full bg-ink-3 opacity-55"
+                  style={{ width: Math.min(8 + a.open * 7, 72) }}
+                />
+              )}
+            </Link>
           </li>
-        ))}
-      </ul>
-    </section>
+        );
+      })}
+    </ul>
   );
 }
 
@@ -270,8 +316,9 @@ const sheetRow = "min-h-12 px-3 text-[15px]";
  * The phone's places: four tabs a thumb reaches, and More, a sheet with the rest. The bar is fixed to the
  * bottom of the screen on Rail Paper; the page leaves room for it (see the (app) layout).
  */
-function PhoneBar({ pathname, today }: { pathname: string; today: LocalDate }) {
+function PhoneBar({ pathname, today, areas }: { pathname: string; today: LocalDate; areas: NavArea[] }) {
   const sheet = useRef<HTMLDialogElement>(null);
+  const hrefOf = usePlaceHref();
   const button = useRef<HTMLButtonElement>(null);
   const tabs = PLACES.filter((p) => p.tab);
   const rest = PLACES.filter((p) => !p.tab && p.group);
@@ -294,7 +341,7 @@ function PhoneBar({ pathname, today }: { pathname: string; today: LocalDate }) {
           const here = p.here(pathname, today);
           return (
             <li key={p.id} className="flex flex-1">
-              <Link href={p.href} aria-current={here ? "page" : undefined} className={here ? tabHere : tabQuiet}>
+              <Link href={hrefOf(p.href)} aria-current={here ? "page" : undefined} className={here ? tabHere : tabQuiet}>
                 {ICONS[p.id]}
                 {p.label}
               </Link>
@@ -340,6 +387,12 @@ function PhoneBar({ pathname, today }: { pathname: string; today: LocalDate }) {
             )
           );
         })}
+        {areas.length > 0 && (
+          <div className="mt-3 border-t border-rule-soft pt-3">
+            <h2 className={`mx-5 mb-1 ${overline}`}>Open today, by area</h2>
+            <AreaLinks areas={areas} chips onGo={close} />
+          </div>
+        )}
         <SheetSection heading="Account">
           <li>
             <ThemeToggle className={`${quiet} ${sheetRow} w-full`} />
@@ -379,10 +432,11 @@ function SheetSection({ heading, children }: { heading: string; children: ReactN
 /** A place in the More sheet: its name, and under it what the place holds. */
 function SheetPlace({ place, here, onGo }: { place: Place; here: boolean; onGo: () => void }) {
   const hint = useId();
+  const hrefOf = usePlaceHref();
   return (
     <li>
       <Link
-        href={place.href}
+        href={hrefOf(place.href)}
         aria-label={place.label}
         aria-describedby={hint}
         aria-current={here ? "page" : undefined}

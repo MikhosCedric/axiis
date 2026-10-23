@@ -1,5 +1,5 @@
 import type { Area, LocalDate } from "@/domain/item";
-import type { TagName } from "@/domain/tag";
+import type { TagColors, TagName } from "@/domain/tag";
 import type { ChildCount } from "@/lib/items/repo";
 import type { TodayView as DayEntries } from "@/features/today/model";
 
@@ -25,6 +25,8 @@ export type DayData = {
   childCounts: Record<string, ChildCount>;
   /** Tag names on the items shown, by the id they are shown with. An occurrence wears its series' tags. */
   tags: Record<string, TagName[]>;
+  /** The colour of each coloured tag shown, by `tagKey`. */
+  tagColors: TagColors;
   /** How often each live series repeats ("every day"), by series id. */
   cadences: Record<string, string>;
   /** The account has never stored an item, deleted or not, so the day shows examples instead of its empty furniture. */

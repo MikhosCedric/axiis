@@ -15,7 +15,8 @@ export async function loadInbox(repo: ItemsRepo, now: Date, timeZone: string): P
     areas,
     items,
     childCounts,
-    tags,
+    tags: tags.names,
+    tagColors: tags.colors,
     full: items.length >= INBOX_LIMIT,
   };
 }

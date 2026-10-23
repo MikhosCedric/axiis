@@ -38,18 +38,16 @@ async function colourWorkAndHome(page: Page) {
   const areas = page.getByRole("region", { name: "Areas" });
   await expect(areas.getByRole("button", { name: "Colour for Work: None" })).toBeVisible();
   const work = await openPicker(page, "Work");
-  await expect(work.getByRole("radio")).toHaveCount(9);
+  await expect(work.getByRole("radio")).toHaveCount(13);
   await expect(work.getByRole("radio", { name: "None" })).toBeChecked();
   await work.getByRole("radio", { name: "Clay" }).check();
   await expect(areas.getByRole("button", { name: "Colour for Work: Clay" })).toBeVisible();
 
-  // Keyboard: arrows walk the native radio group from None to Clay, Ochre and Moss, choosing as they go.
+  // Keyboard: arrows walk the native radio group from None through Clay, Terracotta, Ochre and Mustard to Moss, choosing as they go.
   await areas.getByRole("button", { name: "Colour for Home: None" }).click();
   const home = page.getByRole("group", { name: "Colour for Home" });
   await home.getByRole("radio", { name: "None" }).focus();
-  await page.keyboard.press("ArrowRight");
-  await page.keyboard.press("ArrowRight");
-  await page.keyboard.press("ArrowRight");
+  for (let i = 0; i < 5; i++) await page.keyboard.press("ArrowRight");
   await expect(home.getByRole("radio", { name: "Moss" })).toBeChecked();
   await expect(areas.getByRole("button", { name: "Colour for Home: Moss" })).toBeVisible();
 }
@@ -132,7 +130,7 @@ signedIn.describe("area colours", () => {
     signedIn("give each swatch a 44px target and keep the page from scrolling sideways", async ({ page }) => {
       await page.goto("/settings");
       const swatches = (await openPicker(page, "Work")).locator("label");
-      await expect(swatches).toHaveCount(9);
+      await expect(swatches).toHaveCount(13);
       for (const box of await swatches.evaluateAll((els) => els.map((el) => el.getBoundingClientRect()))) {
         expect(box.width).toBeGreaterThanOrEqual(44);
         expect(box.height).toBeGreaterThanOrEqual(44);

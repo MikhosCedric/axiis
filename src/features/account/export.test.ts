@@ -59,7 +59,7 @@ const rows: Record<ExportTable, unknown[]> = {
     },
   ],
   links: [{ id: LINK, from_id: NOTE, to_id: ITEM, kind: "reference", created_at: T, updated_at: T }],
-  tags: [{ id: TAG, name: "deep", created_at: T, updated_at: T }],
+  tags: [{ id: TAG, name: "deep", color: "indigo", created_at: T, updated_at: T }],
   item_tags: [{ item_id: ITEM, tag_id: TAG, created_at: T, updated_at: T }],
 };
 
@@ -114,7 +114,7 @@ describe("exportChunks", () => {
         expect.objectContaining({ id: NOTE, body: { type: "doc", content: [] }, startAt: null, seriesId: ITEM, originalOn: "2026-10-13" }),
       ],
       links: [{ id: LINK, fromId: NOTE, toId: ITEM, kind: "reference", createdAt: ISO, updatedAt: ISO }],
-      tags: [{ id: TAG, name: "deep", createdAt: ISO, updatedAt: ISO }],
+      tags: [{ id: TAG, name: "deep", color: "indigo", createdAt: ISO, updatedAt: ISO }],
       itemTags: [{ itemId: ITEM, tagId: TAG, createdAt: ISO, updatedAt: ISO }],
     });
   });
@@ -135,7 +135,7 @@ describe("exportChunks", () => {
   });
 
   it("sends one chunk per page, so the whole account is never one string", async () => {
-    const many = { ...rows, tags: Array.from({ length: 2500 }, (_, i) => ({ id: `t${i}`, name: `n${i}`, created_at: T, updated_at: T })) };
+    const many = { ...rows, tags: Array.from({ length: 2500 }, (_, i) => ({ id: `t${i}`, name: `n${i}`, color: null, created_at: T, updated_at: T })) };
     const chunks: string[] = [];
     for await (const chunk of exportChunks(source(many).read, { user: OWNER, exportedAt }, 1000)) chunks.push(chunk);
     expect(chunks.length).toBeGreaterThanOrEqual(7);

@@ -29,6 +29,7 @@ export function SettingsView({
   theme = "system",
   density = "spacious",
   clock = { setting: "auto", clock: "24" },
+  colorHint = true,
 }: {
   email: string | null;
   areas: Area[];
@@ -44,6 +45,8 @@ export function SettingsView({
   density?: Density;
   /** The time format chosen on this device, and the clock it comes to. */
   clock?: { setting: ClockSetting; clock: Clock };
+  /** The suggestion to colour areas has not been dismissed on this device. */
+  colorHint?: boolean;
 }) {
   return (
     <div
@@ -76,7 +79,7 @@ export function SettingsView({
 
       <div className="mt-10 min-w-0 space-y-12 [&>*]:scroll-mt-8">
         <div id="areas">
-          <AreasSection areas={areas} actions={areaActions} />
+          <AreasSection areas={areas} actions={areaActions} colorHint={colorHint} />
         </div>
 
         <div id="tags">

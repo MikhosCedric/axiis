@@ -1,5 +1,5 @@
 import type { Area, Item, LocalDate } from "@/domain/item";
-import type { TagName } from "@/domain/tag";
+import type { TagColors, TagName } from "@/domain/tag";
 import { formatDayHeading } from "@/features/today/format";
 import { WEEK_LENGTH, weekOf } from "@/features/week/model";
 import { addDays, parseLocalDate } from "@/lib/dates";
@@ -15,6 +15,8 @@ export type InboxData = {
   childCounts: Record<string, ChildCount>;
   /** Tag names by item id. */
   tags: Record<string, TagName[]>;
+  /** The colour of each coloured tag shown, by `tagKey`. */
+  tagColors: TagColors;
   /** The read hit its cap, so older items may not be shown. */
   full: boolean;
 };

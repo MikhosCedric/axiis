@@ -2,6 +2,7 @@ import { cookies } from "next/headers";
 import { cache } from "react";
 import { CLOCK_COOKIE, readClock, TZ_COOKIE } from "@/components/shell/cookies";
 import type { LocalDate } from "@/domain/item";
+import { getAreas } from "@/features/filter/server";
 import { getItemsRepo } from "@/lib/items";
 import { resolveTimeZone, toLocalDate } from "@/lib/dates";
 import { loadDay } from "./load";
@@ -24,6 +25,6 @@ export const getDay = cache(async (date: LocalDate) => loadDay(await getItemsRep
 /** The nav rail's areas with today's open count for each, once per request. */
 export const getRailAreas = cache(async () => {
   const repo = await getItemsRepo();
-  const [areas, open] = await Promise.all([repo.listAreas(), loadRailCounts(repo, await getTodayDate(), await getTimeZone())]);
+  const [areas, open] = await Promise.all([getAreas(), loadRailCounts(repo, await getTodayDate(), await getTimeZone())]);
   return areas.map((a) => ({ id: a.id, name: a.name, color: a.color, open: open.get(a.id) ?? 0 }));
 });

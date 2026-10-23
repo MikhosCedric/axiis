@@ -42,14 +42,14 @@ function stubbed(answer: (r: Request, nth: number) => Reply = () => ({ body: [] 
 describe("SupabaseItemsRepo tags", () => {
   it("reads each tag's open count from one tag_open_counts call, however many items carry it", async () => {
     const { repo, requests } = stubbed((r) => {
-      if (r.table === "tags") return { body: [{ id: DEEP, name: "Deep" }, { id: HOME, name: "home" }, { id: UNUSED, name: "unused" }] };
+      if (r.table === "tags") return { body: [{ id: DEEP, name: "Deep", color: null }, { id: HOME, name: "home", color: null }, { id: UNUSED, name: "unused", color: null }] };
       return { body: [{ tag_id: DEEP, open: 1003 }, { tag_id: HOME, open: 2 }] };
     });
 
     expect(await repo.listTags()).toEqual([
-      { id: DEEP, name: "Deep", open: 1003 },
-      { id: HOME, name: "home", open: 2 },
-      { id: UNUSED, name: "unused", open: 0 },
+      { id: DEEP, name: "Deep", color: null, open: 1003 },
+      { id: HOME, name: "home", color: null, open: 2 },
+      { id: UNUSED, name: "unused", color: null, open: 0 },
     ]);
     expect(requests.map((r) => [r.method, r.table])).toEqual(
       expect.arrayContaining([
@@ -64,18 +64,18 @@ describe("SupabaseItemsRepo tags", () => {
   it("reads the tags of many items in one request, keyed by item", async () => {
     const { repo, requests } = stubbed(() => ({
       body: [
-        { item_id: ITEM, tags: { id: DEEP, name: "Deep" } },
-        { item_id: ITEM, tags: { id: HOME, name: "home" } },
-        { item_id: OTHER, tags: { id: HOME, name: "home" } },
+        { item_id: ITEM, tags: { id: DEEP, name: "Deep", color: null } },
+        { item_id: ITEM, tags: { id: HOME, name: "home", color: null } },
+        { item_id: OTHER, tags: { id: HOME, name: "home", color: null } },
       ],
     }));
 
     expect(await repo.tagsForItems([ITEM, OTHER])).toEqual({
       [ITEM]: [
-        { id: DEEP, name: "Deep" },
-        { id: HOME, name: "home" },
+        { id: DEEP, name: "Deep", color: null },
+        { id: HOME, name: "home", color: null },
       ],
-      [OTHER]: [{ id: HOME, name: "home" }],
+      [OTHER]: [{ id: HOME, name: "home", color: null }],
     });
     expect(requests).toHaveLength(1);
     expect(requests[0].params.get("item_id")).toBe(`in.(${ITEM},${OTHER})`);
@@ -96,9 +96,9 @@ describe("SupabaseItemsRepo tags", () => {
   });
 
   it("puts an existing tag on an item without making another, matching the name without case", async () => {
-    const { repo, requests } = stubbed((r) => ({ body: r.table === "tags" ? [{ id: DEEP, name: "Deep" }] : null }));
+    const { repo, requests } = stubbed((r) => ({ body: r.table === "tags" ? [{ id: DEEP, name: "Deep", color: null }] : null }));
 
-    expect(await repo.addTags(ITEM, [name("deep")])).toEqual([{ id: DEEP, name: "Deep" }]);
+    expect(await repo.addTags(ITEM, [name("deep")])).toEqual([{ id: DEEP, name: "Deep", color: null }]);
 
     expect(requests.filter((r) => r.method === "POST" && r.table === "tags")).toEqual([]);
     const link = requests.find((r) => r.table === "item_tags")!;
@@ -112,16 +112,16 @@ describe("SupabaseItemsRepo tags", () => {
       body:
         r.table === "tags" && r.method === "POST"
           ? [
-              { id: HOME, name: "Home" },
-              { id: DEEP, name: "Deep" },
+              { id: HOME, name: "Home", color: null },
+              { id: DEEP, name: "Deep", color: null },
             ]
           : r.table === "tags"
             ? []
             : null,
     }));
     expect(await repo.addTags(ITEM, [name("Home"), name("home"), name("Deep")])).toEqual([
-      { id: HOME, name: "Home" },
-      { id: DEEP, name: "Deep" },
+      { id: HOME, name: "Home", color: null },
+      { id: DEEP, name: "Deep", color: null },
     ]);
     expect(requests.map((r) => [r.method, r.table])).toEqual([
       ["GET", "tags"],
@@ -138,14 +138,14 @@ describe("SupabaseItemsRepo tags", () => {
   it("uses the other tag when a request at the same moment made it first, and still makes the rest", async () => {
     const raced = stubbed((r, nth) => {
       if (r.table === "tags" && r.method === "POST") {
-        return nth === 1 ? { status: 409, body: { code: "23505", message: "duplicate key" } } : { body: [{ id: DEEP, name: "Deep" }] };
+        return nth === 1 ? { status: 409, body: { code: "23505", message: "duplicate key" } } : { body: [{ id: DEEP, name: "Deep", color: null }] };
       }
-      if (r.table === "tags") return { body: nth === 1 ? [] : [{ id: HOME, name: "home" }] };
+      if (r.table === "tags") return { body: nth === 1 ? [] : [{ id: HOME, name: "home", color: null }] };
       return { body: null };
     });
     expect(await raced.repo.addTags(ITEM, [name("Home"), name("Deep")])).toEqual([
-      { id: HOME, name: "home" },
-      { id: DEEP, name: "Deep" },
+      { id: HOME, name: "home", color: null },
+      { id: DEEP, name: "Deep", color: null },
     ]);
     const inserts = raced.requests.filter((r) => r.method === "POST" && r.table === "tags");
     expect(inserts.map((r) => r.body)).toEqual([[{ name: "Home" }, { name: "Deep" }], [{ name: "Deep" }]]);
@@ -156,11 +156,23 @@ describe("SupabaseItemsRepo tags", () => {
   });
 
   it("renames one tag by id and reads back what was stored", async () => {
-    const { repo, requests } = stubbed(() => ({ body: { id: DEEP, name: "Focus" } }));
-    expect(await repo.renameTag(DEEP, name("Focus"))).toEqual({ id: DEEP, name: "Focus" });
+    const { repo, requests } = stubbed(() => ({ body: { id: DEEP, name: "Focus", color: null } }));
+    expect(await repo.renameTag(DEEP, name("Focus"))).toEqual({ id: DEEP, name: "Focus", color: null });
     expect(requests).toHaveLength(1);
     expect(requests[0]).toMatchObject({ method: "PATCH", table: "tags", body: { name: "Focus" } });
     expect(requests[0].params.get("id")).toBe(`eq.${DEEP}`);
+  });
+
+  it("sets and clears one tag's colour by id, and refuses a colour the palette lacks on the way back", async () => {
+    const { repo, requests } = stubbed((r) => ({ body: { id: DEEP, name: "Deep", color: (r.body as { color: string | null }).color } }));
+    expect(await repo.setTagColor(DEEP, "indigo")).toEqual({ id: DEEP, name: "Deep", color: "indigo" });
+    expect(await repo.setTagColor(DEEP, null)).toEqual({ id: DEEP, name: "Deep", color: null });
+    expect(requests.map((r) => [r.method, r.table, r.body, r.params.get("id"), r.params.get("select")])).toEqual([
+      ["PATCH", "tags", { color: "indigo" }, `eq.${DEEP}`, "id,name,color"],
+      ["PATCH", "tags", { color: null }, `eq.${DEEP}`, "id,name,color"],
+    ]);
+    const odd = stubbed(() => ({ body: { id: DEEP, name: "Deep", color: "teal" } }));
+    await expect(odd.repo.setTagColor(DEEP, "moss")).rejects.toThrow();
   });
 
   it("takes a tag off one item, and deletes a tag by id alone", async () => {

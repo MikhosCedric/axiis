@@ -5,7 +5,7 @@ import { occurrenceKey } from "@/domain/item-key";
 import { TAGS_PER_ITEM, TAGS_PER_USER } from "@/domain/tag";
 import { setDone } from "@/features/today/commands";
 import { area, fakeRepo, makeItem } from "@/features/today/test-support";
-import { addTag, deleteTag, loadTagged, loadTagIndex, removeTag, renameTag, tagsOfShown } from "./commands";
+import { addTag, deleteTag, loadTagged, loadTagIndex, removeTag, renameTag, setTagColor, tagsOfShown } from "./commands";
 
 const TZ = "UTC";
 const d = (s: string) => s as LocalDate;
@@ -156,6 +156,39 @@ describe("renameTag and deleteTag", () => {
   });
 });
 
+describe("setTagColor", () => {
+  it("starts every tag with no colour, sets a palette colour on one tag and clears it with null", async () => {
+    const w = world();
+    w.tag(w.task.id, "deep", "home");
+    expect(w.tags.map((t) => t.color)).toEqual([null, null]);
+    expect(await setTagColor(w.repo, w.tags[0].id, "indigo")).toEqual({ ok: true });
+    expect(w.tags.map((t) => t.color)).toEqual(["indigo", null]);
+    expect(await setTagColor(w.repo, w.tags[0].id, null)).toEqual({ ok: true });
+    expect(w.tags.map((t) => t.color)).toEqual([null, null]);
+  });
+
+  it.each(["red", "Moss", "", "verdigris", "#485320", undefined, 3])("refuses %j and keeps the colour", async (color) => {
+    const w = world();
+    w.tag(w.task.id, "deep");
+    await setTagColor(w.repo, w.tags[0].id, "moss");
+    expect(await setTagColor(w.repo, w.tags[0].id, color)).toEqual({ ok: false, error: "That colour is not one Axiis offers." });
+    expect(w.tags[0].color).toBe("moss");
+  });
+
+  it("refuses a tag that is not there, and keeps the colour through a rename", async () => {
+    const w = world();
+    w.tag(w.task.id, "deep");
+    const id = w.tags[0].id;
+    await setTagColor(w.repo, id, "mauve");
+    await renameTag(w.repo, id, "Focus");
+    expect(w.tags[0]).toMatchObject({ name: "Focus", color: "mauve" });
+    await deleteTag(w.repo, id);
+    for (const gone of [id, "not an id"]) {
+      expect(await setTagColor(w.repo, gone, "plum")).toEqual({ ok: false, error: "That tag is not here any more." });
+    }
+  });
+});
+
 describe("reading tags", () => {
   it("names the tags each shown item wears in one read, occurrences and overrides taking the series'", async () => {
     const w = world();
@@ -166,12 +199,13 @@ describe("reading tags", () => {
     const repo = { ...w.repo, tagsForItems: (ids: Parameters<typeof w.repo.tagsForItems>[0]) => (reads++, w.repo.tagsForItems(ids)) };
     const occurrence = { ...w.series, id: w.key("2026-10-07"), recurrence: { kind: "occurrence" as const, seriesId: w.series.id, originalOn: d("2026-10-07") } };
 
+    await setTagColor(w.repo, w.tags.find((t) => t.name === "Deep")!.id, "slate");
     expect(await tagsOfShown(repo, [w.task, w.note, occurrence, orphan], [w.series.id])).toEqual({
-      [w.task.id]: ["Deep", "home"],
-      [occurrence.id]: ["focus"],
+      names: { [w.task.id]: ["Deep", "home"], [occurrence.id]: ["focus"] },
+      colors: { deep: "slate" },
     });
     expect(reads).toBe(1);
-    expect(await tagsOfShown(repo, [], [])).toEqual({});
+    expect(await tagsOfShown(repo, [], [])).toEqual({ names: {}, colors: {} });
     expect(reads).toBe(1);
   });
 

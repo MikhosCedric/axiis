@@ -116,13 +116,13 @@ export function readDropZone(raw: string | undefined, days: LocalDate[]): Destin
  * Where the week stands: "This week · 3 days left · 5 open · 2 due · 4 in the Inbox". Open counts what is
  * planned on its days; due counts open items, planned in it or in the Inbox, that fall due on one of its days.
  */
-export function weekSummary(week: WeekDay[], inbox: TodayEntry[], today: LocalDate): string {
+export function weekSummary(week: WeekDay[], inbox: TodayEntry[], today: LocalDate, scope = ""): string {
   const first = week[0].date;
   const last = week[week.length - 1].date;
   const planned = week.flatMap((d) => d.entries).filter((e) => e.state !== "done");
   const inboxOpen = inbox.filter((e) => e.state !== "done");
   const due = [...planned, ...inboxOpen].filter((e) => e.item.dueOn !== null && e.item.dueOn >= first && e.item.dueOn <= last).length;
-  const line = spanLine({ first, last, noun: "week", open: planned.length, due }, today);
+  const line = spanLine({ first, last, noun: "week", open: planned.length, due }, today, scope);
   return inboxOpen.length ? `${line} · ${inboxOpen.length} in the Inbox` : line;
 }
 

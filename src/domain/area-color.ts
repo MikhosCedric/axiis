@@ -1,9 +1,23 @@
 /**
- * The colours an area can carry. Each name is a design token (`--area-<name>` in
- * globals.css) and a value of the `areas_color_palette` check in migration 0009,
- * so adding one means all three. Null, shown as None, is the ink look.
+ * The colours an area or a tag can carry, in picker order (warm to cool, then the neutral).
+ * Each name is a design token (`--area-<name>` in globals.css) and a value of the
+ * `areas_color_palette` and `tags_color_palette` checks in migration 0011, so adding one
+ * means all three. Null, shown as None, is the ink look.
  */
-export const AREA_COLORS = ["clay", "ochre", "moss", "sage", "slate", "plum", "rose", "stone"] as const;
+export const AREA_COLORS = [
+  "clay",
+  "terracotta",
+  "ochre",
+  "mustard",
+  "moss",
+  "sage",
+  "slate",
+  "indigo",
+  "plum",
+  "mauve",
+  "rose",
+  "stone",
+] as const;
 
 export type AreaColor = (typeof AREA_COLORS)[number];
 
@@ -11,6 +25,14 @@ const known: ReadonlySet<string> = new Set(AREA_COLORS);
 
 export function isAreaColor(value: unknown): value is AreaColor {
   return typeof value === "string" && known.has(value);
+}
+
+/**
+ * Whether to suggest colours: two or more areas, and none coloured yet. One area needs
+ * nothing to tell it apart, and someone who has picked a colour has found the picker.
+ */
+export function wantsColorNudge(areas: readonly { color: AreaColor | null }[]): boolean {
+  return areas.length >= 2 && areas.every((a) => a.color === null);
 }
 
 /** The name a person reads, in a picker or a label. */

@@ -32,6 +32,9 @@ import { addDays } from "@/lib/dates";
 import { captureOnAction } from "./actions";
 import type { MonthData } from "./load";
 import { reach } from "@/lib/reach";
+import { FilterChips } from "@/features/filter/filter-chip";
+import { useKeepFilter } from "@/features/filter/keep-filter";
+import { NO_FILTER, type ViewFilter } from "@/features/filter/model";
 import {
   anchorOf,
   countWords,
@@ -100,13 +103,17 @@ export function MonthView({
   data,
   nav,
   detail,
+  filter = NO_FILTER,
 }: {
   data: MonthData;
   nav?: ReactNode;
   detail?: ReactNode;
+  /** What the page narrowed its data to; the data passed in is already narrowed. */
+  filter?: ViewFilter;
 }) {
   const { month, today } = data;
   const router = useRouter();
+  const keep = useKeepFilter();
   const { selectedParam, selectedId: selected, select } = useItemSelection();
   const [, startTransition] = useTransition();
   const [status, setStatus] = useState<{ text: string; error: boolean } | null>(null);
@@ -150,7 +157,7 @@ export function MonthView({
     setPreview,
   );
 
-  const openDay = (date: LocalDate) => router.push(dayHref(date, today, "score"));
+  const openDay = (date: LocalDate) => router.push(keep(dayHref(date, today, "score")));
 
   function moveFocus(to: LocalDate) {
     if (days.includes(to)) {
@@ -160,7 +167,7 @@ export function MonthView({
     }
     if (!parseYearMonth(monthOf(to))) return;
     leaveArrival(to);
-    router.push(monthHref(monthOf(to), today));
+    router.push(keep(monthHref(monthOf(to), today)));
   }
 
   function cellKeyDown(e: KeyboardEvent<HTMLElement>, date: LocalDate, index: number) {
@@ -231,6 +238,7 @@ export function MonthView({
               {formatMonthHeading(month)}
             </h1>
             <p className="page-summary">{data.summary}</p>
+            <FilterChips filter={filter} className="mt-2.5" />
           </div>
         </header>
 
@@ -283,7 +291,7 @@ export function MonthView({
                     isToday={cell.date === today}
                     active={cell.date === active}
                     over={preview?.over === cell.date}
-                    href={dayHref(cell.date, today, "score")}
+                    href={keep(dayHref(cell.date, today, "score"))}
                     onFocus={() => setActive(cell.date)}
                     onPointerDown={() => (pressedChosen.current = cell.date === active)}
                     onClick={() => cellClick(cell.date)}
@@ -314,7 +322,7 @@ export function MonthView({
               </ul>
             )}
             <Link
-              href={dayHref(activeCell.date, today, "score")}
+              href={keep(dayHref(activeCell.date, today, "score"))}
               className="mt-2 inline-flex min-h-11 items-center rounded-md font-medium text-ink underline underline-offset-2 hover:bg-hover"
             >
               {activeCell.more > 0 ? `${activeCell.more} more. Open the day` : "Open the day"}

@@ -14,3 +14,8 @@ export type Span = "day" | "week" | "month";
 export function spanHrefs(anchor: LocalDate, today: LocalDate, mode: DayViewMode = "score"): Record<Span, string> {
   return { day: dayHref(anchor, today, mode), week: weekHref(anchor, today), month: monthHref(monthOf(anchor), today) };
 }
+
+/** The same three links passed through `keep`, which carries the address's area or tag filter onto each. */
+export function keepSpans(hrefs: Record<Span, string>, keep: (href: string) => string): Record<Span, string> {
+  return { day: keep(hrefs.day), week: keep(hrefs.week), month: keep(hrefs.month) };
+}
