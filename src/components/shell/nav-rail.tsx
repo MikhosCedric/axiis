@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useEffect, useId, useRef, useState, type ReactNode } from "react";
-import { AreaLabel } from "@/components/area-mark";
+import { AreaMark } from "@/components/area-mark";
 import type { AreaColor } from "@/domain/area-color";
 import type { LocalDate } from "@/domain/item";
 import { useKeepFilter } from "@/features/filter/filter-chip";
@@ -179,7 +179,11 @@ function AreaLinks({ areas, row, onGo }: { areas: NavArea[]; row: string; onGo?:
               onClick={onGo}
               className={`flex items-center gap-2.5 rounded-md ${row} ${here ? areaHere : "text-ink-2 hover:bg-hover hover:text-ink active:bg-press"}`}
             >
-              <AreaLabel name={a.name} color={a.color} />
+              {/* An area with no colour keeps the dot's room, so every name starts at one edge. */}
+              <span className="inline-flex min-w-0 items-center gap-1.5">
+                {a.color ? <AreaMark color={a.color} /> : <span aria-hidden="true" className="size-2 flex-none" />}
+                <span className="truncate">{a.name}</span>
+              </span>
               <span className="sr-only">
                 , {a.open} open today{here ? ", shown alone; choose again to show every area" : ""}
               </span>
