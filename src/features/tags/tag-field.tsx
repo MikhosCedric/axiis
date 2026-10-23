@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { startTransition, useId, useOptimistic, useState, type KeyboardEvent } from "react";
-import { parseTagName, sameTag, TAG_NAME_MAX, type TagName } from "@/domain/tag";
+import { AreaMark } from "@/components/area-mark";
+import { parseTagName, sameTag, tagKey, TAG_NAME_MAX, type TagColors, type TagName } from "@/domain/tag";
 import { CloseIcon } from "@/features/detail/icons";
 import type { ActionResult } from "@/features/today/commands";
 import { suggestTags, tagHref } from "./model";
@@ -18,6 +19,7 @@ export function TagField({
   itemId,
   tags,
   known,
+  colors,
   series,
   add,
   remove,
@@ -25,6 +27,8 @@ export function TagField({
   itemId: string;
   tags: TagName[];
   known: TagName[];
+  /** The colour of each coloured tag, by `tagKey`. */
+  colors: TagColors;
   /** The item is one time a series happens, so its tags are the whole series'. */
   series: boolean;
   add: (id: string, name: string) => Promise<ActionResult>;
@@ -101,8 +105,8 @@ export function TagField({
         <ul className="flex flex-wrap gap-1.5">
           {shown.map((name) => (
             <li key={name} className="inline-flex items-center rounded-full border border-rule text-[13px] text-ink-2">
-              <Link href={tagHref(name)} className="rounded-l-full py-0.5 pr-1 pl-2.5 hover:text-ink">
-                #{name}
+              <Link href={tagHref(name)} className="inline-flex items-center gap-1.5 rounded-l-full py-0.5 pr-1 pl-2.5 hover:text-ink">
+                <AreaMark color={colors[tagKey(name)] ?? null} size={6} />#{name}
               </Link>
               <button
                 type="button"
