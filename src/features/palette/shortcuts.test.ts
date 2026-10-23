@@ -5,6 +5,7 @@ import { shortcutAction, type KeyPress } from "@/features/day/nav";
 import { keyPlacement, type DropContext } from "@/features/score/drop";
 import { makeItem } from "@/features/today/test-support";
 import { gridStep } from "@/features/month/model";
+import { rowKey } from "@/features/inbox/model";
 import { keyDestination, weekOf } from "@/features/week/model";
 import { instantAt } from "@/lib/dates";
 import { chordCaps, chordSpoken, globalShortcut, goShortcut, GO_PLACES, SHORTCUTS, type Chord, type Handler } from "./shortcuts";
@@ -52,6 +53,8 @@ const answers: Record<Handler, (chord: Chord) => boolean> = {
   "week-item": (c) =>
     names("week/week-view.tsx", c.key) || [planned, waiting].some((item) => keyDestination(item, days, date, "UTC", c.key) !== null),
   "month-grid": (c) => gridStep(c.key, 3) !== null || names("month/month-view.tsx", c.key),
+  inbox: (c) => rowKey(c.key, date) !== null && source("inbox/inbox-view.tsx").includes("rowKey(e.key"),
+  undo: (c) => !!c.mod && source("../components/undo-toast.tsx").includes(`e.key.toLowerCase() !== "${c.key}"`),
   "inline-edit": (c) => names("detail/inline-title.tsx", c.key) && names("account/areas-section.tsx", c.key),
   "confirm-delete": (c) => names("detail/confirm-delete.tsx", c.key),
   "note-editor": (c) =>

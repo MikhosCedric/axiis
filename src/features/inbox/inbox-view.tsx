@@ -1,7 +1,22 @@
 "use client";
 
-import { useEffect, useId, useMemo, useOptimistic, useRef, useState, useTransition, type FormEvent, type ReactNode, type RefObject } from "react";
+import {
+  useEffect,
+  useId,
+  useMemo,
+  useOptimistic,
+  useRef,
+  useState,
+  useTransition,
+  type FormEvent,
+  type KeyboardEvent,
+  type ReactNode,
+  type RefObject,
+} from "react";
 import { AreaLabel } from "@/components/area-mark";
+import { UndoToast, type UndoNote } from "@/components/undo-toast";
+import { isTypingTarget } from "@/features/day/nav";
+import { unplanAction } from "@/features/detail/actions";
 import type { Area, Item, LocalDate } from "@/domain/item";
 import { DetailAside } from "@/features/detail/detail-aside";
 import { useItemSelection } from "@/features/detail/use-item-selection";
@@ -14,17 +29,19 @@ import { place } from "@/components/shell/places";
 import { RowTags } from "@/features/tags/row-tags";
 import { LAST_DATE } from "@/lib/dates";
 import { planAction } from "./actions";
-import { dayWords, inboxRows, inboxSummary, planDate, type InboxData, type PlanFor } from "./model";
+import { dayWords, inboxRows, inboxSummary, PICK_KEY, planDate, quickPlans, rowKey, type InboxData, type PlanFor } from "./model";
 import { reach } from "@/lib/reach";
 
 /** The writes the inbox makes. Defaults to the server actions; the dev harness passes in-memory ones. */
 export type InboxActions = {
   setDone: (id: string, done: boolean) => Promise<ActionResult>;
   plan: (id: string, when: PlanFor) => Promise<ActionResult>;
+  /** Takes a plan back: the item has no day again. */
+  unplan: (id: string) => Promise<ActionResult>;
   capture: (title: string) => Promise<ActionResult>;
 };
 
-const serverActions: InboxActions = { setDone: setDoneAction, plan: planAction, capture: captureAction };
+const serverActions: InboxActions = { setDone: setDoneAction, plan: planAction, unplan: unplanAction, capture: captureAction };
 const INBOX_GUIDE: GuideTopic[] = ["capture"];
 
 /** Optimistic changes while a save is in flight: a planned item leaves, a reopened one reads as open. */
@@ -49,8 +66,14 @@ export function InboxView({
   const [justDone, setJustDone] = useState<string | null>(null);
   const [doneHere, setDoneHere] = useState<Item[]>([]);
   const [planning, setPlanning] = useState<string | null>(null);
+  // The choices were opened with 4, so the date field takes focus instead of Today.
+  const [pickDate, setPickDate] = useState(false);
+  const [note, setNote] = useState<UndoNote | null>(null);
+  const notes = useRef(0);
   const refocus = useRef<string | null>(null);
   const heading = useRef<HTMLHeadingElement>(null);
+  // Whether this visit began with something to plan, so an Inbox cleared here says so.
+  const [startedFull] = useState(data.items.length > 0);
 
   const rows = useMemo(() => inboxRows(data.items, doneHere), [data.items, doneHere]);
   const [shown, change] = useOptimistic(rows, (current: Item[], c: Change) =>
@@ -83,8 +106,54 @@ export function InboxView({
         return;
       }
       if (!done) setDoneHere((list) => list.filter((i) => i.id !== item.id));
-      setStatus({ text: done ? `${item.title} is done.` : `${item.title} is open again.`, error: false });
+      tell(
+        done ? `${item.title} is done.` : `${item.title} is open again.`,
+        done ? () => toggleDone({ ...item, status: "done" }) : undefined,
+      );
     });
+  }
+
+  function tell(text: string, undo?: () => void) {
+    setNote({ id: ++notes.current, text, undo });
+  }
+
+  function unplan(item: Item) {
+    setStatus(null);
+    startTransition(async () => {
+      const result = await reach(actions.unplan(item.id));
+      if (!result.ok) {
+        setStatus({ text: result.error, error: true });
+        return;
+      }
+      refocus.current = `[data-open="${item.id}"]`;
+      tell(`${item.title} is back in the Inbox.`);
+    });
+  }
+
+  /** J and K or the arrows move between rows; 1 to 3 plan the row in focus, 4 opens its date field. */
+  function rowKeyDown(e: KeyboardEvent<HTMLUListElement>) {
+    if (e.altKey || e.ctrlKey || e.metaKey || e.shiftKey || e.defaultPrevented || e.nativeEvent.isComposing) return;
+    const target = e.target as HTMLElement;
+    if (isTypingTarget(target)) return;
+    const row = target.closest<HTMLElement>("[data-row]");
+    const item = row && shown.find((i) => i.id === row.dataset.row);
+    if (!item) return;
+    const step = rowKey(e.key, today);
+    if (!step) return;
+    if ("move" in step) {
+      const to = shown[shown.indexOf(item) + step.move];
+      if (!to) return;
+      e.preventDefault();
+      document.querySelector<HTMLElement>(`[data-open="${to.id}"]`)?.focus();
+      return;
+    }
+    if (item.status === "done") return;
+    e.preventDefault();
+    if ("plan" in step) plan(item, step.plan);
+    else {
+      setPickDate(true);
+      setPlanning(item.id);
+    }
   }
 
   function plan(item: Item, when: PlanFor) {
@@ -96,12 +165,12 @@ export function InboxView({
     startTransition(async () => {
       change({ kind: "hide", id: item.id });
       const result = await reach(actions.plan(item.id, when));
-      if (!result.ok) refocus.current = `[data-plan="${item.id}"]`;
-      setStatus(
-        result.ok
-          ? { text: `${item.title} is planned for ${dayWords(planDate(when, today), today)}.`, error: false }
-          : { text: result.error, error: true },
-      );
+      if (!result.ok) {
+        refocus.current = `[data-plan="${item.id}"]`;
+        setStatus({ text: result.error, error: true });
+        return;
+      }
+      tell(`${item.title} is planned for ${dayWords(planDate(when, today), today)}.`, () => unplan(item));
     });
   }
 
@@ -141,7 +210,7 @@ export function InboxView({
           </h2>
           <div className="border-b border-rule" />
           {shown.length ? (
-            <ul>
+            <ul onKeyDown={rowKeyDown} aria-describedby="inbox-keys">
               {shown.map((item) => (
                 <InboxRow
                   key={item.id}
@@ -153,16 +222,25 @@ export function InboxView({
                   selected={selectedId === item.id}
                   justDone={justDone === item.id}
                   planning={planning === item.id}
+                  pickDate={pickDate}
                   onSelect={() => select(item.id)}
                   onToggleDone={() => toggleDone(item)}
-                  onPlanning={(open) => setPlanning(open ? item.id : null)}
+                  onPlanning={(open) => {
+                    setPickDate(false);
+                    setPlanning(open ? item.id : null);
+                  }}
                   onPlan={(when) => plan(item, when)}
                 />
               ))}
             </ul>
           ) : (
             <p className="py-3 text-ink-2">
-              Anything you capture without a day lands here, safe until you plan it.
+              {startedFull && "All planned. "}Anything you capture without a day lands here, safe until you plan it.
+            </p>
+          )}
+          {shown.length > 0 && (
+            <p id="inbox-keys" className="mt-3 text-[13px] text-ink-3 pointer-coarse:hidden">
+              J and K move between items. 1 plans the one in focus for today, 2 for tomorrow, 3 for next week, 4 for another day.
             </p>
           )}
           {data.full && (
@@ -172,6 +250,7 @@ export function InboxView({
       </div>
 
       {selectedParam && <DetailAside pending={selectedId !== selectedParam}>{detail}</DetailAside>}
+      <UndoToast note={note} onDone={() => setNote(null)} />
     </div>
   );
 }
@@ -185,6 +264,7 @@ function InboxRow({
   selected,
   justDone,
   planning,
+  pickDate,
   onSelect,
   onToggleDone,
   onPlanning,
@@ -198,6 +278,7 @@ function InboxRow({
   selected: boolean;
   justDone: boolean;
   planning: boolean;
+  pickDate: boolean;
   onSelect: () => void;
   onToggleDone: () => void;
   onPlanning: (open: boolean) => void;
@@ -209,10 +290,11 @@ function InboxRow({
   const panelId = useId();
   const trigger = useRef<HTMLButtonElement>(null);
   const first = useRef<HTMLButtonElement>(null);
+  const date = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    if (planning) first.current?.focus();
-  }, [planning]);
+    if (planning) (pickDate ? date : first).current?.focus();
+  }, [planning, pickDate]);
 
   function close() {
     onPlanning(false);
@@ -221,6 +303,7 @@ function InboxRow({
 
   return (
     <li
+      data-row={item.id}
       className={`grid grid-cols-[48px_minmax(0,1fr)_auto] items-center gap-x-3 border-b border-rule-soft py-(--row-y) rail:grid-cols-[48px_minmax(0,1fr)_auto_auto] ${
         selected ? "bg-accent-wash" : ""
       }`}
@@ -271,6 +354,7 @@ function InboxRow({
           title={item.title}
           today={today}
           first={first}
+          date={date}
           onPlan={onPlan}
           onClose={close}
         />
@@ -284,6 +368,7 @@ function PlanChoices({
   title,
   today,
   first,
+  date,
   onPlan,
   onClose,
 }: {
@@ -291,6 +376,7 @@ function PlanChoices({
   title: string;
   today: LocalDate;
   first: RefObject<HTMLButtonElement | null>;
+  date: RefObject<HTMLInputElement | null>;
   onPlan: (when: PlanFor) => void;
   onClose: () => void;
 }) {
@@ -316,17 +402,23 @@ function PlanChoices({
       }}
       className="col-span-full mt-2.5 flex flex-wrap items-center gap-2 pl-[60px] max-rail:pl-0"
     >
-      <button ref={first} type="button" className={choice} onClick={() => onPlan("today")}>
-        Today
-      </button>
-      <button type="button" className={choice} onClick={() => onPlan("tomorrow")}>
-        Tomorrow
-      </button>
+      {quickPlans(today).map((q, i) => (
+        <button key={q.key} ref={i === 0 ? first : undefined} type="button" aria-keyshortcuts={q.key} className={choice} onClick={() => onPlan(q.when)}>
+          {q.label}
+          <kbd aria-hidden="true" className="ml-2 font-sans text-xs text-ink-3 pointer-coarse:hidden">
+            {q.key}
+          </kbd>
+        </button>
+      ))}
       <form onSubmit={submit} className="flex items-center gap-2">
         <label htmlFor={dateId} className="text-[13px] text-ink-2">
           Another day
+          <kbd aria-hidden="true" className="ml-1.5 font-sans text-xs text-ink-3 pointer-coarse:hidden">
+            {PICK_KEY}
+          </kbd>
         </label>
         <input
+          ref={date}
           id={dateId}
           name="date"
           type="date"
