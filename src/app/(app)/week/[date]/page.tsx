@@ -9,6 +9,7 @@ import { WeekNav } from "@/features/week/week-nav";
 import { WeekView } from "@/features/week/week-view";
 import { filterWeek } from "@/features/filter/apply";
 import { getFilter } from "@/features/filter/server";
+import { TagColorsProvider } from "@/features/tags/tag-colors";
 import { parseLocalDate } from "@/lib/dates";
 
 export async function generateMetadata({ params }: PageProps<"/week/[date]">): Promise<Metadata> {
@@ -22,5 +23,9 @@ export default async function WeekPage({ params, searchParams }: PageProps<"/wee
   if (!date) notFound();
   const { itemId } = readDayQuery(await searchParams);
   const [data, today, filter] = await Promise.all([getWeek(date), getTodayDate(), getFilter(searchParams, true)]);
-  return <WeekView data={filterWeek(data, filter)} filter={filter} nav={<WeekNav days={data.days} today={today} />} detail={<DetailPanel itemId={itemId} />} />;
+  return (
+    <TagColorsProvider value={data.tagColors}>
+      <WeekView data={filterWeek(data, filter)} filter={filter} nav={<WeekNav days={data.days} today={today} />} detail={<DetailPanel itemId={itemId} />} />
+    </TagColorsProvider>
+  );
 }
