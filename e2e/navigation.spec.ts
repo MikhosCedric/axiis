@@ -22,6 +22,61 @@ signedIn.beforeEach(async ({ page, request, baseURL }) => {
 });
 
 const details = (page: Page) => page.getByRole("complementary", { name: "Details" });
+const title = (page: Page, name: string) =>
+  page.getByRole("region", { name: "Items with no day" }).getByRole("button", { name, exact: true });
+
+signedIn.describe("clearing the Inbox", () => {
+  signedIn("the keyboard plans the item in focus and moves on, and Ctrl Z takes the plan back", async ({ page }) => {
+    await page.goto("/inbox");
+    await title(page, "Book flights to Lisbon").focus();
+    await page.keyboard.press("2");
+    await expect(page.getByRole("status").filter({ hasText: "Book flights to Lisbon is planned for tomorrow." })).toBeVisible();
+    await expect(title(page, "Book flights to Lisbon")).toHaveCount(0);
+    await expect(title(page, "Read the lease")).toBeFocused();
+
+    await page.keyboard.press("j");
+    await expect(title(page, "Pick a birthday gift")).toBeFocused();
+    await page.keyboard.press("k");
+    await expect(title(page, "Read the lease")).toBeFocused();
+    await page.keyboard.press("j");
+    await page.keyboard.press("3");
+    await expect(page.getByRole("status").filter({ hasText: /^Pick a birthday gift is planned for Monday \d+ \w+\.$/ })).toBeVisible();
+
+    await page.keyboard.press("ControlOrMeta+z");
+    await expect(page.getByRole("status").filter({ hasText: "Pick a birthday gift is back in the Inbox." })).toBeVisible();
+    await expect(title(page, "Pick a birthday gift")).toBeFocused();
+  });
+
+  signedIn("Undo on the note takes a plan back, and 4 opens the date field", async ({ page }) => {
+    await page.goto("/inbox");
+    await page.getByRole("button", { name: "Plan for: Read the lease" }).click();
+    const choices = page.getByRole("group", { name: "Plan Read the lease for" });
+    await expect(choices.getByRole("button")).toHaveText(["Today1", "Tomorrow2", "Next week3", "Plan"]);
+    await choices.getByRole("button", { name: "Today" }).click();
+    await expect(page.getByRole("status").filter({ hasText: "Read the lease is planned for today." })).toBeVisible();
+
+    await page.getByRole("button", { name: "Undo" }).click();
+    await expect(title(page, "Read the lease")).toBeVisible();
+    await expect(page.getByRole("status").filter({ hasText: "Read the lease is back in the Inbox." })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Undo" })).toHaveCount(0);
+
+    await title(page, "Read the lease").focus();
+    await page.keyboard.press("4");
+    await expect(page.getByRole("group", { name: "Plan Read the lease for" }).getByLabel("Another day")).toBeFocused();
+  });
+
+  signedIn("planning the last item says the Inbox is clear", async ({ page }) => {
+    await page.goto("/inbox");
+    const plans = page.getByRole("button", { name: /^Plan for: / });
+    await expect(plans).toHaveCount(4);
+    await page.locator("[data-open]").first().focus();
+    for (const left of [3, 2, 1, 0]) {
+      await page.keyboard.press("1");
+      await expect(plans).toHaveCount(left);
+    }
+    await expect(page.getByText("All planned. Anything you capture without a day lands here")).toBeVisible();
+  });
+});
 
 signedIn.describe("the detail panel and history", () => {
   signedIn("Escape closes the panel from a list page and focus goes back to the row", async ({ page }) => {
