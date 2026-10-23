@@ -2,7 +2,7 @@ import type { AreaColor } from "@/domain/area-color";
 import { isStored, repeats, type Area, type AreaId, type Item, type ItemId, type ItemType, type LocalDate, type Schedule, type ShownItem } from "@/domain/item";
 import { occurrenceKey, type ItemKey } from "@/domain/item-key";
 import type { Rule, RuleEnd } from "@/domain/recurrence";
-import type { TagName } from "@/domain/tag";
+import type { TagColors, TagName } from "@/domain/tag";
 import { addDays, localMinutes, toLocalDate } from "@/lib/dates";
 import { describeRule, presetOf, type RepeatChoice, type RepeatPreset } from "./repeat";
 import type { ActionResult } from "@/features/today/commands";
@@ -127,7 +127,8 @@ export type DetailView = {
   /** The stored item linked notes and tags attach to. Notes and tags on any occurrence attach to its series. */
   notesFor: ItemId;
   /** The tags it wears, by name, and every tag the user has, most used first, for suggestions. */
-  tags: { on: TagName[]; known: TagName[] };
+  /** `colors` holds the colour of every coloured tag the user has, by `tagKey`. */
+  tags: { on: TagName[]; known: TagName[]; colors: TagColors };
 };
 
 /** The writes the sheet can ask for. Server actions in the app, in-memory fakes in the dev harness. */
@@ -258,7 +259,7 @@ export function buildDetail(input: {
   skipped?: LocalDate[];
   tags?: DetailView["tags"];
 }): DetailView {
-  const { item, series = null, areas, subtasks, parent, timeZone, clock, today, skipped = [], tags = { on: [], known: [] } } = input;
+  const { item, series = null, areas, subtasks, parent, timeZone, clock, today, skipped = [], tags = { on: [], known: [], colors: {} } } = input;
   const policy = subtaskPolicy(item);
   const nesting: Nesting =
     policy.kind === "holds-subtasks"

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { AreaMark } from "@/components/area-mark";
 import type { TagSummary } from "@/domain/tag";
 import { openCount, tagHref } from "./model";
 
@@ -21,6 +22,7 @@ export function TagIndexView({ tags, hrefFor = tagHref }: { tags: TagSummary[]; 
                 className="flex items-baseline justify-between gap-4 rounded-md px-2 py-2.5 hover:bg-hover pointer-coarse:min-h-11 pointer-coarse:items-center active:bg-press"
               >
                 <span className="min-w-0 font-medium break-words text-ink">
+                  <AreaMark color={t.color} className="mr-2 align-[0.05em]" />
                   <span aria-hidden="true" className="text-ink-3">
                     #
                   </span>
