@@ -8,7 +8,7 @@ import { gridStep } from "@/features/month/model";
 import { rowKey } from "@/features/inbox/model";
 import { keyDestination, weekOf } from "@/features/week/model";
 import { instantAt } from "@/lib/dates";
-import { chordCaps, chordSpoken, globalShortcut, goShortcut, GO_PLACES, SHORTCUTS, type Chord, type Handler } from "./shortcuts";
+import { areaShortcut, chordCaps, chordSpoken, globalShortcut, goShortcut, GO_PLACES, SHORTCUTS, type Chord, type Handler } from "./shortcuts";
 
 const source = (path: string) => readFileSync(new URL(`../${path}`, import.meta.url), "utf8");
 
@@ -39,6 +39,7 @@ const planned = makeItem({ schedule: { kind: "day", on: "2026-10-07" as LocalDat
 const answers: Record<Handler, (chord: Chord) => boolean> = {
   global: (c) => globalShortcut(press(c)) !== null,
   go: (c) => goShortcut(false, press(c)) === "wait" && GO_PLACES.every((p) => goShortcut(true, press({ key: p.key })) !== null),
+  area: (c) => areaShortcut(false, press(c), 3) === "wait" && source("palette/palette.tsx").includes("areaShortcut("),
   dialog: (c) => c.key === "Escape" && source("palette/palette.tsx").includes(".showModal()"),
   "day-nav": (c) =>
     shortcutAction(press(c)) !== null &&
@@ -72,6 +73,28 @@ describe("the shortcuts table", () => {
   it("does not list a key twice for the same thing in one place", () => {
     const seen = rows.map((r) => `${r.where}|${r.handler}|${r.chord.key}|${!!r.chord.mod}|${!!r.chord.shift}|${r.then?.key ?? ""}`);
     expect(new Set(seen).size).toBe(seen.length);
+  });
+});
+
+describe("areaShortcut", () => {
+  const step = (waiting: boolean, key: string, count = 3, over: Partial<KeyPress> = {}) => areaShortcut(waiting, press({ key }, over), count);
+
+  it("waits after A, then picks an area by its digit or every area with 0", () => {
+    expect(step(false, "a")).toBe("wait");
+    expect(step(false, "A")).toBe("wait");
+    expect(step(true, "1")).toEqual({ index: 0 });
+    expect(step(true, "3")).toEqual({ index: 2 });
+    expect(step(true, "0")).toEqual({ index: null });
+  });
+
+  it("ignores a digit past the areas there are, any other key, typing, modifiers, and A with no areas", () => {
+    expect(step(true, "4")).toBeNull();
+    expect(step(true, "x")).toBeNull();
+    expect(step(true, "1", 12)).toEqual({ index: 0 });
+    expect(step(false, "1")).toBeNull();
+    expect(step(false, "a", 3, { typing: true })).toBeNull();
+    expect(step(false, "a", 3, { ctrlKey: true })).toBeNull();
+    expect(step(false, "a", 0)).toBeNull();
   });
 });
 

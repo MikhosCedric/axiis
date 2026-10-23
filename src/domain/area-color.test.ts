@@ -1,10 +1,10 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { AREA_COLORS, areaColorLabel, isAreaColor } from "./area-color";
+import { AREA_COLORS, areaColorLabel, isAreaColor, wantsColorNudge } from "./area-color";
 
 const css = readFileSync(join(__dirname, "../app/globals.css"), "utf8");
-const migration = readFileSync(join(__dirname, "../../supabase/migrations/0009_area_colors.sql"), "utf8");
+const migration = readFileSync(join(__dirname, "../../supabase/migrations/0011_colors.sql"), "utf8");
 
 type Rgb = [number, number, number];
 type Theme = "light" | "dark";
@@ -95,9 +95,23 @@ describe("area colour tokens", () => {
     for (const color of palette) expect(distance(color[theme], accent), color.name).toBeGreaterThanOrEqual(0.08);
   });
 
-  it("are exactly the names the database accepts", () => {
-    const allowed = migration.match(/color in \(([^)]*)\)/)?.[1].match(/'(\w+)'/g)?.map((s) => s.slice(1, -1));
+  it.each(["light", "dark"] as const)("never read as a status red or green in %s", (theme) => {
+    // Reference alarm red and success green, as a common UI kit draws them; no palette colour should pass for either.
+    const red = { light: rgb("#c62828"), dark: rgb("#ef5350") }[theme];
+    const green = { light: rgb("#2e7d32"), dark: rgb("#66bb6a") }[theme];
+    for (const color of palette) {
+      expect(distance(color[theme], red), `${color.name} and red`).toBeGreaterThanOrEqual(0.095);
+      expect(distance(color[theme], green), `${color.name} and green`).toBeGreaterThanOrEqual(0.095);
+    }
+  });
+
+  it.each(["areas_color_palette", "tags_color_palette"])("are exactly the names %s accepts", (check) => {
+    const clause = migration.match(new RegExp(`${check}\\s+check \\(color is null or color in \\(([^)]*)\\)`))?.[1];
+    const allowed = clause?.match(/'(\w+)'/g)?.map((s) => s.slice(1, -1));
     expect(allowed).toEqual([...AREA_COLORS]);
+  });
+
+  it("are declared once each, in the palette's order", () => {
     const declared = [...css.matchAll(/--area-(\w+):/g)].map((m) => m[1]);
     expect(declared).toEqual([...AREA_COLORS]);
   });
@@ -107,6 +121,18 @@ describe("isAreaColor and areaColorLabel", () => {
   it("know the palette and nothing else", () => {
     expect(AREA_COLORS.every(isAreaColor)).toBe(true);
     for (const value of ["Clay", "red", "", null, undefined, 1, "accent"]) expect(isAreaColor(value)).toBe(false);
+  });
+
+  it("keeps every name 0009 allowed, so no stored area breaks the larger check", () => {
+    for (const name of ["clay", "ochre", "moss", "sage", "slate", "plum", "rose", "stone"]) expect(isAreaColor(name)).toBe(true);
+  });
+
+  it("suggests colours only to two or more areas with none coloured", () => {
+    const none = { color: null };
+    expect(wantsColorNudge([none, none])).toBe(true);
+    expect(wantsColorNudge([none])).toBe(false);
+    expect(wantsColorNudge([])).toBe(false);
+    expect(wantsColorNudge([none, { color: "moss" }])).toBe(false);
   });
 
   it("names None and each colour in sentence case", () => {

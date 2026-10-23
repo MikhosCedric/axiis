@@ -433,6 +433,7 @@ export function DetailSheet({
         itemId={item.id}
         tags={view.tags.on}
         known={view.tags.known}
+        colors={view.tags.colors}
         series={isSeries || isOccurrence}
         add={actions.addTag}
         remove={actions.removeTag}

@@ -12,6 +12,8 @@ import { setDoneAction } from "@/features/today/actions";
 import { DoneToggle, useDoneToggles, type SetDone } from "@/features/today/done-toggle";
 import { Glyph } from "@/features/today/glyph";
 import { RepeatMark } from "@/features/today/repeat-mark";
+import { FilterChips } from "@/features/filter/filter-chip";
+import { NO_FILTER, scopePrefix, type ViewFilter } from "@/features/filter/model";
 import { captureChecklistAction } from "./actions";
 import { listsSummary, progressShare, progressWords, type ListRow, type ListsData } from "./model";
 
@@ -19,11 +21,14 @@ import { listsSummary, progressShare, progressWords, type ListRow, type ListsDat
 export function ListsView({
   data,
   detail,
+  filter = NO_FILTER,
   capture = captureChecklistAction,
   setDone = setDoneAction,
 }: {
   data: ListsData;
   detail?: ReactNode;
+  /** What the page narrowed its rows to; the rows passed in are already narrowed. */
+  filter?: ViewFilter;
   /** Defaults to the server actions; the dev harness passes in-memory ones. */
   capture?: (title: string) => Promise<CaptureResult>;
   setDone?: SetDone;
@@ -43,8 +48,10 @@ export function ListsView({
       <div className="min-w-0 px-4 pt-6 pb-14 rail:px-9 rail:pt-8">
         <h1 className="headline">Lists</h1>
         <p className="page-summary">
-          {place("lists").hint}. {listsSummary(data.rows)}
+          {place("lists").hint}. {scopePrefix(filter)}
+          {listsSummary(data.rows)}
         </p>
+        <FilterChips filter={filter} className="mt-2.5" />
 
         <div className="mt-6 mb-3">
           <CaptureField

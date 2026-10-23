@@ -9,6 +9,8 @@ export type LeftoverData = {
   rows: LeftoverRow[];
   /** How many in all, `BEHIND_LIMIT` at most. */
   total: number;
+  /** Only one area's are shown, so moving them all at once is not offered. */
+  filtered: boolean;
 };
 
 /** How many rows the strip names; the rest are counted. */

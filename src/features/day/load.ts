@@ -35,7 +35,8 @@ export async function loadDay(repo: ItemsRepo, date: LocalDate, now: Date, timeZ
     view,
     waitingFull: items.unscheduled.length >= WAITING_LIMIT,
     childCounts,
-    tags,
+    tags: tags.names,
+    tagColors: tags.colors,
     firstDay: !anyItem,
     cadences: Object.fromEntries(
       series.flatMap((s) => (s.recurrence.kind === "series" ? [[s.id, cadence(s.recurrence.rule, firstDay(s.schedule, timeZone))]] : [])),

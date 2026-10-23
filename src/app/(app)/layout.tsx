@@ -12,7 +12,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
   const [today, areas, deletesOn] = await Promise.all([getTodayDate(), getRailAreas(), getDeletionDay()]);
 
   return (
-    <PaletteProvider today={today}>
+    <PaletteProvider today={today} areas={areas}>
       <div className="min-h-dvh rail:grid rail:grid-cols-[216px_minmax(0,1fr)]">
         <NavRail today={today} areas={areas} />
         {/* On a phone the places bar is fixed to the bottom, so the page ends above it. */}

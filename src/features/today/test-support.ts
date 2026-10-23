@@ -260,6 +260,12 @@ export function fakeRepo(items: Item[] = [], areas: Area[] = []) {
       tag.name = name;
       return { ...tag };
     },
+    async setTagColor(id, color) {
+      const tag = tags.find((t) => t.id === id);
+      if (!tag) throw new Error("not found");
+      tag.color = color;
+      return { ...tag };
+    },
     async deleteTag(id) {
       drop(tags, (t) => t.id === id);
       drop(itemTags, (l) => l.tagId === id);
@@ -273,7 +279,7 @@ export function fakeRepo(items: Item[] = [], areas: Area[] = []) {
   function link(itemId: ItemId, name: TagName): Tag {
     let tag = tags.find((t) => sameTag(t.name, name));
     if (!tag) {
-      tag = { id: tagId(), name };
+      tag = { id: tagId(), name, color: null };
       tags.push(tag);
     }
     const id = tag.id;

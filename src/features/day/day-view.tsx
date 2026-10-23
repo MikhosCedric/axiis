@@ -30,6 +30,8 @@ import { Tour } from "./tour";
 import { seriesTimeOffer, type SeriesTimeOffer } from "./series-time";
 import { DAY_VIEW_PARAM, type DayData, type DayViewMode } from "./types";
 import { reach } from "@/lib/reach";
+import { FilterChips } from "@/features/filter/filter-chip";
+import { NO_FILTER, scopeWords, type ViewFilter } from "@/features/filter/model";
 
 /** The writes the day screen makes. Defaults to the server actions; the dev harness passes in-memory ones. */
 export type DayActions = {
@@ -94,6 +96,7 @@ export function DayView({
   leftover,
   focus: focusSaved = false,
   tour = false,
+  filter = NO_FILTER,
   actions = serverActions,
 }: {
   data: DayData;
@@ -106,6 +109,8 @@ export function DayView({
   focus?: boolean;
   /** Show the getting-started tour: a new account, or the Guide asked for it again. */
   tour?: boolean;
+  /** What the page narrowed its data to; the data passed in is already narrowed. */
+  filter?: ViewFilter;
   actions?: DayActions;
 }) {
   const { date, timeZone, areas, isToday, childCounts } = data;
@@ -255,7 +260,8 @@ export function DayView({
             <h1 className="headline">
               <DayHeading date={date} />
             </h1>
-            <GlanceLine glance={glance} timeZone={timeZone} />
+            <GlanceLine glance={glance} timeZone={timeZone} scope={scopeWords(filter)} />
+            <FilterChips filter={filter} className="mt-2.5" />
           </div>
         </header>
 

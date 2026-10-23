@@ -1,3 +1,5 @@
+import * as z from "zod/mini";
+import { AREA_COLORS } from "@/domain/area-color";
 import type { Clock } from "@/lib/clock";
 import { repeats, type Item, type ItemId, type ShownItem } from "@/domain/item";
 import { parseItemKey, type ParsedItemKey } from "@/domain/item-key";
@@ -13,6 +15,8 @@ import {
   type Tag,
   type TagName,
   type TagSummary,
+  tagColors,
+  type TagColors,
 } from "@/domain/tag";
 import { resolveKey } from "@/lib/items/occurrences";
 import { TAGGED_LIMIT, type ItemsRepo } from "@/lib/items/repo";
@@ -133,6 +137,21 @@ export async function renameTag(repo: ItemsRepo, rawId: unknown, rawName: unknow
   });
 }
 
+const colorSchema = z.nullable(z.enum(AREA_COLORS));
+
+/** Sets a tag's colour to a palette name, or clears it with null. */
+export async function setTagColor(repo: ItemsRepo, rawId: unknown, rawColor: unknown): Promise<ActionResult> {
+  const id = parseTagId(rawId);
+  if (!id) return { ok: false, error: MISSING_TAG };
+  const color = colorSchema.safeParse(rawColor);
+  if (!color.success) return { ok: false, error: "That colour is not one Axiis offers." };
+  return attempt(async () => {
+    const self = (await repo.listTagNames()).find((t) => t.id === id);
+    if (!self) return { ok: false, error: MISSING_TAG };
+    if (self.color !== color.data) await repo.setTagColor(id, color.data);
+  });
+}
+
 /** Deletes a tag and takes it off every item. No item is deleted. */
 export async function deleteTag(repo: ItemsRepo, rawId: unknown): Promise<ActionResult> {
   const id = parseTagId(rawId);
@@ -141,16 +160,17 @@ export async function deleteTag(repo: ItemsRepo, rawId: unknown): Promise<Action
 }
 
 /**
- * The tag names each shown item wears, keyed by the id it is shown with, read
- * in one request however many items there are. `liveSeries` are the ids of the
- * series still there, so an override of one wears the series' tags.
+ * The tag names each shown item wears, keyed by the id it is shown with, and the
+ * colour of each coloured one, read in one request however many items there are.
+ * `liveSeries` are the ids of the series still there, so an override of one wears
+ * the series' tags.
  */
 export async function tagsOfShown(
   repo: ItemsRepo,
   shown: readonly ShownItem[],
   liveSeries: Iterable<ItemId>,
-): Promise<Record<string, TagName[]>> {
-  if (shown.length === 0) return {};
+): Promise<{ names: Record<string, TagName[]>; colors: TagColors }> {
+  if (shown.length === 0) return { names: {}, colors: {} };
   const live = new Set<string>(liveSeries);
   const owners = new Map(shown.map((i) => [i.id as string, tagOwner(i, live)]));
   const byOwner = await repo.tagsForItems([...new Set(owners.values())]);
@@ -159,7 +179,7 @@ export async function tagsOfShown(
     const tags = byOwner[owner];
     if (tags?.length) names[id] = byName(tags).map((t) => t.name);
   }
-  return names;
+  return { names, colors: tagColors(Object.values(byOwner).flat()) };
 }
 
 /** Every tag by name, with how many open items carry it. */
@@ -195,7 +215,7 @@ export async function loadTagged(repo: ItemsRepo, rawName: unknown, timeZone: st
   const tags = await repo.tagsForItems(items.map((i) => i.id));
   const areaOf = new Map(areas.map((a) => [a.id as string, a]));
   return {
-    tag: { id: tag.id, name: tag.name },
+    tag: { id: tag.id, name: tag.name, color: tag.color },
     rows: items.map((item) => ({
       id: item.id,
       type: item.type,

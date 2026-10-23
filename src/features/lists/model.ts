@@ -1,5 +1,5 @@
 import type { AreaColor } from "@/domain/area-color";
-import type { ItemId } from "@/domain/item";
+import type { AreaId, ItemId } from "@/domain/item";
 import type { ChildCount } from "@/lib/items/repo";
 
 /** One checklist on the Lists page, ready to draw. */
@@ -10,6 +10,7 @@ export type ListRow = {
   repeats: boolean;
   /** When it is planned or how it repeats; null when it has no day. */
   when: string | null;
+  areaId: AreaId | null;
   area: string | null;
   areaColor: AreaColor | null;
   /** Lines done of all its lines. Null for a series, which never has lines of its own. */

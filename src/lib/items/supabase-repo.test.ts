@@ -303,7 +303,7 @@ describe("SupabaseItemsRepo reads that must be complete", () => {
   it("reads the tags of many items past the row cap", async () => {
     const rows = Array.from({ length: 2000 }, (_, i) => ({
       item_id: parent(i % 200),
-      tags: { id: `00000000-0000-4000-b000-${String(i % 10).padStart(12, "0")}`, name: `t${i % 10}` },
+      tags: { id: `00000000-0000-4000-b000-${String(i % 10).padStart(12, "0")}`, name: `t${i % 10}`, color: null },
     }));
     const { repo } = served(rows, 1000);
 

@@ -252,9 +252,9 @@ export function selectedMarkKey(cells: readonly MonthCell[], selected: string | 
 }
 
 /** Where the month stands: "This month · 9 days left · 28 open · 4 due", or "Next month · 3 open". */
-export function monthSummary(month: YearMonth, today: LocalDate, open: number, due: number): string {
+export function monthSummary(month: YearMonth, today: LocalDate, open: number, due: number, scope = ""): string {
   const first = firstOf(month);
-  return spanLine({ first, last: addDays(firstOf(addMonths(month, 1)), -1), noun: "month", open, due }, today);
+  return spanLine({ first, last: addDays(firstOf(addMonths(month, 1)), -1), noun: "month", open, due }, today, scope);
 }
 
 /** How many items a day holds, sent and counted. */

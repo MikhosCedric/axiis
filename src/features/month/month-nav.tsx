@@ -5,8 +5,9 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
 import type { LocalDate } from "@/domain/item";
 import { isTypingTarget, shortcutAction } from "@/features/day/nav";
-import { spanHrefs } from "@/features/week/span";
+import { keepSpans, spanHrefs } from "@/features/week/span";
 import { SpanSwitch } from "@/features/week/span-switch";
+import { useKeepFilter } from "@/features/filter/keep-filter";
 import { MonthPicker } from "./month-picker";
 import { anchorOf, formatMonthHeading, monthHref, monthNavTarget, monthOf, type YearMonth } from "./model";
 
@@ -40,6 +41,7 @@ function StepLink({ href, className, children, ...rest }: { href: string; classN
 
 export function MonthNav({ month, today }: { month: YearMonth; today: LocalDate }) {
   const router = useRouter();
+  const keep = useKeepFilter();
   const previous = monthNavTarget("previous", month, today);
   const next = monthNavTarget("next", month, today);
   const isThisMonth = month === monthOf(today);
@@ -60,23 +62,23 @@ export function MonthNav({ month, today }: { month: YearMonth; today: LocalDate 
       const to = monthNavTarget(action, month, today);
       if (to === month) return;
       e.preventDefault();
-      router.push(monthHref(to, today));
+      router.push(keep(monthHref(to, today)));
     }
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
-  }, [router, month, today]);
+  }, [router, month, today, keep]);
 
   return (
     <nav aria-label="Month" className="flex flex-wrap items-center gap-2">
-      <SpanSwitch current="month" hrefs={spanHrefs(anchorOf(month, today), today)} />
+      <SpanSwitch current="month" hrefs={keepSpans(spanHrefs(anchorOf(month, today), today), keep)} />
       {/* One pair, so Previous and Next never wrap apart. */}
       <span className="inline-flex flex-none">
-        <StepLink href={monthHref(previous, today)} className={`${step} rounded-r-none`} aria-keyshortcuts="[" title="Previous month ( [ )">
+        <StepLink href={keep(monthHref(previous, today))} className={`${step} rounded-r-none`} aria-keyshortcuts="[" title="Previous month ( [ )">
           <Chevron back />
           <span aria-hidden="true" className="max-rail:hidden">Previous</span>
           <span className="sr-only">Previous month, {formatMonthHeading(previous)}</span>
         </StepLink>
-        <StepLink href={monthHref(next, today)} className={`${step} -ml-px rounded-l-none`} aria-keyshortcuts="]" title="Next month ( ] )">
+        <StepLink href={keep(monthHref(next, today))} className={`${step} -ml-px rounded-l-none`} aria-keyshortcuts="]" title="Next month ( ] )">
           <span aria-hidden="true" className="max-rail:hidden">Next</span>
           <Chevron />
           <span className="sr-only">Next month, {formatMonthHeading(next)}</span>
@@ -84,7 +86,7 @@ export function MonthNav({ month, today }: { month: YearMonth; today: LocalDate 
       </span>
       <MonthPicker month={month} today={today} className={step} />
       {!isThisMonth && (
-        <Link href={monthHref(monthOf(today), today)} aria-keyshortcuts="t" title="Back to this month ( T )" className={step}>
+        <Link href={keep(monthHref(monthOf(today), today))} aria-keyshortcuts="t" title="Back to this month ( T )" className={step}>
           This month
         </Link>
       )}

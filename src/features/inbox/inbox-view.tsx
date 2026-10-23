@@ -27,6 +27,8 @@ import type { ActionResult } from "@/features/today/commands";
 import { DoneToggle } from "@/features/today/done-toggle";
 import { place } from "@/components/shell/places";
 import { RowTags } from "@/features/tags/row-tags";
+import { FilterChips } from "@/features/filter/filter-chip";
+import { NO_FILTER, scopePrefix, type ViewFilter } from "@/features/filter/model";
 import { LAST_DATE } from "@/lib/dates";
 import { planAction } from "./actions";
 import { dayWords, inboxRows, inboxSummary, PICK_KEY, planDate, quickPlans, rowKey, type InboxData, type PlanFor } from "./model";
@@ -53,10 +55,13 @@ const choice =
 export function InboxView({
   data,
   detail,
+  filter = NO_FILTER,
   actions = serverActions,
 }: {
   data: InboxData;
   detail?: ReactNode;
+  /** What the page narrowed its data to; the data passed in is already narrowed. */
+  filter?: ViewFilter;
   actions?: InboxActions;
 }) {
   const { today, areas, childCounts } = data;
@@ -186,8 +191,10 @@ export function InboxView({
             Inbox
           </h1>
           <p className="page-summary">
-            {place("inbox").hint}. Plan each one when you are ready. {inboxSummary(shown)}
+            {place("inbox").hint}. Plan each one when you are ready. {scopePrefix(filter)}
+            {inboxSummary(shown)}
           </p>
+          <FilterChips filter={filter} className="mt-2.5" />
         </header>
 
         <div className="mt-6 mb-3 flex flex-wrap items-start gap-x-3 gap-y-1">

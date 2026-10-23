@@ -9,7 +9,8 @@ import { parseCapture, previewWords } from "@/features/today/capture-syntax";
 import { formatDayIn } from "@/features/today/format";
 import { formatMonthHeading, monthHref } from "@/features/month/model";
 import { completeDatePhrase, parseDatePhrase, parseMonthPhrase } from "./date-phrase";
-import { rank } from "./rank";
+import { AREA_PARAM, areaHref } from "@/features/filter/href";
+import { matchTier, rank } from "./rank";
 import type { Visit } from "./recent";
 
 /** An item the palette can act on: a search result, or the item the screen has selected (already open, so no link). */
@@ -31,7 +32,7 @@ export type Command =
   | { kind: "open"; id: string; label: string; detail: string; target: Target }
   | { kind: "act"; id: string; label: string; act: Act };
 
-export type SectionId = "selected" | "recent" | "go" | "dates" | "capture" | "find" | "act";
+export type SectionId = "selected" | "recent" | "go" | "areas" | "dates" | "capture" | "find" | "act";
 export type Section = { id: SectionId; label: string; commands: Command[] };
 
 /** Search runs on the server, so its rows arrive later than the typing that asked for them. */
@@ -132,6 +133,29 @@ export function paletteSections(
     { id: "find", label: "Find", commands: found },
   ];
   return sections.filter((s) => s.commands.length > 0);
+}
+
+/**
+ * "Show only Work" for each area, and "Show all areas" while one is shown, for what is typed.
+ * Only a prefix or a substring counts, so a loose match never crowds the list with areas.
+ * `here` is the page the palette was opened on, which the choice narrows.
+ */
+export function areaSection(input: string, areas: readonly { id: string; name: string }[], here: { pathname: string; query: string }): Section[] {
+  const text = input.trim();
+  if (!text || areas.length === 0) return [];
+  const shown = new URLSearchParams(here.query).get(AREA_PARAM);
+  const offers = [
+    ...areas.map((a) => ({ id: `area-${a.id}`, label: `Show only ${a.name}`, href: areaHref(here.pathname, here.query, a.id), also: [a.name, "area", "filter"] })),
+    ...(shown ? [{ id: "area-all", label: "Show all areas", href: areaHref(here.pathname, here.query, null), also: ["every area", "area", "clear filter"] }] : []),
+  ];
+  const commands: Command[] = offers
+    .flatMap((o) => {
+      const tiers = [o.label, ...o.also].map((t) => matchTier(text, t)).filter((t) => t !== null && t < 2) as number[];
+      return tiers.length ? [{ o, tier: Math.min(...tiers) }] : [];
+    })
+    .sort((a, b) => a.tier - b.tier)
+    .map(({ o }) => ({ kind: "go", id: o.id, label: o.label, href: o.href, hint: "Area" }));
+  return commands.length ? [{ id: "areas", label: "Areas", commands }] : [];
 }
 
 type Offer = { label: string; act: Act; also: string[] };
