@@ -1,8 +1,41 @@
+/*
+ * The prose keeps a 68ch measure at every width. From 1200px the title and the draft note stand in their
+ * own column beside it, held while the prose scrolls, and the pair sits in the middle of the window.
+ */
 .article {
-  max-width: 68ch;
   font-size: 16px;
   line-height: 1.65;
   color: var(--ink);
+}
+
+.head,
+.prose {
+  max-width: 68ch;
+}
+
+@media (min-width: 1200px) {
+  .article {
+    display: grid;
+    grid-template-columns: minmax(0, 26rem) minmax(0, 68ch);
+    justify-content: center;
+    column-gap: clamp(48px, 7vw, 200px);
+  }
+
+  .head {
+    position: sticky;
+    top: 32px;
+    align-self: start;
+  }
+
+  .prose > :first-child {
+    margin-top: 0;
+  }
+}
+
+@media (min-width: 1800px) {
+  .article {
+    font-size: 17px;
+  }
 }
 
 .draft {

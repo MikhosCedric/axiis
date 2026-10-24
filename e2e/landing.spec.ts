@@ -1,5 +1,5 @@
 import AxeBuilder from "@axe-core/playwright";
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Locator, type Page } from "@playwright/test";
 
 /** Console errors and page errors seen while a test runs; each test asserts there were none. */
 function watchErrors(page: Page): string[] {
@@ -25,6 +25,15 @@ async function settle(page: Page) {
       .getAnimations()
       .every((a) => a.playState !== "running" || a.timeline !== document.timeline || a.effect?.getTiming().iterations === Infinity),
   );
+}
+
+/** How strongly a part of the day's name is drawn in the run, 0 to 1: its opacity times its parents', rounded. */
+function shown(run: Locator, name: string): Promise<number> {
+  return run.getByText(name, { exact: true }).evaluate((el) => {
+    let o = 1;
+    for (let n: Element | null = el; n && n.getAttribute("role") !== "group"; n = n.parentElement) o *= Number(getComputedStyle(n).opacity);
+    return Math.round(o * 10) / 10;
+  });
 }
 
 test.describe("the live score", () => {
@@ -131,6 +140,77 @@ test.describe("with reduced motion", () => {
     expect(motion).toEqual({ running: [], held: 0, faint: 0 });
     expect(errors).toEqual([]);
   });
+
+  test("the run is one still moment, not a stretch of page to scroll through", async ({ page }) => {
+    await page.goto("/");
+    const run = page.getByRole("group", { name: "A day, as it goes." });
+    const height = (await run.boundingBox())!.height;
+    expect(height).toBeLessThan(page.viewportSize()!.height);
+    await expect.poll(() => shown(run, "Afternoon")).toBe(1);
+    await expect.poll(() => shown(run, "Morning")).toBe(0);
+  });
+});
+
+test.describe("the run through the day", () => {
+  test.use({ viewport: { width: 1440, height: 900 } });
+
+  test("carries now from morning to evening as the reader scrolls, and back", async ({ page }) => {
+    await page.goto("/");
+    const run = page.getByRole("group", { name: "A day, as it goes." });
+    const at = async (share: number) => {
+      await run.evaluate((el, share) => {
+        const top = el.getBoundingClientRect().top + scrollY;
+        scrollTo(0, top + share * (el.getBoundingClientRect().height - innerHeight));
+      }, share);
+    };
+    // The stage is held while the run scrolls past: three screens or so of scroll, never a jump.
+    expect((await run.boundingBox())!.height).toBeGreaterThan(2 * 900);
+    await at(0.02);
+    await expect.poll(() => shown(run, "Morning")).toBe(1);
+    await expect.poll(() => shown(run, "Evening")).toBe(0);
+    await at(0.98);
+    await expect.poll(() => shown(run, "Evening")).toBe(1);
+    await expect.poll(() => shown(run, "Morning")).toBe(0);
+    await at(0.02);
+    await expect.poll(() => shown(run, "Morning")).toBe(1);
+  });
+});
+
+for (const size of [
+  { width: 1920, height: 1080 },
+  { width: 2560, height: 1440 },
+]) {
+  test.describe(`at ${size.width}px`, () => {
+    test.use({ viewport: size });
+
+    test("the page uses the width: the sample day spans it, with no sideways scroll", async ({ page }) => {
+      await page.goto("/");
+      // The sheet the sample day is drawn on, inside the page's gutters.
+      const sheet = page.getByRole("figure", { name: /A sample day/ }).locator("xpath=..");
+      const box = (await sheet.boundingBox())!;
+      expect(box.width / size.width).toBeGreaterThanOrEqual(0.9);
+      const heading = (await page.getByRole("heading", { level: 1 }).boundingBox())!;
+      expect(heading.width / size.width).toBeGreaterThanOrEqual(0.6);
+      expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBe(0);
+    });
+  });
+}
+
+test("no width from a small phone to an ultrawide scrolls sideways", async ({ page }) => {
+  for (const [width, height] of [
+    [320, 700],
+    [375, 812],
+    [768, 1024],
+    [1024, 768],
+    [1440, 900],
+    [3440, 1440],
+  ]) {
+    await page.setViewportSize({ width, height });
+    await page.goto("/");
+    await settle(page);
+    const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+    expect(overflow, `${width}px`).toBe(0);
+  }
 });
 
 test("sign in opens with a view transition and the brand mark carried over", async ({ page }) => {
@@ -176,6 +256,8 @@ for (const variant of [
   { name: "light", colorScheme: "light", viewport: { width: 1280, height: 800 } },
   { name: "dark", colorScheme: "dark", viewport: { width: 1280, height: 800 } },
   { name: "phone", colorScheme: "light", viewport: { width: 375, height: 812 } },
+  { name: "phone at night", colorScheme: "dark", viewport: { width: 375, height: 812 } },
+  { name: "wide at night", colorScheme: "dark", viewport: { width: 2560, height: 1440 } },
 ] as const) {
   test.describe(variant.name, () => {
     test.use({ colorScheme: variant.colorScheme, viewport: variant.viewport });
