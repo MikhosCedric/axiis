@@ -80,7 +80,7 @@ export function FocusDemo() {
             <svg viewBox="0 0 12 12" width={12} height={12} aria-hidden="true" className={styles.foldChevron}>
               <path d="M4 2l4 4-4 4" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" />
             </svg>
-            The whole day
+            The whole day{" "}
             <span className="font-normal text-ink-3">{foldedLine(SPLIT)}</span>
           </button>
         </ViewTransition>

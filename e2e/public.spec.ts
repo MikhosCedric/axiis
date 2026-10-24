@@ -26,10 +26,17 @@ test("the landing page lists shipped features as shipped, and nothing as coming"
     /Tags/,
     /command palette/,
     /Due dates/,
-    /dentist tomorrow 9:00/,
+    /dentist tomorrow 9am/,
     /earlier day/,
     /compact density/,
     /G then a letter/,
+    /week view/,
+    /month view/,
+    /Focus and Next up/,
+    /12-hour or 24-hour/,
+    /Installs from the browser/,
+    /14 days/,
+    /colours for areas and tags/,
   ]) {
     await expect(today.filter({ hasText: shipped })).toHaveCount(1);
   }

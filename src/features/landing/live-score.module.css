@@ -391,6 +391,12 @@
   }
 }
 
+@media (prefers-reduced-motion: reduce) {
+  .nowMover {
+    transition: none;
+  }
+}
+
 @keyframes rule-in {
   from {
     transform: scaleX(0);

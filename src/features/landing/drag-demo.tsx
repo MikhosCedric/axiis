@@ -105,7 +105,7 @@ export function DragDemo() {
                     <span className="tabular">{words(span)}</span>
                   ) : (
                     <>
-                      {TITLE}
+                      {TITLE}{" "}
                       <span className={styles.landClock}>{formatMinutes(span.start, clock)}</span>
                     </>
                   )}
