@@ -1,0 +1,422 @@
+/*
+ * The run: a stage that holds still (sticky) while the reader scrolls through a run three screens tall,
+ * and a named view timeline over that run. Every moving part below reads the timeline's `contain` range,
+ * which is exactly the stretch the stage is held, so 0% is seven in the morning and 100% eleven at night.
+ */
+.run {
+  position: relative;
+  border-bottom: 1px solid var(--rule);
+}
+
+.stage {
+  container-type: inline-size;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-content: center;
+  gap: clamp(28px, 4vh, 56px);
+  padding-block: 48px;
+}
+
+.head {
+  display: grid;
+  gap: 14px;
+}
+
+@media (min-width: 960px) {
+  .head {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: end;
+    column-gap: 64px;
+  }
+
+  .head > h3,
+  .lead {
+    grid-column: 1;
+  }
+
+  .phases {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+  }
+}
+
+.lead {
+  max-width: 34em;
+  font-size: clamp(15px, 0.75rem + 0.3vw, 18px);
+  line-height: 1.6;
+  color: var(--ink-2);
+  text-wrap: pretty;
+}
+
+/* Morning, afternoon, evening: stacked in one place, the one now is in showing. */
+.phases {
+  position: relative;
+  display: grid;
+  min-width: 6.2em;
+  font-family: var(--font-serif);
+  font-size: clamp(2.25rem, 1rem + 4.5vw, 7.5rem);
+  line-height: 1;
+  font-weight: 500;
+  letter-spacing: -0.03em;
+  color: var(--ink);
+}
+
+.phase {
+  grid-area: 1 / 1;
+}
+
+.phase > span {
+  display: block;
+  opacity: 0;
+}
+
+.phase[data-still] > span {
+  opacity: 1;
+}
+
+.score {
+  --lw: 76px;
+  --row: 60px;
+  display: flex;
+  border-block: 1px solid var(--rule);
+  font-size: 13px;
+}
+
+@media (min-width: 640px) {
+  .score {
+    --lw: 120px;
+    --row: 68px;
+  }
+}
+
+@media (min-width: 1600px) {
+  .score {
+    --lw: 168px;
+    --row: 76px;
+    font-size: 14px;
+  }
+}
+
+.names {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  width: var(--lw);
+  border-right: 1px solid var(--rule);
+}
+
+.axisGap {
+  height: 34px;
+  border-bottom: 1px solid var(--rule);
+}
+
+.name {
+  display: flex;
+  align-items: center;
+  height: var(--row);
+  border-bottom: 1px solid var(--rule);
+  padding-inline: 12px;
+  font-family: var(--font-serif);
+  font-size: clamp(15px, 0.8rem + 0.4vw, 23px);
+  font-weight: 500;
+}
+
+.name:last-child {
+  border-bottom: 0;
+}
+
+.window {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  overflow: clip;
+}
+
+/* An hour is the window's share of the day, but never under 56px; a narrow window follows now instead. */
+.track {
+  --hour: max(56px, (100cqw - var(--lw)) / var(--span));
+  position: relative;
+  width: calc(var(--span) * var(--hour));
+  transform: translateX(calc(min(0px, 100cqw - var(--lw) - 100%) * var(--p)));
+}
+
+.axis {
+  position: relative;
+  height: 34px;
+  border-bottom: 1px solid var(--rule);
+}
+
+.tick {
+  position: absolute;
+  inset-block: 0;
+  left: calc(var(--h) * var(--hour));
+  border-left: 1px solid var(--rule);
+  padding: 10px 0 0 6px;
+  white-space: nowrap;
+  font-size: 12px;
+  line-height: 1;
+  font-weight: 500;
+  color: var(--ink-3);
+}
+
+.staff {
+  position: relative;
+  height: var(--row);
+  border-bottom: 1px solid var(--rule);
+  background:
+    repeating-linear-gradient(to bottom, var(--rule-soft) 0 1px, transparent 1px 6px) left bottom 6px / 100% 25px no-repeat,
+    linear-gradient(to right, var(--rule-soft) 1px, transparent 1px) 0 0 / var(--hour) 100%;
+}
+
+.staff:last-child {
+  border-bottom: 0;
+}
+
+.beam {
+  position: absolute;
+  bottom: 6px;
+  height: 25px;
+  left: calc(var(--s) * var(--hour));
+  width: calc((var(--e) - var(--s)) * var(--hour));
+}
+
+.glyph,
+.liveOut {
+  position: absolute;
+  left: -6px;
+  right: 0;
+  top: 4.5px;
+}
+
+.beam .glyph {
+  width: auto;
+}
+
+.liveOut .glyph {
+  inset: 0;
+  top: 0;
+  left: 0;
+}
+
+.label {
+  position: absolute;
+  left: -6px;
+  bottom: calc(100% + 1px);
+  white-space: nowrap;
+  line-height: 20px;
+  font-weight: 500;
+  color: var(--ink);
+  text-shadow:
+    0 0 2px var(--paper),
+    0 0 4px var(--paper),
+    0 0 6px var(--paper);
+}
+
+.clock {
+  font-size: 0.92em;
+  font-weight: 400;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-3);
+}
+
+/* The still moment: each beam shows its one line form. */
+.planned,
+.done,
+.liveIn {
+  opacity: 0;
+}
+
+.beam[data-still="planned"] .planned,
+.beam[data-still="done"] .done,
+.beam[data-still="live"] .liveIn {
+  opacity: 1;
+}
+
+.now {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  transform: translateX(calc(var(--p) * 100%));
+}
+
+.line {
+  position: absolute;
+  top: 34px;
+  bottom: 0;
+  left: -1px;
+  width: 2px;
+  background: var(--accent);
+}
+
+.flag {
+  position: absolute;
+  top: 6px;
+  left: 0;
+  height: 20px;
+  overflow: clip;
+  transform: translateX(-50%);
+  border-radius: 4px;
+  background: var(--accent);
+  padding-inline: 6px;
+  font-size: 12px;
+  line-height: 20px;
+  font-weight: 600;
+  white-space: nowrap;
+  color: var(--on-accent);
+}
+
+.reel {
+  display: flex;
+  flex-direction: column;
+  transform: translateY(calc(var(--still) * -20px));
+}
+
+.reel > span {
+  height: 20px;
+}
+
+/*
+ * The run itself, only where the browser has scroll-driven animations and the reader has not asked for less
+ * motion. Each change is one animation on one property, placed on the run's scroll by `animation-range`.
+ */
+@media (prefers-reduced-motion: no-preference) {
+  @supports (animation-timeline: view()) {
+    .run {
+      height: 260svh;
+      view-timeline: --run block;
+    }
+
+    .stage {
+      position: sticky;
+      top: 0;
+      min-height: 100svh;
+    }
+
+    .track {
+      animation: camera linear both;
+      animation-timeline: --run;
+      animation-range: contain 0% contain 100%;
+    }
+
+    .now {
+      animation: now-runs linear both;
+      animation-timeline: --run;
+      animation-range: contain 0% contain 100%;
+    }
+
+    .reel {
+      animation: reel steps(var(--steps), end) both;
+      animation-timeline: --run;
+      animation-range: contain 0% contain 100%;
+    }
+
+    .planned {
+      animation: fade-out linear both;
+      animation-timeline: --run;
+      animation-range: contain var(--a) contain var(--a2);
+    }
+
+    .liveIn {
+      animation: fade-in linear both;
+      animation-timeline: --run;
+      animation-range: contain var(--a) contain var(--a2);
+    }
+
+    .liveOut {
+      animation: fade-out linear both;
+      animation-timeline: --run;
+      animation-range: contain var(--b) contain var(--b2);
+    }
+
+    .done {
+      animation: fade-in linear both;
+      animation-timeline: --run;
+      animation-range: contain var(--b) contain var(--b2);
+    }
+
+    .phase > span,
+    .phase[data-still] > span {
+      opacity: 1;
+    }
+
+    .phase:not([data-last]) {
+      animation: phase-out linear both;
+      animation-timeline: --run;
+      animation-range: contain calc(var(--b) - 3%) contain var(--b);
+    }
+
+    .phase:not([data-first]) > span {
+      animation: phase-in linear both;
+      animation-timeline: --run;
+      animation-range: contain var(--a) contain calc(var(--a) + 3%);
+    }
+  }
+}
+
+@keyframes camera {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(min(0px, 100cqw - var(--lw) - 100%));
+  }
+}
+
+@keyframes now-runs {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes reel {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(calc(var(--steps) * -20px));
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes fade-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes phase-in {
+  from {
+    opacity: 0;
+    transform: translateY(0.35em);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes phase-out {
+  from {
+    opacity: 1;
+    transform: none;
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-0.35em);
+  }
+}

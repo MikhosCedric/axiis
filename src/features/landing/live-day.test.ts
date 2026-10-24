@@ -47,7 +47,7 @@ describe("the live sample day", () => {
     const work = LIVE_STAVES[0];
     const beam = (title: string) => work.beams.find((b) => b.title === title)!;
     expect(roomAfter(work, beam("Write the quarterly summary"), WIDEST.to)).toBe(2 - -4.5);
-    expect(roomAfter(work, beam("Reply to the venue"), WIDEST.to)).toBe(10 - 4);
-    expect(roomAfter(work, beam("Send the invoices"), WIDEST.to)).toBe(WIDEST.to - 10);
+    expect(roomAfter(work, beam("Reply to the venue"), WIDEST.to)).toBe(9.25 - 4);
+    expect(roomAfter(work, beam("Send the invoices"), WIDEST.to)).toBe(WIDEST.to - 9.25);
   });
 });

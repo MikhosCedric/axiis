@@ -30,7 +30,7 @@ export const LIVE_STAVES: LiveStaff[] = [
       { title: "Plan next week", start: 2, end: 3.5, row: 0, progress: { done: 1, total: 4 } },
       { title: "Reply to the venue", start: 4, end: 4.5, row: 1 },
       { title: "Read the brief", start: 8, end: 9, row: 0 },
-      { title: "Send the invoices", start: 10, end: 11, row: 1 },
+      { title: "Send the invoices", start: 9.25, end: 10.25, row: 1 },
     ],
   },
   {

@@ -1,7 +1,10 @@
 import type { Metadata } from "next";
 import type { CSSProperties, ReactNode } from "react";
 import Link from "next/link";
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { CLOCK_COOKIE, readClock } from "@/components/shell/cookies";
+import { DayRun } from "@/features/landing/day-run";
 import { ActionBeam, PageTurn, SiteFooter, SiteHeader, primaryAction, quietAction, siteWrap } from "@/components/public/site-chrome";
 import { CaptureDemo } from "@/features/landing/capture-demo";
 import { DoneDemo } from "@/features/landing/done-demo";
@@ -59,6 +62,7 @@ export default async function Home() {
   if (data?.claims) redirect("/today");
 
   const month = monthOf(toLocalDate(new Date(), "UTC"));
+  const { clock } = readClock((await cookies()).get(CLOCK_COOKIE)?.value);
 
   return (
     <PageTurn>
@@ -115,6 +119,8 @@ export default async function Home() {
             </h2>
             <p className={styles.storyLead}>Five things it does, each one working here. Nothing you do on this page is saved.</p>
           </div>
+
+          <DayRun clock={clock} titleClassName={styles.movementTitle} />
 
           <div className={styles.movements}>
           <Movement mark="A" title="Write it the way you would say it." demo={<CaptureDemo />}>
