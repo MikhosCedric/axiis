@@ -30,6 +30,8 @@ test.describe("score", () => {
   test("dragging a waiting item onto an area gives it a time there", async ({ page }) => {
     const score = page.getByRole("region", { name: "Score" });
     const chip = page.getByRole("region", { name: "Inbox", exact: true }).getByRole("button", { name: /^Book the dentist, in the Inbox/ });
+    // Next up and a live beam's extra row grow the page at some hours, which can push the tray below the window.
+    await chip.scrollIntoViewIfNeeded();
     const home = await center(score.getByText("Home", { exact: true }));
 
     await dragTo(page, chip, { x: home.box.x + home.box.width + 160, y: home.y });

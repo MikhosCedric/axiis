@@ -78,17 +78,17 @@ signedIn.describe("the Month", () => {
     await page.keyboard.press("ArrowDown");
     await page.keyboard.press("ArrowDown");
     await expect(picker.getByText("2100", { exact: true })).toBeVisible();
-    await expect(picker.getByRole("button", { name: "February 2100" })).toBeFocused();
+    await expect(picker.getByRole("button", { name: "Feb 2100" })).toBeFocused();
     await page.keyboard.press("PageUp");
     await page.keyboard.press("ArrowRight");
-    await expect(picker.getByRole("button", { name: "March 2099" })).toBeFocused();
+    await expect(picker.getByRole("button", { name: "Mar 2099" })).toBeFocused();
     await page.keyboard.press("Enter");
     await expect(page).toHaveURL("/month/2099-03");
     await expect(page.getByRole("heading", { level: 1, name: "March 2099" })).toBeVisible();
 
     await jump.click();
     await picker.getByRole("button", { name: "Next year, 2100" }).click();
-    await picker.getByRole("button", { name: "November 2100" }).click();
+    await picker.getByRole("button", { name: "Nov 2100" }).click();
     await expect(page).toHaveURL("/month/2100-11");
     await expect(picker).toBeHidden();
   });
