@@ -421,7 +421,7 @@ The signed-out site (`/`, `/login`, `/privacy`, `/terms`) is the one place Axiis
 | Headline staff | the five lines under "on one page." rule in from the left | 1100ms, 70ms apart |
 | Sections | a held section rises 22px and fades in as it enters | 700ms fade, 900ms rise, 90ms between a movement's text and its demo |
 | Depth | a far staff (lines 44px apart, barred every 33vw) drifts 38vh over the first screen of scroll, a nearer fine staff 18vh; each rehearsal mark drifts 28px across its pass through the viewport | scroll-linked, linear |
-| A captured line changing rows | the item moves between its day's line, Any time and the Inbox (a named view transition on a deferred render) | 400ms |
+| A captured line changing rows | choosing an example moves the item between its day's line, Any time and the Inbox (a named view transition); typing changes it in place, since a transition holds the page while it snapshots and would drop keys | 400ms |
 | A beam moving in a demo | the beam glides to its new time | 280ms, none while a pointer holds it |
 | Focus | kept rows move into place, folded rows fade out, the fold line fades in (view transitions) | 400ms move, 160ms out, 260ms in after 120ms |
 | A change of public page | the old page fades and drops 8px, the new one rises 12px and fades in; the brand mark (`brand-mark`) moves on its own from where it was to where it is | out 140ms, in 260ms fade and 520ms rise from 100ms; mark 520ms |

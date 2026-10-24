@@ -1,6 +1,6 @@
 "use client";
 
-import { useDeferredValue, useId, useState, ViewTransition, type CSSProperties } from "react";
+import { startTransition, useId, useState, ViewTransition, type CSSProperties } from "react";
 import { useClock } from "@/components/shell/clock-context";
 import { CAPTURE_EXAMPLES, parseCapture, previewWords } from "@/features/today/capture-syntax";
 import { Glyph } from "@/features/today/glyph";
@@ -22,10 +22,8 @@ export function CaptureDemo() {
   const clock = useClock();
   const id = useId();
   const [text, setText] = useState(FIRST_LINE);
-  // A deferred read lets React run the item's move between rows as a view transition.
-  const shown = useDeferredValue(text);
-  const place = placeCapture(shown);
-  const preview = previewWords(parseCapture(shown), clock);
+  const place = placeCapture(text);
+  const preview = previewWords(parseCapture(text), clock);
   const [said, setSaid] = useState("");
 
   const where = describe(place, clock);
@@ -63,7 +61,15 @@ export function CaptureDemo() {
         <div className={styles.examples}>
           <span className="text-ink-3">Try</span>
           {EXAMPLES.map((line) => (
-            <button key={line} type="button" className={styles.example} onClick={() => setText(line)} aria-pressed={text === line}>
+            <button
+              key={line}
+              type="button"
+              className={styles.example}
+              // Only a chosen example moves the item as a view transition. Typing stays a plain update: a
+              // transition holds the page while it snapshots, and keys pressed then would be lost.
+              onClick={() => startTransition(() => setText(line))}
+              aria-pressed={text === line}
+            >
               {line}
             </button>
           ))}
