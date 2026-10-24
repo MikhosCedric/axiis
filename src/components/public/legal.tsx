@@ -13,15 +13,17 @@ export function LegalPage({ title, children }: { title: string; children: ReactN
       <SiteHeader />
       <main id="main" className={`${siteWrap} pt-8 sm:pt-14`}>
         <article className={styles.article}>
-          <div role="note" className={styles.draft}>
-            <strong className="font-semibold text-ink">Draft.</strong> This page has not been reviewed by the owner or a
-            lawyer, and must be before Axiis opens to the public. Bracketed, highlighted items are blanks to fill in.
-          </div>
-          <h1 className={styles.title}>{title}</h1>
-          <p className={styles.meta}>
-            Effective <Blank>Effective date</Blank>
-          </p>
-          {children}
+          <header className={styles.head}>
+            <div role="note" className={styles.draft}>
+              <strong className="font-semibold text-ink">Draft.</strong> This page has not been reviewed by the owner or
+              a lawyer, and must be before Axiis opens to the public. Bracketed, highlighted items are blanks to fill in.
+            </div>
+            <h1 className={styles.title}>{title}</h1>
+            <p className={styles.meta}>
+              Effective <Blank>Effective date</Blank>
+            </p>
+          </header>
+          <div className={styles.prose}>{children}</div>
         </article>
       </main>
       <SiteFooter />

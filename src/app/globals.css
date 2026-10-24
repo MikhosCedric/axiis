@@ -47,6 +47,8 @@
   --area-stone: light-dark(#796e63, #b2a59a);
   /* Vertical padding of a list row; the Density setting tightens it. */
   --row-y: 0.625rem;
+  /* The public pages' side margin: it grows with the window, so a wide screen is used, not banded. */
+  --gutter: clamp(16px, 4vw, 96px);
 }
 
 :root[data-theme="light"] {

@@ -76,6 +76,32 @@
   }
 }
 
+/* Wider windows show more of the day rather than wider hours: 15, then 18, then 20 hours across. */
+@media (min-width: 1600px) {
+  .score {
+    --from: -6;
+    --to: 9;
+    --lw: 168px;
+    --row-h: 66px;
+  }
+}
+
+@media (min-width: 2200px) {
+  .score {
+    --from: -7;
+    --to: 11;
+    --lw: 188px;
+    --row-h: 72px;
+  }
+}
+
+@media (min-width: 3000px) {
+  .score {
+    --from: -8;
+    --to: 12;
+  }
+}
+
 .sheet {
   position: relative;
 }
@@ -149,6 +175,24 @@
 
   .labelCell {
     padding-inline: 14px;
+  }
+}
+
+@media (min-width: 1600px) {
+  .staffName {
+    font-size: 23px;
+  }
+
+  .labelCell {
+    padding-inline: 20px;
+  }
+
+  .score .label {
+    font-size: 14px;
+  }
+
+  .score .tick {
+    font-size: 13px;
   }
 }
 

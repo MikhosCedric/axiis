@@ -16,11 +16,14 @@
   color: var(--ink);
 }
 
-/* From 900px the first line, "Your tasks and your time,", is held to one line: it measures 12.3em in Besley. */
+/*
+ * From 900px the first line, "Your tasks and your time,", is held to one line: it measures 12.3em in Besley,
+ * so the type grows with the width between the gutters, up to 12rem, and never past a sixth of the window's height.
+ */
 @media (min-width: 900px) {
   .display {
     max-width: none;
-    font-size: min(5.5rem, calc((100vw - 4rem) / 12.6));
+    font-size: min(12rem, calc((100vw - 2 * var(--gutter)) / 12.6), 17svh);
   }
 
   .firstLine {
@@ -55,17 +58,11 @@
 }
 
 .lead {
-  max-width: 34rem;
-  font-size: 17px;
+  max-width: 34em;
+  font-size: clamp(17px, 0.62rem + 0.5vw, 22px);
   line-height: 1.6;
   color: var(--ink-2);
   text-wrap: pretty;
-}
-
-@media (min-width: 640px) {
-  .lead {
-    font-size: 18px;
-  }
 }
 
 /* Under the headline: the lead on the left, the way in on the right, their last lines on one baseline. */
@@ -77,7 +74,8 @@
 
 @media (min-width: 900px) {
   .heroFoot {
-    grid-template-columns: minmax(0, 34rem) auto;
+    grid-template-columns: minmax(0, 34em) auto;
+    font-size: clamp(17px, 0.62rem + 0.5vw, 22px);
     justify-content: space-between;
     align-items: end;
     margin-top: 40px;
@@ -123,7 +121,7 @@
 
 .heading {
   font-family: var(--font-serif);
-  font-size: clamp(1.6rem, 1.2rem + 1.4vw, 2.25rem);
+  font-size: clamp(1.75rem, 0.9rem + 2vw, 4.25rem);
   line-height: 1.1;
   font-weight: 500;
   letter-spacing: -0.015em;
@@ -173,7 +171,7 @@
   padding-block: 48px;
 }
 
-.movement:last-child {
+.story > .movement:last-child {
   border-bottom: 3px double var(--rule);
 }
 
@@ -210,6 +208,29 @@
   }
 }
 
+/*
+ * From 1800px the first four movements stand two by two, each its text over its demo, so a wide
+ * window holds two working pieces side by side instead of one stretched across it. The month stays wide.
+ */
+@media (min-width: 1800px) {
+  .movements {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: clamp(64px, 5vw, 160px);
+  }
+
+  .movements .movement,
+  .movements .movement:nth-of-type(even) {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto 1fr;
+    gap: 36px;
+  }
+
+  .movements .movement:nth-of-type(even) .movementText {
+    order: 0;
+  }
+}
+
 .movementText {
   position: relative;
 }
@@ -230,7 +251,7 @@
 
 .movementTitle {
   font-family: var(--font-serif);
-  font-size: clamp(1.45rem, 1.15rem + 1vw, 2rem);
+  font-size: clamp(1.45rem, 0.9rem + 1.3vw, 2.9rem);
   line-height: 1.12;
   font-weight: 500;
   letter-spacing: -0.015em;
@@ -240,7 +261,7 @@
 .movementBody {
   max-width: 36ch;
   margin-top: 14px;
-  font-size: 15px;
+  font-size: clamp(15px, 0.75rem + 0.3vw, 18px);
   line-height: 1.65;
   color: var(--ink-2);
   text-wrap: pretty;
@@ -259,7 +280,19 @@
 @media (min-width: 820px) {
   .ledger {
     columns: 2;
-    column-gap: 64px;
+    column-gap: clamp(40px, 4vw, 96px);
+  }
+}
+
+@media (min-width: 1400px) {
+  .ledger {
+    columns: 3;
+  }
+}
+
+@media (min-width: 2200px) {
+  .ledger {
+    columns: 4;
   }
 }
 
@@ -269,7 +302,7 @@
   break-inside: avoid;
   border-bottom: 1px solid var(--rule-soft);
   padding: 11px 0;
-  font-size: 15px;
+  font-size: clamp(15px, 0.75rem + 0.25vw, 17px);
   line-height: 1.5;
   color: var(--ink);
 }

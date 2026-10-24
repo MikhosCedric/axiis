@@ -8,7 +8,8 @@ export const primaryAction = styles.primary;
 
 export const quietAction = styles.quiet;
 
-export const siteWrap = "mx-auto w-full max-w-[1180px] px-4 sm:px-8";
+/** The public pages run the width of the window, inside a margin that grows with it (`--gutter`). */
+export const siteWrap = "w-full px-(--gutter)";
 
 /** The beam inside the primary action: dashed at rest, solid under the pointer, as a planned item turns live. */
 export function ActionBeam() {

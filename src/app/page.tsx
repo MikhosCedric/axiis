@@ -116,6 +116,7 @@ export default async function Home() {
             <p className={styles.storyLead}>Five things it does, each one working here. Nothing you do on this page is saved.</p>
           </div>
 
+          <div className={styles.movements}>
           <Movement mark="A" title="Write it the way you would say it." demo={<CaptureDemo />}>
             Type a line and press Enter. A day, a time, a length and <span className="font-medium text-ink">#tags</span> are
             read from the words you use, and the rest is the title. Leave the day out and it waits in the Inbox until you
@@ -136,6 +137,7 @@ export default async function Home() {
             When a day is full, Focus keeps what is happening and the next three in view, and folds the rest behind one
             line that counts it. Next up sits at the top of Today either way.
           </Movement>
+          </div>
 
           <Movement
             mark="E"
