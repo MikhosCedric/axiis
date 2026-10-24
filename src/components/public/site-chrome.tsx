@@ -78,10 +78,9 @@ const FOOTER_LINKS = [
 /** The last bar of the page: a closing double barline over the name, what it is, and where else to go. */
 export function SiteFooter() {
   return (
-    <footer className={`${styles.footer} mt-auto`}>
-      <div className={styles.finalBar} aria-hidden="true" data-loop="">
-        <span className={styles.sweep} />
-      </div>
+    <footer className={`${styles.footer} mt-auto`} data-loop="">
+      <span className={styles.sweep} aria-hidden="true" />
+      <div className={styles.finalBar} aria-hidden="true" />
       <div className={siteWrap}>
         <div className="grid gap-x-16 gap-y-8 py-10 sm:grid-cols-[minmax(0,1fr)_auto]">
           <div className="max-w-[30rem]">

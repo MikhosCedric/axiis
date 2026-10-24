@@ -100,37 +100,38 @@
 }
 
 .footer {
+  position: relative;
+  isolation: isolate;
+  overflow: clip;
   margin-top: 96px;
 }
 
 /*
- * The final barline, the width of the window: a thin line and a thick one, the way a score ends. Over it a
- * faint barline crosses the page once a minute, slowly, as a page is read; paused while it is off screen.
+ * The final barline, the width of the window: a thin line and a thick one, the way a score ends. Under it
+ * a faint barline crosses the footer once a minute, as a playhead reads the last bar; paused off screen.
  */
 .finalBar {
-  position: relative;
   height: 7px;
-  overflow: clip;
   border-top: 1px solid var(--rule);
   border-bottom: 3px solid var(--ink);
 }
 
 .sweep {
   position: absolute;
-  top: -1px;
-  bottom: 0;
-  left: 0;
-  width: 100%;
+  inset: 0;
+  z-index: -1;
   display: none;
+  pointer-events: none;
 }
 
 .sweep::before {
   content: "";
   position: absolute;
-  inset-block: 0;
+  top: 7px;
+  bottom: 0;
   left: 0;
-  width: 3px;
-  background: var(--ink-2);
+  width: 1px;
+  background: linear-gradient(to bottom, var(--rule), transparent);
 }
 
 @media (prefers-reduced-motion: no-preference) {

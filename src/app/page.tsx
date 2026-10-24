@@ -24,7 +24,7 @@ import { SITE_DESCRIPTION } from "@/lib/site";
 import styles from "./landing.module.css";
 
 export const metadata: Metadata = {
-  title: { absolute: "Axiis Â· Tasks and time, on one page" },
+  title: { absolute: "Axiis · Tasks and time, on one page" },
   description: SITE_DESCRIPTION,
   alternates: { canonical: "/" },
 };
@@ -34,7 +34,7 @@ const TERMS = "Free. Email link or Google. No password.";
 
 /** Everything here ships today. Nothing is promised that is not built. */
 const NOW = [
-  "Capture that reads a day, a time, a length and tags typed in plain English, as in â€œdentist tomorrow 9am #healthâ€",
+  "Capture that reads a day, a time, a length and tags typed in plain English, as in “dentist tomorrow 9am #health”",
   "The Score: each part of your life a line, one hour axis across them all, and a line for now",
   "Drag a task onto a line to give it a time, or pull its end to change how long; the same moves from the keyboard",
   "A list view of the same day",

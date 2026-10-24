@@ -2,7 +2,13 @@
 
 import { useEffect, useRef, useState } from "react";
 
-const COUNT_MS = 1400;
+export const COUNT_MS = 1400;
+
+/** The number shown `ms` into the count: easing out, whole numbers only, never past `value`. */
+export function countAt(value: number, ms: number): number {
+  const t = Math.min(1, Math.max(0, ms / COUNT_MS));
+  return Math.round(value * (1 - (1 - t) ** 3));
+}
 
 /**
  * A number counted up from nought the first time it scrolls into view. The server draws the real number,
@@ -23,9 +29,8 @@ export function Tally({ value, className }: { value: number; className?: string 
       io.disconnect();
       const start = performance.now();
       const step = (now: number) => {
-        const t = Math.min(1, (now - start) / COUNT_MS);
-        setShown(Math.round(value * (1 - (1 - t) ** 3)));
-        if (t < 1) frame = requestAnimationFrame(step);
+        setShown(countAt(value, now - start));
+        if (now - start < COUNT_MS) frame = requestAnimationFrame(step);
       };
       frame = requestAnimationFrame(step);
     });

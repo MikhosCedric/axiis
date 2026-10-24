@@ -119,6 +119,7 @@
 
 .seamBeam {
   position: absolute;
+  opacity: 0.5;
   top: 4.5px;
   left: var(--x);
 }

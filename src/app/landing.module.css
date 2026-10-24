@@ -183,7 +183,7 @@
 
 .top {
   position: relative;
-  border: 1px solid var(--rule-soft);
+  border: 1px solid light-dark(rgba(28, 27, 34, 0.12), rgba(236, 229, 211, 0.2));
   background: var(--paper);
   padding: 18px clamp(12px, 1.6vw, 32px) 16px;
   box-shadow:
