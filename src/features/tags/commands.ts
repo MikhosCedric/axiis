@@ -1,11 +1,10 @@
 import * as z from "zod/mini";
 import { AREA_COLORS } from "@/domain/area-color";
 import type { Clock } from "@/lib/clock";
-import { repeats, type Item, type ItemId, type ShownItem } from "@/domain/item";
+import { idSchema, repeats, type Item, type ItemId, type ShownItem } from "@/domain/item";
 import { parseItemKey, type ParsedItemKey } from "@/domain/item-key";
 import {
   byName,
-  parseTagId,
   parseTagName,
   sameTag,
   tagOwner,
@@ -13,6 +12,7 @@ import {
   TAGS_PER_ITEM,
   TAGS_PER_USER,
   type Tag,
+  type TagId,
   type TagName,
   type TagSummary,
   tagColors,
@@ -26,6 +26,11 @@ import { displayTitle } from "@/features/notes/model";
 import type { ActionResult } from "@/features/today/commands";
 import type { TaggedRow } from "./model";
 import { saveFailure } from "@/lib/quota";
+
+function parseTagId(raw: unknown): TagId | null {
+  const id = idSchema.safeParse(raw);
+  return id.success ? (id.data as TagId) : null;
+}
 
 const NAME_ERROR = `A tag needs 1 to ${TAG_NAME_MAX} characters.`;
 const MISSING_ITEM = "That item is not here any more.";

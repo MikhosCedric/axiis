@@ -1,5 +1,6 @@
 "use client";
 
+import { gridStep } from "./grid-step";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -41,7 +42,6 @@ import {
   countWords,
   dayTotal,
   formatMonthHeading,
-  gridStep,
   MARKS_PER_DAY,
   monthHref,
   monthOf,
