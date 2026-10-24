@@ -3,16 +3,19 @@ import type { CSSProperties, ReactNode } from "react";
 import Link from "next/link";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { CLOCK_COOKIE, readClock } from "@/components/shell/cookies";
-import { DayRun } from "@/features/landing/day-run";
 import { ActionBeam, PageTurn, SiteFooter, SiteHeader, primaryAction, quietAction, siteWrap } from "@/components/public/site-chrome";
+import { CLOCK_COOKIE, readClock } from "@/components/shell/cookies";
+import { AREA_COLORS } from "@/domain/area-color";
+import { DELETION_GRACE_DAYS } from "@/features/account/commands";
 import { CaptureDemo } from "@/features/landing/capture-demo";
+import { DayRun } from "@/features/landing/day-run";
 import { DoneDemo } from "@/features/landing/done-demo";
 import { DragDemo } from "@/features/landing/drag-demo";
+import { HeroDrift, Seam } from "@/features/landing/drift";
 import { FocusDemo } from "@/features/landing/focus-demo";
 import { LiveScore } from "@/features/landing/live-score";
 import { MonthDemo } from "@/features/landing/month-demo";
-import { Reveal } from "@/features/landing/reveal";
+import { Tally } from "@/features/landing/tally";
 import { formatMonthHeading, monthGrid, monthOf } from "@/features/month/model";
 import { toLocalDate } from "@/lib/dates";
 import { getFakeAccount } from "@/lib/supabase/fake-session";
@@ -21,7 +24,7 @@ import { SITE_DESCRIPTION } from "@/lib/site";
 import styles from "./landing.module.css";
 
 export const metadata: Metadata = {
-  title: { absolute: "Axiis · Tasks and time, on one page" },
+  title: { absolute: "Axiis Â· Tasks and time, on one page" },
   description: SITE_DESCRIPTION,
   alternates: { canonical: "/" },
 };
@@ -31,7 +34,7 @@ const TERMS = "Free. Email link or Google. No password.";
 
 /** Everything here ships today. Nothing is promised that is not built. */
 const NOW = [
-  "Capture that reads a day, a time, a length and tags typed in plain English, as in “dentist tomorrow 9am #health”",
+  "Capture that reads a day, a time, a length and tags typed in plain English, as in â€œdentist tomorrow 9am #healthâ€",
   "The Score: each part of your life a line, one hour axis across them all, and a line for now",
   "Drag a task onto a line to give it a time, or pull its end to change how long; the same moves from the keyboard",
   "A list view of the same day",
@@ -53,6 +56,14 @@ const NOW = [
   "Export all your data, or delete your account with 14 days to change your mind",
 ];
 
+/** Numbers the page can stand behind: each is read from the code that makes it true. */
+const TALLIES = [
+  { value: NOW.length, words: "things it does today, listed below" },
+  { value: AREA_COLORS.length, words: "muted colours for areas and tags" },
+  { value: DELETION_GRACE_DAYS, words: "days to change your mind after deleting" },
+  { value: 0, words: "ads, analytics or trackers" },
+];
+
 const vars = (v: Record<string, number | string>) => v as CSSProperties;
 
 export default async function Home() {
@@ -66,7 +77,6 @@ export default async function Home() {
 
   return (
     <PageTurn>
-      <Reveal />
       <SiteHeader />
       <main id="main">
         <section className={styles.hero} aria-labelledby="hero-title">
@@ -74,7 +84,8 @@ export default async function Home() {
             <span className={styles.farStaff} />
             <span className={styles.nearStaff} />
           </div>
-          <div className={`${siteWrap} pt-8 pb-12 sm:pt-14 sm:pb-14`}>
+          <div className={`${siteWrap} relative pt-8 pb-12 sm:pt-14 sm:pb-14`}>
+            <HeroDrift />
             <h1 id="hero-title" className={styles.display}>
               <span className={styles.firstLine}>Your tasks and your time,</span>{" "}
               <span className={styles.ruled}>
@@ -108,41 +119,54 @@ export default async function Home() {
             </div>
           </div>
           <div className={siteWrap}>
-            <LiveScore />
+            <div className={styles.stack}>
+              <span className={styles.under} data-parallax="-14" aria-hidden="true" />
+              <div className={styles.top} data-parallax="7">
+                <LiveScore />
+              </div>
+            </div>
           </div>
         </section>
 
+        <Seam
+          beams={[
+            { x: "18%", w: 120, state: "done", rate: 1 },
+            { x: "52%", w: 200, state: "planned", rate: -0.6 },
+            { x: "81%", w: 80, state: "planned", rate: 1.6 },
+          ]}
+        />
+
         <section id="how" className={`${siteWrap} ${styles.story}`} aria-labelledby="how-title">
-          <div className={`${styles.storyHead} ${styles.reveal}`} data-reveal="">
-            <h2 id="how-title" className={styles.heading}>
-              How it works
-            </h2>
-            <p className={styles.storyLead}>Five things it does, each one working here. Nothing you do on this page is saved.</p>
+          <div className={styles.storyHead}>
+            <Rise as="h2" id="how-title" className={styles.heading} text="How it works" />
+            <p className={`${styles.storyLead} ${styles.reveal}`} data-reveal="">
+              Five things it does, each one working here. Nothing you do on this page is saved.
+            </p>
           </div>
 
           <DayRun clock={clock} titleClassName={styles.movementTitle} />
 
           <div className={styles.movements}>
-          <Movement mark="A" title="Write it the way you would say it." demo={<CaptureDemo />}>
-            Type a line and press Enter. A day, a time, a length and <span className="font-medium text-ink">#tags</span> are
-            read from the words you use, and the rest is the title. Leave the day out and it waits in the Inbox until you
-            decide. This field runs the same reader the app does.
-          </Movement>
+            <Movement mark="A" title="Write it the way you would say it." demo={<CaptureDemo />}>
+              Type a line and press Enter. A day, a time, a length and <span className="font-medium text-ink">#tags</span>{" "}
+              are read from the words you use, and the rest is the title. Leave the day out and it waits in the Inbox
+              until you decide. This field runs the same reader the app does.
+            </Movement>
 
-          <Movement mark="B" title="Drag it onto a line." demo={<DragDemo />}>
-            Where you let go is when it starts. Pull its right end to say how long it takes. Every move on the Score works
-            from the keyboard too.
-          </Movement>
+            <Movement mark="B" title="Drag it onto a line." demo={<DragDemo />}>
+              Where you let go is when it starts. Pull its right end to say how long it takes. Every move on the Score
+              works from the keyboard too.
+            </Movement>
 
-          <Movement mark="C" title="Done is a hollow line." demo={<DoneDemo />}>
-            Dashed is planned, solid is happening now, hollow is done. A tick turns the beam over, and nothing turns red
-            when a day runs late.
-          </Movement>
+            <Movement mark="C" title="Done is a hollow line." demo={<DoneDemo />}>
+              Dashed is planned, solid is happening now, hollow is done. A tick turns the beam over, and nothing turns
+              red when a day runs late.
+            </Movement>
 
-          <Movement mark="D" title="Fold the day to what is next." demo={<FocusDemo />}>
-            When a day is full, Focus keeps what is happening and the next three in view, and folds the rest behind one
-            line that counts it. Next up sits at the top of Today either way.
-          </Movement>
+            <Movement mark="D" title="Fold the day to what is next." demo={<FocusDemo />}>
+              When a day is full, Focus keeps what is happening and the next three in view, and folds the rest behind
+              one line that counts it. Next up sits at the top of Today either way.
+            </Movement>
           </div>
 
           <Movement
@@ -156,26 +180,49 @@ export default async function Home() {
           </Movement>
         </section>
 
-        <section className={`${siteWrap} ${styles.section}`} aria-labelledby="state-title">
-          <h2 id="state-title" className={`${styles.heading} ${styles.reveal}`} data-reveal="">
-            What it does today
-          </h2>
+        <Seam
+          beams={[
+            { x: "9%", w: 64, state: "planned", rate: 1.4 },
+            { x: "38%", w: 150, state: "done", rate: -1 },
+            { x: "70%", w: 110, state: "done", rate: 0.7 },
+          ]}
+        />
+
+        <section className={siteWrap} aria-labelledby="state-title">
+          <div className={styles.stateHead}>
+            <Rise as="h2" id="state-title" className={styles.heading} text="What it does today" />
+            <dl className={styles.tallies}>
+              {TALLIES.map((t, i) => (
+                <div key={t.words} className={styles.reveal} data-reveal="" style={vars({ "--i": i })}>
+                  <dt className={styles.tally}>
+                    <Tally value={t.value} />
+                  </dt>
+                  <dd className={styles.tallyWords}>{t.words}</dd>
+                </div>
+              ))}
+            </dl>
+          </div>
           <ul className={styles.ledger}>
             {NOW.map((line, i) => (
-              <li key={line} className={styles.reveal} data-reveal="" style={vars({ "--i": i % 2 })}>
+              <li key={line} className={styles.reveal} data-reveal="" style={vars({ "--i": i % 4 })}>
                 {line}
               </li>
             ))}
           </ul>
         </section>
 
-        <section className={`${siteWrap} ${styles.section}`} aria-labelledby="data-title">
-          <div className={`${styles.close} ${styles.reveal}`} data-reveal="">
+        <Seam
+          beams={[
+            { x: "24%", w: 96, state: "planned", rate: -1.2 },
+            { x: "63%", w: 180, state: "planned", rate: 0.8 },
+          ]}
+        />
+
+        <section className={siteWrap} aria-labelledby="data-title">
+          <div className={styles.close}>
             <div className="max-w-[36rem]">
-              <h2 id="data-title" className={styles.heading}>
-                Yours, and only yours
-              </h2>
-              <p className="mt-4 text-[15px] leading-relaxed text-ink-2">
+              <Rise as="h2" id="data-title" className={styles.heading} text="Yours, and only yours" />
+              <p className={`${styles.closeBody} ${styles.reveal}`} data-reveal="">
                 Your email and the items you make are stored with Supabase, where each row can be read only by your
                 account. No ads, no analytics, no trackers. The{" "}
                 <Link href="/privacy" className="text-ink underline">
@@ -184,7 +231,7 @@ export default async function Home() {
                 says the rest in plain words.
               </p>
             </div>
-            <div className="flex flex-col items-start gap-3">
+            <div className={`flex flex-col items-start gap-3 ${styles.reveal}`} data-reveal="" style={vars({ "--i": 1 })}>
               <Link href="/login" className={primaryAction}>
                 Start with today
                 <ActionBeam />
@@ -196,6 +243,27 @@ export default async function Home() {
       </main>
       <SiteFooter />
     </PageTurn>
+  );
+}
+
+/**
+ * A heading whose words rise one after another out of their own line, as it scrolls into view, over a
+ * short staff that is ruled in under it. The words are the heading's text, so it reads as one line.
+ */
+function Rise({ as: Tag, id, className, text }: { as: "h2" | "h3"; id: string; className: string; text: string }) {
+  const words = text.split(" ");
+  return (
+    <Tag id={id} className={`${className} ${styles.rise}`} data-reveal="">
+      {words.map((word, w) => (
+        <span key={w}>
+          <span className={styles.word}>
+            <span style={vars({ "--w": w })}>{word}</span>
+          </span>
+          {w < words.length - 1 && " "}
+        </span>
+      ))}
+      <span className={styles.headStaff} aria-hidden="true" />
+    </Tag>
   );
 }
 
@@ -225,7 +293,11 @@ function Movement({
         </h3>
         <p className={styles.movementBody}>{children}</p>
       </div>
-      <div className={`${styles.movementDemo} ${styles.reveal}`} data-reveal="" style={vars({ "--i": 1 })}>
+      <div className={`${styles.movementDemo} ${styles.reveal}`} data-reveal="" data-glow="" style={vars({ "--i": 1 })}>
+        <span className={styles.sheetShadow} data-glow-shadow="" aria-hidden="true" />
+        <span className={styles.lamp} aria-hidden="true">
+          <span data-glow-spot="" />
+        </span>
         {demo}
       </div>
     </article>

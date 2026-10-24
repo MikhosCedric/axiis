@@ -1,0 +1,193 @@
+/*
+ * Depth, far (0) to near (2). A nearer layer is drawn stronger, travels against the scroll instead of
+ * lagging behind it, parts further from the pointer (script sets `translate`) and bobs a little more.
+ * Everything here is transform and opacity on its own layer; the field clips so nothing widens the page.
+ */
+.field {
+  position: absolute;
+  inset: 3.5rem 0 0;
+  z-index: -1;
+  display: none;
+  pointer-events: none;
+  font-size: var(--display);
+  line-height: 1;
+}
+
+@media (min-width: 900px) {
+  .field {
+    display: block;
+  }
+}
+
+.depth {
+  position: absolute;
+  inset: 0;
+  opacity: calc(0.38 + var(--d) * 0.2);
+  transition: translate 900ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.piece {
+  position: absolute;
+  left: var(--x);
+  top: var(--y);
+  color: var(--ink-3);
+}
+
+.glyph {
+  width: var(--w);
+}
+
+.done .glyph {
+  color: var(--ink-3);
+}
+
+.planned .glyph {
+  color: var(--ink-2);
+}
+
+/* Five lines 6px apart, faded at both ends: a fragment of a staff. */
+.staff {
+  width: var(--w);
+  height: 25px;
+  background: repeating-linear-gradient(to bottom, currentColor 0 1px, transparent 1px 6px);
+  mask-image: linear-gradient(to right, transparent, #000 25%, #000 75%, transparent);
+}
+
+/* Ledger lines: three short strokes, each the width of a note head and a little more. */
+.ledger {
+  width: 26px;
+  height: 13px;
+  background: repeating-linear-gradient(to bottom, currentColor 0 1.5px, transparent 1.5px 6px);
+}
+
+.barline {
+  width: 1px;
+  height: 25px;
+  background: currentColor;
+}
+
+/* The final barline: a thin line and a thick one. */
+.final {
+  width: 6px;
+  height: 25px;
+  border-left: 1px solid currentColor;
+  border-right: 3px solid var(--ink-2);
+  padding-left: 2px;
+}
+
+.head {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--ink-2);
+}
+
+/* Now, the one verdigris piece: a short playhead with its flag. */
+.now {
+  width: 2px;
+  height: 0.62em;
+  background: var(--accent);
+}
+
+.now::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -7px;
+  width: 16px;
+  height: 9px;
+  border-radius: 3px;
+  background: var(--accent);
+}
+
+/* Between sections: a staff the width of the window. */
+.seam {
+  position: relative;
+  height: 25px;
+  margin-block: clamp(72px, 9vw, 160px);
+  overflow: clip;
+  color: var(--ink-3);
+}
+
+.seamLines {
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(to bottom, var(--rule) 0 1px, transparent 1px 6px);
+  mask-image: linear-gradient(to right, transparent, #000 12%, #000 88%, transparent);
+  transform-origin: left;
+}
+
+.seamBeam {
+  position: absolute;
+  top: 4.5px;
+  left: var(--x);
+}
+
+.seamBar {
+  position: absolute;
+  inset-block: 0;
+  right: var(--gutter);
+  width: 1px;
+  background: var(--rule);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .piece {
+    animation: bob calc(9s + var(--o) * 0.9s) ease-in-out calc(var(--o) * -1.3s) infinite alternate;
+  }
+
+  .field[data-offscreen] .piece {
+    animation-play-state: paused;
+  }
+
+  @supports (animation-timeline: scroll()) {
+    .depth {
+      animation: depth-scroll linear both;
+      animation-timeline: scroll(root);
+      animation-range: 0 100vh;
+    }
+
+    .seamLines {
+      animation: rule-in linear both;
+      animation-timeline: view();
+      animation-range: entry 0% cover 45%;
+    }
+
+    .seamBeam {
+      animation: slide linear both;
+      animation-timeline: view();
+      animation-range: cover;
+    }
+  }
+}
+
+@keyframes bob {
+  from {
+    transform: translateY(calc(-3px - var(--o) * 0.4px));
+  }
+  to {
+    transform: translateY(calc(3px + var(--o) * 0.4px));
+  }
+}
+
+/* Far layers lag the page (they move down as it scrolls up); the nearest moves up past it. */
+@keyframes depth-scroll {
+  to {
+    transform: translateY(calc(30vh - var(--d) * 22vh));
+  }
+}
+
+@keyframes rule-in {
+  from {
+    transform: scaleX(0);
+  }
+}
+
+@keyframes slide {
+  from {
+    transform: translateX(calc(var(--rate) * -8vw));
+  }
+  to {
+    transform: translateX(calc(var(--rate) * 8vw));
+  }
+}

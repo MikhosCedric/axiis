@@ -226,7 +226,7 @@
   position: absolute;
   left: -6px;
   bottom: calc(100% + 1px);
-  max-width: calc(var(--room) / (var(--e) - var(--s)) * 100% - 10px);
+  max-width: calc(min(var(--room), var(--to) - var(--s)) / (var(--e) - var(--s)) * 100% - 10px);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;

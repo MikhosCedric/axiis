@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ViewTransition, type ReactNode } from "react";
 import { BrandMark } from "@/components/shell/icons";
 import { DayNight } from "./day-night";
+import { PublicMotion } from "./motion";
 import styles from "./site-chrome.module.css";
 
 export const primaryAction = styles.primary;
@@ -35,7 +36,10 @@ export function BrandHome({ className = "" }: { className?: string }) {
 export function PageTurn({ children }: { children: ReactNode }) {
   return (
     <ViewTransition enter="public-in" exit="public-out" default="none">
-      <div className="flex min-h-dvh flex-col">{children}</div>
+      <div className="flex min-h-dvh flex-col">
+        <PublicMotion />
+        {children}
+      </div>
     </ViewTransition>
   );
 }
@@ -75,8 +79,10 @@ const FOOTER_LINKS = [
 export function SiteFooter() {
   return (
     <footer className={`${styles.footer} mt-auto`}>
+      <div className={styles.finalBar} aria-hidden="true" data-loop="">
+        <span className={styles.sweep} />
+      </div>
       <div className={siteWrap}>
-        <div className={styles.finalBar} aria-hidden="true" />
         <div className="grid gap-x-16 gap-y-8 py-10 sm:grid-cols-[minmax(0,1fr)_auto]">
           <div className="max-w-[30rem]">
             <span className="font-serif text-[22px] font-semibold tracking-[-0.01em] text-ink">Axiis</span>
