@@ -38,7 +38,7 @@ function toggleTheme() {
 
 export function ThemeToggle({ className }: { className: string }) {
   return (
-    <button type="button" onClick={toggleTheme} aria-label="Switch between light and dark" className={className}>
+    <button type="button" onClick={toggleTheme} aria-label="Theme, switch between light and dark" className={className}>
       <ThemeIcon />
       <span>Theme</span>
     </button>

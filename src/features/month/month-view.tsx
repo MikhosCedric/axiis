@@ -23,6 +23,7 @@ import { GuideButton, type GuideTopic } from "@/features/palette/guide";
 import { CaptureField } from "@/features/today/capture-field";
 import { formatDayHeading } from "@/features/today/format";
 import { Glyph } from "@/features/today/glyph";
+import { monthMarkName } from "@/features/today/item-name";
 import type { BeamState } from "@/features/today/model";
 import { RepeatMark } from "@/features/today/repeat-mark";
 import { moveAction } from "@/features/week/actions";
@@ -56,7 +57,6 @@ const KEYS_ID = "month-keys";
 const MONTH_GUIDE: GuideTopic[] = ["capture", "month"];
 /** Narrower than this, the grid draws dots and the chosen day's items are listed under it. Matches the `@min-[36rem]/month` rules. */
 const COMPACT_PX = 576;
-const STATE_WORD: Record<BeamState, string> = { planned: "planned", live: "happening now", done: "done" };
 
 const ARRIVAL_KEY = "axiis-month-focus";
 
@@ -88,11 +88,6 @@ function moveMark(cells: MonthCell[], { key, from, to }: Move): MonthCell[] {
     if (c.date !== to) return c;
     return c.marks.length < MARKS_PER_DAY ? { ...c, marks: [...c.marks, { ...mark, due: false }] } : { ...c, more: c.more + 1 };
   });
-}
-
-function markLabel(mark: MonthMark): string {
-  const when = mark.time === null ? (mark.due ? null : "any time") : mark.time.startsWith("to ") ? `continues ${mark.time}` : mark.time;
-  return [mark.title, when, mark.area, STATE_WORD[mark.state], mark.repeats && "repeats", mark.due && "due this day"].filter(Boolean).join(", ");
 }
 
 function cellLabel(cell: MonthCell): string {
@@ -388,7 +383,6 @@ function DayCell({
       data-date={cell.date}
       data-drop={cell.date}
       tabIndex={active ? 0 : -1}
-      aria-label={cellLabel(cell)}
       aria-selected={active}
       aria-current={isToday ? "date" : undefined}
       onFocus={(e) => e.target === e.currentTarget && onFocus()}
@@ -399,6 +393,8 @@ function DayCell({
         over ? "bg-accent-wash" : active ? "bg-hover @min-[36rem]/month:bg-transparent" : "hover:bg-hover"
       }`}
     >
+      {/* The cell is named by its content, not aria-label: its marks are drawn inside it, and a name must hold what it draws. */}
+      <span className="sr-only">{cellLabel(cell)}</span>
       <span aria-hidden="true" className="flex items-center justify-center @min-[36rem]/month:justify-start">
         <span
           className={`inline-flex h-6 min-w-6 items-center justify-center rounded-full px-1 text-[13px] tabular ${
@@ -463,7 +459,7 @@ function MarkButton({
   onClick: (e: MouseEvent<HTMLElement>) => void;
   onKeyDown: (e: KeyboardEvent<HTMLElement>) => void;
 }) {
-  const label = markLabel(mark);
+  const label = monthMarkName(mark, variant);
   const shape =
     variant === "cell"
       ? "flex h-[22px] items-center gap-1 rounded px-0.5 text-xs"
@@ -487,10 +483,10 @@ function MarkButton({
       <span aria-hidden="true" className={variant === "cell" ? "w-[22px] flex-none overflow-hidden" : "w-9 flex-none"}>
         <Glyph type={mark.type} state={mark.state} className={variant === "cell" ? "!w-[30px] origin-left scale-[0.72]" : "!w-9"} />
       </span>
-      {mark.time && <span className="flex-none text-ink-3 tabular">{mark.time}</span>}
-      {mark.due && <span className="flex-none text-ink-3">{mark.time ? "· due" : "Due"}</span>}
+      {mark.time && <span className="flex-none text-ink-3 tabular">{mark.time}</span>}{" "}
+      {mark.due && <span className="flex-none text-ink-3">{mark.time ? "· due" : "Due"}</span>}{" "}
       <span className={`min-w-0 truncate ${TITLE[mark.state]}`}>{mark.title}</span>
-      {mark.repeats && <RepeatMark className="text-ink-3" />}
+      {mark.repeats && <RepeatMark className="text-ink-3" />}{" "}
       {variant === "row" && mark.area && (
         <AreaLabel name={mark.area} color={mark.areaColor} className="ml-auto flex-none text-xs text-ink-3" />
       )}

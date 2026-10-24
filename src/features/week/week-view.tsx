@@ -16,12 +16,11 @@ import {
 import { AreaLabel, AreaMark } from "@/components/area-mark";
 import { repeats, type Area, type LocalDate, type ShownItem } from "@/domain/item";
 import { RepeatMark } from "@/features/today/repeat-mark";
-import { tagLine } from "@/features/tags/model";
 import { selectedIn, type ItemKey } from "@/domain/item-key";
 import { dayHref } from "@/features/day/nav";
 import { DetailAside } from "@/features/detail/detail-aside";
 import { useItemSelection } from "@/features/detail/use-item-selection";
-import { STATE_WORD } from "@/features/score/score-view";
+import { STATE_WORD, weekWords } from "@/features/today/item-name";
 import { captureAction, setDoneAction } from "@/features/today/actions";
 import { CaptureField } from "@/features/today/capture-field";
 import type { ActionResult } from "@/features/today/commands";
@@ -30,7 +29,6 @@ import { formatClock } from "@/lib/clock";
 import { useClock } from "@/components/shell/clock-context";
 import { Glyph } from "@/features/today/glyph";
 import { DueMark } from "@/features/today/due-mark";
-import { dueWords } from "@/features/today/due";
 import { GuideButton, type GuideTopic } from "@/features/palette/guide";
 import { LineLegend } from "@/features/today/line-legend";
 import { SameInInbox } from "@/features/inbox/same-in-inbox";
@@ -402,21 +400,21 @@ function ItemRow({
 }) {
   const clock = useClock();
   const { item, state } = entry;
-  const s = item.schedule;
-  // An event holds its whole time, so it says where it ends too; a task says when it starts.
-  const time =
-    s.kind === "timed"
-      ? item.type === "event"
-        ? `${formatClock(s.start, timeZone, clock)}–${formatClock(s.end, timeZone, clock)}`
-        : formatClock(s.start, timeZone, clock)
-      : s.kind === "day"
-        ? "Any time"
-        : null;
-  const spokenTime =
-    s.kind === "timed" ? `${formatClock(s.start, timeZone, clock)} to ${formatClock(s.end, timeZone, clock)}` : (time ?? "in the Inbox");
-  const tagged = tagLine(tags ?? [], 2);
-  const due = item.dueOn && state !== "done" ? dueWords(item.dueOn, today).words : null;
-  const label = [item.title, spokenTime, area?.name, STATE_WORD[state], due, repeats(item) && "repeats", tagged.spoken].filter(Boolean).join(", ");
+  const dueOn = state !== "done" ? (item.dueOn ?? null) : null;
+  const words = weekWords({
+    variant,
+    title: item.title,
+    state,
+    repeats: repeats(item),
+    dueOn,
+    today,
+    tags: tags ?? [],
+    event: item.type === "event",
+    schedule: item.schedule,
+    timeZone,
+    clock,
+    area: area?.name ?? null,
+  });
   const shape =
     variant === "chip"
       ? "inline-flex max-w-[34ch] items-center gap-2 rounded-md border border-rule bg-sheet px-2.5 py-1.5 pointer-coarse:min-h-11"
@@ -427,7 +425,7 @@ function ItemRow({
       role="button"
       tabIndex={0}
       aria-pressed={selected}
-      aria-label={label}
+      aria-label={words.name}
       aria-describedby={KEYS_ID}
       onPointerDown={onPointerDown}
       onKeyDown={onKeyDown}
@@ -441,13 +439,13 @@ function ItemRow({
         <span className={`block leading-snug break-words ${variant === "chip" ? "truncate" : ""} ${TITLE_WEIGHT[state]}`}>
           {item.title}
           {repeats(item) && <RepeatMark className="ml-1 text-ink-3" />}
-        </span>
+        </span>{" "}
         {variant === "row" && (
           <span className="mt-0.5 flex flex-wrap gap-x-2 text-xs text-ink-3">
-            {time && <span className="tabular">{time}</span>}
-            {due && item.dueOn && <DueMark dueOn={item.dueOn} today={today} />}
-            {area && <AreaLabel name={area.name} color={area.color} />}
-            {tagged.shown && <span className="min-w-0 truncate">{tagged.shown}</span>}
+            {words.time && <span className="tabular">{words.time}</span>}{" "}
+            {dueOn && <DueMark dueOn={dueOn} today={today} />}{" "}
+            {area && <AreaLabel name={area.name} color={area.color} />}{" "}
+            {words.tags && <span className="min-w-0 truncate">{words.tags}</span>}
           </span>
         )}
       </span>

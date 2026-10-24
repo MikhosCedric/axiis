@@ -93,7 +93,7 @@ signedIn.describe("area colours", () => {
     await expect(dot(details)).toHaveAttribute("data-area-color", "clay");
 
     await page.goto("/week/2099-05-18");
-    await expect(dot(page.getByRole("button", { name: /^Draft the budget, 10:00 to 11:30, Work/ }))).toHaveAttribute("data-area-color", "clay");
+    await expect(dot(page.getByRole("button", { name: /^Draft the budget, 10:00, ends 11:30, Work/ }))).toHaveAttribute("data-area-color", "clay");
     await expect(dot(page.getByRole("button", { name: /^Water the ferns, Any time, Home/ }))).toHaveAttribute("data-area-color", "moss");
 
     await page.goto("/month/2099-05");

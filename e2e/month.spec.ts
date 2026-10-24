@@ -29,11 +29,11 @@ signedIn.describe("the Month", () => {
     // 1 August 2099 is a Saturday: 31 days need a sixth week.
     await expect(page.getByRole("gridcell")).toHaveCount(42);
     await page.goto("/month/2099-05");
-    await expect(cell(page, /^Wednesday 20 May, 1 item$/)).toBeVisible();
+    await expect(cell(page, /^Wednesday 20 May, 1 item\b/)).toBeVisible();
     await expect(cell(page, /^Wednesday 20 May/).getByRole("button", { name: /^Renew the lease, any time/ })).toBeVisible();
 
     await page.goto("/month/2099-06");
-    await expect(cell(page, /^Monday 1 June, 1 item$/).getByRole("button", { name: /Renew the lease.*due this day/ })).toBeVisible();
+    await expect(cell(page, /^Monday 1 June, 1 item\b/).getByRole("button", { name: /^Due, Renew the lease/ })).toBeVisible();
     // Seen from today, June 2099 is many months ahead; the line says so before what it holds.
     await expect(page.getByText(/^In \d+ months · Nothing open · 1 due$/)).toBeVisible();
   });
@@ -156,7 +156,7 @@ signedIn.describe("the Month", () => {
     await page.getByRole("textbox", { name: "Capture for Sunday 2 August" }).fill("Water the garden 7:30");
     await page.keyboard.press("Enter");
     await expect(page.getByText("Planned for Sunday 2 August, 07:30.")).toBeVisible();
-    const mark = cell(page, /^Sunday 2 August/).getByRole("button", { name: /^Water the garden, 07:30/ });
+    const mark = cell(page, /^Sunday 2 August/).getByRole("button", { name: /^07:30, Water the garden/ });
     await expect(mark).toBeVisible();
 
     const target = cell(page, /^Wednesday 12 August/);
@@ -168,7 +168,7 @@ signedIn.describe("the Month", () => {
     await page.mouse.up();
     await expect(page.getByText("Water the garden is on Wednesday 12 August.")).toBeVisible();
     await page.reload();
-    await expect(cell(page, /^Wednesday 12 August, 1 item$/).getByRole("button", { name: /^Water the garden, 07:30/ })).toBeVisible();
+    await expect(cell(page, /^Wednesday 12 August, 1 item\b/).getByRole("button", { name: /^07:30, Water the garden/ })).toBeVisible();
     await expect(cell(page, /^Sunday 2 August, nothing planned$/)).toBeVisible();
   });
 

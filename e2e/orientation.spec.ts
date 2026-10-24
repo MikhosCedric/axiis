@@ -42,7 +42,7 @@ signedIn.describe("a busy day", () => {
 
     // The printed key names the shapes, and a due date carries the same mark on the Score as in Next up.
     await expect(page.getByRole("list", { name: "Kinds" }).getByRole("listitem")).toHaveText(["Task", "Event", "Checklist"]);
-    await expect(page.getByRole("button", { name: /^Send the invoice, any time, Work, planned, Due today/ })).toBeVisible();
+    await expect(page.getByRole("button", { name: /^Send the invoice, Due today, any time, Work, planned/ })).toBeVisible();
 
     // Done in Any time folds into one line that opens in place.
     const anyTime = page.getByRole("list", { name: "Any time today" });
