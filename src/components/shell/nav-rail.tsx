@@ -429,24 +429,21 @@ function SheetSection({ heading, children }: { heading: string; children: ReactN
   );
 }
 
-/** A place in the More sheet: its name, and under it what the place holds. */
+/** A place in the More sheet: its name, and under it what the place holds. Both are its name, as both are drawn. */
 function SheetPlace({ place, here, onGo }: { place: Place; here: boolean; onGo: () => void }) {
-  const hint = useId();
   const hrefOf = usePlaceHref();
   return (
     <li>
       <Link
         href={hrefOf(place.href)}
-        aria-label={place.label}
-        aria-describedby={hint}
         aria-current={here ? "page" : undefined}
         onClick={onGo}
         className={`${here ? current : quiet} ${sheetRow} py-2`}
       >
         {ICONS[place.id]}
         <span className="grid">
-          <span>{place.label}</span>
-          <span id={hint} className="text-[13px] font-normal text-ink-3">
+          <span>{place.label}</span>{" "}
+          <span className="text-[13px] font-normal text-ink-3">
             {place.hint}
           </span>
         </span>

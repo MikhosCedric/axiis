@@ -5,7 +5,7 @@ import { useId, useLayoutEffect, useRef, useState, type KeyboardEvent } from "re
 import type { LocalDate } from "@/domain/item";
 import { FIRST_DATE, LAST_DATE } from "@/lib/dates";
 import { useKeepFilter } from "@/features/filter/keep-filter";
-import { formatMonthHeading, monthHref, monthOf, pickerStep, stepYear, type YearMonth } from "./model";
+import { monthHref, monthOf, pickerStep, stepYear, type YearMonth } from "./model";
 
 const SHORT = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 const GUTTER = 16;
@@ -146,7 +146,7 @@ export function MonthPicker({ month, today, className }: { month: YearMonth; tod
                 data-month={m}
                 tabIndex={m === focused ? 0 : -1}
                 disabled={!inSpan(m)}
-                aria-label={now ? `${formatMonthHeading(m)}, this month` : formatMonthHeading(m)}
+                aria-label={`${SHORT[i]} ${year}${now ? ", this month" : ""}`}
                 aria-current={shown ? "page" : undefined}
                 onClick={() => go(m)}
                 onKeyDown={onKeyDown}

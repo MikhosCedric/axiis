@@ -146,17 +146,17 @@ test.describe("shell on a phone", () => {
     const sheet = page.getByRole("dialog", { name: "More" });
     await expect(sheet.getByRole("heading")).toHaveText(["Plan", "Library", "Open today, by area", "Account"]);
     await expect(sheet.getByRole("list", { name: "Plan" }).getByRole("link")).toHaveText([/^Month/]);
-    await expect(sheet.getByRole("link", { name: "Month", exact: true })).toHaveAccessibleDescription("The whole month at a glance");
+    await expect(sheet.getByRole("link", { name: /^Month/ })).toHaveAccessibleName("Month The whole month at a glance");
     await expect(sheet.getByRole("list", { name: "Library" }).getByRole("link")).toHaveText([/^Lists/, /^Notes/, /^Tags/]);
-    await expect(sheet.getByRole("link", { name: "Lists", exact: true })).toHaveAccessibleDescription("Checklists and how far along each is");
+    await expect(sheet.getByRole("link", { name: /^Lists/ })).toHaveAccessibleName("Lists Checklists and how far along each is");
     await expect(sheet.getByRole("list", { name: "Account" }).getByRole("listitem")).toHaveText([/Theme/, /^Settings/, /Sign out/]);
     for (const control of [
-      sheet.getByRole("link", { name: "Search", exact: true }),
-      sheet.getByRole("link", { name: "Month", exact: true }),
-      sheet.getByRole("link", { name: "Lists", exact: true }),
-      sheet.getByRole("link", { name: "Notes", exact: true }),
-      sheet.getByRole("link", { name: "Tags", exact: true }),
-      sheet.getByRole("link", { name: "Settings", exact: true }),
+      sheet.getByRole("link", { name: /^Search/ }),
+      sheet.getByRole("link", { name: /^Month/ }),
+      sheet.getByRole("link", { name: /^Lists/ }),
+      sheet.getByRole("link", { name: /^Notes/ }),
+      sheet.getByRole("link", { name: /^Tags/ }),
+      sheet.getByRole("link", { name: /^Settings/ }),
       sheet.getByRole("button", { name: "Sign out" }),
     ]) {
       // With the areas above it, Account can sit just past the fold on a short phone; the sheet scrolls to it.
