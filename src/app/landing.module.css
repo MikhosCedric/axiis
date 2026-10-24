@@ -253,6 +253,7 @@
 .ledger {
   margin-top: 20px;
   border-top: 1px solid var(--rule);
+  counter-reset: bar;
 }
 
 @media (min-width: 820px) {
@@ -263,6 +264,8 @@
 }
 
 .ledger li {
+  display: flex;
+  gap: 14px;
   break-inside: avoid;
   border-bottom: 1px solid var(--rule-soft);
   padding: 11px 0;
@@ -276,6 +279,19 @@
   gap: 40px;
   border-top: 1px solid var(--rule);
   padding-top: 32px;
+}
+
+/* Bar numbers, as a score prints them over each line: quiet, tabular, and not read aloud. */
+.ledger li::before {
+  counter-increment: bar;
+  content: counter(bar) / "";
+  flex: none;
+  width: 2ch;
+  padding-top: 2px;
+  text-align: right;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-3);
 }
 
 @media (min-width: 820px) {

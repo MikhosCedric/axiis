@@ -413,6 +413,10 @@
 @keyframes sweep {
   from {
     transform: translateX(0);
+    opacity: 0;
+  }
+  12% {
+    opacity: 1;
   }
 }
 

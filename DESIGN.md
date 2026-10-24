@@ -34,10 +34,10 @@ colors:
 typography:
   display:
     fontFamily: "Besley, Georgia, serif"
-    fontSize: "clamp(2.6rem, 1.4rem + 5.2vw, 5.25rem)"
+    fontSize: "clamp(2.6rem, 1.4rem + 5.2vw, 5.5rem)"
     fontWeight: 500
     lineHeight: 1
-    letterSpacing: "-0.025em"
+    letterSpacing: "-0.03em"
   headline:
     fontFamily: "Besley, Georgia, serif"
     fontSize: "clamp(28px, 3vw, 40px)"
@@ -265,7 +265,7 @@ An area or a tag narrows a page to what belongs to it. The filter lives in the a
 **Character:** Besley gives headings the cut of a printed programme; Hanken Grotesk is neutral, compact and legible at 12 to 14px, where most of the app lives.
 
 ### Hierarchy
-- **Display** (500, `clamp(2.6rem, 1.4rem + 5.2vw, 5.25rem)`, line-height 1, -0.025em, balanced, max 13ch): the landing page headline only.
+- **Display** (500, `clamp(2.6rem, 1.4rem + 5.2vw, 5.5rem)`, line-height 1, -0.03em, balanced, max 13ch on a phone): the landing page headline only. From 900px it is two lines, "Your tasks and your time," then "on one page.", and its size is also held to `(100vw - 4rem) / 12.6` so the first line (12.3em in Besley) never wraps. "on one page." sits on a staff of five Hairlines drawn behind the words, so its descenders hang through the lines like notes.
 - **Headline** (500, `clamp(28px, 3vw, 40px)`, 1.1, -0.015em): every app page title (Today's date, Week, Month, Inbox, Due, Lists, Notes, Tags, Search, Settings), always through the `headline` utility in `globals.css`, which also balances the lines. In a day's title the weekday is set in Ink Secondary, so the date leads ("Thursday 15 October"). Under every title sits one `page-summary` line (15px, 1.5, Ink Secondary). The note editor's title field is the one exception (3.2vw, 1.15), because it is a growing text field. Landing section heads use a larger clamp (`1.6rem` to `2.25rem`).
 - **Title** (Besley 500, 18px to 22px): section heads inside a page (the Inbox tray, Next up, Subtasks, Linked notes, Due's Past due, This week and Later at 18px), staff names (16px, 19px at rail width) and the wordmark (600, 20px to 22px, -0.01em).
 - **Body** (Hanken 400, 14px, 1.45): the default for the app. Page subtitles under an app headline and public body copy step up to 15px at 1.6 (Body Large), the landing lead paragraph to 17px to 18px, held to 34ch to 36rem. Note bodies are set for reading at 16px, 1.65, 68ch.
@@ -285,7 +285,7 @@ An area or a tag narrows a page to what belongs to it. The filter lives in the a
 
 The app is a two-column shell: a nav rail and a content column. At 760px and up (the `rail` breakpoint) the rail is a sticky, full-height column on Rail Paper with a hairline right edge. Below 760px it becomes a slim header and a bottom bar (see Navigation), and the area readout is dropped.
 
-The Score is the organizing grid. A sticky label column (`--lw`, 80px, or 104px at rail width) holds staff names. The hour axis is 76px per hour (`background-size: 76px`), each staff sub-row is 25px tall with five lines 6px apart, and beams snap to quarter hours. On the app, the axis covers 07:00 to 20:00, widened to whole hours that hold every beam and now. When its container has room for more, it gains whole hours to fill it, later ones up to 24:00 first so nothing already drawn moves, then earlier ones down to 00:00; the hour stays 76px, so what is left over is under one hour. A drag in progress keeps the axis it started on. When the axis is wider than its container, it scrolls horizontally inside it and opens scrolled to now (30% from the left) or to the first beam, rounded back to a whole hour so the first label is never clipped. On the landing sample score the visible window narrows instead (10:00 to 16:00 under 640px, 08:00 to 17:00, then 07:00 to 19:00 from 1000px), so it never scrolls sideways.
+The Score is the organizing grid. A sticky label column (`--lw`, 80px, or 104px at rail width) holds staff names. The hour axis is 76px per hour (`background-size: 76px`), each staff sub-row is 25px tall with five lines 6px apart, and beams snap to quarter hours. On the app, the axis covers 07:00 to 20:00, widened to whole hours that hold every beam and now. When its container has room for more, it gains whole hours to fill it, later ones up to 24:00 first so nothing already drawn moves, then earlier ones down to 00:00; the hour stays 76px, so what is left over is under one hour. A drag in progress keeps the axis it started on. When the axis is wider than its container, it scrolls horizontally inside it and opens scrolled to now (30% from the left) or to the first beam, rounded back to a whole hour so the first label is never clipped. On the landing's sample score the hours are counted from the hour the visitor is in (`src/features/landing/live-day.ts`), and the window narrows instead of scrolling: two hours before now to four after under 640px, three to six, then five to seven from 1000px.
 
 A page head with day or week steps (Day/Week, Previous and Next, the date) is a `page-head`: the steps sit to the right of the title when the page column, a `page` container, is at least 56rem wide, and in one row under the summary otherwise, so they never stack into a tower beside a wrapped title. Under the head, the tool row (capture field, any view switch, the Guide) carries one status line under the field. The screen's own news (a move, a tick, a plan) shares that line with the capture's, through `CaptureField`'s `screenStatus`, so a page reserves one line of room for news, not two.
 
@@ -302,7 +302,7 @@ The system is flat. Structure is drawn with hairlines and three paper tones (Rai
 - **Selected chip ring** (`box-shadow: inset 0 0 0 1px var(--accent)`): doubles a selected chip's border in verdigris; a state mark, not depth.
 
 ### Named Rules
-**The Engraved Line Rule.** If a boundary is needed, draw a hairline. A double barline (`3px double` Hairline) closes the end of the day and the landing's three-measure strip. Never use a shadow to separate two things that sit on the same page.
+**The Engraved Line Rule.** If a boundary is needed, draw a hairline. A double barline (`3px double` Hairline) closes the end of the day and the landing's story. The public footer opens on a final barline: a Hairline over a 3px Ink rule, the way a score ends. Never use a shadow to separate two things that sit on the same page.
 
 ## Shapes
 
@@ -342,7 +342,7 @@ Added after the owner said a busy day felt lost and overwhelming (`docs/ux-clari
 
 ### Buttons
 - **Shape:** gently rounded (6px); outlined variants 6px to 8px.
-- **Public primary:** Verdigris fill, On Verdigris text, 15px 600, 12px by 20px. Hover mixes 14% ink into the verdigris over 150ms. Used only for Start with today, the landing's way in (in the hero and again at the close). The header's Sign in is a plain text link for returning users.
+- **Public primary:** Verdigris fill, On Verdigris text, 15px 600, 12px by 20px, 48px tall. It carries a 26px beam after its words, dashed at rest and solid under the pointer or focus, as a planned item turns live (`ActionBeam`, `src/components/public/site-chrome.tsx`). Hover mixes 14% ink into the verdigris over 150ms; a press sinks it 1px. No glow, no magnetic pull. Used only for Start with today, the landing's way in (in the hero and again at the close). The header's Sign in is a plain text link for returning users.
 - **Public quiet:** hairline border, ink text, same size; hover strengthens the border to Field Stroke.
 - **Ink:** Engraving Ink fill, Paper text, 500. The in-app primary action (New note, Search, Delete account once confirmed). Hover drops opacity to 0.9.
 - **Outline:** hairline border, 6px by 12px, hover Hover Tint, pressed Press Tint. Secondary in-app actions.
@@ -399,6 +399,40 @@ Movement is spent on three moments, each on the house curve and each dropped und
 - **The detail panel arriving:** 16px in from the right beside the page, 8px up when it stacks under it, 320ms. Movement only, no fade, so its text is never measured half-transparent.
 - **A sheet rising:** the phone's More sheet, 320ms from below; the palette and Guide keep their 200ms rise.
 The done sweep on a glyph and the beam glide stay as they were. Hover and press only ease colour (140ms).
+
+### Landing and motion on the public pages
+The signed-out site (`/`, `/login`, `/privacy`, `/terms`) is the one place Axiis moves for its own sake, and even there the motion is the Score's own: lines are ruled, beams slide onto them, the now line sweeps, an item is dragged onto a line. Nothing bounces, glows or floats, and nothing is decoration that the app does not draw.
+
+**Principles.**
+- **Motion says what the app does.** Every moving thing is a gesture or a state change Axiis has: ruling a staff, a beam arriving, the now line, a drag ghost settling into a dashed beam, a tick sweeping a beam hollow, Focus folding a day.
+- **First paint is final.** The headline, the lead, the way in and the Score are drawn by the server in place. The headline never animates (it is the largest paint), and a section is held back only after script has seen it is below the fold (`src/features/landing/reveal.tsx`), so no script, a slow phone or a reader who jumps down never meets a blank page.
+- **Compositor only.** Everything that moves on its own moves by `transform` and `opacity`. The now line rides a layer the width of its track and is moved by a share of its own width, so the sweep and the minute step never re-lay the page. Layout shift is 0 (measured).
+- **No scroll-jacking.** Scrolling is the browser's. Depth layers use CSS scroll-driven animations (`animation-timeline: scroll()` and `view()`) where the browser has them; elsewhere they simply stand still.
+- **Reduced motion is a complete page.** Under `prefers-reduced-motion: reduce` every keyframe, loop, reveal, glide and view transition is gone and the composition is the same, already drawn. `e2e/landing.spec.ts` checks that nothing is running or held back.
+
+**What moves, and how long.** All on the house curve `cubic-bezier(0.16, 1, 0.3, 1)` unless named.
+| Moment | What | Timing |
+|---|---|---|
+| Arrival: staves | each staff line scales in from the left | 900ms, 120ms + 110ms a staff + 60ms a row |
+| Arrival: beams | each beam slides 18px in and fades | 640ms, from 520ms, 65ms apart in staff order |
+| Arrival: now | the now line and its flag sweep from the window's first hour to now, the flag fading in | 1.8s, `cubic-bezier(0.65, 0, 0.35, 1)`, from 450ms |
+| The minute | the now line steps to the new minute | 700ms transition |
+| The loop | the first Inbox chip lifts 3px and fades to 35% (a held chip), its dashed verdigris ghost slides 28px onto Health with its time, settles as a dashed beam, and all goes back | every 14s from 3.2s; paused while the score is off screen |
+| Headline staff | the five lines under "on one page." rule in from the left | 1100ms, 70ms apart |
+| Sections | a held section rises 22px and fades in as it enters | 700ms fade, 900ms rise, 90ms between a movement's text and its demo |
+| Depth | a far staff (lines 44px apart, barred every 33vw) drifts 38vh over the first screen of scroll, a nearer fine staff 18vh; each rehearsal mark drifts 28px across its pass through the viewport | scroll-linked, linear |
+| A captured line changing rows | the item moves between its day's line, Any time and the Inbox (a named view transition on a deferred render) | 400ms |
+| A beam moving in a demo | the beam glides to its new time | 280ms, none while a pointer holds it |
+| Focus | kept rows move into place, folded rows fade out, the fold line fades in (view transitions) | 400ms move, 160ms out, 260ms in after 120ms |
+| A change of public page | the old page fades and drops 8px, the new one rises 12px and fades in; the brand mark (`brand-mark`) moves on its own from where it was to where it is | out 140ms, in 260ms fade and 520ms rise from 100ms; mark 520ms |
+| Day and night | the new theme is drawn in over the page from the left, the way the now line moves (a view transition of the root, clipped) | 620ms, `cubic-bezier(0.65, 0, 0.35, 1)` |
+| The way in | its beam turns from dashed to solid under the pointer; a press sinks 1px | 220ms, 120ms |
+
+**The live score.** The hero's Score is a made-up day laid around the visitor's own time (`useNowMinutes`, minute by minute): its beams are fixed in hours from the top of the current hour, so the same beam is always on now and the others always on their side of it, and only the clock words change. The server cannot know the visitor's clock, so it draws 11:20 and the browser moves to the real time once it is running. A 24-hour and 12-hour switch beside the caption redraws it on either clock, for this drawing only.
+
+**The demos.** Each movement of the story (rehearsal marks A to E, a 30px box in Besley over each title) carries the thing itself, working, with nothing saved: capture read by the app's own `parseCapture` and `previewWords`; one beam that drags, resizes and answers the Score's keys (arrows a quarter hour, Shift and an arrow its end, Escape to cancel a drag); the done box on rows and a staff above them; Focus with its fold; and this month's grid with made-up marks, the Month's keys and a list of the day in focus or under the pointer. Each has a status line for what changed.
+
+**The footer** opens on the final barline, then the name, one honest paragraph (free, no ads, no analytics, no trackers; export or delete from Settings) and two short link groups under Overline heads, the one place outside the rail and the More sheet that the Overline is used.
 
 ### Command Palette
 A native `<dialog>` in Sheet, 560px wide, 12px radius, Dialog lift shadow, rising 8px with a 0.985 scale-in over 200ms. Options are 40px tall; the active option takes Verdigris Wash.
