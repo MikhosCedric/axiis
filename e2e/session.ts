@@ -28,9 +28,9 @@ export const signedIn = base.extend({
 });
 
 /**
- * Waits until the page answers its keys: the palette provider marks the document once its global key
- * listener is attached, which is after React has hydrated the page around it. A server-drawn page is
- * visible well before then, so a key pressed on sight can be lost.
+ * Waits until React has hydrated the page (src/components/shell/hydrated-mark.tsx), by which time the
+ * palette's global key listener is attached. A server-drawn page is visible well before then, so a key
+ * pressed or a line typed on sight can be lost. See docs/e2e-session.md, Waiting for the page.
  */
 export async function hydrated(page: Page): Promise<void> {
   await page.locator("html[data-hydrated]").waitFor({ state: "attached" });

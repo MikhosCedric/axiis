@@ -196,13 +196,10 @@ export function PaletteProvider({
       setOpen((o) => (action === "help" ? (o ?? "help") : o === "palette" ? null : "palette"));
     }
     document.addEventListener("keydown", onKey);
-    // The page answers its keys from here on; browser tests wait for this before pressing any (e2e/session.ts).
-    document.documentElement.dataset.hydrated = "";
     return () => {
       clearTimeout(goTimer);
       clearTimeout(areaTimer);
       document.removeEventListener("keydown", onKey);
-      delete document.documentElement.dataset.hydrated;
     };
   }, [router]);
 

@@ -185,6 +185,8 @@ signedIn.describe("the Month", () => {
       expect(await axe(page)).toEqual([]);
       await cell(page, /^Wednesday 20 May/).getByRole("button", { name: /^Renew the lease/ }).click();
       await expect(page.getByRole("complementary", { name: "Details" })).toBeVisible();
+      // The panel shows before the ?item= navigation has put the page's title back, a few hundred ms without one.
+      await expect(page).toHaveTitle("May 2099 · Axiis");
       expect(await axe(page)).toEqual([]);
     });
   }
