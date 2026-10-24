@@ -282,9 +282,7 @@
   border: 1px solid var(--rule-soft);
   background: var(--paper);
   padding: clamp(16px, 2vw, 32px);
-  transition:
-    opacity 700ms cubic-bezier(0.16, 1, 0.3, 1),
-    transform 500ms cubic-bezier(0.16, 1, 0.3, 1);
+  transition: transform 500ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .movementDemo::before,
@@ -538,9 +536,11 @@
     animation-delay: 280ms;
   }
 
+  /* Held at once, never faded out: only the way in is animated. */
   .reveal[data-reveal="wait"] {
     opacity: 0;
     transform: translateY(22px);
+    transition: none;
   }
 
   .reveal[data-reveal="in"] {
