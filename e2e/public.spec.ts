@@ -93,6 +93,23 @@ for (const [path, title] of [
   });
 }
 
+test.describe("on a wide screen", () => {
+  test.use({ viewport: { width: 2560, height: 1440 } });
+
+  for (const path of ["/privacy", "/terms"]) {
+    test(`${path} runs its header and footer the width of the window and keeps its prose to a reading measure`, async ({ page }) => {
+      await page.goto(path);
+      for (const landmark of ["banner", "contentinfo"] as const) {
+        expect((await page.getByRole(landmark).boundingBox())!.width, landmark).toBeGreaterThanOrEqual(2560 * 0.9);
+      }
+      const prose = (await page.locator("article p").nth(1).boundingBox())!;
+      expect(prose.width).toBeLessThanOrEqual(800);
+      expect(prose.x).toBeGreaterThan(2560 * 0.25);
+      expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBe(0);
+    });
+  }
+});
+
 test("an unknown address shows the not-found page", async ({ page }) => {
   // Signed out, an unknown app path is sent to sign in first; /dev is public in the browser-test build, so it reaches not-found.
   const response = await page.goto("/dev/no-such-page");
