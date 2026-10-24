@@ -278,8 +278,10 @@
   transform: translateY(calc(var(--still) * -20px));
 }
 
+/* Each time carries the flag's fill, so one rolled outside the flag is never ink on bare paper. */
 .reel > span {
   height: 20px;
+  background: var(--accent);
 }
 
 /*

@@ -185,8 +185,9 @@ for (const size of [
 
     test("the page uses the width: the sample day spans it, with no sideways scroll", async ({ page }) => {
       await page.goto("/");
-      const score = page.getByRole("figure", { name: /A sample day/ });
-      const box = (await score.boundingBox())!;
+      // The sheet the sample day is drawn on, inside the page's gutters.
+      const sheet = page.getByRole("figure", { name: /A sample day/ }).locator("xpath=..");
+      const box = (await sheet.boundingBox())!;
       expect(box.width / size.width).toBeGreaterThanOrEqual(0.9);
       const heading = (await page.getByRole("heading", { level: 1 }).boundingBox())!;
       expect(heading.width / size.width).toBeGreaterThanOrEqual(0.6);
