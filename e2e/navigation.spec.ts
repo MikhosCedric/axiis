@@ -1,5 +1,5 @@
 import { expect, type APIRequestContext, type Page } from "@playwright/test";
-import { SESSION_COOKIE, sessionSecret, signedIn } from "./session";
+import { hydrated, SESSION_COOKIE, sessionSecret, signedIn } from "./session";
 
 // The navigation account is a busy week of its own (docs/e2e-session.md), seeded around the server's real today in
 // the server's zone, so these tests can plan and tick without touching what the orientation tests read.
@@ -16,18 +16,14 @@ signedIn.beforeEach(async ({ page, request, baseURL }) => {
   expect((await reset(request)).status()).toBe(204);
   await page.context().addCookies([
     { name: "axiis-e2e-account", value: ACCOUNT, url: baseURL },
-    { name: "tz", value: zone, url: baseURL },
     { name: "tour", value: "done", url: baseURL },
   ]);
 });
 
-/** Opens a page and waits until React has hydrated it, since every key these tests press is a listener React attaches. */
+/** Opens a page and waits until it answers keys, since every key these tests press is a listener React attaches. */
 async function open(page: Page, path: string) {
   await page.goto(path);
-  await page.waitForFunction(() => {
-    const main = document.getElementById("main");
-    return main !== null && Object.keys(main).some((k) => k.startsWith("__react"));
-  });
+  await hydrated(page);
 }
 
 const details = (page: Page) => page.getByRole("complementary", { name: "Details" });

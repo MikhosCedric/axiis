@@ -1,6 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
-import { signedIn } from "./session";
+import { hydrated, signedIn } from "./session";
 
 // The not-found page, the error boundary, and a save that cannot reach the server.
 
@@ -51,9 +51,7 @@ signedIn("a save that cannot reach the server says so and keeps the page", async
   await page.goto("/settings");
   const areas = page.getByRole("region", { name: "Areas" });
   const field = areas.getByLabel("New area");
-  await expect(field).toBeVisible();
-  // Wait for hydration: the add button only works once React owns the form.
-  await page.waitForLoadState("networkidle");
+  await hydrated(page);
 
   await context.setOffline(true);
   await field.fill("Garden");
@@ -66,8 +64,7 @@ signedIn("a save that cannot reach the server says so and keeps the page", async
 signedIn("a capture that cannot reach the server keeps the typed words and says so", async ({ page, context }) => {
   await page.goto("/today");
   const field = page.locator("#capture");
-  await expect(field).toBeVisible();
-  await page.waitForLoadState("networkidle");
+  await hydrated(page);
 
   await context.setOffline(true);
   await field.fill("call the bank about the card");
@@ -81,8 +78,7 @@ signedIn("a capture that cannot reach the server keeps the typed words and says 
 signedIn("a done tick that cannot reach the server puts the item back and says so", async ({ page, context }) => {
   await page.goto("/tags/errands");
   const tick = page.getByRole("checkbox", { name: "Done: Renew passport" });
-  await expect(tick).toBeVisible();
-  await page.waitForLoadState("networkidle");
+  await hydrated(page);
 
   await context.setOffline(true);
   await tick.focus();

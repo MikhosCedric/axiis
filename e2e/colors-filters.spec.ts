@@ -1,6 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, type APIRequestContext, type Page } from "@playwright/test";
-import { SESSION_COOKIE, sessionSecret, signedIn } from "./session";
+import { hydrated, SESSION_COOKIE, sessionSecret, signedIn } from "./session";
 
 // The larger palette, tag colours, and colour as navigation, on an in-memory account of its own whose items sit in areas
 // (`axiis-e2e-account=filters`, src/lib/supabase/fake-account.ts), so no other spec resets it mid-test: "Draft the budget" in Work at 10:00 on 20 May 2099,
@@ -22,16 +22,13 @@ const rail = (page: Page) => page.getByRole("navigation", { name: "Primary" }).f
 const railArea = (page: Page, name: string) => rail(page).getByRole("region", { name: "Open today, by area" }).getByRole("link", { name: new RegExp(`^${name}`) });
 const chips = (page: Page) => page.getByRole("group", { name: "Filter" });
 const staffLabel = (page: Page, name: string) => page.locator("[data-staff-label]").filter({ hasText: name });
-/** The Score measures its axis once React has hydrated it, so its key listeners are attached by then. */
-const scoreReady = (page: Page) => page.locator("[data-axis-measured]").first().waitFor({ state: "attached" });
 
-/** Opens the tag's picker; the button answers once React has hydrated the page, so a click before then is tried again. */
+/** Opens the tag's picker, once the page answers clicks. */
 async function openTagPicker(page: Page, tag: string) {
   const group = page.getByRole("group", { name: `Colour for #${tag}` });
-  await expect(async () => {
-    if (!(await group.isVisible())) await page.getByRole("button", { name: new RegExp(`^Colour for #${tag}: `) }).click();
-    await expect(group).toBeVisible({ timeout: 1000 });
-  }).toPass();
+  await hydrated(page);
+  await page.getByRole("button", { name: new RegExp(`^Colour for #${tag}: `) }).click();
+  await expect(group).toBeVisible();
   return group;
 }
 
@@ -112,7 +109,7 @@ signedIn.describe("colours and filters", () => {
     await page.getByRole("link", { name: "Stop showing only #errands" }).click();
     await expect(page).toHaveURL(new RegExp(`${DAY}$`));
 
-    await scoreReady(page);
+    await hydrated(page);
     await page.locator("body").press("a");
     await page.locator("body").press("2");
     await expect(page).toHaveURL(new RegExp(`${DAY}\\?area=${HOME}$`));
@@ -151,10 +148,9 @@ signedIn.describe("colours and filters", () => {
     await page.goto("/settings");
     const hint = page.locator("[data-color-hint]");
     await expect(hint).toContainText("Give your areas a colour");
-    await expect(async () => {
-      if (await hint.isVisible()) await hint.getByRole("button", { name: "Not now" }).click();
-      await expect(hint).toHaveCount(0, { timeout: 1000 });
-    }).toPass();
+    await hydrated(page);
+    await hint.getByRole("button", { name: "Not now" }).click();
+    await expect(hint).toHaveCount(0);
     await page.reload();
     await expect(page.locator("[data-color-hint]")).toHaveCount(0);
   });
@@ -186,10 +182,9 @@ signedIn.describe("colours and filters on a phone", () => {
   signedIn("More holds the areas, and choosing one narrows the page", async ({ page }) => {
     await page.goto(DAY);
     const sheet = page.getByRole("dialog", { name: "More" });
-    await expect(async () => {
-      if (!(await sheet.isVisible())) await page.getByRole("button", { name: "More" }).click();
-      await expect(sheet).toBeVisible({ timeout: 1000 });
-    }).toPass();
+    await hydrated(page);
+    await page.getByRole("button", { name: "More" }).click();
+    await expect(sheet).toBeVisible();
     const work = sheet.getByRole("link", { name: /^Work/ });
     await expect(work).toBeVisible();
     expect((await work.boundingBox())!.height).toBeGreaterThanOrEqual(44);

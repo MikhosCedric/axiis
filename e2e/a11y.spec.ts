@@ -95,7 +95,6 @@ for (const variant of VARIANTS) {
         signedIn(`${path} has no serious or critical axe violations`, async ({ page, baseURL }) => {
           await page.context().addCookies([
             { name: "axiis-e2e-account", value: "busy", url: baseURL },
-            { name: "tz", value: zone, url: baseURL },
             { name: "clock", value: clock, url: baseURL },
           ]);
           await page.goto(path);

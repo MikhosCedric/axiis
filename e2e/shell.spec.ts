@@ -1,5 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
+import { hydrated } from "./session";
 
 test("the Score and Week trays are the Inbox and link to it", async ({ page }) => {
   for (const path of ["/dev/score", "/dev/week"]) {
@@ -49,7 +50,7 @@ test.describe("the rail", () => {
 
   test("one search field at the top opens the palette", async ({ page }) => {
     await page.goto("/dev/palette");
-    await page.locator("[data-hydrated]").waitFor({ state: "attached" });
+    await hydrated(page);
     const field = page.getByRole("navigation", { name: "Primary" }).getByRole("button", { name: /^Search or go to/ });
     await expect(field).toHaveCount(1);
     await field.click();
@@ -60,7 +61,7 @@ test.describe("the rail", () => {
 
   test("the account row opens a menu that Escape closes, handing focus back", async ({ page }) => {
     await page.goto("/dev/palette");
-    await page.locator("[data-hydrated]").waitFor({ state: "attached" });
+    await hydrated(page);
     const account = page.getByRole("button", { name: "Account" });
     const menu = page.getByRole("group", { name: "Account" });
     await expect(menu).toBeHidden();
@@ -92,7 +93,7 @@ test.describe("the rail", () => {
 
   test("a click outside the account menu closes it", async ({ page }) => {
     await page.goto("/dev/palette");
-    await page.locator("[data-hydrated]").waitFor({ state: "attached" });
+    await hydrated(page);
     await page.getByRole("button", { name: "Account" }).click();
     const menu = page.getByRole("group", { name: "Account" });
     await expect(menu).toBeVisible();

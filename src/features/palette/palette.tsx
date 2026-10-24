@@ -133,6 +133,11 @@ export function PaletteProvider({
   }, []);
   const guide = useMemo(() => ({ open: () => setOpen("help"), show }), [show]);
   useRememberVisits();
+  // Read by the key listener, so a refresh that brings new areas does not reattach it and drop a pending G or A.
+  const areasRef = useRef(areas);
+  useEffect(() => {
+    areasRef.current = areas;
+  }, [areas]);
 
   useEffect(() => {
     let goTimer: ReturnType<typeof setTimeout> | undefined;
@@ -162,6 +167,7 @@ export function PaletteProvider({
         return;
       }
       // A, then a digit: the page narrowed to that area, or 0 for every area.
+      const areas = areasRef.current;
       const pick = areaShortcut(areaTimer !== undefined, press, areas.length);
       clearTimeout(areaTimer);
       areaTimer = undefined;
@@ -188,12 +194,15 @@ export function PaletteProvider({
       setOpen((o) => (action === "help" ? (o ?? "help") : o === "palette" ? null : "palette"));
     }
     document.addEventListener("keydown", onKey);
+    // The page answers its keys from here on; browser tests wait for this before pressing any (e2e/session.ts).
+    document.documentElement.dataset.hydrated = "";
     return () => {
       clearTimeout(goTimer);
       clearTimeout(areaTimer);
       document.removeEventListener("keydown", onKey);
+      delete document.documentElement.dataset.hydrated;
     };
-  }, [router, areas]);
+  }, [router]);
 
   return (
     <OpenPalette.Provider value={() => setOpen("palette")}>

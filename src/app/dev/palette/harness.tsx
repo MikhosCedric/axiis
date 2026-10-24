@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useSyncExternalStore } from "react";
+import { useEffect, useState } from "react";
 import { NavRail } from "@/components/shell/nav-rail";
 import type { LocalDate } from "@/domain/item";
 import { isTypingTarget, shortcutAction } from "@/features/day/nav";
@@ -81,24 +81,12 @@ function Bar() {
   );
 }
 
-const noSubscribe = () => () => {};
-
-/**
- * Present once React has hydrated the page, so a test presses the palette's keys only after the
- * provider's listener exists. The server snapshot is false; the first client render after hydration is true.
- */
-function Hydrated() {
-  const hydrated = useSyncExternalStore(noSubscribe, () => true, () => false);
-  return hydrated ? <span data-hydrated hidden /> : null;
-}
-
 export function PaletteHarness({ today, nav }: { today: LocalDate; nav: boolean }) {
   return (
     <PaletteProvider today={today} actions={actions}>
       <div className="min-h-dvh rail:grid rail:grid-cols-[216px_minmax(0,1fr)]">
         {nav && <NavRail today={today} areas={AREAS.map((a, i) => ({ id: a.id, name: a.name, color: a.color, open: i + 1 }))} />}
         <main className="min-w-0 px-4 py-6 rail:px-9">
-          <Hydrated />
           <h1 className="mb-2 font-serif text-2xl font-semibold">Palette harness</h1>
           <p className="mb-4 max-w-prose text-ink-2">
             Ctrl or Cmd K opens search and commands. A question mark opens the shortcuts. Search runs over the notes harness

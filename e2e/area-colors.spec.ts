@@ -1,6 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, type APIRequestContext, type Locator, type Page } from "@playwright/test";
-import { SESSION_COOKIE, sessionSecret, signedIn } from "./session";
+import { hydrated, SESSION_COOKIE, sessionSecret, signedIn } from "./session";
 
 // Area colours on the real signed-in routes, as the in-memory account whose items sit in areas
 // (`axiis-e2e-account=areas`, src/lib/supabase/fake-account.ts): "Draft the budget" in Work at 10:00 on
@@ -23,13 +23,12 @@ const dot = (scope: Locator) => scope.locator("[data-area-color]");
 const fill = (scope: Locator) => dot(scope).first().evaluate((el) => getComputedStyle(el).backgroundColor);
 const staffLabel = (page: Page, name: string) => page.locator("[data-staff-label]").filter({ hasText: name });
 
-/** Opens an area's picker; the button answers once React has hydrated the page, so a click before then is tried again. */
+/** Opens an area's picker, once the page answers clicks. */
 async function openPicker(page: Page, area: string) {
   const group = page.getByRole("group", { name: `Colour for ${area}` });
-  await expect(async () => {
-    if (!(await group.isVisible())) await page.getByRole("button", { name: new RegExp(`^Colour for ${area}: `) }).click();
-    await expect(group).toBeVisible({ timeout: 1000 });
-  }).toPass();
+  await hydrated(page);
+  await page.getByRole("button", { name: new RegExp(`^Colour for ${area}: `) }).click();
+  await expect(group).toBeVisible();
   return group;
 }
 
