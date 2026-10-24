@@ -3,7 +3,7 @@
 import { useRef, useState, useSyncExternalStore } from "react";
 import type { LocalDate } from "@/domain/item";
 import { useClock } from "@/components/shell/clock-context";
-import { gridStep } from "@/features/month/model";
+import { gridStep } from "@/features/month/grid-step";
 import { formatDayHeading } from "@/features/today/format";
 import { Glyph } from "@/features/today/glyph";
 import { formatMinutes } from "@/lib/clock";
@@ -38,6 +38,7 @@ export function MonthDemo({ days, month, title }: { days: LocalDate[]; month: st
     if (!step || !("days" in step)) return false;
     const next = Math.max(0, Math.min(days.length - 1, index + step.days));
     setFocused(next);
+    setHovered(null);
     cells.current[next]?.focus();
     return true;
   }

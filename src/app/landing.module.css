@@ -7,7 +7,7 @@
 .display {
   max-width: 13ch;
   font-family: var(--font-serif);
-  font-size: clamp(2.6rem, 1.4rem + 5.2vw, 5.75rem);
+  font-size: clamp(2.6rem, 1.4rem + 5.2vw, 5.5rem);
   line-height: 1;
   font-weight: 500;
   letter-spacing: -0.03em;
@@ -16,9 +16,11 @@
   color: var(--ink);
 }
 
+/* From 900px the first line, "Your tasks and your time,", is held to one line: it measures 12.3em in Besley. */
 @media (min-width: 900px) {
   .display {
     max-width: none;
+    font-size: min(5.5rem, calc((100vw - 4rem) / 12.6));
   }
 
   .firstLine {

@@ -1,5 +1,5 @@
 import type { AreaColor } from "./area-color";
-import { idSchema, type ItemId, type ShownItem } from "./item";
+import type { ItemId, ShownItem } from "./item";
 
 export type TagId = string & { readonly __brand: "TagId" };
 
@@ -37,11 +37,6 @@ export function parseTagName(raw: unknown): TagName | null {
   const name = raw.normalize("NFC").replace(/\s+/g, " ").trim().replace(/^#+/, "").trim();
   // Lengths count UTF-16 code units, as zod's min and max did.
   return name.length >= 1 && name.length <= TAG_NAME_MAX && !/\p{Cc}/u.test(name) ? (name as TagName) : null;
-}
-
-export function parseTagId(raw: unknown): TagId | null {
-  const id = idSchema.safeParse(raw);
-  return id.success ? (id.data as TagId) : null;
 }
 
 /** What two names are compared by. */

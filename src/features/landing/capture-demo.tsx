@@ -85,9 +85,9 @@ function describe(place: Placement, clock: "12" | "24"): string {
     case "inbox":
       return `“${place.title}” goes to the Inbox.`;
     case "anytime":
-      return `“${place.title}” goes to ${place.day}, any time.`;
+      return `“${place.title}” lands ${place.day}, any time.`;
     case "timed":
-      return `“${place.title}” goes on ${place.day} at ${formatMinutes(place.start, clock)}.`;
+      return `“${place.title}” lands ${place.day} at ${formatMinutes(place.start, clock)}.`;
   }
 }
 
@@ -95,7 +95,7 @@ function Landing({ place, clock }: { place: Placement; clock: "12" | "24" }) {
   const timed = place.kind === "timed" ? place : null;
   const from = timed ? Math.max(0, Math.min(24 - WINDOW_HOURS, Math.floor(timed.start / 60) - 2)) : 7;
   const hours = Array.from({ length: WINDOW_HOURS + 1 }, (_, i) => from + i);
-  const day = place.kind === "timed" || place.kind === "anytime" ? place.day : "Today";
+  const day = place.kind === "timed" || place.kind === "anytime" ? place.day : "today";
   const item = place.kind === "nothing" ? null : <Item place={place} clock={clock} />;
 
   return (
@@ -111,7 +111,9 @@ function Landing({ place, clock }: { place: Placement; clock: "12" | "24" }) {
         </div>
       </div>
       <div className={styles.landRow}>
-        <span className={styles.landName}>{day}</span>
+        <span className={styles.landName}>
+          <span className="inline-block first-letter:uppercase">{day}</span>
+        </span>
         <div className={`${styles.landTrack} ${styles.landStaff}`}>
           {timed && (
             <div

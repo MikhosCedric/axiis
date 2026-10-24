@@ -1,6 +1,6 @@
 import type { LocalDate } from "@/domain/item";
 import { parseTagName, tagKey, type TagName } from "@/domain/tag";
-import { WEEK_LENGTH, weekOf } from "@/features/week/model";
+import { WEEK_LENGTH, weekOf } from "@/features/week/week-of";
 import { addDays, parseLocalDate } from "@/lib/dates";
 import type { CaptureResult, Landed } from "./commands";
 import { formatMinutes, type Clock } from "@/lib/clock";

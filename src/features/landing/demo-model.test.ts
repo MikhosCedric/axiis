@@ -1,13 +1,31 @@
 import { describe, expect, it } from "vitest";
+import { NEXT_UP_MAX } from "@/features/day/glance";
+import { DEFAULT_MINUTES } from "@/features/score/drop";
 import { CAPTURE_EXAMPLES } from "@/features/today/capture-syntax";
-import { DRAG_AXIS, focusSplit, foldedLine, keySpan, moveBy, placeCapture, resizeBy, type DayRow } from "./demo-model";
+import {
+  DRAG_AXIS,
+  LANDING_DEFAULT_MINUTES,
+  LANDING_NEXT_UP_MAX,
+  focusSplit,
+  foldedLine,
+  keySpan,
+  moveBy,
+  placeCapture,
+  resizeBy,
+  type DayRow,
+} from "./demo-model";
+
+it("uses the app's own default length and Next up count", () => {
+  expect(LANDING_DEFAULT_MINUTES).toBe(DEFAULT_MINUTES);
+  expect(LANDING_NEXT_UP_MAX).toBe(NEXT_UP_MAX);
+});
 
 describe("placeCapture", () => {
   it("puts a line with a day and a time on that day's line, half an hour long unless a length was typed", () => {
     expect(placeCapture("dentist tomorrow 9am #health")).toEqual({
       kind: "timed",
       title: "dentist",
-      day: "Tomorrow",
+      day: "tomorrow",
       start: 9 * 60,
       end: 9 * 60 + 30,
       tags: ["health"],
@@ -23,11 +41,11 @@ describe("placeCapture", () => {
   });
 
   it("reads a time with no day as today", () => {
-    expect(placeCapture("stand-up 9:30 for 15m")).toMatchObject({ kind: "timed", day: "Today", start: 570, end: 585 });
+    expect(placeCapture("stand-up 9:30 for 15m")).toMatchObject({ kind: "timed", day: "today", start: 570, end: 585 });
   });
 
   it("puts a day with no time in Any time, and a bare line in the Inbox", () => {
-    expect(placeCapture("call Sam next friday")).toEqual({ kind: "anytime", title: "call Sam", day: "Next Friday", tags: [] });
+    expect(placeCapture("call Sam next friday")).toEqual({ kind: "anytime", title: "call Sam", day: "next Friday", tags: [] });
     expect(placeCapture(CAPTURE_EXAMPLES[2])).toEqual({ kind: "inbox", title: "buy milk", tags: [] });
     expect(placeCapture("Groceries for Sunday")).toEqual({ kind: "inbox", title: "Groceries for Sunday", tags: [] });
   });

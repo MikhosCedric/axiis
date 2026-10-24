@@ -1,24 +1,30 @@
-import { NEXT_UP_MAX } from "@/features/day/glance";
-import { DEFAULT_MINUTES } from "@/features/score/drop";
 import { SNAP_MINUTES, clamp, snap } from "@/features/score/snap";
 import { dayWordText, parseCapture } from "@/features/today/capture-syntax";
 import type { TagName } from "@/domain/tag";
 
-/** Where a captured line lands, as the real capture decides it: a time puts it on a line, a day alone in Any time, neither in the Inbox. */
+/**
+ * Where a captured line lands, as the real capture decides it: a time puts it on a line, a day alone in
+ * Any time, neither in the Inbox. `day` is the parser's own words for the day ("tomorrow", "next Friday").
+ */
 export type Placement =
   | { kind: "nothing" }
   | { kind: "inbox"; title: string; tags: TagName[] }
   | { kind: "anytime"; title: string; day: string; tags: TagName[] }
   | { kind: "timed"; title: string; day: string; start: number; end: number; tags: TagName[] };
 
-const capital = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+/**
+ * The app's own numbers, written here so the landing does not carry the modules that hold them;
+ * demo-model.test.ts checks each against its source.
+ */
+export const LANDING_DEFAULT_MINUTES = 30;
+export const LANDING_NEXT_UP_MAX = 3;
 
 export function placeCapture(text: string): Placement {
   if (!text.trim()) return { kind: "nothing" };
   const read = parseCapture(text);
-  const day = read.day ? capital(dayWordText(read.day)) : "Today";
+  const day = read.day ? dayWordText(read.day) : "today";
   if (read.time) {
-    const end = read.time.start + (read.time.length ?? DEFAULT_MINUTES);
+    const end = read.time.start + (read.time.length ?? LANDING_DEFAULT_MINUTES);
     return { kind: "timed", title: read.title, day, start: read.time.start, end, tags: read.tags };
   }
   if (read.day) return { kind: "anytime", title: read.title, day, tags: read.tags };
@@ -61,7 +67,7 @@ export type DayRow = { id: string; title: string; start: number; end: number; do
 export function focusSplit(rows: readonly DayRow[], now: number): { kept: DayRow[]; planned: number; done: number } {
   const open = rows.filter((r) => !r.done).sort((a, b) => a.start - b.start);
   const happening = open.filter((r) => r.start <= now && now < r.end);
-  const next = open.filter((r) => r.start > now).slice(0, NEXT_UP_MAX);
+  const next = open.filter((r) => r.start > now).slice(0, LANDING_NEXT_UP_MAX);
   const kept = [...happening, ...next];
   return { kept, planned: open.length - kept.length, done: rows.filter((r) => r.done).length };
 }
