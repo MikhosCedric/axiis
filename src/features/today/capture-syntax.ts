@@ -250,7 +250,7 @@ export function dayOf(word: DayWord, today: LocalDate): LocalDate {
   }
 }
 
-function dayWordText(word: DayWord): string {
+export function dayWordText(word: DayWord): string {
   switch (word.kind) {
     case "in":
       return word.days === 0 ? "today" : word.days === 1 ? "tomorrow" : `in ${word.days} days`;
