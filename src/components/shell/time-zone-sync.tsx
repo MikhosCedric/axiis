@@ -35,9 +35,27 @@ export function TimeZoneSync() {
       }
     }
     if (!changed) return;
-    return afterStreamedReveal(() => router.refresh());
+    let stopWaiting = () => {};
+    const stopRevealWait = afterStreamedReveal(() => (stopWaiting = whenOnline(() => router.refresh())));
+    return () => {
+      stopRevealWait();
+      stopWaiting();
+    };
   }, [router]);
   return null;
+}
+
+/**
+ * A refresh that cannot reach the server makes Next load the whole page again, which offline is the
+ * browser's own error page, losing whatever was typed. So the refresh waits for the connection.
+ */
+function whenOnline(then: () => void): () => void {
+  if (navigator.onLine) {
+    then();
+    return () => {};
+  }
+  window.addEventListener("online", then, { once: true });
+  return () => window.removeEventListener("online", then);
 }
 
 /** How long to wait for the streamed page to be revealed before refreshing anyway. */
