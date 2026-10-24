@@ -1,5 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
+import { signedIn } from "./session";
 
 const PAGES = [
   "/",
@@ -67,12 +68,41 @@ for (const variant of VARIANTS) {
       test(`${path} has no serious or critical axe violations`, async ({ page }) => {
         await page.goto(path);
         await expect(page.locator("h1").first()).toBeVisible();
-        const { violations } = await new AxeBuilder({ page }).analyze();
-        const blocking = violations
-          .filter((v) => v.impact === "serious" || v.impact === "critical")
-          .map((v) => ({ rule: v.id, impact: v.impact, help: v.help, targets: v.nodes.map((n) => n.target.join(" ")) }));
-        expect(blocking).toEqual([]);
+        expect(await blockingViolations(page)).toEqual([]);
       });
     }
   });
+}
+
+// The real signed-in screens on the busy account, which draws every kind of item: beams, chips, due marks, tags,
+// rows and month marks. Read only, so they can share the account with the specs that tick it.
+const SIGNED_IN = ["/today", "/today?view=list", "/week", "/month", "/inbox", "/due", "/lists", "/tags"];
+const zone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+async function blockingViolations(page: Page) {
+  const { violations } = await new AxeBuilder({ page }).analyze();
+  return violations
+    .filter((v) => v.impact === "serious" || v.impact === "critical")
+    .map((v) => ({ rule: v.id, impact: v.impact, help: v.help, targets: v.nodes.map((n) => n.target.join(" ")) }));
+}
+
+for (const variant of VARIANTS) {
+  for (const clock of ["12", "24"] as const) {
+    signedIn.describe(`signed in, ${variant.name}, ${clock}-hour`, () => {
+      signedIn.use({ colorScheme: variant.colorScheme, viewport: variant.viewport, timezoneId: zone });
+
+      for (const path of SIGNED_IN) {
+        signedIn(`${path} has no serious or critical axe violations`, async ({ page, baseURL }) => {
+          await page.context().addCookies([
+            { name: "axiis-e2e-account", value: "busy", url: baseURL },
+            { name: "tz", value: zone, url: baseURL },
+            { name: "clock", value: clock, url: baseURL },
+          ]);
+          await page.goto(path);
+          await expect(page.locator("h1").first()).toBeVisible();
+          expect(await blockingViolations(page)).toEqual([]);
+        });
+      }
+    });
+  }
 }

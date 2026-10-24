@@ -35,7 +35,7 @@ test.describe("score", () => {
     await dragTo(page, chip, { x: home.box.x + home.box.width + 160, y: home.y });
 
     // The harness seeds from the real clock, so a drop that lands on the current half hour reads "happening now".
-    await expect(score.getByRole("button", { name: /^Book the dentist, \d\d:\d\d to \d\d:\d\d, Home, (?:planned|happening now|time passed)$/ })).toBeVisible();
+    await expect(score.getByRole("button", { name: /^Book the dentist, \d\d:\d\d(?:, passed)?, ends \d\d:\d\d, Home(?:, planned|, happening now)?$/ })).toBeVisible();
     await expect(chip).toHaveCount(0);
   });
 
@@ -53,8 +53,8 @@ test.describe("score", () => {
   });
 
   test("arrow keys move a focused beam a quarter hour", async ({ page }) => {
-    const beam = page.getByRole("button", { name: /^Design sync, event, \d\d:\d\d to \d\d:\d\d, Work/ });
-    const [, start, end] = (await beam.getAttribute("aria-label"))!.match(/(\d\d:\d\d) to (\d\d:\d\d)/)!;
+    const beam = page.getByRole("button", { name: /^Design sync, \d\d:\d\d–\d\d:\d\d(?:, passed)?, event, Work/ });
+    const [, start, end] = (await beam.getAttribute("aria-label"))!.match(/(\d\d:\d\d)–(\d\d:\d\d)/)!;
     const later = (clock: string) => minutesToClock(clockToMinutes(clock) + 15);
 
     await beam.focus();
@@ -62,7 +62,7 @@ test.describe("score", () => {
 
     // The fixture fixes this event at 13:00, so when the suite runs near then the moved beam covers now.
     const moved = page.getByRole("button", {
-      name: new RegExp(`^Design sync, event, ${later(start)} to ${later(end)}, Work, (planned|happening now|time passed)$`),
+      name: new RegExp(`^Design sync, ${later(start)}–${later(end)}(, passed)?, event, Work(, planned|, happening now)?$`),
     });
     await expect(moved).toBeVisible();
     await expect(moved).toBeFocused();
@@ -102,7 +102,7 @@ test.describe("score", () => {
 
     await dragTo(page, chip, { x: home.box.x + home.box.width + 160, y: home.y });
 
-    await expect(score.getByRole("button", { name: /^Take vitamins, \d\d:\d\d to \d\d:\d\d, Home, (?:planned|happening now|time passed), repeats$/ })).toBeVisible();
+    await expect(score.getByRole("button", { name: /^Take vitamins, \d\d:\d\d(?:, passed)?, ends \d\d:\d\d, Home(?:, planned|, happening now)?, repeats$/ })).toBeVisible();
     await expect(page.getByRole("button", { name: "Same time every day" })).toBeVisible();
   });
 });

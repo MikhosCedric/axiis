@@ -15,16 +15,15 @@ import { AreaMark } from "@/components/area-mark";
 import type { AreaColor } from "@/domain/area-color";
 import { repeats, type Area, type LocalDate, type ShownItem } from "@/domain/item";
 import { RepeatMark } from "@/features/today/repeat-mark";
-import { tagLine } from "@/features/tags/model";
 import { RowTags } from "@/features/tags/row-tags";
 import { formatClock, formatHour } from "@/lib/clock";
 import { useClock } from "@/components/shell/clock-context";
 import { Glyph } from "@/features/today/glyph";
 import { DueMark } from "@/features/today/due-mark";
-import { dueWords } from "@/features/today/due";
+import { beamWords, chipWords, CHIP_TAGS } from "@/features/today/item-name";
 import { LineLegend } from "@/features/today/line-legend";
 import { SameInInbox } from "@/features/inbox/same-in-inbox";
-import { EMPTY_TRAY, TRAY_FULL, INBOX,type BeamState, type TodayEntry, type TodayView } from "@/features/today/model";
+import { EMPTY_TRAY, TRAY_FULL, INBOX, type TodayEntry, type TodayView } from "@/features/today/model";
 import { instantAt, localMinutes } from "@/lib/dates";
 import type { ChildCount } from "@/lib/items/repo";
 import { keyPlacement, type DropContext, type Placement } from "./drop";
@@ -51,7 +50,6 @@ export type ScoreHandlers = {
   onToggleDone: (item: ShownItem) => void;
 };
 
-export const STATE_WORD: Record<BeamState, string> = { planned: "planned", live: "happening now", done: "done" };
 
 /** Where beams are drawn, and the real today, which a due date is read from even on another day. */
 type BeamContext = DropContext & { today: LocalDate };
@@ -414,10 +412,6 @@ export function ScoreView({
   );
 }
 
-function progress(count: ChildCount | undefined) {
-  return count ? { text: `${count.done}/${count.total}`, spoken: `${count.done} of ${count.total} subtasks done` } : null;
-}
-
 function BeamView({
   beam,
   staff,
@@ -446,12 +440,26 @@ function BeamView({
   const mine = preview?.item.id === item.id;
   const resizing = mine && preview.kind === "resize" && preview.target?.kind === "resize";
   const span = (resizing && spanOf({ ...item, schedule: preview.target!.placement.schedule }, ctx.date, ctx.timeZone)) || beam.span;
-  const startClock = formatClock(minutesToDate(ctx, span.start), ctx.timeZone, clock);
-  const endClock = formatClock(minutesToDate(ctx, span.end), ctx.timeZone, clock);
-  const p = progress(count);
   // Its time is over and it was never ticked: said in words, quietly, so the day reads left of the playhead.
   const over = state === "planned" && ctx.now !== null && span.end <= ctx.now;
-  const event = item.type === "event";
+  const dueOn = state !== "done" ? (item.dueOn ?? null) : null;
+  const words = beamWords({
+    title: item.title,
+    state,
+    repeats: repeats(item),
+    dueOn,
+    today: ctx.today,
+    tags: tags ?? [],
+    event: item.type === "event",
+    start: minutesToDate(ctx, span.start),
+    end: minutesToDate(ctx, span.end),
+    timeZone: ctx.timeZone,
+    clock,
+    resizing: !!resizing,
+    over,
+    area: staff.name,
+    count,
+  });
   const cls = [
     styles.beam,
     styles[state],
@@ -466,7 +474,7 @@ function BeamView({
       role="button"
       tabIndex={0}
       aria-pressed={selected}
-      aria-label={`${item.title}, ${event ? "event, " : ""}${startClock} to ${endClock}, ${staff.name}, ${over ? "time passed" : STATE_WORD[state]}${item.dueOn && state !== "done" ? `, ${dueWords(item.dueOn, ctx.today).words}` : ""}${repeats(item) ? ", repeats" : ""}${p ? `, ${p.spoken}` : ""}${spokenTags(tags)}`}
+      aria-label={words.name}
       aria-describedby={KEYS_ID}
       className={cls}
       style={{
@@ -481,12 +489,12 @@ function BeamView({
         <AreaMark color={staff.color} done={state === "done"} className="mr-1.5 mb-px align-middle" />
         {item.title}
         {repeats(item) && <RepeatMark className={styles.repeat} />}
-        {p && <span className={styles.count}>{p.text}</span>}
+        {words.count && <> <span className={styles.count}>{words.count}</span></>}{" "}
         <time className={styles.clock} dateTime={minutesToDate(ctx, span.start).toISOString()}>
-          {resizing ? `${startClock} to ${endClock}` : event ? `${startClock}–${endClock}` : startClock}
+          {words.time}
         </time>
-        {over && <span className={styles.clock}>passed</span>}
-        {item.dueOn && state !== "done" && <DueMark dueOn={item.dueOn} today={ctx.today} className={styles.clock} />}
+        {over && <> <span className={styles.clock}>passed</span></>}
+        {dueOn && <> <DueMark dueOn={dueOn} today={ctx.today} className={styles.clock} /></>}
       </span>
       <ViewTransition name={`item-${item.id}`} share="morph" default="none">
         <Glyph type={item.type} state={state} justDone={justDone} className={styles.glyph} />
@@ -530,16 +538,11 @@ function Example({ example, top, ctx }: { example: ExampleBeam; top: number; ctx
       style={{ left: xAt(ctx.axis, span.start), width: (span.end - span.start) * PX_PER_MINUTE, top }}
     >
       <span className={styles.label}>
-        {example.title}
+        {example.title}{" "}
         <span className={styles.clock}>{formatClock(minutesToDate(ctx, span.start), ctx.timeZone, clock)}</span>
       </span>
     </div>
   );
-}
-
-function spokenTags(tags: readonly string[] | undefined) {
-  const { spoken } = tagLine(tags ?? []);
-  return spoken ? `, ${spoken}` : "";
 }
 
 /** Done items folded away under one quiet line that opens in place. */
@@ -591,15 +594,15 @@ function Chip({
   onKeyDown: (e: KeyboardEvent<HTMLElement>) => void;
 }) {
   const { item, state } = entry;
-  const p = progress(count);
   const due = item.dueOn && state !== "done" ? item.dueOn : null;
+  const words = chipWords({ title: item.title, state, repeats: repeats(item), dueOn: due, today, tags: tags ?? [], where, count });
   return (
     <div
       data-item={item.id}
       role="button"
       tabIndex={0}
       aria-pressed={selected}
-      aria-label={`${item.title}, ${where}, ${STATE_WORD[state]}${due ? `, ${dueWords(due, today).words}` : ""}${repeats(item) ? ", repeats" : ""}${p ? `, ${p.spoken}` : ""}${spokenTags(tags)}`}
+      aria-label={words.name}
       aria-describedby={KEYS_ID}
       className={`${styles.chip} ${selected ? styles.selected : ""} ${state === "done" ? styles.done : ""} ${lifted ? styles.lifted : ""}`}
       onPointerDown={onPointerDown}
@@ -609,11 +612,11 @@ function Chip({
         <Glyph type={item.type} state={state} justDone={justDone} className={styles.glyph} />
       </ViewTransition>
       <AreaMark color={color} done={state === "done"} />
-      <span className="min-w-0 truncate">{item.title}</span>
+      <span className="min-w-0 truncate">{item.title}</span>{" "}
       {repeats(item) && <RepeatMark className="text-ink-3" />}
-      {p && <span className={styles.count}>{p.text}</span>}
-      {due && <DueMark dueOn={due} today={today} className="text-xs text-ink-3" />}
-      <RowTags tags={tags} max={2} className="whitespace-nowrap" />
+      {words.count && <span className={styles.count}>{words.count}</span>}{" "}
+      {due && <DueMark dueOn={due} today={today} className="text-xs text-ink-3" />}{" "}
+      <RowTags tags={tags} max={CHIP_TAGS} className="whitespace-nowrap" />
     </div>
   );
 }

@@ -67,9 +67,9 @@ for (const viewport of WIDTHS) {
         await expect(page.locator("[data-axis-measured]")).toBeAttached();
         const d = await drawn(page);
         expect(d.beams).toEqual([
-          { text: "Write the plan10:00", staff: "Work", hidden: "true", events: "none" },
-          { text: "Groceries18:00", staff: "Home", hidden: "true", events: "none" },
-          { text: "Walk12:30", staff: "Health", hidden: "true", events: "none" },
+          { text: "Write the plan 10:00", staff: "Work", hidden: "true", events: "none" },
+          { text: "Groceries 18:00", staff: "Home", hidden: "true", events: "none" },
+          { text: "Walk 12:30", staff: "Health", hidden: "true", events: "none" },
         ]);
         expect(d.pageScrolls).toBe(false);
         // The axis spans the examples and now, so late in the day at 1280 it may need to scroll; what it must never do is leave a gap.
