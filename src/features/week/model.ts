@@ -3,20 +3,14 @@ import { buildToday, type TodayEntry } from "@/features/today/model";
 import { addDays, dayRangeFor, instantAt, localMinutes, toLocalDate } from "@/lib/dates";
 import { RANGE_LIMIT } from "@/lib/items/repo";
 import { spanLine } from "@/features/day/glance";
+import { WEEK_LENGTH, weekOf } from "./week-of";
 
-/** First day of the week, as `Date#getUTCDay` numbers it (0 is Sunday). One place, so it can become a setting. */
-export const WEEK_STARTS_ON = 1;
-export const WEEK_LENGTH = 7;
+export { WEEK_LENGTH, WEEK_STARTS_ON, weekOf } from "./week-of";
+
 
 /** Under a week whose read hit `RANGE_LIMIT`, so later planned items are not drawn. */
 export const WEEK_FULL = `Showing the first ${RANGE_LIMIT} planned items of this week. Later ones may be missing.`;
 
-/** The seven local dates of the week that holds `date`, first day first. */
-export function weekOf(date: LocalDate): LocalDate[] {
-  const weekday = new Date(`${date}T00:00:00Z`).getUTCDay();
-  const start = addDays(date, -((weekday - WEEK_STARTS_ON + WEEK_LENGTH) % WEEK_LENGTH));
-  return Array.from({ length: WEEK_LENGTH }, (_, i) => addDays(start, i));
-}
 
 /** The span `repo.listRange` reads for `days`: local midnight of the first day to local midnight after the last. */
 export function weekRange(days: LocalDate[], timeZone: string): SpanRange {

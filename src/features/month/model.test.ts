@@ -2,11 +2,11 @@ import type { Clock } from "@/lib/clock";
 import { describe, expect, it } from "vitest";
 import type { Area, AreaId, Item, ItemId, LocalDate } from "@/domain/item";
 import { makeItem } from "@/features/today/test-support";
+import { gridStep } from "./grid-step";
 import { dayRangeFor, instantAt } from "@/lib/dates";
 import {
   addMonths,
   buildMonth,
-  gridStep,
   MARKS_PER_DAY,
   monthGrid,
   monthHref,

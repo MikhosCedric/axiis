@@ -1,6 +1,6 @@
 import type { LocalDate } from "@/domain/item";
 import { parseTagName, tagKey, type TagName } from "@/domain/tag";
-import { WEEK_LENGTH, weekOf } from "@/features/week/model";
+import { WEEK_LENGTH, weekOf } from "@/features/week/week-of";
 import { addDays, parseLocalDate } from "@/lib/dates";
 import type { CaptureResult, Landed } from "./commands";
 import { formatMinutes, type Clock } from "@/lib/clock";
@@ -250,7 +250,7 @@ export function dayOf(word: DayWord, today: LocalDate): LocalDate {
   }
 }
 
-function dayWordText(word: DayWord): string {
+export function dayWordText(word: DayWord): string {
   switch (word.kind) {
     case "in":
       return word.days === 0 ? "today" : word.days === 1 ? "tomorrow" : `in ${word.days} days`;

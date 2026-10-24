@@ -4,7 +4,7 @@ import type { AreaId, LocalDate } from "@/domain/item";
 import { shortcutAction, type KeyPress } from "@/features/day/nav";
 import { keyPlacement, type DropContext } from "@/features/score/drop";
 import { makeItem } from "@/features/today/test-support";
-import { gridStep } from "@/features/month/model";
+import { gridStep } from "@/features/month/grid-step";
 import { rowKey } from "@/features/inbox/model";
 import { keyDestination, weekOf } from "@/features/week/model";
 import { instantAt } from "@/lib/dates";

@@ -1,24 +1,50 @@
 import Link from "next/link";
+import { ViewTransition, type ReactNode } from "react";
 import { BrandMark } from "@/components/shell/icons";
-import { ThemeToggle } from "@/components/shell/theme-toggle";
+import { DayNight } from "./day-night";
+import styles from "./site-chrome.module.css";
 
-export const primaryAction =
-  "inline-flex items-center justify-center rounded-md bg-accent px-5 py-3 text-[15px] font-semibold text-on-accent transition-[background-color] duration-150 hover:bg-[color-mix(in_oklab,var(--accent)_86%,var(--ink))]";
+export const primaryAction = styles.primary;
 
-export const quietAction =
-  "inline-flex items-center justify-center rounded-md border border-rule px-5 py-3 text-[15px] font-medium text-ink transition-[border-color] duration-150 hover:border-field";
+export const quietAction = styles.quiet;
 
 export const siteWrap = "mx-auto w-full max-w-[1180px] px-4 sm:px-8";
 
-export function SiteHeader() {
+/** The beam inside the primary action: dashed at rest, solid under the pointer, as a planned item turns live. */
+export function ActionBeam() {
+  return <span className={styles.actionBeam} aria-hidden="true" />;
+}
+
+/**
+ * The mark and the name, as a link home. One element across the public pages and sign in, so a change
+ * of page moves it from where it was to where it is (a named view transition) instead of redrawing it.
+ */
+export function BrandHome({ className = "" }: { className?: string }) {
   return (
-    <header className={`${siteWrap} flex items-center justify-between gap-4 py-5`}>
-      <Link href="/" className="flex items-center gap-2.5 rounded-sm text-ink no-underline">
+    <ViewTransition name="brand-mark" share="brand" default="none">
+      <Link href="/" className={`flex w-fit items-center gap-2.5 rounded-sm text-ink no-underline ${className}`}>
         <BrandMark />
         <span className="font-serif text-[22px] leading-none font-semibold tracking-[-0.01em]">Axiis</span>
       </Link>
+    </ViewTransition>
+  );
+}
+
+/** A public page's body: it turns like a page when the address changes. */
+export function PageTurn({ children }: { children: ReactNode }) {
+  return (
+    <ViewTransition enter="public-in" exit="public-out" default="none">
+      <div className="flex min-h-dvh flex-col">{children}</div>
+    </ViewTransition>
+  );
+}
+
+export function SiteHeader() {
+  return (
+    <header className={`${siteWrap} relative z-10 flex items-center justify-between gap-4 py-5`}>
+      <BrandHome />
       <div className="flex items-center gap-1.5">
-        <ThemeToggle className="flex min-h-11 min-w-11 items-center justify-center gap-2 rounded-md px-2.5 text-ink-2 hover:bg-paper-2 hover:text-ink [&>span]:sr-only" />
+        <DayNight />
         <Link href="/login" className="inline-flex min-h-11 items-center rounded-md px-3 font-medium text-ink underline-offset-4 hover:underline">
           Sign in
         </Link>
@@ -27,25 +53,56 @@ export function SiteHeader() {
   );
 }
 
+const FOOTER_LINKS = [
+  {
+    head: "Axiis",
+    links: [
+      { href: "/", label: "Home" },
+      { href: "/login", label: "Sign in" },
+    ],
+  },
+  {
+    head: "The fine print",
+    links: [
+      { href: "/privacy", label: "Privacy" },
+      { href: "/terms", label: "Terms" },
+    ],
+  },
+];
+
+/** The last bar of the page: a closing double barline over the name, what it is, and where else to go. */
 export function SiteFooter() {
   return (
-    <footer className="mt-24 border-t border-rule">
-      <div className={`${siteWrap} flex flex-wrap items-center justify-between gap-x-8 gap-y-3 py-6 text-[13px] text-ink-3`}>
-        <span className="flex items-center gap-2">
-          <span className="font-serif text-[15px] font-semibold text-ink-2">Axiis</span>
-          <span>Tasks and time, on one page.</span>
-        </span>
-        <nav aria-label="Site" className="flex gap-5">
-          <Link href="/privacy" className="inline-flex min-h-11 items-center hover:text-ink hover:underline">
-            Privacy
-          </Link>
-          <Link href="/terms" className="inline-flex min-h-11 items-center hover:text-ink hover:underline">
-            Terms
-          </Link>
-          <Link href="/login" className="inline-flex min-h-11 items-center hover:text-ink hover:underline">
-            Sign in
-          </Link>
-        </nav>
+    <footer className={`${styles.footer} mt-auto`}>
+      <div className={siteWrap}>
+        <div className={styles.finalBar} aria-hidden="true" />
+        <div className="grid gap-x-16 gap-y-8 py-10 sm:grid-cols-[minmax(0,1fr)_auto]">
+          <div className="max-w-[30rem]">
+            <span className="font-serif text-[22px] font-semibold tracking-[-0.01em] text-ink">Axiis</span>
+            <p className="mt-2 text-[15px] leading-relaxed text-ink-2">
+              Tasks and time, on one page. Free, with no ads, no analytics and no trackers. Export everything, or
+              delete your account, from Settings.
+            </p>
+          </div>
+          <nav aria-label="Site" className="flex gap-12">
+            {FOOTER_LINKS.map((group) => (
+              <div key={group.head}>
+                <p id={`footer-${group.links[0].label}`} className="text-[12px] font-semibold tracking-[0.06em] text-ink-3 uppercase">
+                  {group.head}
+                </p>
+                <ul className="mt-2" aria-labelledby={`footer-${group.links[0].label}`}>
+                  {group.links.map((l) => (
+                    <li key={l.href}>
+                      <Link href={l.href} className={styles.footerLink}>
+                        {l.label}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </nav>
+        </div>
       </div>
     </footer>
   );

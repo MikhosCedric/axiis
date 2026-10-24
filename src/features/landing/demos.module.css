@@ -1,0 +1,687 @@
+/* Shared by the landing's demos: small working pieces of the app, drawn on the same paper and lines. */
+
+.demo {
+  min-width: 0;
+  font-size: 14px;
+}
+
+.status {
+  min-height: 20px;
+  margin-top: 10px;
+  font-size: 13px;
+  color: var(--ink-2);
+}
+
+.keysLine {
+  margin-top: 14px;
+  max-width: 52ch;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--ink-2);
+}
+
+.keysLine kbd {
+  display: inline-block;
+  min-width: 22px;
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  background: var(--sheet);
+  padding: 0 5px;
+  text-align: center;
+  font-family: inherit;
+  font-size: 12px;
+  line-height: 18px;
+}
+
+/* Capture */
+
+.captureForm {
+  display: grid;
+  gap: 8px;
+}
+
+.fieldLabel {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink-2);
+}
+
+.captureInput {
+  width: 100%;
+  min-height: 46px;
+  border: 1px solid var(--field);
+  border-radius: 8px;
+  background: var(--sheet);
+  padding: 10px 14px;
+  font-size: 16px;
+  color: var(--ink);
+}
+
+.reads {
+  min-height: 21px;
+  font-size: 14px;
+}
+
+.examples {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 8px;
+  margin-top: 2px;
+  font-size: 13px;
+}
+
+.example {
+  min-height: 32px;
+  border: 1px solid var(--rule);
+  border-radius: 6px;
+  padding: 0 10px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12px;
+  color: var(--ink-2);
+}
+
+.example:hover {
+  border-color: var(--field);
+  background: var(--hover);
+  color: var(--ink);
+}
+
+.example:active {
+  background: var(--press);
+}
+
+.example[aria-pressed="true"] {
+  border-color: var(--ink);
+  color: var(--ink);
+}
+
+@media (pointer: coarse) {
+  .example {
+    min-height: 44px;
+  }
+}
+
+/* A small Score: an axis row, then rows that each have a name cell and a track. */
+
+.landing,
+.dragScore {
+  --lw: 104px;
+  margin-top: 22px;
+  border-block: 1px solid var(--rule);
+}
+
+.dragScore {
+  margin-top: 0;
+}
+
+.landAxis,
+.landRow {
+  display: flex;
+  min-height: 44px;
+}
+
+.landAxis {
+  min-height: 30px;
+  border-bottom: 1px solid var(--rule);
+}
+
+.landRow + .landRow {
+  border-top: 1px solid var(--rule-soft);
+}
+
+.landName {
+  flex: none;
+  display: flex;
+  align-items: center;
+  width: var(--lw);
+  border-right: 1px solid var(--rule);
+  padding: 0 10px;
+  font-family: var(--font-serif);
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.15;
+}
+
+.landSmall {
+  white-space: nowrap;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  color: var(--ink-2);
+}
+
+.landTrack {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  overflow: clip;
+  border-right: 3px double var(--rule);
+}
+
+.landAxis .landTrack {
+  border-right-color: transparent;
+}
+
+.landTick {
+  position: absolute;
+  inset-block: 0;
+  left: calc(var(--h) / var(--span) * 100%);
+  border-left: 1px solid var(--rule);
+  padding: 8px 0 0 5px;
+  white-space: nowrap;
+  font-size: 12px;
+  line-height: 1;
+  font-weight: 500;
+  color: var(--ink-3);
+}
+
+@media (max-width: 520px) {
+  .oddTick {
+    color: transparent;
+  }
+}
+
+.landStaff {
+  height: 64px;
+  background:
+    repeating-linear-gradient(to bottom, var(--rule-soft) 0 1px, transparent 1px 6px) 0 33px / 100% 25px no-repeat,
+    linear-gradient(to right, var(--rule-soft) 1px, transparent 1px) 0 0 / calc(100% / var(--span)) 100%;
+}
+
+.dropping {
+  background-color: var(--accent-wash);
+}
+
+/* The beam rides a layer the width of the track, moved by a share of its own width: a glide on the compositor. */
+.landMover {
+  position: absolute;
+  inset: 0;
+  transform: translateX(calc(var(--at) * 100%));
+  transition: transform 280ms cubic-bezier(0.16, 1, 0.3, 1);
+  pointer-events: none;
+}
+
+.landMover[data-dragging] {
+  transition: none;
+}
+
+.landBeam {
+  position: absolute;
+  top: 33px;
+  left: 0;
+  width: max(calc(var(--len) * 100%), 14px);
+  height: 25px;
+  pointer-events: auto;
+}
+
+.landGlyph {
+  position: absolute;
+  left: -6px;
+  right: 0;
+  top: 4.5px;
+  width: auto;
+}
+
+.landLabel {
+  position: absolute;
+  left: -6px;
+  bottom: calc(100% + 1px);
+  white-space: nowrap;
+  font-size: 13px;
+  line-height: 20px;
+  font-weight: 500;
+  color: var(--ink);
+  text-shadow:
+    0 0 2px var(--paper),
+    0 0 4px var(--paper);
+}
+
+.landClock {
+  margin-left: 6px;
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--ink-3);
+  font-variant-numeric: tabular-nums;
+}
+
+.landTags {
+  margin-left: 6px;
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--ink-2);
+}
+
+.landChips {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  align-items: center;
+  padding: 6px 10px;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  max-width: 100%;
+  border: 1px solid var(--rule);
+  border-radius: 8px;
+  background: var(--sheet);
+  padding: 6px 11px;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.chipGlyph {
+  width: 28px;
+}
+
+/* Drag */
+
+.dragBeam {
+  cursor: grab;
+  touch-action: none;
+  border-radius: 4px;
+}
+
+/* A 44px hit area on a 25px beam, without moving what is drawn. */
+.dragBeam::after {
+  content: "";
+  position: absolute;
+  inset: -10px -4px;
+}
+
+.dragBeam:focus-visible {
+  outline-offset: 6px;
+}
+
+.ghosted {
+  cursor: grabbing;
+}
+
+.ghosted .landGlyph {
+  opacity: 0;
+}
+
+.ghosted::before {
+  content: "";
+  position: absolute;
+  inset: 8px 0 8px -6px;
+  border: 1.5px dashed var(--accent);
+  border-radius: 4px;
+  background: var(--accent-wash);
+}
+
+.dragTip {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--accent);
+}
+
+.grip {
+  position: absolute;
+  z-index: 1;
+  top: -10px;
+  bottom: -10px;
+  right: -6px;
+  width: 18px;
+  cursor: ew-resize;
+  touch-action: none;
+}
+
+.grip::after {
+  content: "";
+  position: absolute;
+  top: 16px;
+  bottom: 16px;
+  left: 7px;
+  width: 2px;
+  border-radius: 1px;
+  background: var(--ink-3);
+  opacity: 0;
+  transition: opacity 140ms;
+}
+
+.dragBeam:hover .grip::after,
+.dragBeam:focus-visible .grip::after {
+  opacity: 1;
+}
+
+@media (pointer: coarse) {
+  .grip {
+    width: 28px;
+    right: -10px;
+  }
+
+  .grip::after {
+    left: 12px;
+    opacity: 1;
+  }
+}
+
+/* Done */
+
+.live .landLabel {
+  font-weight: 700;
+}
+
+.done .landLabel {
+  font-weight: 400;
+  color: var(--ink-3);
+}
+
+/* The app's done box: the glyph itself, 48 by 32, 44 tall under a coarse pointer. */
+.tick {
+  position: relative;
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 48px;
+  height: 32px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.tick:hover {
+  background: var(--hover);
+}
+
+.tick:active {
+  background: var(--press);
+}
+
+.tick:has(:focus-visible) {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+@media (pointer: coarse) {
+  .tick {
+    height: 44px;
+  }
+}
+
+.rows {
+  border-top: 1px solid var(--rule);
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 48px;
+  border-bottom: 1px solid var(--rule-soft);
+  padding: 4px 0;
+  background: var(--paper);
+}
+
+.rowGlyph {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  flex: none;
+}
+
+.rowTitle {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.rowTime {
+  flex: none;
+  font-size: 13px;
+  color: var(--ink-3);
+}
+
+.rowDone .rowTitle {
+  font-weight: 400;
+  color: var(--ink-3);
+}
+
+.nowWords {
+  font-weight: 600;
+  color: var(--accent);
+}
+
+/* Focus */
+
+.focusHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 10px;
+  margin-bottom: 12px;
+  font-size: 13px;
+}
+
+.focusToggle {
+  margin-left: auto;
+  min-height: 38px;
+  border: 1px solid var(--rule);
+  border-radius: 8px;
+  padding: 0 14px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink);
+}
+
+.focusToggle:hover {
+  background: var(--hover);
+}
+
+.focusToggle:active {
+  background: var(--press);
+}
+
+.focusToggle[aria-pressed="true"] {
+  border-color: var(--ink);
+  background: var(--ink);
+  color: var(--paper);
+}
+
+@media (pointer: coarse) {
+  .focusToggle {
+    min-height: 44px;
+  }
+}
+
+.fold {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 44px;
+  border-bottom: 1px solid var(--rule);
+  text-align: left;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ink-2);
+}
+
+.fold:hover {
+  color: var(--ink);
+}
+
+.foldChevron {
+  flex: none;
+  transition: transform 200ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.fold[aria-expanded="true"] .foldChevron {
+  transform: rotate(90deg);
+}
+
+/* Month */
+
+.monthDemo {
+  display: grid;
+  gap: 20px;
+  container-type: inline-size;
+}
+
+@media (min-width: 900px) {
+  .monthDemo {
+    grid-template-columns: minmax(0, 1fr) 15rem;
+    align-items: start;
+  }
+}
+
+.monthGrid {
+  border-top: 1px solid var(--rule);
+  border-left: 1px solid var(--rule);
+}
+
+.monthWeek {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+}
+
+.weekday {
+  border-right: 1px solid var(--rule);
+  border-bottom: 1px solid var(--rule);
+  padding: 6px 6px;
+  font-size: 12px;
+  color: var(--ink-2);
+}
+
+.day {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+  height: 6.25rem;
+  border-right: 1px solid var(--rule);
+  border-bottom: 1px solid var(--rule);
+  padding: 5px 6px;
+  cursor: pointer;
+  transition: background-color 140ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.day:focus-visible {
+  outline-offset: -3px;
+}
+
+.dayShown {
+  background: var(--hover);
+}
+
+.dayNumber {
+  align-self: flex-start;
+  min-width: 22px;
+  border-radius: 999px;
+  padding: 0 5px;
+  font-size: 12px;
+  line-height: 22px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.dayOut .dayNumber {
+  color: var(--ink-3);
+}
+
+.dayMonth {
+  font-weight: 500;
+}
+
+.today {
+  background: var(--ink);
+  color: var(--paper);
+  text-align: center;
+}
+
+.marks {
+  display: grid;
+  gap: 1px;
+  min-width: 0;
+}
+
+.mark {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  height: 18px;
+  font-size: 12px;
+}
+
+.markGlyph {
+  flex: none;
+  transform: scale(0.5);
+  transform-origin: left center;
+  margin-right: -20px;
+}
+
+.markWords {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.more {
+  font-size: 12px;
+  color: var(--ink-3);
+}
+
+/* Under a 36rem column the cells draw dots, as the Month does on a phone. */
+@container (width < 36rem) {
+  .day {
+    height: 56px;
+    align-items: center;
+  }
+
+  .dayNumber {
+    align-self: center;
+  }
+
+  .marks {
+    display: flex;
+    gap: 3px;
+  }
+
+  .mark {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--ink);
+  }
+
+  .markGlyph,
+  .markWords,
+  .more {
+    display: none;
+  }
+
+  .weekday {
+    padding-inline: 4px;
+    text-align: center;
+  }
+}
+
+.dayList {
+  border-top: 1px solid var(--rule);
+  padding-top: 12px;
+}
+
+.dayListRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 40px;
+  border-bottom: 1px solid var(--rule-soft);
+  font-size: 14px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landMover,
+  .foldChevron,
+  .day {
+    transition: none;
+  }
+}

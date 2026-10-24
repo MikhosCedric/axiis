@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { SiteFooter, SiteHeader, siteWrap } from "./site-chrome";
+import { PageTurn, SiteFooter, SiteHeader, siteWrap } from "./site-chrome";
 import styles from "./legal.module.css";
 
 /** A fact only the owner can supply. Drawn so it cannot be missed in review. */
@@ -9,7 +9,7 @@ export function Blank({ children }: { children: string }) {
 
 export function LegalPage({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <>
+    <PageTurn>
       <SiteHeader />
       <main id="main" className={`${siteWrap} pt-8 sm:pt-14`}>
         <article className={styles.article}>
@@ -25,6 +25,6 @@ export function LegalPage({ title, children }: { title: string; children: ReactN
         </article>
       </main>
       <SiteFooter />
-    </>
+    </PageTurn>
   );
 }
