@@ -8,7 +8,7 @@ import { gridStep } from "@/features/month/grid-step";
 import { rowKey } from "@/features/inbox/model";
 import { keyDestination, weekOf } from "@/features/week/model";
 import { instantAt } from "@/lib/dates";
-import { areaShortcut, chordCaps, chordSpoken, globalShortcut, goShortcut, GO_PLACES, SHORTCUTS, type Chord, type Handler } from "./shortcuts";
+import { areaShortcut, CAPTURE_KEY, chordCaps, chordSpoken, globalShortcut, goShortcut, GO_PLACES, SHORTCUTS, type Chord, type Handler } from "./shortcuts";
 
 const source = (path: string) => readFileSync(new URL(`../${path}`, import.meta.url), "utf8");
 
@@ -47,7 +47,10 @@ const answers: Record<Handler, (chord: Chord) => boolean> = {
     source("day/day-nav.tsx").includes("shortcutAction(") &&
     source("week/week-nav.tsx").includes("shortcutAction(") &&
     source("month/month-nav.tsx").includes("shortcutAction("),
-  capture: (c) => names("today/capture-field.tsx", c.key) && source("palette/palette.tsx").includes("e.key === CAPTURE_KEY"),
+  capture: (c) =>
+    c.key === CAPTURE_KEY
+      ? source("palette/palette.tsx").includes('document.getElementById("capture")')
+      : names("today/capture-field.tsx", c.key),
   "score-item": (c) =>
     names("score/score-view.tsx", c.key) ||
     [beam, waiting].some((item) => keyPlacement(ctx, item, [null, work], { key: c.key, shiftKey: !!c.shift }) !== null),

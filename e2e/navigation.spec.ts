@@ -92,10 +92,8 @@ signedIn.describe("the palette as a way around", () => {
 
     await open(page, "/due");
     const palette = page.getByRole("dialog", { name: "Search and commands" });
-    await expect(async () => {
-      await page.keyboard.press("c");
-      await expect(palette).toBeVisible({ timeout: 500 });
-    }).toPass();
+    await page.keyboard.press("c");
+    await expect(palette).toBeVisible();
     await palette.getByRole("combobox").fill("");
     await expect(palette.getByRole("combobox")).toBeFocused();
     await expect(palette.getByRole("group", { name: "Recent" }).getByRole("option")).toHaveText(["Wednesday 2 January 2030"]);
@@ -108,12 +106,9 @@ signedIn.describe("the palette as a way around", () => {
 
   signedIn("C on a page with a capture field still goes to that field", async ({ page }) => {
     await open(page, "/inbox");
-    // The key is wired once the page hydrates, so press until it is.
-    await expect(async () => {
-      await page.locator("h1").click();
-      await page.keyboard.press("c");
-      await expect(page.getByLabel("Capture anything")).toBeFocused({ timeout: 500 });
-    }).toPass();
+    await page.locator("h1").click();
+    await page.keyboard.press("c");
+    await expect(page.getByLabel("Capture anything")).toBeFocused();
     await expect(page.getByRole("dialog", { name: "Search and commands" })).toBeHidden();
   });
 });

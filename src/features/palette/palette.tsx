@@ -181,11 +181,13 @@ export function PaletteProvider({
         router.push(areaHref(window.location.pathname, window.location.search.slice(1), id));
         return;
       }
-      // C goes to the page's capture field where it has one (that field takes the key); anywhere else the palette captures.
+      // C goes to the page's capture field where it has one; anywhere else the palette captures.
       if (e.key === CAPTURE_KEY && !press.altKey && !press.ctrlKey && !press.metaKey && !press.typing && !e.defaultPrevented) {
-        if (document.getElementById("capture") || document.querySelector("dialog[open]")) return;
+        if (document.querySelector("dialog[open]")) return;
         e.preventDefault();
-        setOpen("palette");
+        const field = document.getElementById("capture");
+        if (field) field.focus();
+        else setOpen("palette");
         return;
       }
       const action = globalShortcut(press);

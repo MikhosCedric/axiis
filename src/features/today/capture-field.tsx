@@ -94,19 +94,6 @@ export function CaptureField({
 
   useEffect(() => () => unmark.current(), []);
 
-  useEffect(() => {
-    function onKey(e: KeyboardEvent) {
-      const t = e.target as HTMLElement;
-      if (e.key !== "c" || e.metaKey || e.ctrlKey || e.altKey || t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName)) {
-        return;
-      }
-      e.preventDefault();
-      input.current?.focus();
-    }
-    document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
-  }, []);
-
   function submit(e: FormEvent) {
     e.preventDefault();
     const title = value.trim();
