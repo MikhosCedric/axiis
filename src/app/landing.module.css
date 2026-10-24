@@ -1,12 +1,122 @@
+/* The hero holds its own depth layers behind it, so they never reach the header or the sections below. */
+.hero {
+  position: relative;
+  isolation: isolate;
+}
+
 .display {
   max-width: 13ch;
   font-family: var(--font-serif);
-  font-size: clamp(2.6rem, 1.4rem + 5.2vw, 5.25rem);
+  font-size: clamp(2.6rem, 1.4rem + 5.2vw, 5.75rem);
   line-height: 1;
   font-weight: 500;
-  letter-spacing: -0.025em;
+  letter-spacing: -0.03em;
+  font-optical-sizing: auto;
   text-wrap: balance;
   color: var(--ink);
+}
+
+@media (min-width: 900px) {
+  .display {
+    max-width: none;
+  }
+
+  .firstLine {
+    display: block;
+  }
+}
+
+/* "on one page." sits on a staff of five hairlines, ruled left to right as the page opens. */
+.ruled {
+  position: relative;
+  display: inline-block;
+  white-space: nowrap;
+}
+
+.staffUnder {
+  position: absolute;
+  z-index: -1;
+  left: -0.04em;
+  right: -0.08em;
+  bottom: -0.16em;
+  display: flex;
+  height: 0.36em;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.staffUnder span {
+  display: block;
+  height: max(1px, 0.012em);
+  background: var(--rule);
+  transform-origin: left;
+}
+
+.lead {
+  max-width: 34rem;
+  font-size: 17px;
+  line-height: 1.6;
+  color: var(--ink-2);
+  text-wrap: pretty;
+}
+
+@media (min-width: 640px) {
+  .lead {
+    font-size: 18px;
+  }
+}
+
+/* Under the headline: the lead on the left, the way in on the right, their last lines on one baseline. */
+.heroFoot {
+  display: grid;
+  gap: 32px;
+  margin-top: 28px;
+}
+
+@media (min-width: 900px) {
+  .heroFoot {
+    grid-template-columns: minmax(0, 34rem) auto;
+    justify-content: space-between;
+    align-items: end;
+    margin-top: 40px;
+  }
+
+  .lead {
+    margin-top: 0;
+  }
+}
+
+/*
+ * Depth: two large, faint staves behind the hero, one far (wide-spaced, barred) and one nearer and finer.
+ * As the page scrolls they move slower than the page and at different rates, so the paper reads as
+ * sheets laid over each other. Transform only.
+ */
+.depth {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  overflow: clip;
+  pointer-events: none;
+}
+
+.farStaff {
+  position: absolute;
+  inset-inline: 0;
+  top: 6%;
+  height: 177px;
+  background:
+    repeating-linear-gradient(to bottom, var(--rule-soft) 0 1px, transparent 1px 44px),
+    linear-gradient(to right, var(--rule-soft) 1px, transparent 1px) 18vw 0 / 33vw 100%;
+  mask-image: linear-gradient(to right, transparent, #000 30%, #000 85%, transparent);
+}
+
+.nearStaff {
+  position: absolute;
+  inset-inline: 0;
+  top: 44%;
+  height: 49px;
+  background: repeating-linear-gradient(to bottom, var(--rule-soft) 0 1px, transparent 1px 12px);
+  mask-image: linear-gradient(to right, transparent 45%, #000 75%, transparent);
 }
 
 .heading {
@@ -18,135 +128,124 @@
   text-wrap: balance;
 }
 
-/* Three bars of one staff: barlines between, a double barline at the end. */
-.measures {
-  display: grid;
-  margin-top: 28px;
-  border-block: 1px solid var(--rule);
+.section {
+  margin-top: 96px;
 }
 
-.measure {
+@media (min-width: 640px) {
+  .section {
+    margin-top: 128px;
+  }
+}
+
+/* The story: a head, then five movements, each a rehearsal mark, a title, a few lines and the thing working. */
+.story {
+  margin-top: 96px;
+  scroll-margin-top: 24px;
+}
+
+@media (min-width: 640px) {
+  .story {
+    margin-top: 128px;
+  }
+}
+
+.storyHead {
   display: grid;
-  grid-template-rows: auto 1fr auto;
   gap: 10px;
-  padding: 24px 0 28px;
+  border-bottom: 1px solid var(--rule);
+  padding-bottom: 20px;
 }
 
-.measure + .measure {
-  border-top: 1px solid var(--rule);
-}
-
-@media (min-width: 820px) {
-  .measures {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    border-right: 3px double var(--rule);
-  }
-
-  .measure {
-    padding: 28px 28px 32px;
-  }
-
-  .measure:first-child {
-    padding-left: 0;
-  }
-
-  .measure + .measure {
-    border-top: 0;
-    border-left: 1px solid var(--rule);
-  }
-}
-
-.measureTitle {
-  font-family: var(--font-serif);
-  font-size: 22px;
-  line-height: 1.2;
-  font-weight: 500;
-}
-
-.measureText {
-  max-width: 34ch;
+.storyLead {
+  max-width: 40rem;
   font-size: 15px;
   line-height: 1.6;
   color: var(--ink-2);
 }
 
-.figure {
-  display: flex;
-  align-items: flex-end;
-  min-height: 64px;
-  padding-top: 12px;
+.movement {
+  display: grid;
+  gap: 28px;
+  border-bottom: 1px solid var(--rule);
+  padding-block: 48px;
 }
 
-.miniChip {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  border: 1px solid var(--rule);
-  border-radius: 8px;
-  background: var(--sheet);
-  padding: 7px 11px;
-  font-size: 13px;
-  font-weight: 500;
+.movement:last-child {
+  border-bottom: 3px double var(--rule);
 }
 
-.miniChip .chipGlyph {
-  width: 28px;
+@media (min-width: 960px) {
+  .movement {
+    grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+    gap: 64px;
+    align-items: start;
+    padding-block: 72px;
+  }
+
+  .movement:nth-of-type(even) {
+    grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+  }
+
+  .movement:nth-of-type(even) .movementText {
+    order: 2;
+  }
+
+  .wide {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 32px;
+  }
+
+  .wide .movementText {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) minmax(0, 1.4fr);
+    column-gap: 24px;
+    align-items: baseline;
+  }
+
+  .wide .movementBody {
+    margin-top: 0;
+  }
 }
 
-.miniStaff {
+.movementText {
   position: relative;
-  display: block;
-  width: 100%;
-  max-width: 260px;
-  height: 25px;
-  background: repeating-linear-gradient(to bottom, var(--rule-soft) 0 1px, transparent 1px 6px);
 }
 
-.ghost {
-  position: absolute;
-  left: 18%;
-  width: 52%;
-  top: 8px;
-  height: 9px;
-  border: 1.5px dashed var(--accent);
-  border-radius: 4px;
-  background: var(--accent-wash);
-}
-
-.ghostTip {
-  position: absolute;
-  left: -1.5px;
-  bottom: calc(100% + 6px);
-  font-size: 12px;
-  line-height: 20px;
+/* A rehearsal mark, as a score boxes a letter over the bar where a passage begins. */
+.mark {
+  display: inline-grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  margin-bottom: 18px;
+  border: 1.5px solid var(--ink);
+  font-family: var(--font-serif);
+  font-size: 17px;
   font-weight: 600;
-  white-space: nowrap;
-  color: var(--accent);
+  line-height: 1;
 }
 
-.miniBeam {
-  position: absolute;
-  left: 18%;
-  width: 52%;
-  inset-block: 0;
-}
-
-.miniBeam .miniGlyph {
-  position: absolute;
-  left: -6px;
-  right: 0;
-  top: 4.5px;
-  width: auto;
-}
-
-.miniLabel {
-  position: absolute;
-  left: -6px;
-  bottom: calc(100% + 1px);
-  white-space: nowrap;
-  font-size: 13px;
-  line-height: 20px;
+.movementTitle {
+  font-family: var(--font-serif);
+  font-size: clamp(1.45rem, 1.15rem + 1vw, 2rem);
+  line-height: 1.12;
   font-weight: 500;
+  letter-spacing: -0.015em;
+  text-wrap: balance;
+}
+
+.movementBody {
+  max-width: 36ch;
+  margin-top: 14px;
+  font-size: 15px;
+  line-height: 1.65;
+  color: var(--ink-2);
+  text-wrap: pretty;
+}
+
+.movementDemo {
+  min-width: 0;
 }
 
 .ledger {
@@ -181,5 +280,97 @@
   .close {
     grid-template-columns: minmax(0, 1fr) auto;
     align-items: end;
+  }
+}
+
+/*
+ * Motion. Everything here is transform and opacity, and none of it holds back what is first on screen:
+ * the headline is never animated, and a section is held back only once script has seen it is below the fold.
+ */
+@media (prefers-reduced-motion: no-preference) {
+  .staffUnder span {
+    animation: rule-in 1100ms cubic-bezier(0.16, 1, 0.3, 1) backwards;
+  }
+
+  .staffUnder span:nth-child(2) {
+    animation-delay: 70ms;
+  }
+
+  .staffUnder span:nth-child(3) {
+    animation-delay: 140ms;
+  }
+
+  .staffUnder span:nth-child(4) {
+    animation-delay: 210ms;
+  }
+
+  .staffUnder span:nth-child(5) {
+    animation-delay: 280ms;
+  }
+
+  .reveal[data-reveal="wait"] {
+    opacity: 0;
+    transform: translateY(22px);
+  }
+
+  .reveal[data-reveal="in"] {
+    transition:
+      opacity 700ms cubic-bezier(0.16, 1, 0.3, 1),
+      transform 900ms cubic-bezier(0.16, 1, 0.3, 1);
+    transition-delay: calc(var(--i, 0) * 90ms);
+  }
+
+  @supports (animation-timeline: scroll()) {
+    .farStaff {
+      animation: drift-far linear both;
+      animation-timeline: scroll(root);
+      animation-range: 0 100vh;
+    }
+
+    .nearStaff {
+      animation: drift-near linear both;
+      animation-timeline: scroll(root);
+      animation-range: 0 100vh;
+    }
+
+    .mark {
+      animation: mark-drift linear both;
+      animation-timeline: view();
+      animation-range: cover;
+    }
+  }
+}
+
+@keyframes rule-in {
+  from {
+    transform: scaleX(0);
+  }
+}
+
+@keyframes drift-far {
+  to {
+    transform: translateY(38vh);
+  }
+}
+
+@keyframes drift-near {
+  to {
+    transform: translateY(18vh);
+  }
+}
+
+@keyframes mark-drift {
+  from {
+    transform: translateY(14px);
+  }
+  to {
+    transform: translateY(-14px);
+  }
+}
+
+@media print {
+  .reveal[data-reveal] {
+    opacity: 1;
+    transform: none;
   }
 }

@@ -1,0 +1,466 @@
+.figure {
+  margin: 0;
+}
+
+.caption {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+  margin-bottom: 14px;
+  font-size: 13px;
+}
+
+/* The Ink-filled segment rule, small: the reader's clock for this drawing only. */
+.clockSwitch {
+  display: inline-flex;
+  border: 1px solid var(--rule);
+  border-radius: 6px;
+  padding: 2px;
+}
+
+.clockSwitch button {
+  min-height: 30px;
+  border-radius: 4px;
+  padding: 0 10px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ink-2);
+}
+
+.clockSwitch button:hover {
+  background: var(--hover);
+  color: var(--ink);
+}
+
+.clockSwitch button[aria-pressed="true"] {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+@media (pointer: coarse) {
+  .clockSwitch button {
+    min-height: 44px;
+  }
+}
+
+/*
+ * Hours here are counted from the top of the hour now is in (live-day.ts), so the window is
+ * a few hours either side of now at any time of day. It narrows on small screens instead of scrolling.
+ */
+.score {
+  --from: -2;
+  --to: 4;
+  --lw: 84px;
+  --row-h: 56px;
+  --span: calc(var(--to) - var(--from));
+  position: relative;
+  border-block: 1px solid var(--rule);
+}
+
+@media (min-width: 640px) {
+  .score {
+    --from: -3;
+    --to: 6;
+    --lw: 120px;
+    --row-h: 60px;
+  }
+}
+
+@media (min-width: 1000px) {
+  .score {
+    --from: -5;
+    --to: 7;
+    --lw: 136px;
+  }
+}
+
+.sheet {
+  position: relative;
+}
+
+.labelCell {
+  flex: none;
+  width: var(--lw);
+  border-right: 1px solid var(--rule);
+  padding: 12px 10px;
+}
+
+.track {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  border-right: 3px double var(--rule);
+}
+
+.axisRow {
+  display: flex;
+  height: 34px;
+  border-bottom: 1px solid var(--rule);
+}
+
+.axisRow .labelCell {
+  padding: 0;
+}
+
+.axisRow .track {
+  border-right-color: transparent;
+}
+
+.tick {
+  position: absolute;
+  inset-block: 0;
+  left: calc((var(--h) - var(--from)) / var(--span) * 100%);
+  border-left: 1px solid var(--rule);
+  padding: 10px 0 0 6px;
+  white-space: nowrap;
+  font-size: 12px;
+  line-height: 1;
+  font-weight: 500;
+  color: var(--ink-3);
+}
+
+.staff {
+  display: flex;
+  border-bottom: 1px solid var(--rule);
+}
+
+.staff .track {
+  height: calc(var(--rows) * var(--row-h) + 12px);
+  background-image: linear-gradient(to right, var(--rule-soft) 1px, transparent 1px);
+  background-size: calc(100% / var(--span)) 100%;
+}
+
+.staffName {
+  display: block;
+  font-family: var(--font-serif);
+  font-size: 16px;
+  line-height: 1.2;
+  font-weight: 500;
+  color: var(--ink);
+}
+
+@media (min-width: 640px) {
+  .staffName {
+    font-size: 19px;
+  }
+
+  .labelCell {
+    padding-inline: 14px;
+  }
+}
+
+.lines {
+  position: absolute;
+  inset-inline: 0;
+  top: calc(var(--row) * var(--row-h) + var(--row-h) - 25px);
+  height: 25px;
+  background: repeating-linear-gradient(to bottom, var(--rule-soft) 0 1px, transparent 1px 6px);
+  transform-origin: left;
+}
+
+.beam {
+  position: absolute;
+  height: 25px;
+  top: calc(var(--row) * var(--row-h) + var(--row-h) - 25px);
+  left: calc((var(--s) - var(--from)) / var(--span) * 100%);
+  width: calc((var(--e) - var(--s)) / var(--span) * 100%);
+  min-width: 14px;
+}
+
+.beam .glyph {
+  position: absolute;
+  left: -6px;
+  right: 0;
+  top: 4.5px;
+  width: auto;
+}
+
+.label {
+  position: absolute;
+  left: -6px;
+  bottom: calc(100% + 1px);
+  max-width: calc(var(--room) / (var(--e) - var(--s)) * 100% - 10px);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+  line-height: 20px;
+  font-weight: 500;
+  color: var(--ink);
+  /* Over the now line, with a paper halo, so the line passes behind the words. */
+  z-index: 3;
+  text-shadow:
+    0 0 2px var(--paper),
+    0 0 4px var(--paper),
+    0 0 6px var(--paper);
+  /* A label whose beam starts outside the visible window would show only a stub of text; hide it. */
+  opacity: clamp(0, min((var(--s) - var(--from)) * 100 + 1, (var(--to) - 0.75 - var(--s)) * 100 + 1), 1);
+}
+
+.live .label {
+  font-weight: 700;
+}
+
+.done .label {
+  font-weight: 400;
+  color: var(--ink-3);
+}
+
+.count,
+.clock {
+  font-weight: 400;
+  font-variant-numeric: tabular-nums;
+}
+
+.count {
+  margin-left: 4px;
+  color: var(--ink-2);
+}
+
+.clock {
+  margin-left: 6px;
+  font-size: 12px;
+  color: var(--ink-3);
+}
+
+/*
+ * The now line and its clock flag ride one layer the width of the track. The layer moves by transform,
+ * a share of its own width, so the line sweeps and steps each minute on the compositor.
+ */
+.nowLayer {
+  position: absolute;
+  inset-block: 0;
+  left: var(--lw);
+  right: 3px;
+  z-index: 2;
+  overflow: clip;
+  pointer-events: none;
+}
+
+.nowMover {
+  position: absolute;
+  inset: 0;
+  transform: translateX(calc((var(--into) - var(--from)) / var(--span) * 100%));
+  transition: transform 700ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.playhead {
+  position: absolute;
+  top: 34px;
+  bottom: 0;
+  left: -1px;
+  width: 2px;
+  background: var(--accent);
+}
+
+.nowPill {
+  position: absolute;
+  top: 6px;
+  left: 0;
+  transform: translateX(-50%);
+  border-radius: 4px;
+  background: var(--accent);
+  padding: 4px 6px;
+  white-space: nowrap;
+  font-size: 12px;
+  line-height: 1;
+  font-weight: 600;
+  color: var(--on-accent);
+}
+
+.tray {
+  display: flex;
+  border-top: 1px solid var(--rule);
+}
+
+.trayLabel {
+  font-family: var(--font-serif);
+  font-size: 15px;
+  line-height: 1.2;
+  font-weight: 500;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-content: flex-start;
+  gap: 8px;
+  min-width: 0;
+  padding: 10px;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  max-width: 100%;
+  border: 1px solid var(--rule);
+  border-radius: 8px;
+  background: var(--sheet);
+  padding: 7px 11px;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.chip .chipGlyph {
+  width: 28px;
+}
+
+/* The drag ghost, as the Score draws one: a dashed verdigris outline over its wash, the time range above. */
+.ghost::before {
+  content: "";
+  position: absolute;
+  inset: 8px 0 8px -6px;
+  border: 1.5px dashed var(--accent);
+  border-radius: 4px;
+  background: var(--accent-wash);
+}
+
+.ghostTip {
+  position: absolute;
+  left: -6px;
+  bottom: calc(100% + 1px);
+  white-space: nowrap;
+  font-size: 12px;
+  line-height: 20px;
+  font-weight: 600;
+  color: var(--accent);
+}
+
+.ghost,
+.landed {
+  opacity: 0;
+}
+
+.key {
+  display: flex;
+  flex-wrap: wrap;
+  column-gap: 26px;
+  row-gap: 8px;
+  margin: 14px 0 0;
+  font-size: 13px;
+}
+
+.key dd {
+  margin: 0;
+}
+
+.keyPlayhead {
+  display: inline-block;
+  width: 2px;
+  height: 16px;
+  margin-inline: 21px;
+  background: var(--accent);
+}
+
+/*
+ * Arrival, once: the staff lines are ruled left to right, the beams slide onto them in order, and the
+ * now line sweeps from the window's first hour to now. Then a loop every 14 seconds: the first Inbox chip
+ * lifts, its ghost slides onto Health with its time, settles as a dashed beam, and goes back.
+ */
+@media (prefers-reduced-motion: no-preference) {
+  .lines {
+    animation: rule-in 900ms cubic-bezier(0.16, 1, 0.3, 1) calc(120ms + var(--k) * 110ms + var(--row) * 60ms) backwards;
+  }
+
+  .score .beam:not(.ghost, .landed) {
+    animation: beam-in 640ms cubic-bezier(0.16, 1, 0.3, 1) calc(520ms + var(--n) * 65ms) backwards;
+  }
+
+  .nowMover {
+    animation: sweep 1.8s cubic-bezier(0.65, 0, 0.35, 1) 450ms backwards;
+  }
+
+  .ghost {
+    animation: ghost 14s cubic-bezier(0.16, 1, 0.3, 1) 3.2s infinite;
+  }
+
+  .landed {
+    animation: landed 14s ease-out 3.2s infinite;
+  }
+
+  .lifted {
+    animation: lifted 14s cubic-bezier(0.16, 1, 0.3, 1) 3.2s infinite;
+  }
+
+  .score[data-offscreen] :is(.ghost, .landed, .lifted) {
+    animation-play-state: paused;
+  }
+}
+
+@keyframes rule-in {
+  from {
+    transform: scaleX(0);
+  }
+}
+
+@keyframes beam-in {
+  from {
+    opacity: 0;
+    transform: translateX(-18px);
+  }
+}
+
+@keyframes sweep {
+  from {
+    transform: translateX(0);
+  }
+}
+
+@keyframes lifted {
+  0%,
+  4% {
+    opacity: 1;
+    transform: none;
+  }
+  9% {
+    opacity: 1;
+    transform: translateY(-3px);
+  }
+  14%,
+  82% {
+    opacity: 0.35;
+    transform: translateY(-3px);
+  }
+  90%,
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes ghost {
+  0%,
+  7% {
+    opacity: 0;
+    transform: translateX(-28px);
+  }
+  15%,
+  26% {
+    opacity: 1;
+    transform: none;
+  }
+  31%,
+  100% {
+    opacity: 0;
+    transform: none;
+  }
+}
+
+@keyframes landed {
+  0%,
+  26% {
+    opacity: 0;
+  }
+  31%,
+  80% {
+    opacity: 1;
+  }
+  88%,
+  100% {
+    opacity: 0;
+  }
+}

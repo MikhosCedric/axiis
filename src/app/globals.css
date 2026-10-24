@@ -261,6 +261,29 @@
   }
 }
 
+/* The public day and night switch draws the sky in effect: a sun by day, a crescent by night. */
+.day-night-moon {
+  display: none;
+}
+
+:root[data-theme="dark"] .day-night-sun {
+  display: none;
+}
+
+:root[data-theme="dark"] .day-night-moon {
+  display: inline;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .day-night-sun {
+    display: none;
+  }
+
+  :root:not([data-theme="light"]) .day-night-moon {
+    display: inline;
+  }
+}
+
 /* Items morph between Score and List; see ViewTransition share="morph". */
 ::view-transition {
   pointer-events: none;
@@ -285,6 +308,73 @@
   animation:
     220ms ease-out 80ms both vt-fade,
     360ms cubic-bezier(0.16, 1, 0.3, 1) 80ms both vt-rise;
+}
+
+/*
+ * The public pages turn the same way, a little further: the old page drops 8px as it fades, the new one
+ * rises 12px. The brand mark is not part of either page: it moves on its own from where it was to where it is.
+ */
+::view-transition-old(.public-out) {
+  animation:
+    140ms ease-in both vt-fade reverse,
+    140ms ease-in both vt-drop;
+}
+
+::view-transition-new(.public-in) {
+  animation:
+    260ms ease-out 100ms both vt-fade,
+    520ms cubic-bezier(0.16, 1, 0.3, 1) 100ms both vt-rise-public;
+}
+
+::view-transition-group(.brand) {
+  animation-duration: 520ms;
+  animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+  z-index: 10;
+}
+
+/* The landing's demos: a captured line moving between rows, and Today folding under Focus. */
+::view-transition-group(.capture-move),
+::view-transition-group(.focus-move) {
+  animation-duration: 400ms;
+  animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+::view-transition-new(.focus-in) {
+  animation: 260ms ease-out 120ms both vt-fade;
+}
+
+::view-transition-old(.focus-out) {
+  animation: 160ms ease-in both vt-fade reverse;
+}
+
+/* Day and night on the public pages: the new theme is drawn in from the left, the way the now line moves. */
+:root[data-theme-turn]::view-transition-old(root) {
+  animation: none;
+}
+
+:root[data-theme-turn]::view-transition-new(root) {
+  animation: 620ms cubic-bezier(0.65, 0, 0.35, 1) both vt-wipe;
+}
+
+@keyframes vt-wipe {
+  from {
+    clip-path: inset(0 100% 0 0);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+
+@keyframes vt-drop {
+  to {
+    transform: translateY(8px);
+  }
+}
+
+@keyframes vt-rise-public {
+  from {
+    transform: translateY(12px);
+  }
 }
 
 @keyframes vt-fade {
