@@ -111,6 +111,15 @@
   color: var(--ink-3);
 }
 
+/* A beam's label spaces its pieces with real spaces, so its text reads as words; these margins make up the rest. */
+.label > .count {
+  margin-left: 0.5px;
+}
+
+.label > .clock {
+  margin-left: 2.5px;
+}
+
 .grip {
   position: absolute;
   right: -6px;

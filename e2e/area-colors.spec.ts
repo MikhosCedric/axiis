@@ -69,9 +69,13 @@ signedIn.describe("area colours", () => {
 
   signedIn("are chosen in Settings, kept, and shown on the Score, Week, Month, detail panel and rail", async ({ page }) => {
     await colourWorkAndHome(page);
-    await page.reload();
+    // The arrows sent one save per colour they passed and the button shows the last at once, so a reload can land
+    // before the last save does; kept means it reads Moss once the saves are in.
+    await expect(async () => {
+      await page.reload();
+      await expect(page.getByRole("button", { name: "Colour for Home: Moss" })).toBeVisible({ timeout: 1000 });
+    }).toPass();
     await expect(page.getByRole("button", { name: "Colour for Work: Clay" })).toBeVisible();
-    await expect(page.getByRole("button", { name: "Colour for Home: Moss" })).toBeVisible();
     await expect(page.getByRole("button", { name: "Colour for Health: None" })).toBeVisible();
 
     await page.goto(DAY);
@@ -93,12 +97,12 @@ signedIn.describe("area colours", () => {
     await expect(dot(details)).toHaveAttribute("data-area-color", "clay");
 
     await page.goto("/week/2099-05-18");
-    await expect(dot(page.getByRole("button", { name: /^Draft the budget, 10:00 to 11:30, Work/ }))).toHaveAttribute("data-area-color", "clay");
+    await expect(dot(page.getByRole("button", { name: /^Draft the budget, 10:00, Work, ends 11:30/ }))).toHaveAttribute("data-area-color", "clay");
     await expect(dot(page.getByRole("button", { name: /^Water the ferns, Any time, Home/ }))).toHaveAttribute("data-area-color", "moss");
 
     await page.goto("/month/2099-05");
     const wednesday = page.getByRole("gridcell", { name: /^Wednesday 20 May/ });
-    await expect(dot(wednesday.getByRole("button", { name: /^Draft the budget/ }))).toHaveAttribute("data-area-color", "clay");
+    await expect(dot(wednesday.getByRole("button", { name: /^10:00, Draft the budget/ }))).toHaveAttribute("data-area-color", "clay");
     await expect(dot(wednesday.getByRole("button", { name: /^Water the ferns/ }))).toHaveAttribute("data-area-color", "moss");
   });
 
