@@ -48,6 +48,14 @@ export function MonthPicker({ month, today, className }: { month: YearMonth; tod
     panel.current?.querySelector<HTMLElement>(`[data-month="${focused}"]`)?.focus();
   });
 
+  // The shown month carries autofocus, so the popover focuses it as it opens, before the next key. The toggle
+  // event comes later, as a task of its own, and an arrow pressed at once would otherwise land on the button.
+  useLayoutEffect(() => {
+    for (const el of panel.current?.querySelectorAll<HTMLElement>("[data-month]") ?? []) {
+      el.toggleAttribute("autofocus", el.dataset.month === month);
+    }
+  });
+
   useLayoutEffect(() => {
     if (!open) return;
     function place() {
@@ -107,8 +115,9 @@ export function MonthPicker({ month, today, className }: { month: YearMonth; tod
         onToggle={(e) => {
           const opening = e.newState === "open";
           setOpen(opening);
-          if (opening) focus(month);
-          else if (document.activeElement === document.body || panel.current?.contains(document.activeElement)) trigger.current?.focus();
+          if (opening) return;
+          setFocused(month);
+          if (document.activeElement === document.body || panel.current?.contains(document.activeElement)) trigger.current?.focus();
         }}
         className="inset-auto m-0 w-[min(288px,calc(100vw-32px))] rounded-lg border border-rule bg-sheet p-3 text-ink shadow-float [--ground:var(--sheet)]"
       >
