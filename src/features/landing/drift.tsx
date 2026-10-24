@@ -29,7 +29,6 @@ const HERO: Depth[] = [
     pieces: [
       { form: "staff", x: "58%", y: "1.42em", w: "3.4em" },
       { form: "barline", x: "91%", y: "1.42em" },
-      { form: "staff", x: "-3%", y: "calc(100% - 0.2em)", w: "2em" },
       { form: "head", x: "44%", y: "-0.28em" },
     ],
   },

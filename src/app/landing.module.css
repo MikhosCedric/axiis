@@ -94,11 +94,13 @@
 /*
  * Depth: two large, faint staves behind the hero, one far (wide-spaced, barred) and one nearer and finer.
  * As the page scrolls they move slower than the page and at different rates, so the paper reads as
- * sheets laid over each other. Transform only.
+ * sheets laid over each other. Transform only. The layer is a screen tall rather than the hero's height,
+ * so while the page is still streaming in and the hero grows, the staves never move (a layout shift).
  */
 .depth {
   position: absolute;
-  inset: 0;
+  inset: 0 0 auto;
+  height: 100svh;
   z-index: -1;
   overflow: clip;
   pointer-events: none;
@@ -107,7 +109,7 @@
 .farStaff {
   position: absolute;
   inset-inline: 0;
-  top: 6%;
+  top: 6svh;
   height: 177px;
   background:
     repeating-linear-gradient(to bottom, var(--rule-soft) 0 1px, transparent 1px 44px),
@@ -118,7 +120,7 @@
 .nearStaff {
   position: absolute;
   inset-inline: 0;
-  top: 44%;
+  top: 48svh;
   height: 49px;
   background: repeating-linear-gradient(to bottom, var(--rule-soft) 0 1px, transparent 1px 12px);
   mask-image: linear-gradient(to right, transparent 45%, #000 75%, transparent);
