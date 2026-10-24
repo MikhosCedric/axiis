@@ -69,9 +69,13 @@ signedIn.describe("area colours", () => {
 
   signedIn("are chosen in Settings, kept, and shown on the Score, Week, Month, detail panel and rail", async ({ page }) => {
     await colourWorkAndHome(page);
-    await page.reload();
+    // The arrows sent one save per colour they passed and the button shows the last at once, so a reload can land
+    // before the last save does; kept means it reads Moss once the saves are in.
+    await expect(async () => {
+      await page.reload();
+      await expect(page.getByRole("button", { name: "Colour for Home: Moss" })).toBeVisible({ timeout: 1000 });
+    }).toPass();
     await expect(page.getByRole("button", { name: "Colour for Work: Clay" })).toBeVisible();
-    await expect(page.getByRole("button", { name: "Colour for Home: Moss" })).toBeVisible();
     await expect(page.getByRole("button", { name: "Colour for Health: None" })).toBeVisible();
 
     await page.goto(DAY);
