@@ -1,6 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
-import { signedIn } from "./session";
+import { hydrated, signedIn } from "./session";
 
 const PAGES = [
   "/",
@@ -104,4 +104,23 @@ for (const variant of VARIANTS) {
       }
     });
   }
+}
+
+// Where now falls decides how the Score scrolls and which beams say "passed", so Label in Name is checked at every
+// half hour of the day, on both clocks, at phone width, where beams sit half out of view.
+const HALF_HOURS = Array.from({ length: 48 }, (_, i) => `${String(Math.floor(i / 2)).padStart(2, "0")}:${i % 2 ? "30" : "00"}`);
+for (const clock of ["12", "24"] as const) {
+  test.describe(`the Score at phone width on the ${clock}-hour clock, all day`, () => {
+    test.use({ viewport: { width: 390, height: 844 } });
+    for (const at of HALF_HOURS) {
+      test(`at ${at} every beam and chip is named with the words it draws`, async ({ page, baseURL }) => {
+        await page.context().addCookies([{ name: "clock", value: clock, url: baseURL }]);
+        await page.goto(`/dev/score?at=${at}`);
+        await hydrated(page);
+        await expect(page.locator("[data-axis-measured]")).toBeAttached();
+        const { violations } = await new AxeBuilder({ page }).withRules(["label-content-name-mismatch"]).analyze();
+        expect(violations.flatMap((v) => v.nodes.map((n) => n.html.slice(0, 200)))).toEqual([]);
+      });
+    }
+  });
 }
