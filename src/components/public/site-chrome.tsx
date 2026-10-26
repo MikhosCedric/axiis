@@ -2,13 +2,15 @@ import Link from "next/link";
 import { ViewTransition, type ReactNode } from "react";
 import { BrandMark } from "@/components/shell/icons";
 import { DayNight } from "./day-night";
+import { PublicMotion } from "./motion";
 import styles from "./site-chrome.module.css";
 
 export const primaryAction = styles.primary;
 
 export const quietAction = styles.quiet;
 
-export const siteWrap = "mx-auto w-full max-w-[1180px] px-4 sm:px-8";
+/** The public pages run the width of the window, inside a margin that grows with it (`--gutter`). */
+export const siteWrap = "w-full px-(--gutter)";
 
 /** The beam inside the primary action: dashed at rest, solid under the pointer, as a planned item turns live. */
 export function ActionBeam() {
@@ -34,7 +36,10 @@ export function BrandHome({ className = "" }: { className?: string }) {
 export function PageTurn({ children }: { children: ReactNode }) {
   return (
     <ViewTransition enter="public-in" exit="public-out" default="none">
-      <div className="flex min-h-dvh flex-col">{children}</div>
+      <div className="flex min-h-dvh flex-col">
+        <PublicMotion />
+        {children}
+      </div>
     </ViewTransition>
   );
 }
@@ -73,9 +78,10 @@ const FOOTER_LINKS = [
 /** The last bar of the page: a closing double barline over the name, what it is, and where else to go. */
 export function SiteFooter() {
   return (
-    <footer className={`${styles.footer} mt-auto`}>
+    <footer className={`${styles.footer} mt-auto`} data-loop="">
+      <span className={styles.sweep} aria-hidden="true" />
+      <div className={styles.finalBar} aria-hidden="true" />
       <div className={siteWrap}>
-        <div className={styles.finalBar} aria-hidden="true" />
         <div className="grid gap-x-16 gap-y-8 py-10 sm:grid-cols-[minmax(0,1fr)_auto]">
           <div className="max-w-[30rem]">
             <span className="font-serif text-[22px] font-semibold tracking-[-0.01em] text-ink">Axiis</span>

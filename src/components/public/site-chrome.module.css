@@ -100,14 +100,58 @@
 }
 
 .footer {
+  position: relative;
+  isolation: isolate;
+  overflow: clip;
   margin-top: 96px;
 }
 
-/* The final barline: a thin line and a thick one, the way a score ends. */
+/*
+ * The final barline, the width of the window: a thin line and a thick one, the way a score ends. Under it
+ * a faint barline crosses the footer once a minute, as a playhead reads the last bar; paused off screen.
+ */
 .finalBar {
   height: 7px;
   border-top: 1px solid var(--rule);
   border-bottom: 3px solid var(--ink);
+}
+
+.sweep {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  display: none;
+  pointer-events: none;
+}
+
+.sweep::before {
+  content: "";
+  position: absolute;
+  top: 7px;
+  bottom: 0;
+  left: 0;
+  width: 1px;
+  background: linear-gradient(to bottom, var(--rule), transparent);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .sweep {
+    display: block;
+    animation: sweep 60s linear infinite;
+  }
+
+  [data-offscreen] > .sweep {
+    animation-play-state: paused;
+  }
+}
+
+@keyframes sweep {
+  from {
+    transform: translateX(-4px);
+  }
+  to {
+    transform: translateX(100%);
+  }
 }
 
 .footerLink {

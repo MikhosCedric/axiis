@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, type CSSProperties } from "react";
+import { useState, type CSSProperties } from "react";
 import { useClock } from "@/components/shell/clock-context";
 import { Glyph } from "@/features/today/glyph";
 import { formatHour, formatMinutes, type Clock } from "@/lib/clock";
@@ -40,15 +40,7 @@ export function LiveScore() {
   const minutes = useNowMinutes();
   const [clock, setClock] = useState<Clock>(useClock());
   const { hour, into } = nowParts(minutes);
-  const score = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    const el = score.current;
-    if (!el) return;
-    const io = new IntersectionObserver(([entry]) => el.toggleAttribute("data-offscreen", !entry.isIntersecting));
-    io.observe(el);
-    return () => io.disconnect();
-  }, []);
 
   const wall = (rel: number) => formatMinutes(wallMinutesOf(rel, hour), clock);
 
@@ -68,7 +60,7 @@ export function LiveScore() {
         </div>
       </div>
 
-      <div ref={score} className={styles.score} style={vars({ "--into": into })} aria-hidden="true">
+      <div className={styles.score} data-loop="" style={vars({ "--into": into })} aria-hidden="true">
         <div className={styles.sheet}>
           <div className={styles.axisRow}>
             <div className={styles.labelCell} />

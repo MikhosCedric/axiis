@@ -34,7 +34,7 @@ colors:
 typography:
   display:
     fontFamily: "Besley, Georgia, serif"
-    fontSize: "clamp(2.6rem, 1.4rem + 5.2vw, 5.5rem)"
+    fontSize: "clamp(2.6rem, 1.4rem + 5.2vw, 5.5rem), from 900px min(12rem, (100vw - 2 * gutter) / 12.6, 17svh)"
     fontWeight: 500
     lineHeight: 1
     letterSpacing: "-0.03em"
@@ -46,7 +46,7 @@ typography:
     letterSpacing: "-0.015em"
   headline-public:
     fontFamily: "Besley, Georgia, serif"
-    fontSize: "clamp(1.6rem, 1.2rem + 1.4vw, 2.25rem)"
+    fontSize: "clamp(1.75rem, 0.9rem + 2vw, 4.25rem)"
     fontWeight: 500
     lineHeight: 1.1
     letterSpacing: "-0.015em"
@@ -285,11 +285,11 @@ An area or a tag narrows a page to what belongs to it. The filter lives in the a
 
 The app is a two-column shell: a nav rail and a content column. At 760px and up (the `rail` breakpoint) the rail is a sticky, full-height column on Rail Paper with a hairline right edge. Below 760px it becomes a slim header and a bottom bar (see Navigation), and the area readout is dropped.
 
-The Score is the organizing grid. A sticky label column (`--lw`, 80px, or 104px at rail width) holds staff names. The hour axis is 76px per hour (`background-size: 76px`), each staff sub-row is 25px tall with five lines 6px apart, and beams snap to quarter hours. On the app, the axis covers 07:00 to 20:00, widened to whole hours that hold every beam and now. When its container has room for more, it gains whole hours to fill it, later ones up to 24:00 first so nothing already drawn moves, then earlier ones down to 00:00; the hour stays 76px, so what is left over is under one hour. A drag in progress keeps the axis it started on. When the axis is wider than its container, it scrolls horizontally inside it and opens scrolled to now (30% from the left) or to the first beam, rounded back to a whole hour so the first label is never clipped. On the landing's sample score the hours are counted from the hour the visitor is in (`src/features/landing/live-day.ts`), and the window narrows instead of scrolling: two hours before now to four after under 640px, three to six, then five to seven from 1000px.
+The Score is the organizing grid. A sticky label column (`--lw`, 80px, or 104px at rail width) holds staff names. The hour axis is 76px per hour (`background-size: 76px`), each staff sub-row is 25px tall with five lines 6px apart, and beams snap to quarter hours. On the app, the axis covers 07:00 to 20:00, widened to whole hours that hold every beam and now. When its container has room for more, it gains whole hours to fill it, later ones up to 24:00 first so nothing already drawn moves, then earlier ones down to 00:00; the hour stays 76px, so what is left over is under one hour. A drag in progress keeps the axis it started on. When the axis is wider than its container, it scrolls horizontally inside it and opens scrolled to now (30% from the left) or to the first beam, rounded back to a whole hour so the first label is never clipped. On the landing's sample score the hours are counted from the hour the visitor is in (`src/features/landing/live-day.ts`), and the window narrows instead of scrolling: two hours before now to four after under 640px, three to six, five to seven from 1000px, six to nine from 1600px, seven to eleven from 2200px and eight to twelve from 3000px.
 
 A page head with day or week steps (Day/Week, Previous and Next, the date) is a `page-head`: the steps sit to the right of the title when the page column, a `page` container, is at least 56rem wide, and in one row under the summary otherwise, so they never stack into a tower beside a wrapped title. Under the head, the tool row (capture field, any view switch, the Guide) carries one status line under the field. The screen's own news (a move, a tick, a plan) shares that line with the capture's, through `CaptureField`'s `screenStatus`, so a page reserves one line of room for news, not two.
 
-Spacing follows Tailwind's 4px scale. Controls use 8px and 12px gaps, sections inside a page are separated by 28px (`mt-7`), and public sections by 96px to 128px. Settings is one column below 1180px. From 1180px it is two: a sticky index of its parts (Areas, Tags, Display, Your data) in an 11rem column on the left, and the sections on the right. Theme, Density and Time format sit together under Display; the rail's theme toggle changes the same setting. The public site is a single column capped at 1180px with 16px gutters (32px from 640px). Prose is held to 34ch to 72ch. Density is spacious by default. Settings has a Compact choice that tightens list rows only: the rows of Inbox, Due, Lists, a tag's page and the Score's List view, through `--row-y` (cookie `density`, `data-density` on `<html>`). The Score's staves and the Week are the same in both. Time format is Auto, 12-hour or 24-hour (cookie `clock`). Auto follows the browser's language and region: the time-zone sync writes that clock into the cookie (`auto-12` or `auto-24`) and refreshes once, so the server and the browser always draw the same times. A first visit with no cookie is drawn on the 24-hour clock until that refresh.
+Spacing follows Tailwind's 4px scale. Controls use 8px and 12px gaps, sections inside a page are separated by 28px (`mt-7`), and public sections by 96px to 128px. Settings is one column below 1180px. From 1180px it is two: a sticky index of its parts (Areas, Tags, Display, Your data) in an 11rem column on the left, and the sections on the right. Theme, Density and Time format sit together under Display; the rail's theme toggle changes the same setting. The public site runs the width of the window inside a gutter that grows with it (`--gutter`, `clamp(16px, 4vw, 96px)`), with no cap; only prose is held to a measure (34ch to 72ch). See Landing and motion on the public pages for how the landing uses a wide screen. Density is spacious by default. Settings has a Compact choice that tightens list rows only: the rows of Inbox, Due, Lists, a tag's page and the Score's List view, through `--row-y` (cookie `density`, `data-density` on `<html>`). The Score's staves and the Week are the same in both. Time format is Auto, 12-hour or 24-hour (cookie `clock`). Auto follows the browser's language and region: the time-zone sync writes that clock into the cookie (`auto-12` or `auto-24`) and refreshes once, so the server and the browser always draw the same times. A first visit with no cookie is drawn on the 24-hour clock until that refresh.
 
 ## Elevation & Depth
 
@@ -302,6 +302,8 @@ The system is flat. Structure is drawn with hairlines and three paper tones (Rai
 - **Selected chip ring** (`box-shadow: inset 0 0 0 1px var(--accent)`): doubles a selected chip's border in verdigris; a state mark, not depth.
 
 ### Named Rules
+**The Lifted Sheet (public pages only).** On the signed-out landing, the hero's Score and each demo are sheets of paper laid on the page: a Rule Soft edge, square corners, and a three-step ink shadow (`0 1px 1px`, `0 10px 24px -8px`, `0 40px 80px -24px`). The hero sheet has a darker Rail Paper sheet under it, set 0.5deg off square. A demo sheet lifts 3px under a fine pointer and a deeper shadow fades in. The app keeps its flat paper.
+
 **The Engraved Line Rule.** If a boundary is needed, draw a hairline. A double barline (`3px double` Hairline) closes the end of the day and the landing's story. The public footer opens on a final barline: a Hairline over a 3px Ink rule, the way a score ends. Never use a shadow to separate two things that sit on the same page.
 
 ## Shapes
@@ -401,14 +403,26 @@ Movement is spent on three moments, each on the house curve and each dropped und
 The done sweep on a glyph and the beam glide stay as they were. Hover and press only ease colour (140ms).
 
 ### Landing and motion on the public pages
-The signed-out site (`/`, `/login`, `/privacy`, `/terms`) is the one place Axiis moves for its own sake, and even there the motion is the Score's own: lines are ruled, beams slide onto them, the now line sweeps, an item is dragged onto a line. Nothing bounces, glows or floats, and nothing is decoration that the app does not draw.
+The signed-out site (`/`, `/login`, `/privacy`, `/terms`) is the one place Axiis moves for its own sake, and even there the motion is the Score's own: lines are ruled, beams slide onto them, the now line sweeps, an item is dragged onto a line, a day runs from morning to evening. Pieces of a score float behind the page at three depths, and sheets lift off it, but nothing bounces or glows, and nothing is drawn that the app does not draw: line forms, staves, ledger lines, barlines, and now.
+
+**Widths.** Nothing is capped but reading. Content spans the window inside `--gutter` (16px on a phone, 4vw, 96px from 2400px), and backgrounds, staves and the seams between sections run edge to edge.
+- **Type scales with the window.** The headline's first line is held to one line from 900px and sized to the width between the gutters (`min(12rem, (100vw - 2 * gutter) / 12.6, 17svh)`, `--display` on the hero): 105px at 1440, 140px at 1920, 188px at 2560, 192px at 3440. Section heads run `clamp(1.75rem, 0.9rem + 2vw, 4.25rem)`, movement titles to 2.9rem, body copy from 15px to 18px. Prose keeps its measure: the lead 34em, a movement's body 36ch, legal text 68ch.
+- **The sample Score shows more of the day, not wider hours:** 6 hours under 640px, 9 to 1000px, 12 to 1600px, 15 to 2200px, 18 to 3000px, 20 beyond, with made-up items across all twenty (`WIDEST` in `live-day.ts`). Labels and staff names step up from 1600px. A label is cut at the next beam or at the window's end, whichever is first.
+- **Several columns on a wide screen.** From 1800px the first four movements stand two by two, each its text over its demo; the month stays wide. The shipped list is two columns from 820px, three from 1400px, four from 2200px. Legal pages set the title and draft note in a 26rem column, held while the 68ch prose beside it scrolls, the pair centred, from 1200px. The 404 and error pages use the same gutter.
 
 **Principles.**
 - **Motion says what the app does.** Every moving thing is a gesture or a state change Axiis has: ruling a staff, a beam arriving, the now line, a drag ghost settling into a dashed beam, a tick sweeping a beam hollow, Focus folding a day.
 - **First paint is final.** The headline, the lead, the way in and the Score are drawn by the server in place. The headline never animates (it is the largest paint), and a section is held back only after script has seen it is below the fold (`src/features/landing/reveal.tsx`), so no script, a slow phone or a reader who jumps down never meets a blank page.
 - **Compositor only.** Everything that moves on its own moves by `transform` and `opacity`. The now line rides a layer the width of its track and is moved by a share of its own width, so the sweep and the minute step never re-lay the page. Layout shift is 0 (measured).
-- **No scroll-jacking.** Scrolling is the browser's. Depth layers use CSS scroll-driven animations (`animation-timeline: scroll()` and `view()`) where the browser has them; elsewhere they simply stand still.
-- **Reduced motion is a complete page.** Under `prefers-reduced-motion: reduce` every keyframe, loop, reveal, glide and view transition is gone and the composition is the same, already drawn. `e2e/landing.spec.ts` checks that nothing is running or held back.
+- **No scroll-jacking.** Scrolling is the browser's. Depth layers and the run use CSS scroll-driven animations (`animation-timeline: scroll()`, `view()` and a named view timeline) where the browser has them; elsewhere they simply stand still. The run holds its stage with `position: sticky`; the reader's scroll speed is never changed.
+- **Script says when, CSS moves.** One small client component on every public page (`PublicMotion`, `src/components/public/motion.tsx`) holds back sections below the fold, pauses loops that are off screen (`data-loop` gets `data-offscreen`), and, for a fine pointer only, sets `translate` on the hero's layers (`data-parallax`) and the demos' lamp and shadow (`data-glow`), at most once a frame. Nothing it writes changes layout.
+- **Reduced motion is a complete page.** Under `prefers-reduced-motion: reduce` every keyframe, loop, reveal, glide, parallax and view transition is gone and the composition is the same, already drawn: the floating pieces stand where they are, the run is one still moment at 14:30 with all three line forms, tallies show their numbers. `e2e/landing.spec.ts` checks that nothing is running or held back and that the run is not a tall stretch to scroll through.
+
+**Layers, far to near.** All `aria-hidden`, all behind the text (`z-index: -1` inside the hero's isolated stack).
+1. **The depth staves:** a far staff (lines 44px apart, barred every 33vw) and a nearer fine one, the width of the window, in a layer one screen tall so a streaming hero never moves them.
+2. **Floating pieces** (`HeroDrift`, `src/features/landing/drift.tsx`), from 900px, placed in the headline's own em so they keep to the open stretch right of "on one page." at every width: a staff fragment, a dashed beam, hollow beams, a barline and a final barline, ledger lines, a lone head, and the one verdigris piece, a now tick with its flag. Three depths: far (drawn at 38%, parts 10px from the pointer, lags the scroll by 30vh), middle (58%, 22px, 8vh) and near (78%, 38px, runs 14vh ahead of the scroll). Each piece bobs 3 to 7px over 9 to 17s.
+3. **The sheets:** the hero Score's under sheet parts 14px against the pointer, the Score itself 7px with it, so the two read as separate paper.
+4. **Seams:** between the hero and the story, the story and the list, the list and the close, a staff the width of the window is ruled in as it arrives and its two or three beams slide 8vw either way at their own rates while it crosses the screen, so the sections' lines carry on into each other.
 
 **What moves, and how long.** All on the house curve `cubic-bezier(0.16, 1, 0.3, 1)` unless named.
 | Moment | What | Timing |
@@ -420,7 +434,16 @@ The signed-out site (`/`, `/login`, `/privacy`, `/terms`) is the one place Axiis
 | The loop | the first Inbox chip lifts 3px and fades to 35% (a held chip), its dashed verdigris ghost slides 28px onto Health with its time, settles as a dashed beam, and all goes back | every 14s from 3.2s; paused while the score is off screen |
 | Headline staff | the five lines under "on one page." rule in from the left | 1100ms, 70ms apart |
 | Sections | a held section rises 22px and fades in as it enters | 700ms fade, 900ms rise, 90ms between a movement's text and its demo |
-| Depth | a far staff (lines 44px apart, barred every 33vw) drifts 38vh over the first screen of scroll, a nearer fine staff 18vh; each rehearsal mark drifts 28px across its pass through the viewport | scroll-linked, linear |
+| Section heads | each word rises out of its own clipped line, then a five-line staff is ruled in under the head | 1000ms, 70ms a word; staff 1100ms from 250ms |
+| Bar numbers | a shipped line's number fades up 8px a beat after its line | 500ms fade, 700ms rise, 260ms after the line |
+| Tallies | the four numbers (shipped lines, colours, days of grace, trackers; each read from the code) count up from nought the first time they come into view | 1400ms, ease out (`countAt` in `tally.tsx`) |
+| Depth | a far staff drifts 38vh over the first screen of scroll, a nearer fine staff 18vh; the three layers of floating pieces 30vh, 8vh and -14vh; each rehearsal mark drifts 28px across its pass through the viewport | scroll-linked, linear |
+| Floating | each piece bobs up and down, out of step with the others; paused off screen | 9s to 17s a swing, `ease-in-out`, alternate |
+| Pointer | the floating layers and the hero's two sheets part from a fine pointer, each by its depth | 900ms `translate` transition, written once a frame |
+| Seams | a staff the width of the window rules in from the left as it arrives; its beams slide 8vw times their rate across its pass | scroll-linked, linear |
+| The run | as the reader scrolls a stage held for 260svh, now crosses 07:00 to 23:00: each beam fades from dashed to solid at its start and to hollow at its end, the clock flag rolls in quarter hours (a reel of times moved by `steps()`), Morning, Afternoon and Evening rise in and out, and under 640px the track follows now | scroll-linked over the run's `contain` range; a line form changes over 1.5% of it, a part of the day over 3% (`day-run-model.ts`) |
+| A demo under the pointer | its sheet lifts 3px and a deeper shadow fades in; the shadow falls away from the pointer, and a 480px lamp of Sheet paper follows it | 500ms lift, 400ms shadow, 300ms lamp |
+| The footer | a faint barline crosses the footer under the final barline; paused off screen | 60s, linear, endless |
 | A captured line changing rows | choosing an example moves the item between its day's line, Any time and the Inbox (a named view transition); typing changes it in place, since a transition holds the page while it snapshots and would drop keys | 400ms |
 | A beam moving in a demo | the beam glides to its new time | 280ms, none while a pointer holds it |
 | Focus | kept rows move into place, folded rows fade out, the fold line fades in (view transitions) | 400ms move, 160ms out, 260ms in after 120ms |
@@ -432,7 +455,9 @@ The signed-out site (`/`, `/login`, `/privacy`, `/terms`) is the one place Axiis
 
 **The demos.** Each movement of the story (rehearsal marks A to E, a 30px box in Besley over each title) carries the thing itself, working, with nothing saved: capture read by the app's own `parseCapture` and `previewWords`; one beam that drags, resizes and answers the Score's keys (arrows a quarter hour, Shift and an arrow its end, Escape to cancel a drag); the done box on rows and a staff above them; Focus with its fold; and this month's grid with made-up marks, the Month's keys and a list of the day in focus or under the pointer. Each has a status line for what changed.
 
-**The footer** opens on the final barline, then the name, one honest paragraph (free, no ads, no analytics, no trackers; export or delete from Settings) and two short link groups under Overline heads, the one place outside the rail and the More sheet that the Overline is used.
+**The run** (`src/features/landing/day-run.tsx`) opens "How it works": a fixed day of made-up items on wall-clock hours, 07:00 to 23:00, on the reader's clock, with a sentence that says what the scroll does. It is `role="group"` named by its head; the drawing is `aria-hidden`, since the hero's Score already lists a day for screen readers.
+
+**The footer** runs the width of the window and opens on the final barline, then the name, one honest paragraph (free, no ads, no analytics, no trackers; export or delete from Settings) and two short link groups under Overline heads, the one place outside the rail and the More sheet that the Overline is used.
 
 ### Command Palette
 A native `<dialog>` in Sheet, 560px wide, 12px radius, Dialog lift shadow, rising 8px with a 0.985 scale-in over 200ms. Options are 40px tall; the active option takes Verdigris Wash.

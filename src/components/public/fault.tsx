@@ -4,7 +4,7 @@ import { BrandMark } from "@/components/shell/icons";
 /** The quiet full-page message behind not-found and error boundaries. Never shows error details. */
 export function Fault({ title, children, actions }: { title: string; children: ReactNode; actions: ReactNode }) {
   return (
-    <main id="main" className="mx-auto flex min-h-dvh w-full max-w-[1180px] flex-col px-4 py-6 sm:px-8">
+    <main id="main" className="flex min-h-dvh w-full flex-col px-(--gutter) py-6">
       <div className="flex items-center gap-2.5 text-ink">
         <BrandMark />
         <span className="font-serif text-[22px] leading-none font-semibold tracking-[-0.01em]">Axiis</span>

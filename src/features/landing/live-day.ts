@@ -24,28 +24,35 @@ export const LIVE_STAVES: LiveStaff[] = [
     name: "Work",
     rows: 2,
     beams: [
+      { title: "Sort the shared folder", start: -7.5, end: -6.5, row: 1 },
       { title: "Write the quarterly summary", start: -4.5, end: -3, row: 0 },
       { title: "Review Ana's draft", start: -0.5, end: 1.25, row: 1, progress: { done: 2, total: 3 } },
       { title: "Plan next week", start: 2, end: 3.5, row: 0, progress: { done: 1, total: 4 } },
       { title: "Reply to the venue", start: 4, end: 4.5, row: 1 },
+      { title: "Read the brief", start: 8, end: 9, row: 0 },
+      { title: "Send the invoices", start: 9.25, end: 10.25, row: 1 },
     ],
   },
   {
     name: "Home",
     rows: 1,
     beams: [
+      { title: "Laundry", start: -6.75, end: -6, row: 0 },
       { title: "Water the plants", start: -3.75, end: -3.5, row: 0 },
       { title: "Call the landlord", start: 1.5, end: 1.75, row: 0 },
       { title: "Groceries", start: 5.5, end: 6.25, row: 0 },
+      { title: "Cook for the week", start: 8.5, end: 9.75, row: 0 },
     ],
   },
   {
     name: "Health",
     rows: 1,
     beams: [
+      { title: "Swim", start: -7.75, end: -7, row: 0 },
       { title: "Easy run", start: -2.5, end: -1.75, row: 0 },
       { title: "Physio exercises", start: 2.5, end: 3, row: 0 },
       { title: "Yoga class", start: 6, end: 7, row: 0 },
+      { title: "Stretch", start: 10.5, end: 11, row: 0 },
     ],
   },
 ];
@@ -56,7 +63,7 @@ export const LIVE_TRAY = ["Book the dentist", "Renew passport", "Birthday card f
 export const LANDING = { title: LIVE_TRAY[0], staff: 2, start: 1.25, end: 2 } as const;
 
 /** Hours of the widest window drawn (the narrower ones are inside it), from first to last barline. */
-export const WIDEST = { from: -5, to: 7 } as const;
+export const WIDEST = { from: -8, to: 12 } as const;
 
 /** Where the server draws now, before the browser knows the visitor's clock: 11:20. */
 export const SERVER_MINUTES = 11 * 60 + 20;

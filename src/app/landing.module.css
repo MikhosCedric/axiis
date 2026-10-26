@@ -1,13 +1,15 @@
 /* The hero holds its own depth layers behind it, so they never reach the header or the sections below. */
 .hero {
+  --display: clamp(2.6rem, 1.4rem + 5.2vw, 5.5rem);
   position: relative;
   isolation: isolate;
+  overflow-x: clip;
 }
 
 .display {
   max-width: 13ch;
   font-family: var(--font-serif);
-  font-size: clamp(2.6rem, 1.4rem + 5.2vw, 5.5rem);
+  font-size: var(--display);
   line-height: 1;
   font-weight: 500;
   letter-spacing: -0.03em;
@@ -16,11 +18,17 @@
   color: var(--ink);
 }
 
-/* From 900px the first line, "Your tasks and your time,", is held to one line: it measures 12.3em in Besley. */
+/*
+ * From 900px the first line, "Your tasks and your time,", is held to one line: it measures 12.3em in Besley,
+ * so the type grows with the width between the gutters, up to 12rem, and never past a sixth of the window's height.
+ */
 @media (min-width: 900px) {
+  .hero {
+    --display: min(12rem, calc((100vw - 2 * var(--gutter)) / 12.6), 17svh);
+  }
+
   .display {
     max-width: none;
-    font-size: min(5.5rem, calc((100vw - 4rem) / 12.6));
   }
 
   .firstLine {
@@ -55,17 +63,11 @@
 }
 
 .lead {
-  max-width: 34rem;
-  font-size: 17px;
+  max-width: 34em;
+  font-size: clamp(17px, 0.62rem + 0.5vw, 22px);
   line-height: 1.6;
   color: var(--ink-2);
   text-wrap: pretty;
-}
-
-@media (min-width: 640px) {
-  .lead {
-    font-size: 18px;
-  }
 }
 
 /* Under the headline: the lead on the left, the way in on the right, their last lines on one baseline. */
@@ -77,7 +79,8 @@
 
 @media (min-width: 900px) {
   .heroFoot {
-    grid-template-columns: minmax(0, 34rem) auto;
+    grid-template-columns: minmax(0, 34em) auto;
+    font-size: clamp(17px, 0.62rem + 0.5vw, 22px);
     justify-content: space-between;
     align-items: end;
     margin-top: 40px;
@@ -91,11 +94,13 @@
 /*
  * Depth: two large, faint staves behind the hero, one far (wide-spaced, barred) and one nearer and finer.
  * As the page scrolls they move slower than the page and at different rates, so the paper reads as
- * sheets laid over each other. Transform only.
+ * sheets laid over each other. Transform only. The layer is a screen tall rather than the hero's height,
+ * so while the page is still streaming in and the hero grows, the staves never move (a layout shift).
  */
 .depth {
   position: absolute;
-  inset: 0;
+  inset: 0 0 auto;
+  height: 100svh;
   z-index: -1;
   overflow: clip;
   pointer-events: none;
@@ -104,7 +109,7 @@
 .farStaff {
   position: absolute;
   inset-inline: 0;
-  top: 6%;
+  top: 6svh;
   height: 177px;
   background:
     repeating-linear-gradient(to bottom, var(--rule-soft) 0 1px, transparent 1px 44px),
@@ -115,7 +120,7 @@
 .nearStaff {
   position: absolute;
   inset-inline: 0;
-  top: 44%;
+  top: 48svh;
   height: 49px;
   background: repeating-linear-gradient(to bottom, var(--rule-soft) 0 1px, transparent 1px 12px);
   mask-image: linear-gradient(to right, transparent 45%, #000 75%, transparent);
@@ -123,33 +128,16 @@
 
 .heading {
   font-family: var(--font-serif);
-  font-size: clamp(1.6rem, 1.2rem + 1.4vw, 2.25rem);
+  font-size: clamp(1.75rem, 0.9rem + 2vw, 4.25rem);
   line-height: 1.1;
   font-weight: 500;
   letter-spacing: -0.015em;
   text-wrap: balance;
 }
 
-.section {
-  margin-top: 96px;
-}
-
-@media (min-width: 640px) {
-  .section {
-    margin-top: 128px;
-  }
-}
-
-/* The story: a head, then five movements, each a rehearsal mark, a title, a few lines and the thing working. */
+/* The story: a head, the run, then five movements, each a rehearsal mark, a title, a few lines and the thing working. */
 .story {
-  margin-top: 96px;
   scroll-margin-top: 24px;
-}
-
-@media (min-width: 640px) {
-  .story {
-    margin-top: 128px;
-  }
 }
 
 .storyHead {
@@ -159,11 +147,198 @@
   padding-bottom: 20px;
 }
 
-.storyLead {
+.storyLead,
+.closeBody {
   max-width: 40rem;
-  font-size: 15px;
+  font-size: clamp(15px, 0.75rem + 0.3vw, 18px);
   line-height: 1.6;
   color: var(--ink-2);
+}
+
+.closeBody {
+  margin-top: 16px;
+}
+
+/*
+ * The hero's Score is a sheet laid on the page, with a second, darker sheet under it set a little off
+ * square. Both part from a fine pointer by different amounts (script sets `translate`), so the pair reads
+ * as two layers of paper, not a picture of one.
+ */
+.stack {
+  position: relative;
+  isolation: isolate;
+}
+
+.under,
+.top {
+  transition: translate 900ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.under {
+  position: absolute;
+  inset: 14px -10px -12px 10px;
+  z-index: -1;
+  border: 1px solid var(--rule-soft);
+  background: var(--paper-2);
+  transform: rotate(-0.5deg);
+}
+
+.top {
+  position: relative;
+  border: 1px solid light-dark(rgba(28, 27, 34, 0.12), rgba(236, 229, 211, 0.2));
+  background: var(--paper);
+  padding: 18px clamp(12px, 1.6vw, 32px) 16px;
+  box-shadow:
+    0 1px 1px light-dark(rgb(28 27 34 / 0.06), rgb(0 0 0 / 0.3)),
+    0 10px 24px -8px light-dark(rgb(28 27 34 / 0.14), rgb(0 0 0 / 0.5)),
+    0 40px 80px -24px light-dark(rgb(28 27 34 / 0.16), rgb(0 0 0 / 0.55));
+}
+
+@media (max-width: 639px) {
+  .under {
+    inset: 8px -5px -7px 5px;
+  }
+
+  .top {
+    margin-inline: -4px;
+    padding-inline: 8px;
+  }
+}
+
+/* A heading's words, each in its own clipped line, so they can rise out of it. */
+.word {
+  display: inline-block;
+  overflow: clip;
+  padding-bottom: 0.12em;
+  margin-bottom: -0.12em;
+  vertical-align: top;
+}
+
+.word > span {
+  display: inline-block;
+}
+
+/* Five hairlines ruled under a section heading. */
+.headStaff {
+  display: block;
+  width: min(9rem, 40%);
+  height: 13px;
+  margin-top: 0.3em;
+  background: repeating-linear-gradient(to bottom, var(--rule) 0 1px, transparent 1px 3px);
+  transform-origin: left;
+}
+
+.stateHead {
+  display: grid;
+  gap: 32px;
+  border-bottom: 1px solid var(--rule);
+  padding-bottom: 28px;
+}
+
+@media (min-width: 1100px) {
+  .stateHead {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: end;
+    column-gap: 64px;
+  }
+}
+
+.tallies {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 24px clamp(24px, 3vw, 72px);
+}
+
+@media (min-width: 720px) {
+  .tallies {
+    grid-template-columns: repeat(4, minmax(0, auto));
+  }
+}
+
+.tally {
+  font-family: var(--font-serif);
+  font-size: clamp(2.5rem, 1.4rem + 3vw, 6rem);
+  line-height: 1;
+  font-weight: 500;
+  letter-spacing: -0.03em;
+}
+
+.tallyWords {
+  max-width: 14em;
+  margin-top: 8px;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--ink-2);
+}
+
+/*
+ * Each demo sits on its own sheet: on hover it lifts 3px, its shadow deepens (a second shadow fading in,
+ * not a shadow being redrawn) and falls away from the pointer, and a soft lamp of lighter paper follows
+ * the pointer across it.
+ */
+.movementDemo {
+  position: relative;
+  isolation: isolate;
+  border: 1px solid var(--rule-soft);
+  background: var(--paper);
+  padding: clamp(16px, 2vw, 32px);
+  transition: transform 500ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.movementDemo::before,
+.sheetShadow {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  pointer-events: none;
+}
+
+.movementDemo::before {
+  box-shadow: 0 1px 2px light-dark(rgb(28 27 34 / 0.08), rgb(0 0 0 / 0.35));
+}
+
+.sheetShadow {
+  box-shadow:
+    0 14px 30px -10px light-dark(rgb(28 27 34 / 0.2), rgb(0 0 0 / 0.6)),
+    0 36px 70px -30px light-dark(rgb(28 27 34 / 0.18), rgb(0 0 0 / 0.5));
+  opacity: 0;
+  transition:
+    opacity 400ms cubic-bezier(0.16, 1, 0.3, 1),
+    translate 600ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.lamp {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  overflow: clip;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 400ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.lamp > span {
+  position: absolute;
+  top: -240px;
+  left: -240px;
+  width: 480px;
+  height: 480px;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, var(--sheet), transparent);
+  transition: translate 300ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  .movementDemo[data-glow]:hover {
+    transform: translateY(-3px);
+    transition-delay: 0s;
+  }
+
+  .movementDemo:hover .sheetShadow,
+  .movementDemo:hover .lamp {
+    opacity: 1;
+  }
 }
 
 .movement {
@@ -173,7 +348,7 @@
   padding-block: 48px;
 }
 
-.movement:last-child {
+.story > .movement:last-child {
   border-bottom: 3px double var(--rule);
 }
 
@@ -210,6 +385,29 @@
   }
 }
 
+/*
+ * From 1800px the first four movements stand two by two, each its text over its demo, so a wide
+ * window holds two working pieces side by side instead of one stretched across it. The month stays wide.
+ */
+@media (min-width: 1800px) {
+  .movements {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: clamp(64px, 5vw, 160px);
+  }
+
+  .movements .movement,
+  .movements .movement:nth-of-type(even) {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto 1fr;
+    gap: 36px;
+  }
+
+  .movements .movement:nth-of-type(even) .movementText {
+    order: 0;
+  }
+}
+
 .movementText {
   position: relative;
 }
@@ -230,7 +428,7 @@
 
 .movementTitle {
   font-family: var(--font-serif);
-  font-size: clamp(1.45rem, 1.15rem + 1vw, 2rem);
+  font-size: clamp(1.45rem, 0.9rem + 1.3vw, 2.9rem);
   line-height: 1.12;
   font-weight: 500;
   letter-spacing: -0.015em;
@@ -240,7 +438,7 @@
 .movementBody {
   max-width: 36ch;
   margin-top: 14px;
-  font-size: 15px;
+  font-size: clamp(15px, 0.75rem + 0.3vw, 18px);
   line-height: 1.65;
   color: var(--ink-2);
   text-wrap: pretty;
@@ -259,7 +457,19 @@
 @media (min-width: 820px) {
   .ledger {
     columns: 2;
-    column-gap: 64px;
+    column-gap: clamp(40px, 4vw, 96px);
+  }
+}
+
+@media (min-width: 1400px) {
+  .ledger {
+    columns: 3;
+  }
+}
+
+@media (min-width: 2200px) {
+  .ledger {
+    columns: 4;
   }
 }
 
@@ -269,7 +479,7 @@
   break-inside: avoid;
   border-bottom: 1px solid var(--rule-soft);
   padding: 11px 0;
-  font-size: 15px;
+  font-size: clamp(15px, 0.75rem + 0.25vw, 17px);
   line-height: 1.5;
   color: var(--ink);
 }
@@ -326,9 +536,11 @@
     animation-delay: 280ms;
   }
 
+  /* Held at once, never faded out: only the way in is animated. */
   .reveal[data-reveal="wait"] {
     opacity: 0;
     transform: translateY(22px);
+    transition: none;
   }
 
   .reveal[data-reveal="in"] {
@@ -336,6 +548,35 @@
       opacity 700ms cubic-bezier(0.16, 1, 0.3, 1),
       transform 900ms cubic-bezier(0.16, 1, 0.3, 1);
     transition-delay: calc(var(--i, 0) * 90ms);
+  }
+
+  /* A held heading: its words wait under their line, its staff unruled; then they rise 70ms apart. */
+  .rise[data-reveal="wait"] .word > span {
+    transform: translateY(105%);
+  }
+
+  .rise[data-reveal="wait"] .headStaff {
+    transform: scaleX(0);
+  }
+
+  .rise[data-reveal="in"] .word > span {
+    transition: transform 1000ms cubic-bezier(0.16, 1, 0.3, 1) calc(var(--w) * 70ms);
+  }
+
+  .rise[data-reveal="in"] .headStaff {
+    transition: transform 1100ms cubic-bezier(0.16, 1, 0.3, 1) 250ms;
+  }
+
+  /* A ledger line's bar number is printed a beat after its line arrives. */
+  .ledger li[data-reveal="wait"]::before {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  .ledger li[data-reveal="in"]::before {
+    transition:
+      opacity 500ms cubic-bezier(0.16, 1, 0.3, 1) calc(var(--i, 0) * 90ms + 260ms),
+      transform 700ms cubic-bezier(0.16, 1, 0.3, 1) calc(var(--i, 0) * 90ms + 260ms);
   }
 
   @supports (animation-timeline: scroll()) {
