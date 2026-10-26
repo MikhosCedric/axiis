@@ -133,6 +133,11 @@ export function PaletteProvider({
   }, []);
   const guide = useMemo(() => ({ open: () => setOpen("help"), show }), [show]);
   useRememberVisits();
+  // Read by the key listener, so a refresh that brings new areas does not reattach it and drop a pending G or A.
+  const areasRef = useRef(areas);
+  useEffect(() => {
+    areasRef.current = areas;
+  }, [areas]);
 
   useEffect(() => {
     let goTimer: ReturnType<typeof setTimeout> | undefined;
@@ -162,6 +167,7 @@ export function PaletteProvider({
         return;
       }
       // A, then a digit: the page narrowed to that area, or 0 for every area.
+      const areas = areasRef.current;
       const pick = areaShortcut(areaTimer !== undefined, press, areas.length);
       clearTimeout(areaTimer);
       areaTimer = undefined;
@@ -175,11 +181,13 @@ export function PaletteProvider({
         router.push(areaHref(window.location.pathname, window.location.search.slice(1), id));
         return;
       }
-      // C goes to the page's capture field where it has one (that field takes the key); anywhere else the palette captures.
+      // C goes to the page's capture field where it has one; anywhere else the palette captures.
       if (e.key === CAPTURE_KEY && !press.altKey && !press.ctrlKey && !press.metaKey && !press.typing && !e.defaultPrevented) {
-        if (document.getElementById("capture") || document.querySelector("dialog[open]")) return;
+        if (document.querySelector("dialog[open]")) return;
         e.preventDefault();
-        setOpen("palette");
+        const field = document.getElementById("capture");
+        if (field) field.focus();
+        else setOpen("palette");
         return;
       }
       const action = globalShortcut(press);
@@ -193,7 +201,7 @@ export function PaletteProvider({
       clearTimeout(areaTimer);
       document.removeEventListener("keydown", onKey);
     };
-  }, [router, areas]);
+  }, [router]);
 
   return (
     <OpenPalette.Provider value={() => setOpen("palette")}>

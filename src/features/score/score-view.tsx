@@ -487,7 +487,9 @@ function BeamView({
     >
       <span className={styles.label} style={{ maxWidth: labelWidth(beam.free) }} title={item.title}>
         <AreaMark color={staff.color} done={state === "done"} className="mr-1.5 mb-px align-middle" />
-        {item.title}
+        {/* An element, like the time and "passed": axe's Label in Name judges a bare text node by its parent,
+            so on a beam half scrolled out of view it read the title and "passed" without the time between. */}
+        <span>{item.title}</span>
         {repeats(item) && <RepeatMark className={styles.repeat} />}
         {words.count && <> <span className={styles.count}>{words.count}</span></>}{" "}
         <time className={styles.clock} dateTime={minutesToDate(ctx, span.start).toISOString()}>

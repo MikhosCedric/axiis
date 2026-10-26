@@ -1,6 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect as defaultExpect, test, type APIRequestContext, type Page } from "@playwright/test";
-import { SESSION_COOKIE, sessionSecret, signedIn } from "./session";
+import { hydrated, SESSION_COOKIE, sessionSecret, signedIn } from "./session";
 
 const expect = defaultExpect.configure({ timeout: 30_000 });
 
@@ -107,12 +107,8 @@ test.describe("first-day capture", () => {
     await page.emulateMedia({ reducedMotion: "reduce" });
     await page.goto("/dev/score?firstday");
     await expect(field(page)).toHaveAttribute("placeholder", FIRST_EXAMPLE);
-    // The C shortcut is wired in the same commit as the turning, so once it focuses the field the turning would have begun.
-    await expect(async () => {
-      await page.locator("h1").click();
-      await page.keyboard.press("c");
-      await expect(field(page)).toBeFocused({ timeout: 500 });
-    }).toPass();
+    // The harness has no loading boundary, so the provider marks the page in the same commit that starts the turning.
+    await hydrated(page);
     // Sampled, not retried: a retrying assertion would wait for the turning to come back round.
     const seen = new Set<string | null>();
     for (let i = 0; i < 9; i++) {

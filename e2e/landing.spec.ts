@@ -1,5 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Locator, type Page } from "@playwright/test";
+import { hydrated } from "./session";
 
 /** Console errors and page errors seen while a test runs; each test asserts there were none. */
 function watchErrors(page: Page): string[] {
@@ -13,6 +14,7 @@ function watchErrors(page: Page): string[] {
 
 /** Scrolls the page through once, so every section has been revealed, then waits for motion to settle. */
 async function settle(page: Page) {
+  await hydrated(page);
   await page.evaluate(async () => {
     for (let y = 0; y < document.documentElement.scrollHeight; y += innerHeight / 2) {
       scrollTo(0, y);
@@ -65,6 +67,7 @@ test.describe("the live score", () => {
 test("every demo works from the keyboard", async ({ page }) => {
   const errors = watchErrors(page);
   await page.goto("/");
+  await hydrated(page);
 
   // Capture: the app's parser reads the line, and Enter says where it lands.
   const line = page.getByLabel("Type a line");
@@ -126,9 +129,11 @@ test.describe("with reduced motion", () => {
   test("the page is a complete, still composition", async ({ page }) => {
     const errors = watchErrors(page);
     await page.goto("/");
-    await expect(page.getByRole("figure", { name: /A sample day/ })).toBeVisible();
-    await page.evaluate(() => scrollTo(0, document.documentElement.scrollHeight));
-    await page.waitForTimeout(300);
+    await hydrated(page);
+    await page.evaluate(async () => {
+      scrollTo(0, document.documentElement.scrollHeight);
+      await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+    });
     const motion = await page.evaluate(() => ({
       running: document
         .getAnimations()

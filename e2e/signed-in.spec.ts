@@ -1,10 +1,10 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Locator, type Page } from "@playwright/test";
-import { SESSION_COOKIE, sessionHeader, signedIn } from "./session";
+import { hydrated, SESSION_COOKIE, sessionHeader, signedIn } from "./session";
 
 // The real signed-in routes, as the in-memory account from src/lib/supabase/fake-account.ts. See docs/e2e-session.md.
 
-/** Tomorrow's date in the zone the app plans in: the tz cookie, or UTC without one. */
+/** Tomorrow's date in the zone the app plans in: the tz cookie `signedIn` sets, or UTC without one. */
 async function tomorrowForApp(page: Page): Promise<string> {
   const cookie = (await page.context().cookies()).find((c) => c.name === "tz");
   const timeZone = cookie ? decodeURIComponent(cookie.value) : "UTC";
@@ -25,11 +25,7 @@ signedIn.describe("signed in", () => {
 
   signedIn("G then a letter goes to a page, and a lone letter does not", async ({ page }) => {
     await page.goto("/today");
-    // The heading is drawn on the server; the keys are a listener React attaches once it has hydrated the page.
-    await page.waitForFunction(() => {
-      const main = document.getElementById("main");
-      return main !== null && Object.keys(main).some((k) => k.startsWith("__react"));
-    });
+    await hydrated(page);
     await page.keyboard.press("i");
     await expect(page).toHaveURL("/today");
     await page.keyboard.press("g");
@@ -146,11 +142,9 @@ signedIn.describe("signed in", () => {
 
   signedIn("the Search page is one choice away from the rail's search field", async ({ page }) => {
     await page.goto("/inbox");
-    // The field answers once React has hydrated the rail, so a click before then is tried again.
-    await expect(async () => {
-      await page.getByRole("navigation", { name: "Primary" }).getByRole("button", { name: /^Search or go to/ }).click();
-      await expect(page.getByRole("dialog", { name: "Search and commands" })).toBeVisible({ timeout: 1000 });
-    }).toPass();
+    await hydrated(page);
+    await page.getByRole("navigation", { name: "Primary" }).getByRole("button", { name: /^Search or go to/ }).click();
+    await expect(page.getByRole("dialog", { name: "Search and commands" })).toBeVisible();
     await page.getByRole("option", { name: "Search, Find any task or note" }).click();
     await expect(page).toHaveURL("/search");
     await expect(page.getByRole("heading", { level: 1, name: "Search" })).toBeVisible();
@@ -209,9 +203,6 @@ signedIn.describe("signed in", () => {
 
   signedIn.describe("in New York", () => {
     signedIn.use({ timezoneId: "America/New_York" });
-    signedIn.beforeEach(async ({ context, baseURL }) => {
-      await context.addCookies([{ name: "tz", value: encodeURIComponent("America/New_York"), url: baseURL }]);
-    });
 
     const details = (page: Page) => page.getByRole("complementary", { name: "Details" });
     const when = (page: Page) => details(page).locator("dt", { hasText: "When" }).locator("+ dd > span").first();
