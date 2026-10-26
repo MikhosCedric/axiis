@@ -1,6 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, type Page } from "@playwright/test";
-import { signedIn } from "./session";
+import { hydrated, signedIn } from "./session";
 
 // The Month on the real signed-in route, as the in-memory account from src/lib/supabase/fake-account.ts.
 // Its fixtures plan "Renew the lease" for 20 May 2099, due 1 June 2099, so these months never meet a real today.
@@ -113,12 +113,10 @@ signedIn.describe("the Month", () => {
     const first = cell(page, /^Friday 1 May/);
     await expect(first).toHaveAttribute("tabindex", "0");
     await expect(page.getByRole("gridcell").and(page.locator("[tabindex='0']"))).toHaveCount(1);
-    // The grid's keys answer once React has hydrated it, so a press before then is tried again.
-    await expect(async () => {
-      await first.focus();
-      await page.keyboard.press("ArrowRight");
-      await expect(cell(page, /^Saturday 2 May/)).toBeFocused({ timeout: 1000 });
-    }).toPass();
+    await hydrated(page);
+    await first.focus();
+    await page.keyboard.press("ArrowRight");
+    await expect(cell(page, /^Saturday 2 May/)).toBeFocused();
     await page.keyboard.press("ArrowDown");
     await expect(cell(page, /^Saturday 9 May/)).toBeFocused();
     await page.keyboard.press("Home");
@@ -148,11 +146,10 @@ signedIn.describe("the Month", () => {
 
   signedIn("captures onto the day in focus, and a drag moves the item to another day", async ({ page }) => {
     await page.goto("/month/2099-08");
-    await expect(async () => {
-      await cell(page, /^Saturday 1 August/).focus();
-      await page.keyboard.press("ArrowRight");
-      await expect(page.getByRole("textbox", { name: "Capture for Sunday 2 August" })).toBeVisible({ timeout: 1000 });
-    }).toPass();
+    await hydrated(page);
+    await cell(page, /^Saturday 1 August/).focus();
+    await page.keyboard.press("ArrowRight");
+    await expect(page.getByRole("textbox", { name: "Capture for Sunday 2 August" })).toBeVisible();
     await page.getByRole("textbox", { name: "Capture for Sunday 2 August" }).fill("Water the garden 7:30");
     await page.keyboard.press("Enter");
     await expect(page.getByText("Planned for Sunday 2 August, 07:30.")).toBeVisible();
@@ -188,6 +185,8 @@ signedIn.describe("the Month", () => {
       expect(await axe(page)).toEqual([]);
       await cell(page, /^Wednesday 20 May/).getByRole("button", { name: /^Renew the lease/ }).click();
       await expect(page.getByRole("complementary", { name: "Details" })).toBeVisible();
+      // The panel shows before the ?item= navigation has put the page's title back, a few hundred ms without one.
+      await expect(page).toHaveTitle("May 2099 · Axiis");
       expect(await axe(page)).toEqual([]);
     });
   }

@@ -1,5 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
+import { hydrated } from "./session";
 
 const field = (page: Page) => page.locator("#capture");
 const status = (page: Page) => page.locator("#capture-status");
@@ -97,7 +98,7 @@ test.describe("capture field", () => {
 test.describe("palette actions", () => {
   async function openPalette(page: Page) {
     // The shortcut is a listener React attaches on hydration; the server-drawn heading shows before that.
-    await expect(page.locator("[data-hydrated]")).toBeAttached();
+    await hydrated(page);
     await page.keyboard.press("Control+k");
     const box = page.getByRole("combobox");
     await expect(box).toBeFocused();

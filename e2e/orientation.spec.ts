@@ -15,10 +15,7 @@ signedIn.use({ timezoneId: zone });
 
 async function useAccount(page: Page, request: APIRequestContext, baseURL: string | undefined, account: "busy" | "empty") {
   expect((await reset(request, account)).status()).toBe(204);
-  await page.context().addCookies([
-    { name: "axiis-e2e-account", value: account, url: baseURL },
-    { name: "tz", value: zone, url: baseURL },
-  ]);
+  await page.context().addCookies([{ name: "axiis-e2e-account", value: account, url: baseURL }]);
 }
 
 const glance = (page: Page) => page.locator("[data-glance]");

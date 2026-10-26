@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { cookies, headers } from "next/headers";
 import { Besley, Hanken_Grotesk } from "next/font/google";
 import { ClockProvider } from "@/components/shell/clock-context";
+import { HydratedMark } from "@/components/shell/hydrated-mark";
 import { CLOCK_COOKIE, DENSITY_COOKIE, readClock, readDensity, THEME_COOKIE } from "@/components/shell/cookies";
 import { SITE_DESCRIPTION, SITE_NAME, siteUrl } from "@/lib/site";
 import { PAPER_DARK, PAPER_LIGHT } from "@/lib/theme-colors";
@@ -66,6 +67,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
           Skip to content
         </a>
         <ClockProvider clock={clock}>{children}</ClockProvider>
+        <HydratedMark />
       </body>
     </html>
   );

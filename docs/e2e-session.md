@@ -58,6 +58,14 @@ Server source maps contain `fake-session.ts` as original source text, which neve
 
 Unit tests in `src/lib/supabase/fake-session.test.ts` cover each missing condition, including a build without the flag. `src/lib/e2e-build.test.ts` covers what `next.config.ts` inlines, where it builds, the Vercel refusal and `devHarnessEnabled`. `src/proxy.test.ts` shows that a request with the right cookie is sent to `/login` without the flag or without `E2E_FAKE_SESSION`.
 
+## Waiting for the page
+
+A server-drawn page is visible before React has hydrated it, and a key pressed then is lost. `hydrated(page)` in `e2e/session.ts` waits for `<html data-hydrated>`, which `HydratedMark` (`src/components/shell/hydrated-mark.tsx`, the last thing in the root layout's body) sets in an effect. Effects run in tree order, so by then the palette's global key listener (G, A, C, Ctrl K, ?) is attached. It works on public pages too. Use it before any key or click that needs the app, instead of `networkidle`, React's internal `__react` keys (set before effects run) or a loop that presses until something answers.
+
+The marker is set when the layout commits. A page under a `loading.tsx` boundary commits a little later, so a listener the page attaches in its own effect (the detail panel's Escape, the day and week `[` and `]`) can still be missing at that moment; clicks and keys React handles on the element itself are replayed, so they work.
+
+`signedIn` also sets the `tz` cookie to the context's `timezoneId` (or the machine's zone), so `TimeZoneSync` finds nothing to send and never refreshes a page under a test.
+
 ## Running it
 
 ```bash

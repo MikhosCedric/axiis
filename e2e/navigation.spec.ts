@@ -1,5 +1,5 @@
 import { expect, type APIRequestContext, type Page } from "@playwright/test";
-import { SESSION_COOKIE, sessionSecret, signedIn } from "./session";
+import { hydrated, SESSION_COOKIE, sessionSecret, signedIn } from "./session";
 
 // The navigation account is a busy week of its own (docs/e2e-session.md), seeded around the server's real today in
 // the server's zone, so these tests can plan and tick without touching what the orientation tests read.
@@ -16,18 +16,14 @@ signedIn.beforeEach(async ({ page, request, baseURL }) => {
   expect((await reset(request)).status()).toBe(204);
   await page.context().addCookies([
     { name: "axiis-e2e-account", value: ACCOUNT, url: baseURL },
-    { name: "tz", value: zone, url: baseURL },
     { name: "tour", value: "done", url: baseURL },
   ]);
 });
 
-/** Opens a page and waits until React has hydrated it, since every key these tests press is a listener React attaches. */
+/** Opens a page and waits until it answers keys, since every key these tests press is a listener React attaches. */
 async function open(page: Page, path: string) {
   await page.goto(path);
-  await page.waitForFunction(() => {
-    const main = document.getElementById("main");
-    return main !== null && Object.keys(main).some((k) => k.startsWith("__react"));
-  });
+  await hydrated(page);
 }
 
 const details = (page: Page) => page.getByRole("complementary", { name: "Details" });
@@ -96,10 +92,8 @@ signedIn.describe("the palette as a way around", () => {
 
     await open(page, "/due");
     const palette = page.getByRole("dialog", { name: "Search and commands" });
-    await expect(async () => {
-      await page.keyboard.press("c");
-      await expect(palette).toBeVisible({ timeout: 500 });
-    }).toPass();
+    await page.keyboard.press("c");
+    await expect(palette).toBeVisible();
     await palette.getByRole("combobox").fill("");
     await expect(palette.getByRole("combobox")).toBeFocused();
     await expect(palette.getByRole("group", { name: "Recent" }).getByRole("option")).toHaveText(["Wednesday 2 January 2030"]);
@@ -112,12 +106,9 @@ signedIn.describe("the palette as a way around", () => {
 
   signedIn("C on a page with a capture field still goes to that field", async ({ page }) => {
     await open(page, "/inbox");
-    // The key is wired once the page hydrates, so press until it is.
-    await expect(async () => {
-      await page.locator("h1").click();
-      await page.keyboard.press("c");
-      await expect(page.getByLabel("Capture anything")).toBeFocused({ timeout: 500 });
-    }).toPass();
+    await page.locator("h1").click();
+    await page.keyboard.press("c");
+    await expect(page.getByLabel("Capture anything")).toBeFocused();
     await expect(page.getByRole("dialog", { name: "Search and commands" })).toBeHidden();
   });
 });

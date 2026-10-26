@@ -1,5 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
+import { hydrated } from "./session";
 
 /** Console errors and page errors seen while a test runs; each test asserts there were none. */
 function watchErrors(page: Page): string[] {
@@ -56,6 +57,7 @@ test.describe("the live score", () => {
 test("every demo works from the keyboard", async ({ page }) => {
   const errors = watchErrors(page);
   await page.goto("/");
+  await hydrated(page);
 
   // Capture: the app's parser reads the line, and Enter says where it lands.
   const line = page.getByLabel("Type a line");
