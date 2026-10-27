@@ -68,6 +68,8 @@ export type Quick = {
   patched: (key: string) => Patch | undefined;
   /** Which row's title is a field now, as `renameKey` names it. */
   renaming: string | null;
+  /** What is open over the page for this item, if anything, so its trigger can say it is expanded. */
+  openFor: (key: string) => LayerKind | null;
   /** Runs a row action: a button in the cluster, a key, or an entry in a menu. */
   run: (action: QuickAction, item: QuickItem, hooks: RowHooks, from: HTMLElement) => void;
   open: (kind: LayerKind, item: QuickItem, hooks: RowHooks, at: Box, row: HTMLElement | null) => void;

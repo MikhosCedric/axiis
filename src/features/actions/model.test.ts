@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { ItemId, LocalDate, VirtualItem } from "@/domain/item";
 import { makeItem } from "@/features/today/test-support";
-import { canDo, deleteKind, menuStep, moreEntries, placeNear, rowKeyAction, type RowPress } from "./model";
+import { canDo, deleteKind, menuStep, moreEntries, rowKeyAction, type RowPress } from "./model";
 import { quickItem, quickNote } from "./quick-item";
 
 const TZ = "Europe/London";
@@ -125,22 +125,5 @@ describe("menuStep", () => {
     expect(menuStep("z", 0, labels)).toBeNull();
     expect(menuStep("Enter", 0, labels)).toBeNull();
     expect(menuStep(" ", 0, labels)).toBeNull();
-  });
-});
-
-describe("placeNear", () => {
-  const view = { width: 400, height: 600 };
-  const size = { width: 200, height: 150 };
-
-  it("sits under its anchor, left edges lined up", () => {
-    expect(placeNear({ left: 40, top: 100, width: 30, height: 20 }, size, view)).toEqual({ left: 40, top: 124 });
-  });
-
-  it("flips above when there is no room below, and stays inside the window", () => {
-    expect(placeNear({ left: 300, top: 500, width: 30, height: 20 }, size, view)).toEqual({ left: 184, top: 346 });
-  });
-
-  it("holds the margin when the window is too short either way", () => {
-    expect(placeNear({ left: 0, top: 60, width: 0, height: 0 }, { width: 200, height: 560 }, view)).toEqual({ left: 16, top: 24 });
   });
 });

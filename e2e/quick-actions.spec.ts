@@ -256,6 +256,61 @@ signedIn.describe("quick actions have no axe violations", () => {
   }
 });
 
+signedIn.describe("the popovers and menus", () => {
+  signedIn("a click outside closes one and leaves focus where the click put it", async ({ page }) => {
+    await openList(page);
+    const title = list(page).getByRole("button", { name: /^Call the plumber/ });
+    await title.focus();
+    await page.keyboard.press("p");
+    const plan = page.getByRole("dialog", { name: "Plan Call the plumber" });
+    await expect(plan).toBeVisible();
+    await page.getByRole("textbox", { name: /Capture/ }).click();
+    await expect(plan).toBeHidden();
+    await expect(page.getByRole("textbox", { name: /Capture/ })).toBeFocused();
+  });
+
+  signedIn("Tab past the last control closes it and goes back to the row; arrows move between its choices", async ({ page }) => {
+    await openList(page);
+    const title = list(page).getByRole("button", { name: /^Call the plumber/ });
+    await title.focus();
+    await page.keyboard.press("p");
+    const plan = page.getByRole("dialog", { name: "Plan Call the plumber" });
+    await expect(plan.getByRole("button", { name: "Today" })).toBeFocused();
+    await page.keyboard.press("ArrowRight");
+    await expect(plan.getByRole("button", { name: "Tomorrow" })).toBeFocused();
+    await page.keyboard.press("ArrowLeft");
+    await page.keyboard.press("ArrowLeft");
+    await expect(plan.getByRole("button", { name: "Next week" })).toBeFocused();
+    await plan.getByRole("button", { name: "Any time" }).focus();
+    await page.keyboard.press("Tab");
+    await expect(plan).toBeHidden();
+    await expect(title).toBeFocused();
+  });
+
+  signedIn("a trigger says when its layer is open, and a menu hands over to Plan in the same place", async ({ page }) => {
+    await openList(page);
+    const title = list(page).getByRole("button", { name: /^Call the plumber/ });
+    await title.hover();
+    const more = list(page).getByRole("button", { name: "More Call the plumber" });
+    await expect(more).toHaveAttribute("aria-expanded", "false");
+    await more.click();
+    await expect(more).toHaveAttribute("aria-expanded", "true");
+    await expect(page.getByRole("menu", { name: "Actions for Call the plumber" })).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(more).toHaveAttribute("aria-expanded", "false");
+
+    await title.click({ button: "right" });
+    await page.getByRole("menuitem", { name: "Plan…" }).click();
+    const plan = page.getByRole("dialog", { name: "Plan Call the plumber" });
+    await expect(plan.getByRole("button", { name: "Today" })).toBeFocused();
+    await expect(plan.getByRole("button", { name: "Today" })).toHaveAttribute("aria-pressed", "true");
+    await plan.getByRole("textbox", { name: "At" }).fill("7pm");
+    await page.keyboard.press("Enter");
+    await expect(note(page)).toHaveText(/^Call the plumber is at 19:00 now\.$/);
+    await expect(title).toBeFocused();
+  });
+});
+
 signedIn.describe("quick actions under a coarse pointer", () => {
   signedIn.use({ isMobile: true, hasTouch: true, viewport: { width: 375, height: 812 } });
 

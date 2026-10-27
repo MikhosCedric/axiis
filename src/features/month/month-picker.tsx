@@ -1,5 +1,6 @@
 "use client";
 
+import { placeNear } from "@/lib/placement";
 import { useRouter } from "next/navigation";
 import { useId, useLayoutEffect, useRef, useState, type KeyboardEvent } from "react";
 import type { LocalDate } from "@/domain/item";
@@ -63,9 +64,10 @@ export function MonthPicker({ month, today, className }: { month: YearMonth; tod
       const el = panel.current;
       if (!button || !el) return;
       const at = button.getBoundingClientRect();
-      const width = el.offsetWidth;
-      el.style.left = `${Math.max(GUTTER, Math.min(at.left, window.innerWidth - GUTTER - width))}px`;
-      el.style.top = `${at.bottom + GAP}px`;
+      const size = { width: el.offsetWidth, height: el.offsetHeight };
+      const { left, top } = placeNear(at, size, { width: window.innerWidth, height: window.innerHeight }, GAP, GUTTER);
+      el.style.left = `${left}px`;
+      el.style.top = `${top}px`;
     }
     place();
     window.addEventListener("resize", place);
