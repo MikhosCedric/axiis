@@ -51,6 +51,10 @@ const serverActions: QuickActions = {
 
 const loadLayer = () => import("./layer");
 
+// One empty map for every render: a new one each time would change the context on every render, and a
+// change that reaches a part of the page still streaming in makes React draw it again beside the streamed copy.
+const NO_PATCHES: ReadonlyMap<string, Patch> = new Map();
+
 const noSubscribe = () => () => {};
 const layerHost = () => document.getElementById("main") ?? document.body;
 const noHost = () => null;
@@ -108,7 +112,7 @@ export function QuickActionsProvider({
   children: ReactNode;
 }) {
   const [, startTransition] = useTransition();
-  const [overlay, patch] = useOptimistic(new Map<string, Patch>(), (now, [key, p]: [string, Patch]) =>
+  const [overlay, patch] = useOptimistic(NO_PATCHES, (now, [key, p]: [string, Patch]) =>
     new Map(now).set(key, { ...now.get(key), ...p }),
   );
   const [note, setNote] = useState<UndoNote | null>(null);
