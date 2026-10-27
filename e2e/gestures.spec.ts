@@ -25,6 +25,8 @@ const note = (page: Page) => page.getByRole("status").filter({ hasText: /\S/ }).
 async function openList(page: Page) {
   await page.goto("/today?view=list");
   await hydrated(page);
+  // On a touch screen the gestures attach after hydration, through two lazy imports.
+  if (await page.evaluate(() => matchMedia("(pointer: coarse)").matches)) await page.locator("html[data-gestures]").waitFor({ state: "attached" });
 }
 
 /** A real touch, through the browser's own input, so it arrives as touch pointer events and can scroll the page. */

@@ -14,9 +14,9 @@ const MOSS = { light: "rgb(72, 83, 32)", dark: "rgb(122, 135, 83)" };
 const reset = (request: APIRequestContext) =>
   request.post("/dev/e2e-session", { headers: { cookie: `${SESSION_COOKIE}=${sessionSecret()}; axiis-e2e-account=areas` } });
 
+// A colour save refreshes the page, and for a moment the refresh leaves it without a title; axe reads that as a fault.
 async function axe(page: Page) {
-  // A save refreshes the page, and its head can be without a <title> for a moment while that commits.
-  await expect(page).toHaveTitle(/\S/);
+  await expect(page).toHaveTitle(/./);
   const { violations } = await new AxeBuilder({ page }).analyze();
   return violations.filter((v) => v.impact === "serious" || v.impact === "critical").map((v) => `${v.id}: ${v.nodes.map((n) => n.target).join(" ")}`);
 }

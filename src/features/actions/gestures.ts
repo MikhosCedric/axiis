@@ -160,7 +160,10 @@ export function attachGestures(api: { current: Quick | null }): () => void {
   document.addEventListener("pointerup", onUp, true);
   document.addEventListener("pointercancel", onUp, true);
   document.addEventListener("click", onClick, true);
+  // Tells a browser test the gestures are live: they attach after hydration, through two lazy imports.
+  document.documentElement.dataset.gestures = "";
   return () => {
+    delete document.documentElement.dataset.gestures;
     closeShown();
     clearStrip(strip);
     document.removeEventListener("pointerdown", onDown, true);
