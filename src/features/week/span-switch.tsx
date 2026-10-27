@@ -18,7 +18,7 @@ export function SpanSwitch({ current, hrefs }: { current: Span; hrefs: Record<Sp
       label="Day, week or month"
       chosen={current}
       segments={SPANS.map(({ span, label }) => ({ key: span, label, href: hrefs[span] }))}
-      className="h-9 pointer-coarse:h-11"
+      className="h-9 pointer-coarse:h-12"
     />
   );
 }
