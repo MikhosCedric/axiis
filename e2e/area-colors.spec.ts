@@ -15,6 +15,8 @@ const reset = (request: APIRequestContext) =>
   request.post("/dev/e2e-session", { headers: { cookie: `${SESSION_COOKIE}=${sessionSecret()}; axiis-e2e-account=areas` } });
 
 async function axe(page: Page) {
+  // A save refreshes the page, and its head can be without a <title> for a moment while that commits.
+  await expect(page).toHaveTitle(/\S/);
   const { violations } = await new AxeBuilder({ page }).analyze();
   return violations.filter((v) => v.impact === "serious" || v.impact === "critical").map((v) => `${v.id}: ${v.nodes.map((n) => n.target).join(" ")}`);
 }
