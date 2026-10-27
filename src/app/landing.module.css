@@ -1,9 +1,25 @@
+/*
+ * The landing. Every size here is a role from the public type scale (`--fs-*` in globals.css) or a step of
+ * the 8px spacing scale (`--sp-*`), and sections are spaced by one rhythm, `--section-y`.
+ */
+
 /* The hero holds its own depth layers behind it, so they never reach the header or the sections below. */
 .hero {
-  --display: clamp(2.6rem, 1.4rem + 5.2vw, 5.5rem);
+  --display: var(--fs-display);
   position: relative;
   isolation: isolate;
   overflow-x: clip;
+}
+
+.heroText {
+  position: relative;
+  padding-block: var(--sp-3) var(--sp-5);
+}
+
+@media (min-width: 640px) {
+  .heroText {
+    padding-top: var(--sp-5);
+  }
 }
 
 .display {
@@ -20,11 +36,11 @@
 
 /*
  * From 900px the first line, "Your tasks and your time,", is held to one line: it measures 12.3em in Besley,
- * so the type grows with the width between the gutters, up to 12rem, and never past a sixth of the window's height.
+ * so the type grows with the column up to the display ceiling (8rem), and never past a sixth of the window's height.
  */
 @media (min-width: 900px) {
   .hero {
-    --display: min(12rem, calc((100vw - 2 * var(--gutter)) / 12.6), 17svh);
+    --display: min(8rem, calc((100vw - 2 * var(--gutter)) / 12.6), 17svh);
   }
 
   .display {
@@ -64,30 +80,32 @@
 
 .lead {
   max-width: 34em;
-  font-size: clamp(17px, 0.62rem + 0.5vw, 22px);
+  font-size: var(--fs-lead);
   line-height: 1.6;
   color: var(--ink-2);
   text-wrap: pretty;
 }
 
+.terms {
+  margin-top: 12px;
+  font-size: var(--fs-caption);
+  color: var(--ink-3);
+}
+
 /* Under the headline: the lead on the left, the way in on the right, their last lines on one baseline. */
 .heroFoot {
   display: grid;
-  gap: 32px;
-  margin-top: 28px;
+  gap: var(--sp-4);
+  margin-top: var(--sp-4);
 }
 
 @media (min-width: 900px) {
   .heroFoot {
     grid-template-columns: minmax(0, 34em) auto;
-    font-size: clamp(17px, 0.62rem + 0.5vw, 22px);
+    font-size: var(--fs-lead);
     justify-content: space-between;
     align-items: end;
-    margin-top: 40px;
-  }
-
-  .lead {
-    margin-top: 0;
+    margin-top: var(--sp-5);
   }
 }
 
@@ -126,39 +144,6 @@
   mask-image: linear-gradient(to right, transparent 45%, #000 75%, transparent);
 }
 
-.heading {
-  font-family: var(--font-serif);
-  font-size: clamp(1.75rem, 0.9rem + 2vw, 4.25rem);
-  line-height: 1.1;
-  font-weight: 500;
-  letter-spacing: -0.015em;
-  text-wrap: balance;
-}
-
-/* The story: a head, the run, then five movements, each a rehearsal mark, a title, a few lines and the thing working. */
-.story {
-  scroll-margin-top: 24px;
-}
-
-.storyHead {
-  display: grid;
-  gap: 10px;
-  border-bottom: 1px solid var(--rule);
-  padding-bottom: 20px;
-}
-
-.storyLead,
-.closeBody {
-  max-width: 40rem;
-  font-size: clamp(15px, 0.75rem + 0.3vw, 18px);
-  line-height: 1.6;
-  color: var(--ink-2);
-}
-
-.closeBody {
-  margin-top: 16px;
-}
-
 /*
  * The hero's Score is a sheet laid on the page, with a second, darker sheet under it set a little off
  * square. Both part from a fine pointer by different amounts (script sets `translate`), so the pair reads
@@ -179,6 +164,7 @@
   inset: 14px -10px -12px 10px;
   z-index: -1;
   border: 1px solid var(--rule-soft);
+  border-radius: 6px;
   background: var(--paper-2);
   transform: rotate(-0.5deg);
 }
@@ -186,6 +172,7 @@
 .top {
   position: relative;
   border: 1px solid light-dark(rgba(28, 27, 34, 0.12), rgba(236, 229, 211, 0.2));
+  border-radius: 6px;
   background: var(--paper);
   padding: 18px clamp(12px, 1.6vw, 32px) 16px;
   box-shadow:
@@ -203,6 +190,25 @@
     margin-inline: -4px;
     padding-inline: 8px;
   }
+}
+
+.heading {
+  font-family: var(--font-serif);
+  font-size: var(--fs-h2);
+  line-height: 1.1;
+  font-weight: 500;
+  letter-spacing: -0.015em;
+  text-wrap: balance;
+}
+
+/* A heading that an in-page link lands on takes focus; the ring sits clear of its words. */
+.rise:focus-visible {
+  outline-offset: 8px;
+  border-radius: 2px;
+}
+
+.rise:focus:not(:focus-visible) {
+  outline: none;
 }
 
 /* A heading's words, each in its own clipped line, so they can rise out of it. */
@@ -228,80 +234,396 @@
   transform-origin: left;
 }
 
-.stateHead {
+/* How it works: a head, then the run, both on the page's paper. */
+.how {
+  padding-top: var(--section-y);
+  scroll-margin-top: 72px;
+}
+
+.storyHead {
   display: grid;
-  gap: 32px;
+  gap: var(--sp-2);
   border-bottom: 1px solid var(--rule);
-  padding-bottom: 28px;
+  padding-bottom: var(--sp-3);
 }
 
-@media (min-width: 1100px) {
-  .stateHead {
-    grid-template-columns: minmax(0, 1fr) auto;
+@media (min-width: 960px) {
+  .storyHead {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 32rem);
     align-items: end;
-    column-gap: 64px;
+    column-gap: var(--sp-6);
   }
 }
 
-.tallies {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 24px clamp(24px, 3vw, 72px);
+.storyLead,
+.closeBody {
+  max-width: 40rem;
+  font-size: var(--fs-body);
+  line-height: 1.6;
+  color: var(--ink-2);
+  text-wrap: pretty;
 }
 
-@media (min-width: 720px) {
-  .tallies {
-    grid-template-columns: repeat(4, minmax(0, auto));
-  }
+.closeBody {
+  margin-top: var(--sp-2);
 }
 
-.tally {
+.runTitle,
+.movementTitle {
   font-family: var(--font-serif);
-  font-size: clamp(2.5rem, 1.4rem + 3vw, 6rem);
-  line-height: 1;
+  font-size: var(--fs-h3);
+  line-height: 1.12;
   font-weight: 500;
-  letter-spacing: -0.03em;
+  letter-spacing: -0.015em;
+  text-wrap: balance;
 }
 
-.tallyWords {
-  max-width: 14em;
-  margin-top: 8px;
-  font-size: 13px;
-  line-height: 1.45;
+/*
+ * The movements' band: a step darker paper with a fine grain, so the sheets laid on it read as lighter
+ * paper above it. A staff runs in along its top edge, carried on from the page above.
+ */
+.band {
+  position: relative;
+  isolation: isolate;
+  margin-top: var(--sp-6);
+  padding-bottom: var(--section-y);
+  background: var(--paper-2);
+  border-top: 1px solid var(--rule-soft);
+}
+
+.band::before,
+.night::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .11 0 0 0 0 .1 0 0 0 0 .13 .5 0 0 0 -.18'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)'/%3E%3C/svg%3E");
+}
+
+.night::before {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .93 0 0 0 0 .9 0 0 0 0 .83 .32 0 0 0 -.12'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)'/%3E%3C/svg%3E");
+}
+
+.bandGrid {
+  position: relative;
+}
+
+/*
+ * Beside the movements on a window with room in its margin (2400px and up): their contents, held in
+ * view while they scroll past, an ink tick sliding to the one being read.
+ */
+.rail {
+  display: none;
+}
+
+@media (min-width: 2400px) {
+  .rail {
+    position: absolute;
+    inset-block: 0;
+    left: var(--gutter);
+    display: block;
+    width: calc((100% - var(--content-max)) / 2 - var(--gutter) - var(--sp-5));
+  }
+}
+
+.railHead,
+.railLetters {
+  position: sticky;
+}
+
+.railHead {
+  top: 112px;
+  font-size: var(--fs-caption);
+  font-weight: 600;
+  font-variant-caps: all-small-caps;
+  letter-spacing: 0.1em;
+  color: var(--ink-3);
+}
+
+.railLetters {
+  top: 144px;
+  display: grid;
+  margin-top: var(--sp-2);
+  border-left: 1px solid var(--rule);
+  --at: 0;
+  --step-x: 0px;
+  --step-y: 48px;
+}
+
+.railLetters > [aria-hidden] {
+  top: 6px;
+  left: -2px;
+  width: 3px;
+  height: 36px;
+  border-radius: 2px;
+}
+
+.railLink {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  height: 48px;
+  padding-left: var(--sp-3);
+  font-family: var(--font-serif);
+  font-size: var(--fs-body);
+  font-weight: 500;
+  color: var(--ink-3);
+  transition:
+    color 220ms cubic-bezier(0.16, 1, 0.3, 1),
+    font-weight 220ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.railLink:hover,
+.railLink[aria-current] {
+  font-weight: 650;
+  color: var(--ink);
+}
+
+.railName {
+  font-family: var(--font-sans);
+  font-size: var(--fs-small);
+  font-weight: 500;
+}
+
+/*
+ * The movements: each a spread, with its words on an under sheet and the thing itself on a sheet lifted
+ * over that sheet's edge. Sides alternate, and each demo takes the width it needs, so no two rows match.
+ */
+.movements {
+  display: grid;
+  gap: var(--sp-5);
+}
+
+.movement {
+  position: relative;
+  display: grid;
+  gap: var(--sp-3);
+  scroll-margin-top: 96px;
+}
+
+.underSheet {
+  display: none;
+}
+
+@media (min-width: 960px) {
+  .movements {
+    gap: var(--sp-6);
+  }
+
+  .movement {
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    column-gap: var(--sp-4);
+    align-items: center;
+    --text: 1 / 6;
+    --demo: 6 / -1;
+    --under: 1 / 8;
+  }
+
+  .movementText {
+    grid-column: var(--text);
+    grid-row: 1;
+    padding-block: calc(var(--sp-5) + var(--sp-4));
+    padding-inline: var(--sp-3) 0;
+  }
+
+  .movementDemo {
+    grid-column: var(--demo);
+    grid-row: 1;
+  }
+
+  .underSheet {
+    display: block;
+    grid-column: var(--under);
+    grid-row: 1;
+    align-self: stretch;
+    z-index: -1;
+    margin-block: var(--sp-5);
+    border: 1px solid var(--rule-soft);
+    border-radius: 6px;
+    background: var(--paper);
+    box-shadow: 0 1px 2px light-dark(rgb(28 27 34 / 0.06), rgb(0 0 0 / 0.3));
+  }
+
+  /* Text on the right: the demo comes first in the row, and the under sheet reaches back under it. */
+  .drag {
+    --text: 8 / -1;
+    --demo: 1 / 8;
+    --under: 6 / -1;
+  }
+
+  .drag .movementText,
+  .focus .movementText {
+    padding-inline: 0 var(--sp-3);
+  }
+
+  .done {
+    --text: 1 / 5;
+    --demo: 5 / -1;
+    --under: 1 / 7;
+  }
+
+  .focus {
+    --text: 7 / -1;
+    --demo: 1 / 7;
+    --under: 5 / -1;
+  }
+
+  .month {
+    --text: 1 / 4;
+    --demo: 4 / -1;
+    --under: 1 / 6;
+  }
+}
+
+.movementText {
+  position: relative;
+}
+
+.markRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* A rehearsal mark, as a score boxes a letter over the bar where a passage begins, and its tempo. */
+.mark {
+  display: inline-grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border: 1.5px solid var(--ink);
+  border-radius: 3px;
+  font-family: var(--font-serif);
+  font-size: 17px;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.tempo {
+  font-family: var(--font-serif);
+  font-size: var(--fs-small);
+  font-style: italic;
+  letter-spacing: 0.02em;
+  color: var(--ink-3);
+}
+
+.movementTitle {
+  margin-top: var(--sp-2);
+  transition: font-weight 320ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .movement:hover .movementTitle {
+    font-weight: 600;
+  }
+}
+
+.movementBody {
+  max-width: 38ch;
+  margin-top: var(--sp-2);
+  font-size: var(--fs-body);
+  line-height: 1.65;
+  color: var(--ink-2);
+  text-wrap: pretty;
+}
+
+/* What the demo answers to, as key caps. */
+.keys {
+  display: grid;
+  gap: var(--sp-1);
+  max-width: 38ch;
+  margin-top: var(--sp-3);
+  border-top: 1px solid var(--rule-soft);
+  padding-top: var(--sp-2);
+}
+
+.keys > div {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.keys dt {
+  display: flex;
+  gap: 4px;
+}
+
+.keys kbd {
+  display: inline-grid;
+  place-items: center;
+  min-width: 26px;
+  height: 26px;
+  padding-inline: 6px;
+  border: 1px solid var(--rule);
+  border-bottom-width: 2px;
+  border-radius: 5px;
+  background: var(--sheet);
+  font-family: var(--font-sans);
+  font-size: var(--fs-caption);
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.keys dd {
+  font-size: var(--fs-small);
   color: var(--ink-2);
 }
 
 /*
- * Each demo sits on its own sheet: on hover it lifts 3px, its shadow deepens (a second shadow fading in,
- * not a shadow being redrawn) and falls away from the pointer, and a soft lamp of lighter paper follows
- * the pointer across it.
+ * Each demo sits on its own sheet, with a second sheet's edge showing under it and its top corner
+ * turned down. Under a fine pointer it lifts 3px, its shadow deepens (a second shadow fading in, not a
+ * shadow being redrawn) and falls away from the pointer, and a soft lamp of lighter paper follows it.
  */
 .movementDemo {
   position: relative;
   isolation: isolate;
+  min-width: 0;
   border: 1px solid var(--rule-soft);
+  border-radius: 6px;
   background: var(--paper);
   padding: clamp(16px, 2vw, 32px);
+  box-shadow:
+    0 1px 1px light-dark(rgb(28 27 34 / 0.07), rgb(0 0 0 / 0.35)),
+    0 8px 16px -8px light-dark(rgb(28 27 34 / 0.14), rgb(0 0 0 / 0.5)),
+    0 28px 56px -24px light-dark(rgb(28 27 34 / 0.22), rgb(0 0 0 / 0.6));
   transition: transform 500ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.movementDemo::before,
-.sheetShadow {
+/* The sheet under it: only its edge shows, a few pixels below. */
+.movementDemo::after {
   content: "";
+  position: absolute;
+  inset: auto 10px -6px;
+  height: 12px;
+  z-index: -3;
+  border: 1px solid var(--rule-soft);
+  border-radius: 0 0 6px 6px;
+  background: var(--paper);
+}
+
+/* The turned-down corner. */
+.movementDemo::before {
+  content: "";
+  position: absolute;
+  top: -1px;
+  right: -1px;
+  width: 18px;
+  height: 18px;
+  border-radius: 0 6px 0 4px;
+  background: linear-gradient(225deg, var(--paper-2) 50%, var(--sheet) 50%);
+  box-shadow: -1px 1px 2px light-dark(rgb(28 27 34 / 0.12), rgb(0 0 0 / 0.4));
+}
+
+.sheetShadow {
   position: absolute;
   inset: 0;
   z-index: -2;
+  border-radius: 6px;
   pointer-events: none;
-}
-
-.movementDemo::before {
-  box-shadow: 0 1px 2px light-dark(rgb(28 27 34 / 0.08), rgb(0 0 0 / 0.35));
-}
-
-.sheetShadow {
   box-shadow:
-    0 14px 30px -10px light-dark(rgb(28 27 34 / 0.2), rgb(0 0 0 / 0.6)),
-    0 36px 70px -30px light-dark(rgb(28 27 34 / 0.18), rgb(0 0 0 / 0.5));
+    0 18px 36px -12px light-dark(rgb(28 27 34 / 0.22), rgb(0 0 0 / 0.6)),
+    0 44px 80px -32px light-dark(rgb(28 27 34 / 0.2), rgb(0 0 0 / 0.5));
   opacity: 0;
   transition:
     opacity 400ms cubic-bezier(0.16, 1, 0.3, 1),
@@ -313,6 +635,7 @@
   inset: 0;
   z-index: -1;
   overflow: clip;
+  border-radius: inherit;
   pointer-events: none;
   opacity: 0;
   transition: opacity 400ms cubic-bezier(0.16, 1, 0.3, 1);
@@ -336,120 +659,166 @@
   }
 
   .movementDemo:hover .sheetShadow,
-  .movementDemo:hover .lamp {
+  [data-glow]:hover > .lamp {
     opacity: 1;
   }
 }
 
-.movement {
-  display: grid;
-  gap: 28px;
-  border-bottom: 1px solid var(--rule);
-  padding-block: 48px;
-}
-
-.story > .movement:last-child {
-  border-bottom: 3px double var(--rule);
-}
-
-@media (min-width: 960px) {
-  .movement {
-    grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
-    gap: 64px;
-    align-items: start;
-    padding-block: 72px;
-  }
-
-  .movement:nth-of-type(even) {
-    grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
-  }
-
-  .movement:nth-of-type(even) .movementText {
-    order: 2;
-  }
-
-  .wide {
-    grid-template-columns: minmax(0, 1fr);
-    gap: 32px;
-  }
-
-  .wide .movementText {
-    display: grid;
-    grid-template-columns: auto minmax(0, 1fr) minmax(0, 1.4fr);
-    column-gap: 24px;
-    align-items: baseline;
-  }
-
-  .wide .movementBody {
-    margin-top: 0;
-  }
-}
-
 /*
- * From 1800px the first four movements stand two by two, each its text over its demo, so a wide
- * window holds two working pieces side by side instead of one stretched across it. The month stays wide.
+ * What it does today, as a night section: the same tokens drawn on their dark side whatever the theme,
+ * with numbers on tiles of different sizes and the shipped list ruled beneath.
  */
-@media (min-width: 1800px) {
-  .movements {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    column-gap: clamp(64px, 5vw, 160px);
-  }
-
-  .movements .movement,
-  .movements .movement:nth-of-type(even) {
-    grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: auto 1fr;
-    gap: 36px;
-  }
-
-  .movements .movement:nth-of-type(even) .movementText {
-    order: 0;
-  }
-}
-
-.movementText {
+.night {
   position: relative;
+  isolation: isolate;
+  background: var(--paper);
+  color: var(--ink);
+  border-top: 1px solid var(--rule-soft);
+  padding-block: var(--section-y) calc(var(--section-y) + var(--sp-7));
 }
 
-/* A rehearsal mark, as a score boxes a letter over the bar where a passage begins. */
-.mark {
-  display: inline-grid;
-  place-items: center;
-  width: 30px;
-  height: 30px;
-  margin-bottom: 18px;
-  border: 1.5px solid var(--ink);
+.stateGrid {
+  display: grid;
+  gap: var(--sp-5);
+}
+
+@media (min-width: 1100px) {
+  .stateGrid {
+    grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+    align-items: end;
+    column-gap: var(--sp-6);
+  }
+}
+
+.stateHead .storyLead {
+  margin-top: var(--sp-2);
+}
+
+.tallies {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-areas: "a a" "b c" "d d";
+  gap: 12px;
+}
+
+@media (min-width: 720px) {
+  .tallies {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-areas: "a a b c" "a a d d";
+  }
+}
+
+.tile {
+  display: flex;
+  min-height: 9.5rem;
+  flex-direction: column;
+  gap: var(--sp-1);
+  border: 1px solid var(--rule-soft);
+  border-radius: 8px;
+  background: var(--sheet);
+  padding: var(--sp-3);
+  box-shadow:
+    inset 0 1px 0 rgb(236 229 211 / 0.07),
+    0 20px 40px -24px rgb(0 0 0 / 0.7);
+}
+
+.tile:nth-child(1) {
+  grid-area: a;
+}
+
+.tile:nth-child(2) {
+  grid-area: b;
+}
+
+.tile:nth-child(3) {
+  grid-area: c;
+}
+
+.tile:nth-child(4) {
+  grid-area: d;
+}
+
+.tally {
   font-family: var(--font-serif);
-  font-size: 17px;
-  font-weight: 600;
+  font-size: var(--fs-numeral);
   line-height: 1;
-}
-
-.movementTitle {
-  font-family: var(--font-serif);
-  font-size: clamp(1.45rem, 0.9rem + 1.3vw, 2.9rem);
-  line-height: 1.12;
   font-weight: 500;
-  letter-spacing: -0.015em;
-  text-wrap: balance;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums lining-nums;
 }
 
-.movementBody {
-  max-width: 36ch;
-  margin-top: 14px;
-  font-size: clamp(15px, 0.75rem + 0.3vw, 18px);
-  line-height: 1.65;
+.tile:nth-child(1) .tally {
+  flex: 1;
+}
+
+.tallyWords {
+  max-width: 18em;
+  font-size: var(--fs-small);
+  line-height: 1.45;
   color: var(--ink-2);
-  text-wrap: pretty;
 }
 
-.movementDemo {
-  min-width: 0;
+.swatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: auto;
+  padding-top: var(--sp-1);
+}
+
+.swatches span {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+/* The count drawn as a tally is kept: four strokes and a fifth across them, a gate for each five. */
+.strokes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 18px;
+  margin-top: auto;
+  padding-block: var(--sp-2);
+}
+
+.strokes > span {
+  position: relative;
+  display: flex;
+  gap: 7px;
+  height: 34px;
+  padding-inline: 2px;
+}
+
+.strokes i {
+  width: 2px;
+  border-radius: 1px;
+  background: var(--ink-2);
+}
+
+.strokes > [data-gate]::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: -4px;
+  right: -4px;
+  height: 2px;
+  border-radius: 1px;
+  background: var(--ink);
+  transform: rotate(-28deg);
+}
+
+/* A ruler of the days of grace, one tick a day and a longer one at each end. */
+.days {
+  height: 12px;
+  margin-top: auto;
+  background:
+    linear-gradient(to right, var(--ink-2) 1px, transparent 1px) 0 0 / calc((100% - 1px) / 14) 7px repeat-x,
+    linear-gradient(to right, var(--ink-2) 1px, transparent 1px calc(100% - 1px), var(--ink-2) calc(100% - 1px));
+  border-top: 1px solid var(--rule);
 }
 
 .ledger {
-  margin-top: 20px;
+  margin-top: var(--sp-5);
   border-top: 1px solid var(--rule);
   counter-reset: bar;
 }
@@ -457,7 +826,7 @@
 @media (min-width: 820px) {
   .ledger {
     columns: 2;
-    column-gap: clamp(40px, 4vw, 96px);
+    column-gap: var(--sp-6);
   }
 }
 
@@ -467,28 +836,15 @@
   }
 }
 
-@media (min-width: 2200px) {
-  .ledger {
-    columns: 4;
-  }
-}
-
 .ledger li {
   display: flex;
   gap: 14px;
   break-inside: avoid;
   border-bottom: 1px solid var(--rule-soft);
   padding: 11px 0;
-  font-size: clamp(15px, 0.75rem + 0.25vw, 17px);
+  font-size: var(--fs-body);
   line-height: 1.5;
   color: var(--ink);
-}
-
-.close {
-  display: grid;
-  gap: 40px;
-  border-top: 1px solid var(--rule);
-  padding-top: 32px;
 }
 
 /* Bar numbers, as a score prints them over each line: quiet, tabular, and not read aloud. */
@@ -499,9 +855,27 @@
   width: 2ch;
   padding-top: 2px;
   text-align: right;
-  font-size: 12px;
+  font-size: var(--fs-caption);
   font-variant-numeric: tabular-nums;
   color: var(--ink-3);
+}
+
+/* The close: a sheet pulled up over the night section's foot, the one call to start on it. */
+.close {
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  gap: var(--sp-4);
+  margin-top: calc(-1 * var(--sp-7));
+  overflow: clip;
+  border: 1px solid var(--rule-soft);
+  border-radius: 8px;
+  background: var(--paper);
+  padding: var(--sp-5) clamp(var(--sp-3), 4vw, var(--sp-6));
+  box-shadow:
+    0 1px 1px light-dark(rgb(28 27 34 / 0.07), rgb(0 0 0 / 0.35)),
+    0 12px 24px -12px light-dark(rgb(28 27 34 / 0.2), rgb(0 0 0 / 0.55)),
+    0 40px 80px -32px light-dark(rgb(28 27 34 / 0.28), rgb(0 0 0 / 0.65));
 }
 
 @media (min-width: 820px) {
@@ -567,6 +941,25 @@
     transition: transform 1100ms cubic-bezier(0.16, 1, 0.3, 1) 250ms;
   }
 
+  /*
+   * Arriving by an in-page link: the heading's words rise again and its staff is ruled in, and a movement's
+   * sheet lifts and settles, so the eye finds where the page has stopped. The staff ends last; script
+   * takes `data-arrive` off when it does.
+   */
+  .how[data-arrive] .storyHead .word > span,
+  .movement[data-arrive] .rise .word > span {
+    animation: arrive-rise 900ms cubic-bezier(0.16, 1, 0.3, 1) calc(var(--w) * 60ms) both;
+  }
+
+  .how[data-arrive] .storyHead .headStaff,
+  .movement[data-arrive] .rise .headStaff {
+    animation: arrive-done 1000ms cubic-bezier(0.16, 1, 0.3, 1) 220ms both;
+  }
+
+  .movement[data-arrive] .movementDemo {
+    animation: arrive-lift 1100ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
   /* A ledger line's bar number is printed a beat after its line arrives. */
   .ledger li[data-reveal="wait"]::before {
     opacity: 0;
@@ -591,18 +984,30 @@
       animation-timeline: scroll(root);
       animation-range: 0 100vh;
     }
-
-    .mark {
-      animation: mark-drift linear both;
-      animation-timeline: view();
-      animation-range: cover;
-    }
   }
 }
 
 @keyframes rule-in {
   from {
     transform: scaleX(0);
+  }
+}
+
+@keyframes arrive-rise {
+  from {
+    transform: translateY(105%);
+  }
+}
+
+@keyframes arrive-done {
+  from {
+    transform: scaleX(0);
+  }
+}
+
+@keyframes arrive-lift {
+  30% {
+    transform: translateY(-6px);
   }
 }
 
@@ -615,15 +1020,6 @@
 @keyframes drift-near {
   to {
     transform: translateY(18vh);
-  }
-}
-
-@keyframes mark-drift {
-  from {
-    transform: translateY(14px);
-  }
-  to {
-    transform: translateY(-14px);
   }
 }
 

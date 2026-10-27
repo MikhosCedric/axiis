@@ -88,5 +88,21 @@ for (const scheme of ["light", "dark"]) {
     await page.close();
   }
 }
+// With motion on: one screenshot a screen down the page, as a reader scrolling it would see each stop.
+for (const [width, height] of [
+  [1440, 900],
+  [1920, 1080],
+]) {
+  const page = await browser.newPage({ viewport: { width, height } });
+  await page.goto(base + "/");
+  await page.locator("html[data-hydrated]").waitFor({ state: "attached" });
+  const total = await page.evaluate(() => document.documentElement.scrollHeight);
+  for (let y = 0, i = 0; y < total; y += height, i++) {
+    await page.evaluate((y) => scrollTo({ top: y, behavior: "instant" }), y);
+    await page.waitForTimeout(1300);
+    await page.screenshot({ path: join(out, `${width}-slice-${String(i).padStart(2, "0")}.png`) });
+  }
+  await page.close();
+}
 writeFileSync(join(out, "report.json"), JSON.stringify(report, null, 2));
 await browser.close();
