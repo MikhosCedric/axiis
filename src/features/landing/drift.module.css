@@ -104,7 +104,7 @@
 .seam {
   position: relative;
   height: 25px;
-  margin-block: var(--sp-4) var(--sp-5);
+  margin-block: var(--sp-4);
   overflow: clip;
   color: var(--ink-3);
 }

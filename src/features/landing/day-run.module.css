@@ -97,6 +97,36 @@
   }
 }
 
+/* The key under the run: the three line forms, each with what it says. */
+.key {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-1) var(--sp-5);
+  font-size: var(--fs-small);
+}
+
+.key > div {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.key dt {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.key dd {
+  color: var(--ink-2);
+}
+
+.keyGlyph {
+  width: 44px;
+}
+
 .names {
   display: flex;
   flex: none;
@@ -300,11 +330,12 @@
       position: sticky;
       top: 76px;
       min-height: calc(100svh - 76px);
-      padding-block: var(--sp-3);
+      align-content: start;
+      padding-block: var(--sp-5) var(--sp-3);
     }
 
     .score {
-      --row: clamp(60px, 9svh, 104px);
+      --row: clamp(60px, (100svh - 560px) / 4, 116px);
     }
 
     .track {

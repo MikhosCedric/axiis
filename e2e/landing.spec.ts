@@ -146,6 +146,17 @@ test.describe("with reduced motion", () => {
     expect(errors).toEqual([]);
   });
 
+  test("an in-page link jumps straight there, with nothing played on arrival", async ({ page }) => {
+    await page.goto("/");
+    await hydrated(page);
+    await page.getByRole("link", { name: "See it work" }).click();
+    await expect(page.getByRole("heading", { level: 2, name: "How it works" })).toBeFocused();
+    const top = await page.locator("#how").evaluate((el) => Math.round(el.getBoundingClientRect().top));
+    expect(top).toBeLessThan(120);
+    expect(await page.locator("[data-arrive]").count()).toBe(0);
+    expect(await page.evaluate(() => document.getAnimations().filter((a) => a.playState === "running").length)).toBe(0);
+  });
+
   test("the run is one still moment, not a stretch of page to scroll through", async ({ page }) => {
     await page.goto("/");
     const run = page.getByRole("group", { name: "A day, as it goes." });
@@ -181,25 +192,131 @@ test.describe("the run through the day", () => {
   });
 });
 
+/** The widest each type role may be drawn, in px: the ceilings of the public type scale in globals.css. */
+const CEILING = { display: 128, h2: 52, h3: 33, numeral: 64, lead: 21, body: 17 };
+
 for (const size of [
   { width: 1920, height: 1080 },
   { width: 2560, height: 1440 },
+  { width: 3440, height: 1440 },
 ]) {
   test.describe(`at ${size.width}px`, () => {
     test.use({ viewport: size });
 
-    test("the page uses the width: the sample day spans it, with no sideways scroll", async ({ page }) => {
+    test("the column spans the window up to its measure, and the sample day spans the column", async ({ page }) => {
       await page.goto("/");
-      // The sheet the sample day is drawn on, inside the page's gutters.
-      const sheet = page.getByRole("figure", { name: /A sample day/ }).locator("xpath=..");
-      const box = (await sheet.boundingBox())!;
-      expect(box.width / size.width).toBeGreaterThanOrEqual(0.9);
-      const heading = (await page.getByRole("heading", { level: 1 }).boundingBox())!;
-      expect(heading.width / size.width).toBeGreaterThanOrEqual(0.6);
+      // `--gutter` and `--content-max` from globals.css, worked out for this width.
+      const gutter = Math.min(96, Math.max(16, 0.04 * size.width));
+      const column = Math.min(size.width - 2 * gutter, Math.max(1760, Math.min(0.6 * size.width, 2160)));
+      const sheet = (await page.getByRole("figure", { name: /A sample day/ }).locator("xpath=..").boundingBox())!;
+      expect(sheet.width).toBeGreaterThanOrEqual(column * 0.95);
+      expect(Math.abs(sheet.x + sheet.width / 2 - size.width / 2)).toBeLessThan(24);
       expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBe(0);
+    });
+
+    test("no text grows past its role's ceiling, and prose keeps a readable measure", async ({ page }) => {
+      await page.goto("/");
+      const drawn = await page.evaluate(() => {
+        const px = (sel: string) => Math.max(...[...document.querySelectorAll(sel)].map((el) => parseFloat(getComputedStyle(el).fontSize)));
+        const prose = [...document.querySelectorAll("main p, main li")]
+          .filter((el) => (el.textContent ?? "").length > 90)
+          .map((el) => el.getBoundingClientRect().width / parseFloat(getComputedStyle(el).fontSize));
+        return {
+          display: px("h1"),
+          h2: px("main h2"),
+          h3: px("main h3"),
+          numeral: px("main dt"),
+          lead: px("main section:first-of-type p"),
+          body: px("main article p, main li"),
+          widestMeasure: Math.max(...prose),
+        };
+      });
+      for (const [role, max] of Object.entries(CEILING)) expect(drawn[role as keyof typeof CEILING], role).toBeLessThanOrEqual(max + 0.5);
+      // About 75 characters a line at most: Hanken Grotesk sets near 2 characters an em.
+      expect(drawn.widestMeasure).toBeLessThanOrEqual(42);
     });
   });
 }
+
+for (const size of [
+  { width: 1440, height: 900 },
+  { width: 1920, height: 1080 },
+]) {
+  test.describe(`scrolled screen by screen at ${size.width}px`, () => {
+    test.use({ viewport: size });
+
+    test("every screen holds words: no stretch of half a screen is empty", async ({ page }) => {
+      await page.goto("/");
+      await hydrated(page);
+      const total = await page.evaluate(() => document.documentElement.scrollHeight);
+      for (let y = 0; y < total - size.height / 2; y += size.height / 2) {
+        await page.evaluate((y) => scrollTo({ top: y, behavior: "instant" }), y);
+        // The tallest stretch of this screen, top to bottom, that no line of text crosses.
+        const empty = await page.evaluate(() => {
+          const lines: [number, number][] = [];
+          const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+          for (let n = walker.nextNode(); n; n = walker.nextNode()) {
+            if (!n.textContent?.trim()) continue;
+            const range = document.createRange();
+            range.selectNodeContents(n);
+            for (const r of range.getClientRects()) if (r.height > 0 && r.bottom > 0 && r.top < innerHeight) lines.push([r.top, r.bottom]);
+          }
+          lines.sort((a, b) => a[0] - b[0]);
+          let reach = 0;
+          let gap = 0;
+          for (const [top, bottom] of lines) {
+            gap = Math.max(gap, top - reach);
+            reach = Math.max(reach, bottom);
+          }
+          return Math.max(gap, innerHeight - reach);
+        });
+        expect(empty, `at ${y}px`).toBeLessThan(size.height * 0.45);
+      }
+    });
+  });
+}
+
+test.describe("in-page links", () => {
+  test.use({ viewport: { width: 1440, height: 900 } });
+
+  test("a movement's letter glides to it, puts it in the address, focuses its heading and marks the letter", async ({ page }) => {
+    const errors = watchErrors(page);
+    await page.goto("/");
+    await hydrated(page);
+    const letters = page.getByRole("navigation", { name: "Movements" });
+    await expect(letters.locator("[aria-current]")).toHaveCount(0);
+
+    await letters.getByRole("link", { name: "C Done" }).click();
+    await expect(page).toHaveURL(/#done$/);
+    await expect(page.getByRole("heading", { level: 3, name: "Done is a hollow line." })).toBeFocused();
+    // It lands under the header, once the glide is over, and the tab has moved to C.
+    await expect
+      .poll(() => page.locator("#done").evaluate((el) => Math.round(el.getBoundingClientRect().top)))
+      .toBeGreaterThanOrEqual(60);
+    await expect.poll(() => page.locator("#done").evaluate((el) => Math.round(el.getBoundingClientRect().top))).toBeLessThan(140);
+    await expect(letters.getByRole("link", { name: "C Done" })).toHaveAttribute("aria-current", "");
+    await expect(letters.locator("[aria-current]")).toHaveCount(1);
+    await expect.poll(() => letters.evaluate((nav) => getComputedStyle(nav).getPropertyValue("--at").trim())).toBe("2");
+
+    await letters.getByRole("link", { name: "A Capture" }).click();
+    await expect(page).toHaveURL(/#capture$/);
+    await expect(letters.getByRole("link", { name: "A Capture" })).toHaveAttribute("aria-current", "");
+    await expect(page.getByRole("heading", { level: 3, name: "Write it the way you would say it." })).toBeFocused();
+    expect(errors).toEqual([]);
+  });
+
+  test("See it work goes to How it works from the keyboard and puts focus on its heading", async ({ page }) => {
+    await page.goto("/");
+    await hydrated(page);
+    const before = await page.evaluate(() => performance.getEntriesByType("navigation").length);
+    await page.getByRole("link", { name: "See it work" }).focus();
+    await page.keyboard.press("Enter");
+    await expect(page).toHaveURL(/#how$/);
+    await expect(page.getByRole("heading", { level: 2, name: "How it works" })).toBeFocused();
+    await expect.poll(() => page.locator("#how").evaluate((el) => Math.round(el.getBoundingClientRect().top))).toBeLessThan(120);
+    expect(await page.evaluate(() => performance.getEntriesByType("navigation").length)).toBe(before);
+  });
+});
 
 test("no width from a small phone to an ultrawide scrolls sideways", async ({ page }) => {
   for (const [width, height] of [

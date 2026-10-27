@@ -285,8 +285,8 @@
 .band {
   position: relative;
   isolation: isolate;
-  margin-top: var(--sp-6);
-  padding-bottom: var(--section-y);
+  margin-top: var(--sp-4);
+  padding-bottom: var(--sp-7);
   background: var(--paper-2);
   border-top: 1px solid var(--rule-soft);
 }
@@ -408,7 +408,7 @@
 
 @media (min-width: 960px) {
   .movements {
-    gap: var(--sp-6);
+    gap: var(--sp-5);
   }
 
   .movement {
@@ -423,7 +423,7 @@
   .movementText {
     grid-column: var(--text);
     grid-row: 1;
-    padding-block: calc(var(--sp-5) + var(--sp-4));
+    padding-block: calc(var(--sp-5) + var(--sp-3));
     padding-inline: var(--sp-3) 0;
   }
 
