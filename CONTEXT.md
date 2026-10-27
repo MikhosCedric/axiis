@@ -62,6 +62,8 @@ A solo productivity web app. One connected set of items, shown through many view
 
 **Row actions**: the small set of actions at the end of anything that draws an item (a row, a beam, a chip, a mark): Done, Rename, Plan, Area and tags, Delete and More, shown under a resting pointer or with focus inside, also as a menu on a right-click and on keys (E, P, D, Delete, `.`). Each is the same command the detail panel uses. Never "hover menu" or "quick menu" on screen; the menu is named "Actions for" the item.
 
+**Choose**: marking rows for one change to many (Shift, Ctrl or Cmd with a click, X, or Select mode on a touch screen), said as "3 chosen" on the bar that acts on them. Never "select" on screen, since the selected item is the one open in the detail panel.
+
 **Recent**: the palette's list of the last few pages this browser opened that are not places (a day, a week, a month, a note, a tag). Kept per browser, never on the server.
 
 **Capture**: adding an item from one line of text. A plain line lands in the Inbox. On Today, Week, Month, the Inbox and the palette, a day, a time, a length and tags at the line's start or end plan and tag the new task ("dentist tomorrow 9:00 #health"); a checklist captured on Lists keeps its name as typed. Must take under two seconds.

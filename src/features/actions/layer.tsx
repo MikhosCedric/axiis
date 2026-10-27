@@ -10,11 +10,12 @@ import { DEFAULT_MINUTES } from "@/features/score/drop";
 import { TagField } from "@/features/tags/tag-field";
 import { TITLE_MAX } from "@/features/today/model";
 import { formatMinutes, parseClock } from "@/lib/clock";
+import { reach } from "@/lib/reach";
 import { FIRST_DATE, LAST_DATE, parseLocalDate } from "@/lib/dates";
 import { QuickIcon } from "./icons";
 import type { QuickIconName } from "./icon-sprite";
 import { canDo, CLUSTER_ORDER, deleteKind, menuStep, moreEntries, type MoreEntry, type QuickAction, type QuickItem } from "./model";
-import { useQuick, type OpenLayer, type Quick } from "./context";
+import { focusTarget, rowEntries, useQuick, type OpenLayer, type Quick, type RowEntry } from "./context";
 import { ACTION_KEY, ACTION_LABEL } from "./cluster";
 
 export default function Layer({ layer }: { layer: OpenLayer }) {
@@ -491,3 +492,91 @@ function RenamePanel({ quick, layer, onClosed }: PanelProps) {
   );
 }
 
+
+/**
+ * Puts focus on the row for `key` once it is drawn again (after an undo brings it back), for up to a
+ * second, in the section it was in: one item can be drawn twice on a page (Next up and the List).
+ */
+function focusWhenBack(key: string, section: string | null) {
+  let tries = 0;
+  const look = () => {
+    const within = (section && document.querySelector(`section[aria-labelledby="${CSS.escape(section)}"]`)) || document;
+    const row = within.querySelector<HTMLElement>(`[data-quick="${CSS.escape(key)}"]`);
+    const target = row && focusTarget(row);
+    if (target) target.focus();
+    else if (++tries < 40) setTimeout(look, 25);
+  };
+  setTimeout(look, 0);
+}
+
+/** Deletes an item (or skips one time a series happens), and says what it did with an Undo that brings it back. */
+export async function removeItem(quick: Quick, item: QuickItem, scope: "one" | "all", section: string | null) {
+  const { actions } = quick;
+  const result = await reach(actions.remove(item.key, scope));
+  if (!result.ok) return { news: result.error };
+  const undo = () =>
+    quick.batch([], async () => {
+      const undone = await reach(result.skipped ? actions.unskip(result.skipped) : actions.restore(result.deleted));
+      if (!undone.ok) return { news: undone.error };
+      focusWhenBack(item.key, section);
+      return { news: result.skipped ? `${item.title} is back on its day.` : `${item.title} is back.` };
+    });
+  const news = result.skipped
+    ? `${item.title} is skipped on this day.`
+    : scope === "all"
+      ? `${item.title} is deleted, every time.`
+      : `${item.title} is deleted.`;
+  return { news, undo };
+}
+
+/**
+ * The rows chosen after one more choice: `row` added, or taken out when it was in; with "range", every row
+ * drawn from `last` (the one chosen before) to it, added.
+ */
+export function picking(
+  now: ReadonlyMap<string, RowEntry>,
+  row: HTMLElement,
+  how: "toggle" | "range",
+  last: HTMLElement | null,
+): ReadonlyMap<string, RowEntry> {
+  const rows = [...document.querySelectorAll<HTMLElement>("[data-quick]")];
+  const from = how === "range" && last ? rows.indexOf(last) : -1;
+  const to = rows.indexOf(row);
+  const span = from === -1 || to === -1 ? [row] : rows.slice(Math.min(from, to), Math.max(from, to) + 1);
+  const next = new Map(now);
+  const adding = how === "range" || !next.has(row.dataset.quick ?? "");
+  for (const el of span) {
+    const entry = rowEntries.get(el);
+    if (!entry) continue;
+    if (adding) next.set(entry.item.key, entry);
+    else next.delete(entry.item.key);
+  }
+  return next;
+}
+
+/**
+ * Listens on the page for the Escape that lets chosen rows go and, on a touch screen, for the swipes and long
+ * presses on rows (gestures.ts, loaded only there). Returns a function that stops.
+ */
+export function listen(self: { current: Quick | null }): () => void {
+  let gestures: (() => void) | undefined;
+  let live = true;
+  if (window.matchMedia("(pointer: coarse)").matches) {
+    void import("./gestures").then((m) => {
+      if (live) gestures = m.attachGestures(self);
+    });
+  }
+  function onKey(e: globalThis.KeyboardEvent) {
+    const quick = self.current;
+    if (e.key !== "Escape" || !quick || !(quick.picked.size > 0 || quick.selecting)) return;
+    if (e.defaultPrevented || document.querySelector(":popover-open")) return;
+    e.preventDefault();
+    quick.clearPicked();
+  }
+  document.addEventListener("keydown", onKey);
+  return () => {
+    live = false;
+    gestures?.();
+    document.removeEventListener("keydown", onKey);
+  };
+}

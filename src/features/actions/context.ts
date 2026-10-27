@@ -118,3 +118,9 @@ export function useQuick(): Quick | null {
 export function renameKey(place: string, key: string): string {
   return `${place}|${key}`;
 }
+
+/** The element a row is reached by from the keyboard: the row itself when it takes focus, else its first control. */
+export function focusTarget(row: HTMLElement): HTMLElement | null {
+  if (row.matches("[tabindex], button, a[href]")) return row;
+  return row.querySelector<HTMLElement>("[data-quick-focus]") ?? row.querySelector<HTMLElement>("button, a[href], [tabindex='0']");
+}

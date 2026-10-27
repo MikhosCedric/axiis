@@ -7,6 +7,7 @@ import { dayWords, planDate, quickPlans, type PlanFor } from "@/features/inbox/m
 import type { ActionResult } from "@/features/today/commands";
 import { reach } from "@/lib/reach";
 import { useQuick, type Patch, type Quick, type RowEntry } from "./context";
+import type { Box } from "@/lib/placement";
 import { bulkWords, canDo, chosenWords, deleteKind, type QuickItem } from "./model";
 import { QuickIcon } from "./icons";
 import type { QuickIconName } from "./icon-sprite";
@@ -32,7 +33,8 @@ async function each(items: QuickItem[], call: (item: QuickItem) => Promise<Actio
 export default function Bulk() {
   const quick = useQuick();
   const [open, setOpen] = useState<Open>(null);
-  const [anchor, setAnchor] = useState<DOMRect | null>(null);
+  // Kept as it was when opened, so a render of the bar does not move or reopen the popover.
+  const [anchor, setAnchor] = useState<Box | null>(null);
   const plan = useRef<HTMLButtonElement>(null);
   const area = useRef<HTMLButtonElement>(null);
   const tag = useRef<HTMLButtonElement>(null);
@@ -42,7 +44,8 @@ export default function Bulk() {
   const count = items.length;
 
   function show(which: Open, button: HTMLButtonElement | null) {
-    setAnchor(button?.getBoundingClientRect() ?? null);
+    const r = button?.getBoundingClientRect();
+    setAnchor(r ? { left: r.left, top: r.top - 8, width: r.width, height: 0 } : null);
     setOpen(which);
   }
 
@@ -78,7 +81,7 @@ export default function Bulk() {
       </div>
       {open && anchor && (
         <Floating
-          at={{ left: anchor.left, top: anchor.top - 8, width: anchor.width, height: 0 }}
+          at={anchor}
           label={open === "plan" ? `Plan ${bulkWords(count)}` : open === "area" ? `Area for ${bulkWords(count)}` : `Tag ${bulkWords(count)}`}
           onClosed={shut}
           className="w-[min(320px,calc(100vw-32px))] p-3"
