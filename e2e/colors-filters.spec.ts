@@ -13,7 +13,9 @@ const HOME = "00000000-0000-4000-a000-000000000002";
 const reset = (request: APIRequestContext) =>
   request.post("/dev/e2e-session", { headers: { cookie: `${SESSION_COOKIE}=${sessionSecret()}; axiis-e2e-account=filters` } });
 
+// A colour save refreshes the page, and for a moment the refresh leaves it without a title; axe reads that as a fault.
 async function axe(page: Page) {
+  await expect(page).toHaveTitle(/./);
   const { violations } = await new AxeBuilder({ page }).analyze();
   return violations.filter((v) => v.impact === "serious" || v.impact === "critical").map((v) => `${v.id}: ${v.nodes.map((n) => n.target).join(" ")}`);
 }
