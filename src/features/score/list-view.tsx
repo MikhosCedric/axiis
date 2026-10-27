@@ -1,5 +1,6 @@
 "use client";
 
+import { MotionList } from "@/components/motion-list";
 import { ViewTransition } from "react";
 import { AreaLabel } from "@/components/area-mark";
 import { repeats, type Area, type LocalDate, type ShownItem } from "@/domain/item";
@@ -145,7 +146,7 @@ export function ListView({
     const done = entries.filter((e) => e.state === "done" && e.item.id !== justDone && e.item.id !== selectedId);
     return (
       <>
-        <ul>{entries.filter((e) => !done.includes(e)).map(row)}</ul>
+        <MotionList>{entries.filter((e) => !done.includes(e)).map(row)}</MotionList>
         {done.length > 0 && (
           <div className="py-1.5">
             <DoneFold count={done.length} listClassName="mt-1">

@@ -116,6 +116,49 @@ signedIn.describe("segmented controls", () => {
   });
 });
 
+signedIn.describe("rows that move", () => {
+  const list = (page: Page) => page.getByRole("region", { name: "List", exact: true });
+
+  signedIn("a deleted row fades where it stood while the rows below close up, and comes back settling in", async ({ page }) => {
+    await page.goto("/today?view=list");
+    await hydrated(page);
+    // The first open row of the day, so there are rows below it to close up.
+    const first = list(page).locator("ul").first().locator(":scope > li[data-quick]").first();
+    const key = (await first.getAttribute("data-quick"))!;
+    await first.getByRole("button").first().focus();
+    await page.keyboard.press("Delete");
+    await expect(list(page).locator("li[data-ghost]")).toHaveCount(1);
+    const moving = await list(page).evaluate((el) =>
+      el.getAnimations({ subtree: true }).filter((a) => !(a.effect as KeyframeEffect).target?.closest("[data-ghost]")).length,
+    );
+    expect(moving).toBeGreaterThan(0);
+    await expect(list(page).locator("li[data-ghost]")).toHaveCount(0);
+
+    await page.getByRole("button", { name: "Undo" }).click();
+    await expect(list(page).locator(`li[data-quick="${key}"]`)).toBeVisible();
+  });
+
+  signedIn("under reduced motion rows change at once", async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    await page.goto("/today?view=list");
+    await hydrated(page);
+    await list(page).getByRole("button", { name: /^Call the plumber/ }).focus();
+    await page.keyboard.press("Delete");
+    await expect(list(page).getByRole("button", { name: /^Call the plumber/ })).toHaveCount(0);
+    await expect(list(page).locator("li[data-ghost]")).toHaveCount(0);
+    expect(await list(page).evaluate((el) => el.getAnimations({ subtree: true }).length)).toBe(0);
+  });
+
+  signedIn("a capture on the Inbox settles in at the top", async ({ page }) => {
+    await page.goto("/inbox");
+    await hydrated(page);
+    await page.locator("#capture").fill("Water the ferns");
+    await page.keyboard.press("Enter");
+    const row = page.locator("[data-quick]").filter({ has: page.getByRole("button", { name: /^Water the ferns/ }) });
+    await expect(row).toBeVisible();
+  });
+});
+
 signedIn.describe("no axe violations on the polished surfaces", () => {
   for (const { width, colorScheme } of [
     { width: 1440, colorScheme: "light" as const },
