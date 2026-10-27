@@ -1,3 +1,4 @@
+import { type QuickItem } from "@/features/actions/model";
 import type { AreaColor } from "@/domain/area-color";
 import type { ItemId, ItemType } from "@/domain/item";
 import { byName, parseTagName, sameTag, type TagName, type TagSummary } from "@/domain/tag";
@@ -11,6 +12,8 @@ export function tagHref(name: string): string {
 
 /** One item on a tag's page, already worded for the user's zone. */
 export type TaggedRow = {
+  /** What the row's quick actions act on. */
+  quick: QuickItem;
   id: ItemId;
   type: ItemType;
   title: string;

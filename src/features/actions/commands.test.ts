@@ -129,13 +129,20 @@ describe("duplicateItem", () => {
 });
 
 describe("tagChoices", () => {
-  it("lists tags most used first, with their colours", async () => {
+  it("lists the item's tags, and every tag most used first", async () => {
     const a = makeItem();
     const b = makeItem();
     const fake = fakeRepo([a, b]);
     fake.tag(a.id, "home", "errands");
     fake.tag(b.id, "errands");
-    const { known } = await tagChoices(fake.repo);
-    expect(known).toEqual(["errands", "home"]);
+    expect(await tagChoices(fake.repo, b.id, TZ)).toMatchObject({ on: ["errands"], known: ["errands", "home"] });
+  });
+
+  it("gives one time a series happens the series' tags", async () => {
+    const series = makeItem({ schedule: { kind: "day", on: d("2026-10-05") }, recurrence: { kind: "series", rule: daily } });
+    const fake = fakeRepo([series]);
+    fake.tag(series.id, "team");
+    expect((await tagChoices(fake.repo, occurrenceKey(series.id, d("2026-10-07")), TZ))?.on).toEqual(["team"]);
+    expect(await tagChoices(fake.repo, "nope", TZ)).toBeNull();
   });
 });

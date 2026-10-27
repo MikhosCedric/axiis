@@ -22,6 +22,6 @@ export async function duplicateItemAction(key: string): Promise<DuplicateResult>
   return result;
 }
 
-export async function tagChoicesAction() {
-  return tagChoices(await getItemsRepo());
+export async function tagChoicesAction(key: string) {
+  return tagChoices(await getItemsRepo(), key, await getTimeZone());
 }

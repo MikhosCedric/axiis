@@ -1,5 +1,8 @@
 "use client";
 
+import { quickItem, type QuickItem } from "@/features/actions/model";
+import { useQuick, type RowHooks } from "@/features/actions/provider";
+import { RowActions, rowProps } from "@/features/actions/row-actions";
 import Link from "next/link";
 import {
   Fragment,
@@ -94,6 +97,7 @@ export function WeekView({
   const clock = useClock();
   const { days, today, timeZone, areas } = data;
   const { selectedParam, selectedId, select } = useItemSelection();
+  const quick = useQuick();
   const [, startTransition] = useTransition();
   const [status, setStatus] = useState<{ text: string; error: boolean } | null>(null);
   const [justDone, setJustDone] = useState<string | null>(null);
@@ -166,7 +170,17 @@ export function WeekView({
     if (el) refocus.current = null;
   });
 
+  /** What the quick actions act on for a row or chip. Delete and Backspace keep their meaning here: back to the Inbox. */
+  const quickOf = (item: ShownItem): { item: QuickItem; hooks: RowHooks } => ({
+    item: { ...quickItem(item, timeZone), title: quick?.patched(item.id)?.title ?? item.title },
+    hooks: { onOpen: () => select(item.id), onToggleDone: () => toggleDone(item), deleteKeys: false },
+  });
+
   function keyDown(e: KeyboardEvent<HTMLElement>, item: ShownItem) {
+    if (quick) {
+      const q = quickOf(item);
+      if (quick.keyDown(e, q.item, q.hooks)) return;
+    }
     if (e.altKey || e.ctrlKey || e.metaKey) return;
     if (e.key === "Enter") {
       e.preventDefault();
@@ -186,8 +200,13 @@ export function WeekView({
     }
   }
 
-  const row = (entry: TodayEntry, variant: "row" | "chip") => (
+  const row = (entry: TodayEntry, variant: "row" | "chip") => {
+    if (quick?.patched(entry.item.id)?.hidden) return null;
+    const q = quickOf(entry.item);
+    return (
+    <>
     <ItemRow
+      quick={q}
       entry={entry}
       variant={variant}
       timeZone={timeZone}
@@ -200,7 +219,17 @@ export function WeekView({
       onPointerDown={(e) => start(e, entry.item)}
       onKeyDown={(e) => keyDown(e, entry.item)}
     />
-  );
+    {preview === null && (
+      <RowActions
+        item={q.item}
+        hooks={q.hooks}
+        touch={false}
+        className={variant === "row" ? "quick-over !top-1 !translate-y-0 [--row-ground:var(--paper)]" : "absolute top-1/2 left-full -translate-y-1/2 border border-rule-soft bg-sheet pl-0.5"}
+      />
+    )}
+    </>
+    );
+  };
 
   return (
     <div className={selectedParam ? "min-[1180px]:grid min-[1180px]:grid-cols-[minmax(0,1fr)_328px]" : ""}>
@@ -251,7 +280,9 @@ export function WeekView({
             {week.map(({ date, entries }) => (
               <DayColumn key={date} date={date} today={today} over={preview?.over === date} empty={entries.length === 0}>
                 {entries.map((e) => (
-                  <li key={e.item.id}>{row(e, "row")}</li>
+                  <li key={e.item.id} className="group/row relative">
+                    {row(e, "row")}
+                  </li>
                 ))}
               </DayColumn>
             ))}
@@ -284,7 +315,7 @@ export function WeekView({
           {waiting.length ? (
             <ul className="flex flex-wrap gap-2.5">
               {waiting.map((e) => (
-                <li key={e.item.id} className="min-w-0">
+                <li key={e.item.id} className="group/row relative min-w-0">
                   {row(e, "chip")}
                 </li>
               ))}
@@ -374,6 +405,7 @@ function DayColumn({
 const TITLE_WEIGHT = { planned: "font-medium text-ink", live: "font-bold text-ink", done: "font-normal text-ink-3" };
 
 function ItemRow({
+  quick,
   entry,
   variant,
   timeZone,
@@ -397,9 +429,12 @@ function ItemRow({
   lifted: boolean;
   onPointerDown: (e: ReactPointerEvent<HTMLElement>) => void;
   onKeyDown: (e: KeyboardEvent<HTMLElement>) => void;
+  quick: { item: QuickItem; hooks: RowHooks };
 }) {
   const clock = useClock();
-  const { item, state } = entry;
+  const actions = useQuick();
+  const { state } = entry;
+  const item = { ...entry.item, title: quick.item.title };
   const dueOn = state !== "done" ? (item.dueOn ?? null) : null;
   const words = weekWords({
     variant,
@@ -422,6 +457,7 @@ function ItemRow({
   return (
     <div
       data-item={item.id}
+      {...rowProps(actions, quick.item, quick.hooks)}
       role="button"
       tabIndex={0}
       aria-pressed={selected}

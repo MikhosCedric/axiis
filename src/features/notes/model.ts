@@ -1,3 +1,4 @@
+import { type QuickItem } from "@/features/actions/model";
 import type { AreaColor } from "@/domain/area-color";
 import type { AreaId, Item, ItemId, ItemType } from "@/domain/item";
 import { toLocalDate } from "@/lib/dates";
@@ -29,7 +30,7 @@ export type ConnectedRow = {
   href: string;
 };
 
-export type SearchRow = { id: ItemId; type: ItemType; title: string; snippet: string; done: boolean; href: string };
+export type SearchRow = { id: ItemId; type: ItemType; title: string; snippet: string; done: boolean; href: string; quick: QuickItem };
 
 /** Everything the note screen draws, serializable to the client. */
 export type NoteView = {

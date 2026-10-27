@@ -1,3 +1,4 @@
+import { quickItem } from "@/features/actions/model";
 import type { Clock } from "@/lib/clock";
 import { z } from "zod";
 import { idSchema, type AreaId, type Item, type ItemId } from "@/domain/item";
@@ -146,7 +147,7 @@ async function carryingAll(items: ItemsRepo, names: readonly TagName[]): Promise
  * series counts, since it wears the series' tags. With only tags, every item
  * carrying them is listed, most recently edited first like any search.
  */
-export async function searchItems(notes: NotesRepo, items: ItemsRepo, rawQuery: unknown): Promise<SearchRow[]> {
+export async function searchItems(notes: NotesRepo, items: ItemsRepo, rawQuery: unknown, timeZone = "UTC"): Promise<SearchRow[]> {
   const query = parseQuery(rawQuery);
   if (!query) return [];
   const { text, tags } = splitTagTerms(query);
@@ -157,6 +158,7 @@ export async function searchItems(notes: NotesRepo, items: ItemsRepo, rawQuery: 
     snippet,
     done: item.status === "done",
     href: hrefFor(item),
+    quick: { ...quickItem(item, timeZone), title: displayTitle(item) },
   });
   if (tags.length === 0) return (await notes.search(query)).map(({ item, snippet }) => toRow(item, snippet));
 

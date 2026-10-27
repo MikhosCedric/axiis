@@ -73,8 +73,19 @@ export async function duplicateItem(repo: ItemsRepo, rawKey: unknown, timeZone: 
   }
 }
 
-/** Every tag by use, with its colour, for a row's tag chooser. */
-export async function tagChoices(repo: ItemsRepo): Promise<{ known: TagName[]; colors: TagColors }> {
-  const tags = await repo.listTags();
-  return { known: byUse(tags), colors: tagColors(tags) };
+export type TagChoices = { on: TagName[]; known: TagName[]; colors: TagColors };
+
+/**
+ * The tags on an item (its series' for one time it happens, since tags belong
+ * to the whole series), and every tag by use with its colour, for a row's tag chooser.
+ */
+export async function tagChoices(repo: ItemsRepo, rawKey: unknown, timeZone: string): Promise<TagChoices | null> {
+  const key = parseItemKey(rawKey);
+  if (!key) return null;
+  const [found, tags] = await Promise.all([resolveKey(repo, key, timeZone), repo.listTags()]);
+  if (!found) return null;
+  const owner =
+    found.kind === "virtual" ? found.series.id : found.item.recurrence.kind === "override" ? found.item.recurrence.seriesId : found.item.id;
+  const on = byName((await repo.tagsForItems([owner]))[owner] ?? []).map((t) => t.name);
+  return { on, known: byUse(tags), colors: tagColors(tags) };
 }

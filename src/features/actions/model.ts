@@ -20,11 +20,10 @@ export type QuickItem = {
   /** Wall-clock minutes of its start and its length, when it has a time. */
   time: { start: number; length: number } | null;
   areaId: string | null;
-  tags: readonly string[];
   subtask: boolean;
 };
 
-export function quickItem(item: ShownItem, timeZone: string, tags: readonly string[] = []): QuickItem {
+export function quickItem(item: ShownItem, timeZone: string): QuickItem {
   const r = item.recurrence;
   const s = item.schedule;
   const day = s.kind === "day" ? s.on : s.kind === "timed" ? toLocalDate(s.start, timeZone) : r.kind === "override" || r.kind === "occurrence" ? r.originalOn : null;
@@ -41,13 +40,12 @@ export function quickItem(item: ShownItem, timeZone: string, tags: readonly stri
         ? { start: wallMinutes(s.start, timeZone), length: Math.round((s.end.getTime() - s.start.getTime()) / 60000) }
         : null,
     areaId: item.areaId,
-    tags,
     subtask: item.parentId !== null,
   };
 }
 
 /** A note on its own row: no day, no series. */
-export function quickNote(note: { id: string; title: string; areaId?: string | null; tags?: readonly string[] }): QuickItem {
+export function quickNote(note: { id: string; title: string; areaId?: string | null }): QuickItem {
   return {
     key: note.id,
     title: note.title,
@@ -58,7 +56,6 @@ export function quickNote(note: { id: string; title: string; areaId?: string | n
     day: null,
     time: null,
     areaId: note.areaId ?? null,
-    tags: note.tags ?? [],
     subtask: false,
   };
 }
@@ -70,7 +67,7 @@ export const CLUSTER_ORDER: readonly QuickAction[] = ["done", "rename", "plan", 
 
 /** What can be done to this item from its row. A note has no day and no done box; a series' own row moves by its first day, in the panel. */
 export function canDo(item: QuickItem, action: QuickAction): boolean {
-  if (action === "done") return item.type !== "note";
+  if (action === "done") return item.type !== "note" && item.series !== "series";
   if (action === "plan") return item.type !== "note" && item.series !== "series";
   return true;
 }
@@ -183,5 +180,24 @@ export function placeNear(
   return {
     left: Math.max(margin, left),
     top: Math.max(margin, Math.min(top, view.height - margin - size.height)),
+  };
+}
+
+/** A Month mark: one line of a day cell, which knows its day only when it is planned to start there. */
+export function quickMark(
+  mark: { key: string; occurrence: string | null; title: string; type: ItemType; state: string; repeats: boolean; movable: boolean },
+  on: LocalDate,
+): QuickItem {
+  return {
+    key: mark.key,
+    title: mark.title,
+    type: mark.type,
+    done: mark.state === "done",
+    series: mark.repeats ? "occurrence" : "none",
+    occurrence: mark.occurrence ?? (mark.key.includes("~") ? mark.key : null),
+    day: mark.movable ? on : null,
+    time: null,
+    areaId: null,
+    subtask: false,
   };
 }

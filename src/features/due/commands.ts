@@ -1,3 +1,4 @@
+import { quickItem } from "@/features/actions/model";
 import { displayTitle } from "@/features/notes/model";
 import { whenOf } from "@/features/tags/commands";
 import type { Clock } from "@/lib/clock";
@@ -23,6 +24,7 @@ export async function loadDue(repo: ItemsRepo, now: Date, timeZone: string, cloc
       const done = item.status === "done";
       return [
         {
+          quick: { ...quickItem(item, timeZone), title: displayTitle(item) },
           id: item.id,
           type: item.type,
           title: displayTitle(item),

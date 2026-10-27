@@ -13,6 +13,9 @@ import { Glyph } from "@/features/today/glyph";
 import { SameInInbox } from "@/features/inbox/same-in-inbox";
 import { EMPTY_TRAY, TRAY_FULL, INBOX,type BeamState, type TodayEntry, type TodayView } from "@/features/today/model";
 import type { ChildCount } from "@/lib/items/repo";
+import { quickItem } from "@/features/actions/model";
+import { useQuick } from "@/features/actions/provider";
+import { RenameField, RowActions, rowProps } from "@/features/actions/row-actions";
 
 const TITLE_WEIGHT: Record<BeamState, string> = {
   planned: "font-medium text-ink",
@@ -47,8 +50,15 @@ export function ListView({
   onToggleDone: (item: ShownItem) => void;
 }) {
   const clock = useClock();
+  const quick = useQuick();
   const areaOf = new Map(areas.map((a) => [a.id as string, a]));
-  const row = ({ item, state }: TodayEntry) => {
+  const row = ({ item, state: saved }: TodayEntry) => {
+    const patch = quick?.patched(item.id);
+    if (patch?.hidden) return null;
+    const state = patch?.done === undefined ? saved : patch.done ? "done" : saved === "done" ? "planned" : saved;
+    const title = patch?.title ?? item.title;
+    const qi = { ...quickItem(item, timeZone), title };
+    const hooks = { onOpen: () => onSelect(item.id), onToggleDone: () => onToggleDone(item), inlineRename: true, doneBox: true };
     const count = childCounts[item.id];
     const s = item.schedule;
     const selected = selectedId === item.id;
@@ -59,8 +69,9 @@ export function ListView({
       <li
         key={item.id}
         data-item={item.id}
-        className={`grid grid-cols-[4.5rem_48px_minmax(0,1fr)] items-center gap-x-3 border-b border-rule-soft py-(--row-y) rail:grid-cols-[minmax(6.5rem,auto)_48px_minmax(0,1fr)_auto] ${
-          selected ? "bg-accent-wash" : ""
+        {...rowProps(quick, qi, hooks)}
+        className={`group/row relative grid grid-cols-[4.5rem_48px_minmax(0,1fr)] items-center gap-x-3 border-b border-rule-soft py-(--row-y) pointer-coarse:grid-cols-[4.5rem_48px_minmax(0,1fr)_auto] rail:grid-cols-[minmax(6.5rem,auto)_48px_minmax(0,1fr)_auto] rail:pointer-coarse:grid-cols-[minmax(6.5rem,auto)_48px_minmax(0,1fr)_auto_auto] ${
+          selected ? "row-selected" : ""
         }`}
       >
         <span className="pl-1 text-ink-2 tabular">
@@ -82,21 +93,25 @@ export function ListView({
             className="sr-only"
             checked={state === "done"}
             onChange={() => onToggleDone(item)}
-            aria-label={`Done: ${item.title}`}
+            aria-label={`Done: ${title}`}
           />
           <ViewTransition name={`item-${item.id}`} share="morph" default="none">
             <Glyph type={item.type} state={state} justDone={justDone === item.id} />
           </ViewTransition>
         </label>
+        {quick?.renaming === item.id ? (
+          <RenameField item={qi} className={TITLE_WEIGHT[state]} />
+        ) : (
         <button
           type="button"
+          data-quick-focus
           aria-pressed={selected}
           onClick={() => onSelect(item.id)}
           className={`min-w-0 cursor-pointer rounded text-left break-words hover:underline ${TITLE_WEIGHT[state]} ${
             state === "done" ? quiet : ""
           }`}
         >
-          {item.title}
+          {title}
           {repeats(item) && (
             <>
               <RepeatMark className={`ml-1.5 ${quiet}`} />
@@ -116,9 +131,11 @@ export function ListView({
           <RowTags tags={tags[item.id]} selected={selected} />
           {item.dueOn && state !== "done" && <DueMark dueOn={item.dueOn} today={today} className={`ml-2 text-xs ${quiet}`} />}
         </button>
+        )}
         <span className={`pr-1 text-[13px] max-rail:hidden ${quiet}`}>
           {area && <AreaLabel name={area.name} color={area.color} />}
         </span>
+        <RowActions item={qi} hooks={hooks} className="quick-over" />
       </li>
     );
   };

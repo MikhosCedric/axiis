@@ -6,6 +6,7 @@ import { undoDeletionAction } from "@/features/account/actions";
 import { DeletionBanner } from "@/features/account/deletion-banner";
 import { getDeletionDay } from "@/features/account/deletion-day";
 import { getRailAreas, getTodayDate } from "@/features/day/server";
+import { QuickActionsProvider } from "@/features/actions/provider";
 import { PaletteProvider } from "@/features/palette/palette";
 
 export default async function AppLayout({ children }: { children: ReactNode }) {
@@ -13,6 +14,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
 
   return (
     <PaletteProvider today={today} areas={areas}>
+      <QuickActionsProvider today={today} areas={areas}>
       <div className="min-h-dvh rail:grid rail:grid-cols-[216px_minmax(0,1fr)]">
         <NavRail today={today} areas={areas} />
         {/* On a phone the places bar is fixed to the bottom, so the page ends above it. */}
@@ -22,6 +24,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
         </main>
         <TimeZoneSync />
       </div>
+      </QuickActionsProvider>
     </PaletteProvider>
   );
 }

@@ -1,5 +1,7 @@
 "use client";
 
+import { useQuick } from "@/features/actions/provider";
+import { RenameField, RowActions, rowProps } from "@/features/actions/row-actions";
 import type { ReactNode } from "react";
 import { AreaLabel } from "@/components/area-mark";
 import { place } from "@/components/shell/places";
@@ -98,31 +100,44 @@ function DueRowView({
   onSelect: () => void;
   onToggleDone: () => void;
 }) {
+  const quick = useQuick();
+  const patch = quick?.patched(row.id);
+  const title = patch?.title ?? row.title;
+  const qi = { ...row.quick, title };
+  const hooks = { onOpen: onSelect, onToggleDone, inlineRename: true, doneBox: true };
   // The quietest ink is too faint to read on the accent wash of a selected row.
   const quiet = selected ? "text-ink-2" : "text-ink-3";
+  if (patch?.hidden) return null;
   return (
     <li
-      className={`grid grid-cols-[48px_minmax(0,1fr)] items-start gap-x-3 border-b border-rule-soft py-(--row-y) ${selected ? "bg-accent-wash" : ""}`}
+      {...rowProps(quick, qi, hooks)}
+      className={`group/row relative grid grid-cols-[48px_minmax(0,1fr)] items-start gap-x-3 border-b border-rule-soft py-(--row-y) pointer-coarse:grid-cols-[48px_minmax(0,1fr)_auto] ${selected ? "row-selected" : ""}`}
     >
       <span className="-my-1 grid place-items-center">
-        <DoneToggle type={row.type} title={row.title} done={row.done} justDone={justDone} onToggle={onToggleDone} />
+        <DoneToggle type={row.type} title={title} done={row.done} justDone={justDone} onToggle={onToggleDone} />
       </span>
       <div className="min-w-0">
+        {quick?.renaming === row.id ? (
+          <RenameField item={qi} className="font-medium" />
+        ) : (
         <button
           type="button"
+          data-quick-focus
           aria-pressed={selected}
           onClick={onSelect}
           className={`cursor-pointer rounded text-left tap-y break-words hover:underline ${row.done ? `font-normal ${quiet}` : "font-medium text-ink"}`}
         >
-          {row.title}
+          {title}
           {row.done && <span className="sr-only">, done</span>}
         </button>
+        )}
         <p className={`mt-0.5 flex flex-wrap gap-x-3 text-xs ${quiet}`}>
           <span className="tabular">{row.due}</span>
           {row.when && <span className="tabular">Planned {row.when}</span>}
           {row.area && <AreaLabel name={row.area} color={row.areaColor} />}
         </p>
       </div>
+      <RowActions item={qi} hooks={hooks} className="quick-over" />
     </li>
   );
 }
