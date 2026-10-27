@@ -52,7 +52,7 @@ signedIn.describe("the Month", () => {
     await page.keyboard.press("t");
     await expect(page).toHaveURL("/month");
     await page.goto("/today");
-    await page.getByRole("heading", { level: 1 }).first().waitFor();
+    await hydrated(page);
     await page.keyboard.press("g");
     await page.keyboard.press("m");
     await expect(page).toHaveURL("/month");
