@@ -307,7 +307,7 @@ export function DayView({
               aria-pressed={focusOn}
               onClick={toggleFocus}
               title="Show only what is next and what is due today"
-              className={`rounded-lg border border-rule px-3.5 py-2 font-medium pointer-coarse:py-3 ${focusOn ? "border-ink bg-ink text-paper" : "text-ink-2 hover:bg-hover active:bg-press"}`}
+              className={`press rounded-lg border border-rule px-3.5 py-2 font-medium pointer-coarse:py-3 ${focusOn ? "border-ink bg-ink text-paper" : "text-ink-2 hover:bg-hover active:bg-press"}`}
             >
               Focus
             </button>

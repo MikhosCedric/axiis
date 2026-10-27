@@ -55,7 +55,7 @@ Gates for each: no new migration; first-load JS at most 5 KB gzipped more per ro
 
 ## Round two: visual polish, after Apple's apps
 
-Not built in this round. Each item names what it borrows and the rule it must keep.
+Being built as phase E (stacked PRs, Today and the Week first) and phase F (a dark, performance and accessibility pass). E1: raised cards, glass bars and a press that gives (DESIGN.md, Raised cards and bars). E2: large titles that fold into a sticky glass bar. E3: segmented controls with a sliding thumb. E4: rows that move instead of jumping. Each item below names what it borrows and the rule it must keep.
 
 - **Springs for things that move under a hand.** A dragged beam settling, a swiped row snapping back, a popover arriving, on the spring set in DESIGN.md (Interaction tokens). Colour and opacity keep their 140ms ease.
 - **Menus that grow from where they were opened.** A menu scales in from its trigger's corner (0.96 to 1) instead of only rising, as on macOS. A context menu grows from the pointer.

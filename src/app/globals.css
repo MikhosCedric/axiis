@@ -33,6 +33,18 @@
   /* A thing held under the pointer: a dragged chip. */
   --lift: 0 6px 18px light-dark(rgb(28 27 34 / 0.22), rgb(0 0 0 / 0.6));
   /*
+   * A card raised a little off the page (Next up, the List, the Inbox, the Week's tray): a close soft shadow,
+   * a far faint one, and a line of light along its top edge, as paper catches a lamp. At night the shadows
+   * deepen and the light line all but goes, since the sheet is already the lightest tone.
+   */
+  --raise:
+    0 1px 2px light-dark(rgb(14 12 10 / 0.07), rgb(0 0 0 / 0.45)),
+    0 10px 28px -14px light-dark(rgb(14 12 10 / 0.22), rgb(0 0 0 / 0.7));
+  --highlight: inset 0 1px 0 light-dark(rgb(255 255 255 / 0.6), rgb(255 255 255 / 0.045));
+  /* The ground of a bar that stays on screen while the page moves under it: the page's own tone, see-through. */
+  --bar: light-dark(rgb(235 228 212 / 0.78), rgb(20 19 26 / 0.76));
+  --bar-rail: light-dark(rgb(226 218 198 / 0.82), rgb(14 13 19 / 0.8));
+  /*
    * Area colours, named in src/domain/area-color.ts. They tint a small mark beside an area's name (a dot),
    * never text, a fill or a line form, and each holds 3:1 on Rail Paper, Paper and Sheet (area-color.test.ts).
    */
@@ -117,6 +129,7 @@
   --breakpoint-rail: 760px;
   --shadow-float: var(--float);
   --shadow-lift: var(--lift);
+  --shadow-raise: var(--raise), var(--highlight);
   /* A loading page breathes slowly; a fast pulse reads as alarm. */
   --animate-breathe: breathe 2.4s ease-in-out infinite;
 
@@ -223,7 +236,53 @@
     top: 50%;
     translate: 0 -50%;
     padding-left: 16px;
-    background: linear-gradient(to right, transparent, var(--row-ground, var(--paper)) 14px);
+    background: linear-gradient(to right, transparent, var(--row-ground, var(--card, var(--paper))) 14px);
+  }
+}
+
+/*
+ * A raised card: Sheet, a Hairline Soft edge, 12px corners and the Raise shadow. What sits on it reads its
+ * ground from `--card` (a row's actions fade into it, a selected row's wash mixes over it).
+ */
+@utility surface {
+  background: var(--sheet);
+  border: 1px solid var(--rule-soft);
+  border-radius: 12px;
+  box-shadow: var(--raise), var(--highlight);
+  --card: var(--sheet);
+  --ground: var(--sheet);
+}
+
+/*
+ * A bar that stays on screen while the page moves under it (the phone's header and tab bar, a day's or a
+ * week's sticky title): the page's tone, see-through, with the page blurred behind it. Never on content.
+ * Solid where the browser cannot blur, or the reader asks for less transparency.
+ */
+@utility glass {
+  background: var(--paper);
+  @supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)) {
+    background: var(--bar);
+    -webkit-backdrop-filter: saturate(1.4) blur(14px);
+    backdrop-filter: saturate(1.4) blur(14px);
+  }
+  @media (prefers-reduced-transparency: reduce) {
+    background: var(--paper);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+
+@utility glass-rail {
+  background: var(--paper-2);
+  @supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)) {
+    background: var(--bar-rail);
+    -webkit-backdrop-filter: saturate(1.4) blur(14px);
+    backdrop-filter: saturate(1.4) blur(14px);
+  }
+  @media (prefers-reduced-transparency: reduce) {
+    background: var(--paper-2);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
   }
 }
 
@@ -238,7 +297,7 @@
 [data-picked] {
   background: var(--accent-wash);
   box-shadow: inset 0 0 0 1.5px var(--accent);
-  --row-ground: color-mix(in srgb, var(--accent) 15%, var(--paper));
+  --row-ground: color-mix(in srgb, var(--accent) 15%, var(--card, var(--paper)));
   /* The quietest ink is too faint to read on the wash, as on a selected row. */
   --ink-3: var(--ink-2);
   --color-ink-3: var(--ink-2);
@@ -247,7 +306,7 @@
 /* The ground under a selected row, as Verdigris Wash lies over Paper. */
 @utility row-selected {
   background: var(--accent-wash);
-  --row-ground: color-mix(in srgb, var(--accent) 15%, var(--paper));
+  --row-ground: color-mix(in srgb, var(--accent) 15%, var(--card, var(--paper)));
 }
 
 @layer base {
@@ -275,6 +334,20 @@
     transition-property: color, background-color, border-color, text-decoration-color, opacity;
     transition-duration: 140ms;
     transition-timing-function: var(--ease-axiis);
+  }
+
+  /* A control marked "press" gives a little under the finger and springs back on release (the one sanctioned spring). */
+  @media (prefers-reduced-motion: no-preference) {
+    .press:not(:disabled) {
+      transition-property: color, background-color, border-color, text-decoration-color, opacity, scale;
+      transition-duration: 140ms, 140ms, 140ms, 140ms, 140ms, var(--dur-spring);
+      transition-timing-function: var(--ease-axiis), var(--ease-axiis), var(--ease-axiis), var(--ease-axiis), var(--ease-axiis), var(--ease-spring);
+    }
+    .press:not(:disabled):active {
+      scale: 0.97;
+      transition-duration: 90ms;
+      transition-timing-function: var(--ease-axiis);
+    }
   }
 
   button:not(:disabled, [aria-disabled="true"]),

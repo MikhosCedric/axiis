@@ -42,7 +42,7 @@ export async function getFakeAccount(): Promise<FakeAccount | null> {
     if (!isFakeSession(jar.get("axiis-e2e-session")?.value)) return null;
     const kind = jar.get("axiis-e2e-account")?.value;
     const picked =
-      kind === "empty" || kind === "areas" || kind === "filters" || kind === "busy" || kind === "navigation" || kind === "gestures" || kind === "deletion" ? kind : "fixtures";
+      kind === "empty" || kind === "areas" || kind === "filters" || kind === "busy" || kind === "navigation" || kind === "gestures" || kind === "polish" || kind === "deletion" ? kind : "fixtures";
     return (await import("./fake-account")).fakeAccount(picked);
   }
   return null;

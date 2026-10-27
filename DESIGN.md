@@ -293,13 +293,18 @@ Spacing follows Tailwind's 4px scale. Controls use 8px and 12px gaps, sections i
 
 ## Elevation & Depth
 
-The system is flat. Structure is drawn with hairlines and three paper tones (Rail Paper, Music Paper, Sheet). Shadow appears only where something genuinely floats above the page.
+Structure is drawn with hairlines and three paper tones (Rail Paper, Music Paper, Sheet). The Score, the Week and the Month stay flat, ruled paper. Lists of items sit on raised cards (Raise, below), bars that stay put are glass, and a heavier shadow appears only where something genuinely floats above the page.
 
 ### Shadow Vocabulary
 - **Float** (`--float`, utility `shadow-float`: `0 24px 56px -16px` and `0 2px 6px`, warm ink by day, near black at night): the command palette, the Guide, the More sheet and the rail's account menu (which has no backdrop); the dialogs sit over a `rgb(8 7 10 / 0.48)` backdrop.
 - **Lift** (`--lift`, utility `shadow-lift`: `0 6px 18px`, ink by day, black at night): the floating copy of a chip while it is dragged off the staves or across the Week.
 - **Raised tab** (`0 1px 2px` plus an inset Hairline Soft ring): the current rail item only.
 - **Selected chip ring** (`box-shadow: inset 0 0 0 1px var(--accent)`): doubles a selected chip's border in verdigris; a state mark, not depth.
+
+### Raised cards and bars (the polish round, `docs/ux-roadmap.md`)
+- **Raise** (`--raise`, `--highlight`, utility `surface`, Tailwind `shadow-raise`): a card a little off the page. Sheet, a Hairline Soft edge, 12px corners, a close soft shadow (`0 1px 2px`), a far faint one (`0 10px 28px -14px`), and an inset line of light along the top edge (white at 60% by day, 4.5% at night, where the sheet is already the lightest tone). Today's Next up, the List's Planned and Inbox groups, and the Week's Inbox tray are cards. The Score's staves, the Week's days and the Month's grid stay ruled paper: the score is printed, not stacked. What sits on a card reads its ground from `--card`, so a row's actions fade into Sheet and a selected or chosen row's wash mixes over Sheet.
+- **Glass** (`--bar`, `--bar-rail`, utilities `glass`, `glass-rail`): a bar that stays on screen while the page moves under it, in the page's own tone at about 78%, with the page blurred 14px and saturated 1.4 behind it. Only bars: the phone's header (now sticky) and tab bar, and the sticky titles of Today and the Week. Never content, a card or a popover. Solid where the browser cannot blur or under `prefers-reduced-transparency`.
+- **Press** (class `press`): a control gives to 97% while held (90ms) and springs back on release (`--ease-spring`, `--dur-spring`), only where motion is welcome. Opt-in, on controls (the Guide, Focus, the view switches, a row's actions), never on a title or a row.
 
 ### Named Rules
 **The Lifted Sheet (public pages only).** On the signed-out landing, the hero's Score, each demo and the close are sheets of paper laid on the page: a Rule Soft edge, 6px corners (8px for the close and the night tiles), and a three-step ink shadow (`0 1px 1px`, then a near and a far one). The hero sheet has a darker Rail Paper sheet under it, set 0.5deg off square. A demo sheet shows the edge of a second sheet 6px below it and a turned-down top corner, sits over the edge of its movement's under sheet, and lifts 3px under a fine pointer while a deeper shadow fades in. The app keeps its flat paper.
@@ -530,7 +535,7 @@ All help lives in one place. The Guide is the palette's dialog (same Sheet, widt
 - **Don't** colour-code item types, or give an item a colour of its own; type is the glyph's head shape. An area's or a tag's colour is the person's choice from the palette, shown only as a dot beside its name.
 - **Don't** add Verdigris, any hue near it, or a status red or green to the palette.
 - **Don't** use verdigris for success, decoration, icons or headings.
-- **Don't** add shadows to cards or rows; only floating layers (the palette, a dragged chip) are lifted.
+- **Don't** add shadows to rows, staves or the ruled views; a list's card takes the one Raise shadow, and only floating layers (the palette, a dragged chip, a popover) are lifted further.
 - **Don't** set controls, labels or metadata in Besley.
 - **Don't** add gradients beyond the ruled-line patterns that draw staves and dashes.
 - **Don't** use exclamation marks, streaks, overdue reds or productivity-guru copy.

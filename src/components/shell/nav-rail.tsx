@@ -290,7 +290,7 @@ function SignOut({ className }: { className: string }) {
 function PhoneHeader() {
   const openPalette = useOpenPalette();
   return (
-    <header className="flex h-14 items-center justify-between border-b border-rule-soft bg-paper px-4 rail:hidden">
+    <header className="glass sticky top-0 z-30 flex h-14 items-center justify-between border-b border-rule-soft px-4 rail:hidden">
       <Wordmark />
       <button
         type="button"
@@ -334,7 +334,7 @@ function PhoneBar({ pathname, today, areas }: { pathname: string; today: LocalDa
   return (
     <nav
       aria-label="Primary"
-      className="fixed inset-x-0 bottom-0 z-30 border-t border-rule bg-paper-2 pb-[env(safe-area-inset-bottom)] rail:hidden"
+      className="glass-rail fixed inset-x-0 bottom-0 z-30 border-t border-rule pb-[env(safe-area-inset-bottom)] rail:hidden"
     >
       <ul className="flex h-16">
         {tabs.map((p) => {
