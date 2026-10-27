@@ -296,7 +296,7 @@ export function DayView({
             chosen={shownMode}
             segments={MODES.map(({ mode, label }) => ({ key: mode, label }))}
             onChoose={(m) => switchMode(m as DayViewMode)}
-            className="h-[38px] pointer-coarse:h-11"
+            className="h-[38px] pointer-coarse:h-12"
           />
           {isToday && !firstDay && (
             <button

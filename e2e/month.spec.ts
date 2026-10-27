@@ -147,9 +147,12 @@ signedIn.describe("the Month", () => {
   signedIn("captures onto the day in focus, and a drag moves the item to another day", async ({ page }) => {
     await page.goto("/month/2099-08");
     await hydrated(page);
-    await cell(page, /^Saturday 1 August/).focus();
-    await page.keyboard.press("ArrowRight");
-    await expect(page.getByRole("textbox", { name: "Capture for Sunday 2 August" })).toBeVisible();
+    // The page can refresh once more after hydrating and drop the focus, so focus and press again until it takes.
+    await expect(async () => {
+      await cell(page, /^Saturday 1 August/).focus();
+      await page.keyboard.press("ArrowRight");
+      await expect(page.getByRole("textbox", { name: "Capture for Sunday 2 August" })).toBeVisible({ timeout: 1000 });
+    }).toPass();
     await page.getByRole("textbox", { name: "Capture for Sunday 2 August" }).fill("Water the garden 7:30");
     await page.keyboard.press("Enter");
     await expect(page.getByText("Planned for Sunday 2 August, 07:30.")).toBeVisible();
