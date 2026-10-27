@@ -8,6 +8,13 @@ import { QuickIcon } from "./icons";
 
 // Loaded on its own, after the page: a row is drawn and answers its keys without it.
 
+/** The layers each trigger opens, so it can say when one of them is open. */
+const popup = new Map<QuickAction, readonly string[]>([
+  ["plan", ["plan"]],
+  ["labels", ["labels"]],
+  ["more", ["more", "context"]],
+]);
+
 export const ACTION_LABEL: Record<QuickAction, string> = {
   done: "Done",
   rename: "Rename",
@@ -52,6 +59,7 @@ export function Cluster({
     (a) => canDo(item, a) && !(a === "done" && hooks.doneBox) && (!compact || a === "done" || a === "more"),
   );
   const done = quick.patched(item.key)?.done ?? item.done;
+  const open = quick.openFor(item.key);
   return (
     <div
       data-quick-cluster
@@ -74,6 +82,7 @@ export function Cluster({
             aria-label={`${label} ${item.title}`}
             title={key ? `${label} (${key})` : label}
             aria-haspopup={action === "more" ? "menu" : action === "plan" || action === "labels" ? "dialog" : undefined}
+            aria-expanded={popup.has(action) ? popup.get(action)!.includes(open ?? "") : undefined}
             onClick={(e) => quick.run(action, item, hooks, e.currentTarget)}
             className={`grid size-7 place-items-center rounded-md text-ink-2 hover:bg-hover hover:text-ink active:bg-press [&:active>svg]:translate-y-px pointer-coarse:size-11 ${
               action === "more" ? "" : "pointer-coarse:hidden"

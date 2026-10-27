@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useId, useLayoutEffect, useRef, useState, type FormEvent, type KeyboardEvent, type ReactNode } from "react";
+import { useEffect, useId, useRef, useState, type FormEvent, type KeyboardEvent } from "react";
 import { AreaMark } from "@/components/area-mark";
+import { Floating } from "@/components/floating";
 import { useClock } from "@/components/shell/clock-context";
 import type { TagColors, TagName } from "@/domain/tag";
 import { dayWords, planDate, quickPlans, type PlanFor } from "@/features/inbox/model";
@@ -12,82 +13,14 @@ import { formatMinutes, parseClock } from "@/lib/clock";
 import { FIRST_DATE, LAST_DATE, parseLocalDate } from "@/lib/dates";
 import { QuickIcon } from "./icons";
 import type { QuickIconName } from "./icon-sprite";
-import { canDo, CLUSTER_ORDER, deleteKind, menuStep, moreEntries, placeNear, type Box, type MoreEntry, type QuickAction, type QuickItem } from "./model";
+import { canDo, CLUSTER_ORDER, deleteKind, menuStep, moreEntries, type MoreEntry, type QuickAction, type QuickItem } from "./model";
 import { useQuick, type OpenLayer, type Quick } from "./context";
 import { ACTION_KEY, ACTION_LABEL } from "./cluster";
-
-const FOCUSABLE = "button:not(:disabled), input:not(:disabled), [tabindex='0'], [role='menuitem'], [role='menuitemradio']";
-
-/**
- * A native popover placed at `at`: Escape and a click outside close it (the
- * browser's light dismiss), and closing hands focus back through `onClosed`.
- * The first control, or the one marked `data-autofocus`, takes focus as it opens.
- */
-function Floating({
-  at,
-  label,
-  role = "dialog",
-  className = "",
-  onClosed,
-  children,
-}: {
-  at: Box;
-  label: string;
-  role?: "dialog" | "menu";
-  className?: string;
-  onClosed: () => void;
-  children: ReactNode;
-}) {
-  const box = useRef<HTMLDivElement>(null);
-  const closed = useRef(onClosed);
-  useEffect(() => {
-    closed.current = onClosed;
-  });
-
-  useLayoutEffect(() => {
-    const el = box.current;
-    if (!el) return;
-    el.showPopover();
-    const { width, height } = el.getBoundingClientRect();
-    const { left, top } = placeNear(at, { width, height }, { width: window.innerWidth, height: window.innerHeight });
-    el.style.left = `${left}px`;
-    el.style.top = `${top}px`;
-    (el.querySelector<HTMLElement>("[data-autofocus]") ?? el.querySelector<HTMLElement>(FOCUSABLE))?.focus();
-    const away = () => el.hidePopover();
-    // The page moving under it would leave it pointing at nothing, so it closes, as a native menu does.
-    window.addEventListener("resize", away);
-    window.addEventListener("scroll", away, true);
-    return () => {
-      window.removeEventListener("resize", away);
-      window.removeEventListener("scroll", away, true);
-      if (el.matches(":popover-open")) el.hidePopover();
-    };
-  }, [at]);
-
-  return (
-    <div
-      ref={box}
-      popover="auto"
-      role={role}
-      aria-label={label}
-      onToggle={(e) => {
-        if (e.newState === "closed") closed.current();
-      }}
-      onKeyDown={(e) => {
-        // Escape belongs to this layer: the browser closes it, and nothing behind it should also act.
-        if (e.key === "Escape") e.stopPropagation();
-      }}
-      className={`fixed inset-auto m-0 rounded-lg border border-rule bg-sheet text-ink shadow-float [--ground:var(--sheet)] motion-safe:animate-pop-in ${className}`}
-    >
-      {children}
-    </div>
-  );
-}
 
 export default function Layer({ layer }: { layer: OpenLayer }) {
   const quick = useQuick();
   if (!quick) return null;
-  const onClosed = () => quick.close(true);
+  const onClosed = (refocus: boolean) => quick.close(refocus);
   switch (layer.kind) {
     case "more":
     case "context":
@@ -104,7 +37,7 @@ export default function Layer({ layer }: { layer: OpenLayer }) {
   }
 }
 
-type PanelProps = { quick: Quick; layer: OpenLayer; onClosed: () => void };
+type PanelProps = { quick: Quick; layer: OpenLayer; onClosed: (refocus: boolean) => void };
 
 const MORE_LABEL: Record<MoreEntry, string> = {
   duplicate: "Duplicate",
@@ -289,7 +222,7 @@ function PlanPanel({ quick, layer, onClosed }: PanelProps) {
   return (
     <Floating at={layer.at} label={`Plan ${item.title}`} onClosed={onClosed} className="w-[min(320px,calc(100vw-32px))] p-3">
       <p className={head}>Plan for</p>
-      <div className="mt-2 flex flex-wrap gap-2">
+      <div data-roving className="mt-2 flex flex-wrap gap-2">
         {quickPlans(today).map((q) => (
           <button key={q.key} type="button" className={choice} aria-pressed={planDate(q.when, today) === item.day} onClick={() => plan(q.when)}>
             {q.label}
@@ -474,7 +407,7 @@ function DeleteAsk({ quick, layer, onClosed }: PanelProps) {
       {all ? (
         <>
           <p className="text-[13px] text-ink-2">{prompt}</p>
-          <div className="mt-2.5 flex flex-wrap gap-2">
+          <div data-roving className="mt-2.5 flex flex-wrap gap-2">
             <button type="button" className={`${choice} inline-flex items-center gap-2`} onClick={() => go("all")}>
               <QuickIcon name="delete" />
               Delete every time
@@ -487,7 +420,7 @@ function DeleteAsk({ quick, layer, onClosed }: PanelProps) {
       ) : (
         <>
           <p className="text-[13px] text-ink-2">It repeats.</p>
-          <div className="mt-2.5 flex flex-wrap gap-2">
+          <div data-roving className="mt-2.5 flex flex-wrap gap-2">
             <button type="button" className={`${choice} inline-flex items-center gap-2`} onClick={() => go("one")}>
               <QuickIcon name="skip" />
               Skip this day

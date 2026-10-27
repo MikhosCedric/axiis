@@ -277,6 +277,7 @@ export function QuickActionsProvider({
       actions,
       patched: (key) => overlay.get(key),
       renaming,
+      openFor: (key) => (layer?.item.key === key ? layer.kind : null),
       run,
       open,
       close,
@@ -289,7 +290,7 @@ export function QuickActionsProvider({
       tell,
       prefetch,
     }),
-    [areas, today, actions, overlay, renaming, run, open, close, keyDown, contextMenu, commitRename, stopRenaming, save, remove, tell, prefetch],
+    [areas, today, actions, overlay, renaming, layer, run, open, close, keyDown, contextMenu, commitRename, stopRenaming, save, remove, tell, prefetch],
   );
 
   return (

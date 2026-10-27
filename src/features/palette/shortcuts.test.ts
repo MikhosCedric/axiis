@@ -63,7 +63,7 @@ const answers: Record<Handler, (chord: Chord) => boolean> = {
     rowKeyAction({ key: c.key, altKey: false, ctrlKey: false, metaKey: false, shiftKey: !!c.shift, typing: false, defaultPrevented: false, sequence: false }) !==
       null && source("actions/provider.tsx").includes("rowKeyAction("),
   menu: (c) =>
-    c.key === "Escape" ? source("actions/layer.tsx").includes('popover="auto"') : menuStep(c.key, 0, ["One", "Two"]) !== null,
+    c.key === "Escape" ? source("../components/floating.tsx").includes('popover="auto"') : menuStep(c.key, 0, ["One", "Two"]) !== null,
   undo: (c) => !!c.mod && source("../components/undo-toast.tsx").includes(`e.key.toLowerCase() !== "${c.key}"`),
   "inline-edit": (c) => names("detail/inline-title.tsx", c.key) && names("account/areas-section.tsx", c.key),
   "confirm-delete": (c) => names("detail/confirm-delete.tsx", c.key),
