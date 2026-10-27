@@ -302,6 +302,11 @@ export class SupabaseItemsRepo implements ItemsRepo {
     unwrap("softDelete", result, () => undefined);
   }
 
+  async restore(id: ItemId): Promise<void> {
+    const result = await this.db.from("items").update({ deleted_at: null }).eq("id", id).not("deleted_at", "is", null);
+    unwrap("restore", result, () => undefined);
+  }
+
   async purgeDeleted(): Promise<void> {
     unwrap("purgeDeleted", await this.db.rpc("purge_deleted_items"), () => undefined);
   }

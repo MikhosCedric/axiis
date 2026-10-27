@@ -98,7 +98,7 @@ describe("deleteItem", () => {
     const b = makeItem({ parentId: parent.id });
     const { repo, calls, deleted } = recordingRepo([parent, a, b]);
 
-    expect(await deleteItem(repo, parent.id, "UTC")).toEqual({ ok: true });
+    expect(await deleteItem(repo, parent.id, "UTC")).toEqual({ ok: true, deleted: [a.id, b.id, parent.id], skipped: null });
     expect(deleted).toEqual([a.id, b.id, parent.id]);
     expect(calls.update).toEqual([]);
     expect(calls.create).toEqual([]);
@@ -109,19 +109,19 @@ describe("deleteItem", () => {
     const child = makeItem({ parentId: parent.id });
     const { repo, deleted } = recordingRepo([parent, child]);
 
-    expect(await deleteItem(repo, child.id, "UTC")).toEqual({ ok: true });
+    expect(await deleteItem(repo, child.id, "UTC")).toEqual({ ok: true, deleted: [child.id], skipped: null });
     expect(deleted).toEqual([child.id]);
   });
 
   it("purges old soft-deleted items once the delete is done, and not when only one occurrence is skipped", async () => {
     const parent = makeItem();
     const { repo, calls } = recordingRepo([parent, makeItem({ parentId: parent.id })]);
-    expect(await deleteItem(repo, parent.id, "UTC")).toEqual({ ok: true });
+    expect((await deleteItem(repo, parent.id, "UTC")).ok).toBe(true);
     expect(calls.purgeDeleted).toBe(1);
 
     const series = makeItem({ schedule: { kind: "day", on: "2026-10-05" as LocalDate }, recurrence: { kind: "series", rule: { freq: "daily", interval: 1, end: { kind: "never" } } } });
     const skip = recordingRepo([series]);
-    expect(await deleteItem(skip.repo, `${series.id}~2026-10-06`, "UTC", "one")).toEqual({ ok: true });
+    expect(await deleteItem(skip.repo, `${series.id}~2026-10-06`, "UTC", "one")).toEqual({ ok: true, deleted: [], skipped: `${series.id}~2026-10-06` });
     expect(skip.calls.purgeDeleted).toBe(0);
   });
 
@@ -131,7 +131,7 @@ describe("deleteItem", () => {
     repo.purgeDeleted = async () => {
       throw new Error("function public.purge_deleted_items() does not exist");
     };
-    expect(await deleteItem(repo, item.id, "UTC")).toEqual({ ok: true });
+    expect(await deleteItem(repo, item.id, "UTC")).toEqual({ ok: true, deleted: [item.id], skipped: null });
     expect(deleted).toEqual([item.id]);
   });
 
