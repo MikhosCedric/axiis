@@ -1,6 +1,6 @@
 "use client";
 
-import { useQuick } from "@/features/actions/provider";
+import { renameKey, useQuick } from "@/features/actions/context";
 import { RenameField, RowActions, rowProps } from "@/features/actions/row-actions";
 import type { ReactNode } from "react";
 import { AreaLabel } from "@/components/area-mark";
@@ -104,7 +104,7 @@ function DueRowView({
   const patch = quick?.patched(row.id);
   const title = patch?.title ?? row.title;
   const qi = { ...row.quick, title };
-  const hooks = { onOpen: onSelect, onToggleDone, inlineRename: true, doneBox: true };
+  const hooks = { onOpen: onSelect, onToggleDone, inlineRename: "due", doneBox: true };
   // The quietest ink is too faint to read on the accent wash of a selected row.
   const quiet = selected ? "text-ink-2" : "text-ink-3";
   if (patch?.hidden) return null;
@@ -117,7 +117,7 @@ function DueRowView({
         <DoneToggle type={row.type} title={title} done={row.done} justDone={justDone} onToggle={onToggleDone} />
       </span>
       <div className="min-w-0">
-        {quick?.renaming === row.id ? (
+        {quick?.renaming === renameKey("due", row.id) ? (
           <RenameField item={qi} className="font-medium" />
         ) : (
         <button

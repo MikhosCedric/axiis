@@ -1,29 +1,25 @@
 "use client";
 
 import {
-  createContext,
   lazy,
   Suspense,
   useCallback,
-  useContext,
   useEffect,
   useLayoutEffect,
   useMemo,
   useOptimistic,
   useRef,
   useState,
+  useSyncExternalStore,
   useTransition,
   type KeyboardEvent,
   type MouseEvent,
   type ReactNode,
 } from "react";
-import type { AreaColor } from "@/domain/area-color";
+import { createPortal } from "react-dom";
 import type { LocalDate } from "@/domain/item";
 import { UndoToast, type UndoNote } from "@/components/undo-toast";
 import { isTypingTarget } from "@/features/day/nav";
-import type { DeleteResult } from "@/features/detail/commands";
-import type { TimeOfDay, TypeChoice } from "@/features/detail/model";
-import type { PlanFor } from "@/features/inbox/model";
 import { sequencePending } from "@/features/palette/sequence";
 import type { ActionResult } from "@/features/today/commands";
 import { reach } from "@/lib/reach";
@@ -32,29 +28,8 @@ import { planAction } from "@/features/inbox/actions";
 import { addTagAction, removeTagAction } from "@/features/tags/actions";
 import { setDoneAction } from "@/features/today/actions";
 import { duplicateItemAction, restoreItemsAction, tagChoicesAction } from "./actions";
-import type { DuplicateResult, TagChoices } from "./commands";
 import { canDo, deleteKind, rowKeyAction, type Box, type QuickAction, type QuickItem } from "./model";
-
-/** The writes behind the quick actions. The app passes server actions; a dev harness passes in-memory ones. */
-export type QuickActions = {
-  setDone: (key: string, done: boolean) => Promise<ActionResult>;
-  rename: (key: string, title: string) => Promise<ActionResult>;
-  plan: (key: string, when: PlanFor) => Promise<ActionResult>;
-  unplan: (key: string) => Promise<ActionResult>;
-  setTime: (key: string, time: TimeOfDay) => Promise<ActionResult>;
-  clearTime: (key: string) => Promise<ActionResult>;
-  setArea: (key: string, areaId: string | null) => Promise<ActionResult>;
-  addTag: (key: string, name: string) => Promise<ActionResult>;
-  removeTag: (key: string, name: string) => Promise<ActionResult>;
-  remove: (key: string, scope?: "one" | "all") => Promise<DeleteResult>;
-  restore: (ids: string[]) => Promise<ActionResult>;
-  /** Brings back a skipped occurrence, by its occurrence key. */
-  unskip: (key: string) => Promise<ActionResult>;
-  duplicate: (key: string) => Promise<DuplicateResult>;
-  setType: (key: string, type: TypeChoice) => Promise<ActionResult>;
-  /** The item's tags and every tag, or null when the item is gone. */
-  tagChoices: (key: string) => Promise<TagChoices | null>;
-};
+import { QuickContext, renameKey, type LayerKind, type OpenLayer, type Patch, type Quick, type QuickActions, type QuickArea, type RowHooks } from "./context";
 
 const serverActions: QuickActions = {
   setDone: setDoneAction,
@@ -74,59 +49,11 @@ const serverActions: QuickActions = {
   tagChoices: tagChoicesAction,
 };
 
-export type QuickArea = { id: string; name: string; color: AreaColor | null };
-
-/** What a view tells the actions about one row: how to open it, and its own done box when it has one. */
-export type RowHooks = {
-  onOpen: () => void;
-  /** The view's own tick, which keeps its optimistic state and news. Without one, the actions tick it. */
-  onToggleDone?: () => void;
-  /** The row draws its own done box, so the cluster leaves Done out. */
-  doneBox?: boolean;
-  /** The title can turn into a field in place. Beams, chips and marks rename in a popover instead. */
-  inlineRename?: boolean;
-  /** False where Delete and Backspace already mean "back to the Inbox" (the Score and the Week). */
-  deleteKeys?: boolean;
-};
-
-export type LayerKind = "more" | "context" | "plan" | "labels" | "delete" | "delete-all" | "rename";
-
-/** What is open over the page: a menu or a popover, for one item, placed at `at`. */
-export type OpenLayer = { kind: LayerKind; item: QuickItem; hooks: RowHooks; at: Box; row: HTMLElement | null };
-
-type Patch = { hidden?: boolean; title?: string; done?: boolean };
-
-export type Quick = {
-  areas: readonly QuickArea[];
-  today: LocalDate;
-  actions: QuickActions;
-  /** The change in flight for an item, drawn before the save answers and dropped if it fails. */
-  patched: (key: string) => Patch | undefined;
-  renaming: string | null;
-  /** Runs a row action: a button in the cluster, a key, or an entry in a menu. */
-  run: (action: QuickAction, item: QuickItem, hooks: RowHooks, from: HTMLElement) => void;
-  open: (kind: LayerKind, item: QuickItem, hooks: RowHooks, at: Box, row: HTMLElement | null) => void;
-  close: (refocus?: boolean) => void;
-  /** The keys on a row in focus. Returns whether it used the key. */
-  keyDown: (e: KeyboardEvent<HTMLElement>, item: QuickItem, hooks: RowHooks) => boolean;
-  contextMenu: (e: MouseEvent<HTMLElement>, item: QuickItem, hooks: RowHooks) => void;
-  commitRename: (item: QuickItem, title: string, row: HTMLElement | null) => void;
-  stopRenaming: (row: HTMLElement | null) => void;
-  /** Saves with the change drawn at once, says how it went, and offers `undo` when given. */
-  save: (item: QuickItem, patch: Patch, call: () => Promise<ActionResult>, news?: string | null, undo?: () => void) => void;
-  remove: (item: QuickItem, scope: "one" | "all", row: HTMLElement | null) => void;
-  tell: (text: string, undo?: () => void) => void;
-  prefetch: () => void;
-};
-
-const QuickContext = createContext<Quick | null>(null);
-
-/** The quick actions, or null on a page drawn without them (a dev harness that does not wrap its view). */
-export function useQuick(): Quick | null {
-  return useContext(QuickContext);
-}
-
 const loadLayer = () => import("./layer");
+
+const noSubscribe = () => () => {};
+const layerHost = () => document.getElementById("main") ?? document.body;
+const noHost = () => null;
 const Layer = lazy(loadLayer);
 
 /** The element a row is reached by from the keyboard: the row itself when it takes focus, else its first control. */
@@ -144,11 +71,15 @@ function boxOf(el: HTMLElement): Box {
   return { left: r.left, top: r.top, width: r.width, height: r.height };
 }
 
-/** Puts focus on the row for `key` once it is drawn again (after an undo brings it back), for up to a second. */
-function focusWhenBack(key: string) {
+/**
+ * Puts focus on the row for `key` once it is drawn again (after an undo brings it back), for up to a
+ * second, in the section it was in: one item can be drawn twice on a page (Next up and the List).
+ */
+function focusWhenBack(key: string, section: string | null) {
   let tries = 0;
   const look = () => {
-    const row = document.querySelector<HTMLElement>(`[data-quick="${CSS.escape(key)}"]`);
+    const within = (section && document.querySelector(`section[aria-labelledby="${CSS.escape(section)}"]`)) || document;
+    const row = within.querySelector<HTMLElement>(`[data-quick="${CSS.escape(key)}"]`);
     const target = row && focusTarget(row);
     if (target) target.focus();
     else if (++tries < 40) setTimeout(look, 25);
@@ -184,6 +115,7 @@ export function QuickActionsProvider({
   const [layer, setLayer] = useState<OpenLayer | null>(null);
   const [renaming, setRenaming] = useState<string | null>(null);
   const notes = useRef(0);
+  const host = useSyncExternalStore(noSubscribe, layerHost, noHost);
   const layerRef = useRef(layer);
   // A row whose title field just closed: focus goes back to its title once it is drawn again.
   const refocusRow = useRef<HTMLElement | null>(null);
@@ -214,6 +146,7 @@ export function QuickActionsProvider({
 
   const remove = useCallback(
     (item: QuickItem, scope: "one" | "all", row: HTMLElement | null) => {
+      const section = row?.closest("section[aria-labelledby]")?.getAttribute("aria-labelledby") ?? null;
       focusNeighbour(row);
       startTransition(async () => {
         patch([item.key, { hidden: true }]);
@@ -228,7 +161,7 @@ export function QuickActionsProvider({
             if (!undone.ok) tell(undone.error);
             else {
               tell(result.skipped ? `${item.title} is back on its day.` : `${item.title} is back.`);
-              focusWhenBack(item.key);
+              focusWhenBack(item.key, section);
             }
           });
         tell(result.skipped ? `${item.title} is skipped on this day.` : scope === "all" ? `${item.title} is deleted, every time.` : `${item.title} is deleted.`, back);
@@ -261,7 +194,7 @@ export function QuickActionsProvider({
           }
           return;
         case "rename":
-          if (hooks.inlineRename) setRenaming(item.key);
+          if (hooks.inlineRename) setRenaming(renameKey(hooks.inlineRename, item.key));
           else open("rename", item, hooks, boxOf(row), row);
           return;
         case "delete":
@@ -354,12 +287,19 @@ export function QuickActionsProvider({
   return (
     <QuickContext.Provider value={value}>
       {children}
-      {layer && (
-        <Suspense fallback={null}>
-          <Layer key={`${layer.kind}-${layer.item.key}`} layer={layer} />
-        </Suspense>
-      )}
-      <UndoToast note={note} onDone={() => setNote(null)} />
+      {/* Inside the page's main landmark, as everything on it must be; the layers float in the top layer anyway. */}
+      {host &&
+        createPortal(
+          <>
+            {layer && (
+              <Suspense fallback={null}>
+                <Layer key={`${layer.kind}-${layer.item.key}`} layer={layer} />
+              </Suspense>
+            )}
+            <UndoToast note={note} onDone={() => setNote(null)} />
+          </>,
+          host,
+        )}
     </QuickContext.Provider>
   );
 }

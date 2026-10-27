@@ -1,4 +1,4 @@
-import { quickItem } from "@/features/actions/model";
+import { quickItem } from "@/features/actions/quick-item";
 import type { Clock } from "@/lib/clock";
 import { z } from "zod";
 import { idSchema, type AreaId, type Item, type ItemId } from "@/domain/item";

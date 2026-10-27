@@ -1,7 +1,7 @@
 "use client";
 
-import { quickNote } from "@/features/actions/model";
-import { useQuick } from "@/features/actions/provider";
+import { quickNote } from "@/features/actions/quick-item";
+import { useQuick } from "@/features/actions/context";
 import { RowActions, rowProps } from "@/features/actions/row-actions";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";

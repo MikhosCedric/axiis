@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import type { ItemId, LocalDate, VirtualItem } from "@/domain/item";
 import { makeItem } from "@/features/today/test-support";
-import { canDo, deleteKind, menuStep, moreEntries, placeNear, quickItem, quickNote, rowKeyAction, type RowPress } from "./model";
+import { canDo, deleteKind, menuStep, moreEntries, placeNear, rowKeyAction, type RowPress } from "./model";
+import { quickItem, quickNote } from "./quick-item";
 
 const TZ = "Europe/London";
 const SERIES = "00000000-0000-4000-8000-00000000aaaa" as ItemId;

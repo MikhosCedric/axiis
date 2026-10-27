@@ -18,12 +18,12 @@ test("a tag page's glyph ticks an item done and back, and a series or a note has
   // The box is drawn by a glyph over a visually hidden input, so it is ticked from the keyboard.
   await tick.focus();
   await page.keyboard.press("Space");
-  await expect(page.getByRole("status")).toHaveText("Renew passport is done.");
+  await expect(page.getByRole("status").filter({ hasText: "Renew passport" })).toHaveText("Renew passport is done.");
   await expect(page.getByRole("button", { name: /^Renew passport\s*, done$/ })).toBeVisible();
   await expect(tick).toBeChecked();
 
   await page.keyboard.press("Space");
-  await expect(page.getByRole("status")).toHaveText("Renew passport is open again.");
+  await expect(page.getByRole("status").filter({ hasText: "Renew passport" })).toHaveText("Renew passport is open again.");
   await expect(tick).not.toBeChecked();
 
   await expect(page.getByRole("checkbox", { name: /Water the ferns/ })).toHaveCount(0);

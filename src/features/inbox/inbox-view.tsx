@@ -33,8 +33,8 @@ import { LAST_DATE } from "@/lib/dates";
 import { planAction } from "./actions";
 import { dayWords, inboxRows, inboxSummary, PICK_KEY, planDate, quickPlans, rowKey, type InboxData, type PlanFor } from "./model";
 import { reach } from "@/lib/reach";
-import { quickItem } from "@/features/actions/model";
-import { useQuick } from "@/features/actions/provider";
+import { quickItem } from "@/features/actions/quick-item";
+import { renameKey, useQuick } from "@/features/actions/context";
 import { RenameField, RowActions, rowProps } from "@/features/actions/row-actions";
 
 /** The writes the inbox makes. Defaults to the server actions; the dev harness passes in-memory ones. */
@@ -305,7 +305,7 @@ function InboxRow({
   const done = item.status === "done";
   const title = patch?.title ?? item.title;
   const qi = { ...quickItem(item, timeZone), title };
-  const hooks = { onOpen: onSelect, onToggleDone, inlineRename: true, doneBox: true };
+  const hooks = { onOpen: onSelect, onToggleDone, inlineRename: "inbox", doneBox: true };
   // The quietest ink is too faint to read on the accent wash of a selected row.
   const quiet = selected ? "text-ink-2" : "text-ink-3";
   const panelId = useId();
@@ -327,12 +327,12 @@ function InboxRow({
     <li
       data-row={item.id}
       {...rowProps(quick, qi, hooks)}
-      className={`group/row relative grid grid-cols-[48px_minmax(0,1fr)_auto] items-center gap-x-3 border-b border-rule-soft py-(--row-y) pointer-coarse:grid-cols-[48px_minmax(0,1fr)_auto_auto] rail:grid-cols-[48px_minmax(0,1fr)_auto_auto] rail:pointer-coarse:grid-cols-[48px_minmax(0,1fr)_auto_auto_auto] ${
+      className={`group/row relative grid grid-cols-[48px_minmax(0,1fr)_auto] items-center gap-x-3 border-b border-rule-soft py-(--row-y) rail:grid-cols-[48px_minmax(0,1fr)_auto_auto] ${
         selected ? "row-selected" : ""
       }`}
     >
       <DoneToggle type={item.type} title={title} done={done} justDone={justDone} onToggle={onToggleDone} />
-      {quick?.renaming === item.id ? (
+      {quick?.renaming === renameKey("inbox", item.id) ? (
         <RenameField item={qi} className={done ? "font-normal" : "font-medium"} />
       ) : (
       <button
@@ -360,6 +360,9 @@ function InboxRow({
       </button>
       )}
       <span className={`text-[13px] max-rail:hidden ${quiet}`}>{area && <AreaLabel name={area.name} color={area.color} />}</span>
+      {/* The actions sit left of Plan for, over the row, so Plan for stays where the hand expects it. */}
+      <div className="relative flex items-center justify-end gap-1">
+      <RowActions item={qi} hooks={hooks} className="quick-over" style={{ right: "100%" }} />
       {done ? (
         <span className={`pr-1 text-[13px] ${quiet}`}>Done</span>
       ) : (
@@ -376,7 +379,7 @@ function InboxRow({
           Plan for
         </button>
       )}
-      <RowActions item={qi} hooks={hooks} className="quick-over" />
+      </div>
       {planning && !done && (
         <PlanChoices
           id={panelId}

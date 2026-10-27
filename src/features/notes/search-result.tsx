@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useQuick } from "@/features/actions/provider";
+import { useQuick } from "@/features/actions/context";
 import { RowActions, rowProps } from "@/features/actions/row-actions";
 import { TYPE_WORD, type SearchRow } from "./model";
 

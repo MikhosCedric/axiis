@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { ItemId, LocalDate } from "@/domain/item";
 import type { TagName } from "@/domain/tag";
 import type { SearchRow } from "@/features/notes/model";
-import { quickNote } from "@/features/actions/model";
+import { quickNote } from "@/features/actions/quick-item";
 import { actedLine, actSections, FIND_MAX, findQuery, findStatus, paletteSections, type Find, type Target } from "./model";
 
 const today = "2026-10-06" as LocalDate;

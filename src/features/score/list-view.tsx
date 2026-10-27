@@ -13,8 +13,8 @@ import { Glyph } from "@/features/today/glyph";
 import { SameInInbox } from "@/features/inbox/same-in-inbox";
 import { EMPTY_TRAY, TRAY_FULL, INBOX,type BeamState, type TodayEntry, type TodayView } from "@/features/today/model";
 import type { ChildCount } from "@/lib/items/repo";
-import { quickItem } from "@/features/actions/model";
-import { useQuick } from "@/features/actions/provider";
+import { quickItem } from "@/features/actions/quick-item";
+import { renameKey, useQuick } from "@/features/actions/context";
 import { RenameField, RowActions, rowProps } from "@/features/actions/row-actions";
 
 const TITLE_WEIGHT: Record<BeamState, string> = {
@@ -58,7 +58,7 @@ export function ListView({
     const state = patch?.done === undefined ? saved : patch.done ? "done" : saved === "done" ? "planned" : saved;
     const title = patch?.title ?? item.title;
     const qi = { ...quickItem(item, timeZone), title };
-    const hooks = { onOpen: () => onSelect(item.id), onToggleDone: () => onToggleDone(item), inlineRename: true, doneBox: true };
+    const hooks = { onOpen: () => onSelect(item.id), onToggleDone: () => onToggleDone(item), inlineRename: "list", doneBox: true };
     const count = childCounts[item.id];
     const s = item.schedule;
     const selected = selectedId === item.id;
@@ -99,7 +99,7 @@ export function ListView({
             <Glyph type={item.type} state={state} justDone={justDone === item.id} />
           </ViewTransition>
         </label>
-        {quick?.renaming === item.id ? (
+        {quick?.renaming === renameKey("list", item.id) ? (
           <RenameField item={qi} className={TITLE_WEIGHT[state]} />
         ) : (
         <button

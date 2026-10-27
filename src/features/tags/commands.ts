@@ -1,4 +1,4 @@
-import { quickItem } from "@/features/actions/model";
+import { quickItem } from "@/features/actions/quick-item";
 import * as z from "zod/mini";
 import { AREA_COLORS } from "@/domain/area-color";
 import type { Clock } from "@/lib/clock";

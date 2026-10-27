@@ -1,6 +1,6 @@
 "use client";
 
-import { useQuick } from "@/features/actions/provider";
+import { renameKey, useQuick } from "@/features/actions/context";
 import { RenameField, RowActions, rowProps } from "@/features/actions/row-actions";
 import { useId, type ReactNode } from "react";
 import { AreaLabel } from "@/components/area-mark";
@@ -119,7 +119,7 @@ function ListRowView({
   const patch = quick?.patched(row.id);
   const title = patch?.title ?? row.title;
   const qi = { ...row.quick, title };
-  const hooks = { onOpen: onSelect, onToggleDone: row.repeats ? undefined : onToggleDone, doneBox: !row.repeats, inlineRename: true };
+  const hooks = { onOpen: onSelect, onToggleDone: row.repeats ? undefined : onToggleDone, doneBox: !row.repeats, inlineRename: "lists" };
   // The quietest ink is too faint to read on the accent wash of a selected row.
   const quiet = selected ? "text-ink-2" : "text-ink-3";
   if (patch?.hidden) return null;
@@ -139,7 +139,7 @@ function ListRowView({
         </span>
       )}
       <div className="min-w-0">
-        {quick?.renaming === row.id ? (
+        {quick?.renaming === renameKey("lists", row.id) ? (
           <RenameField item={qi} className="font-medium" />
         ) : (
         <button

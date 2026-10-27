@@ -1,7 +1,7 @@
 "use client";
 
-import { quickItem } from "@/features/actions/model";
-import { useQuick } from "@/features/actions/provider";
+import { quickItem } from "@/features/actions/quick-item";
+import { renameKey, useQuick } from "@/features/actions/context";
 import { RenameField, RowActions, rowProps } from "@/features/actions/row-actions";
 import { AreaLabel } from "@/components/area-mark";
 import { ProgressLine } from "@/components/progress-line";
@@ -74,7 +74,7 @@ export function NextUp({
           if (patch?.hidden) return null;
           const title = patch?.title ?? item.title;
           const qi = { ...quickItem(item, timeZone), title };
-          const hooks = { onOpen: () => onSelect(item.id), onToggleDone: () => onToggleDone(item), inlineRename: true, doneBox: true };
+          const hooks = { onOpen: () => onSelect(item.id), onToggleDone: () => onToggleDone(item), inlineRename: "next-up", doneBox: true };
           return (
             <li
               key={item.id}
@@ -86,7 +86,7 @@ export function NextUp({
                 <DoneToggle type={item.type} title={title} done={state === "done"} justDone={justDone === item.id} onToggle={() => onToggleDone(item)} />
               </span>
               <div className="min-w-0">
-                {quick?.renaming === item.id ? (
+                {quick?.renaming === renameKey("next-up", item.id) ? (
                   <RenameField item={qi} className="font-medium" />
                 ) : (
                 <button

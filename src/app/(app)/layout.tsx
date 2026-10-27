@@ -6,6 +6,7 @@ import { undoDeletionAction } from "@/features/account/actions";
 import { DeletionBanner } from "@/features/account/deletion-banner";
 import { getDeletionDay } from "@/features/account/deletion-day";
 import { getRailAreas, getTodayDate } from "@/features/day/server";
+import { QuickIconSprite } from "@/features/actions/icon-sprite";
 import { QuickActionsProvider } from "@/features/actions/provider";
 import { PaletteProvider } from "@/features/palette/palette";
 
@@ -23,6 +24,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
           <PageTransition>{children}</PageTransition>
         </main>
         <TimeZoneSync />
+        <QuickIconSprite />
       </div>
       </QuickActionsProvider>
     </PaletteProvider>

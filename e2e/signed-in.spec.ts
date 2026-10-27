@@ -260,7 +260,7 @@ signedIn.describe("signed in", () => {
     // The box is drawn by a glyph over a visually hidden input, so it is ticked from the keyboard.
     await past.getByRole("checkbox", { name: "Done: File the tax form" }).focus();
     await page.keyboard.press("Space");
-    await expect(page.getByRole("status")).toHaveText("File the tax form is done.");
+    await expect(page.getByRole("status").filter({ hasText: "File the tax form" })).toHaveText("File the tax form is done.");
 
     await page.reload();
     await expect(page.getByRole("checkbox", { name: "Done: File the tax form" })).toBeChecked();

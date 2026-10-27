@@ -17,6 +17,8 @@ export type Handler =
   | "week-item"
   | "month-grid"
   | "inbox"
+  | "row"
+  | "menu"
   | "undo"
   | "inline-edit"
   | "confirm-delete"
@@ -84,6 +86,25 @@ export const SHORTCUTS: ShortcutGroup[] = [
       { chords: [k("2")], does: "Plan it for tomorrow", handler: "inbox" },
       { chords: [k("3")], does: "Plan it for next week", handler: "inbox" },
       { chords: [k("4")], does: "Plan it for another day", handler: "inbox" },
+    ],
+  },
+  {
+    where: "An item in focus, on any page",
+    shortcuts: [
+      { chords: [k("e")], does: "Rename it in place", handler: "row" },
+      { chords: [k("p")], does: "Plan it: today, tomorrow, next week, a date or a time", handler: "row" },
+      { chords: [k("d")], does: "Mark done or not done", handler: "row" },
+      { chords: [k("Delete"), k("Backspace")], does: "Delete it, with Undo (on the Score and the Week, back to the Inbox)", handler: "row" },
+      { chords: [k(".")], does: "More: duplicate, make an event or a task, move to the Inbox, open details", handler: "row" },
+      { chords: [k("ContextMenu"), k("F10", { shift: true })], does: "Every action, as a menu", handler: "row" },
+    ],
+  },
+  {
+    where: "A menu of actions",
+    shortcuts: [
+      { chords: [k("ArrowUp"), k("ArrowDown")], does: "The action before or after", handler: "menu" },
+      { chords: [k("Home"), k("End")], does: "The first or last action", handler: "menu" },
+      { chords: [k("Escape")], does: "Close it, back to the item", handler: "menu" },
     ],
   },
   {
@@ -203,6 +224,7 @@ const NAMES: Record<string, string> = {
   End: "End",
   PageUp: "Page Up",
   PageDown: "Page Down",
+  ContextMenu: "Menu",
 };
 
 const SPOKEN: Record<string, string> = {
@@ -214,6 +236,8 @@ const SPOKEN: Record<string, string> = {
   "?": "Question mark",
   "[": "Left bracket",
   "]": "Right bracket",
+  ".": "Full stop",
+  ContextMenu: "Menu key",
 };
 
 /** The caps to draw for a chord, as on the keyboard: ["Ctrl", "K"] or ["⌘", "K"]. */

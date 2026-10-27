@@ -1,6 +1,6 @@
 "use client";
 
-import { useQuick } from "@/features/actions/provider";
+import { renameKey, useQuick } from "@/features/actions/context";
 import { RenameField, RowActions, rowProps } from "@/features/actions/row-actions";
 import Link from "next/link";
 import type { ReactNode } from "react";
@@ -61,7 +61,7 @@ export function TaggedView({
                 onOpen: () => select(row.id),
                 onToggleDone: tickable ? () => ticks.toggle(row.id, title, !ticks.isDone(row.id, row.done)) : undefined,
                 doneBox: tickable,
-                inlineRename: true,
+                inlineRename: "tagged",
               };
               const selected = selectedId === row.id;
               const done = ticks.isDone(row.id, row.done);
@@ -92,7 +92,7 @@ export function TaggedView({
                     </span>
                   )}
                   <div className="min-w-0">
-                    {quick?.renaming === row.id ? (
+                    {quick?.renaming === renameKey("tagged", row.id) ? (
                       <RenameField item={qi} className="font-medium" />
                     ) : (
                     <button

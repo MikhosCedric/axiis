@@ -1,7 +1,8 @@
 "use client";
 
-import { quickItem, type QuickItem } from "@/features/actions/model";
-import { useQuick, type RowHooks } from "@/features/actions/provider";
+import { type QuickItem } from "@/features/actions/model";
+import { quickItem } from "@/features/actions/quick-item";
+import { useQuick, type RowHooks } from "@/features/actions/context";
 import { RowActions, rowProps } from "@/features/actions/row-actions";
 import {
   useEffect,

@@ -1,7 +1,8 @@
 "use client";
 
-import { quickItem, type QuickItem } from "@/features/actions/model";
-import { useQuick, type RowHooks } from "@/features/actions/provider";
+import { type QuickItem } from "@/features/actions/model";
+import { quickItem } from "@/features/actions/quick-item";
+import { useQuick, type RowHooks } from "@/features/actions/context";
 import { RowActions, rowProps } from "@/features/actions/row-actions";
 import Link from "next/link";
 import {
@@ -224,6 +225,7 @@ export function WeekView({
         item={q.item}
         hooks={q.hooks}
         touch={false}
+        compact={variant === "row"}
         className={variant === "row" ? "quick-over !top-1 !translate-y-0 [--row-ground:var(--paper)]" : "absolute top-1/2 left-full -translate-y-1/2 border border-rule-soft bg-sheet pl-0.5"}
       />
     )}

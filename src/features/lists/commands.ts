@@ -1,4 +1,4 @@
-import { quickItem } from "@/features/actions/model";
+import { quickItem } from "@/features/actions/quick-item";
 import type { Clock } from "@/lib/clock";
 import { repeats } from "@/domain/item";
 import { displayTitle } from "@/features/notes/model";

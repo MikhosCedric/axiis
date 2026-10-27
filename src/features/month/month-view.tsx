@@ -1,7 +1,7 @@
 "use client";
 
-import { quickMark } from "@/features/actions/model";
-import { useQuick } from "@/features/actions/provider";
+import { quickMark } from "@/features/actions/quick-item";
+import { useQuick } from "@/features/actions/context";
 import { RowActions, rowProps } from "@/features/actions/row-actions";
 import { gridStep } from "./grid-step";
 import Link from "next/link";
@@ -238,7 +238,10 @@ export function MonthView({
       }}
     />
     {preview === null && (
-      <RowActions item={qi} hooks={hooks} compact touch={false} className="quick-over [--row-ground:var(--paper)]" />
+      <RowActions item={qi} hooks={hooks} compact
+        touch={false}
+        className={variant === "row" ? "quick-over" : "absolute top-1/2 left-full -translate-y-1/2 border border-rule-soft bg-sheet pl-0.5"}
+      />
     )}
     </>
     );

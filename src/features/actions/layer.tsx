@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useLayoutEffect, useRef, useState, type ComponentType, type FormEvent, type KeyboardEvent, type ReactNode } from "react";
+import { useEffect, useId, useLayoutEffect, useRef, useState, type FormEvent, type KeyboardEvent, type ReactNode } from "react";
 import { AreaMark } from "@/components/area-mark";
 import { useClock } from "@/components/shell/clock-context";
 import type { TagColors, TagName } from "@/domain/tag";
@@ -10,10 +10,11 @@ import { TagField } from "@/features/tags/tag-field";
 import { TITLE_MAX } from "@/features/today/model";
 import { formatMinutes, parseClock } from "@/lib/clock";
 import { FIRST_DATE, LAST_DATE, parseLocalDate } from "@/lib/dates";
-import { DeleteIcon, DoneIcon, DuplicateIcon, EventIcon, InboxIcon, LabelsIcon, MoreIcon, OpenIcon, PlanIcon, RenameIcon, SkipIcon, TaskIcon } from "./icons";
+import { QuickIcon } from "./icons";
+import type { QuickIconName } from "./icon-sprite";
 import { canDo, CLUSTER_ORDER, deleteKind, menuStep, moreEntries, placeNear, type Box, type MoreEntry, type QuickAction, type QuickItem } from "./model";
-import { useQuick, type OpenLayer, type Quick } from "./provider";
-import { ACTION_KEY, ACTION_LABEL } from "./row-actions";
+import { useQuick, type OpenLayer, type Quick } from "./context";
+import { ACTION_KEY, ACTION_LABEL } from "./cluster";
 
 const FOCUSABLE = "button:not(:disabled), input:not(:disabled), [tabindex='0'], [role='menuitem'], [role='menuitemradio']";
 
@@ -114,25 +115,16 @@ const MORE_LABEL: Record<MoreEntry, string> = {
   open: "Open details",
 };
 
-const MORE_ICON: Record<MoreEntry, ComponentType> = {
-  duplicate: DuplicateIcon,
-  "make-event": EventIcon,
-  "make-task": TaskIcon,
-  inbox: InboxIcon,
-  "delete-all": DeleteIcon,
-  open: OpenIcon,
+const MORE_ICON: Record<MoreEntry, QuickIconName> = {
+  duplicate: "duplicate",
+  "make-event": "event",
+  "make-task": "task",
+  inbox: "inbox",
+  "delete-all": "delete",
+  open: "open",
 };
 
-const ACTION_ICON: Record<QuickAction, ComponentType> = {
-  done: DoneIcon,
-  rename: RenameIcon,
-  plan: PlanIcon,
-  labels: LabelsIcon,
-  delete: DeleteIcon,
-  more: MoreIcon,
-};
-
-type Entry = { id: string; label: string; key?: string; Icon: ComponentType; run: () => void; rule?: boolean };
+type Entry = { id: string; label: string; key?: string; icon: QuickIconName; run: () => void; rule?: boolean };
 
 /** The More menu, or on a right-click every action then More's entries. */
 function ActionMenu({ quick, layer, onClosed }: PanelProps) {
@@ -160,14 +152,14 @@ function ActionMenu({ quick, layer, onClosed }: PanelProps) {
           id: a,
           label: a === "done" && done ? "Open again" : a === "plan" || a === "labels" ? `${ACTION_LABEL[a]}…` : ACTION_LABEL[a],
           key: ACTION_KEY[a],
-          Icon: ACTION_ICON[a],
+          icon: a,
           run: () => act(a),
         }))
       : [];
   const rest: Entry[] = moreEntries(item).map((m, i) => ({
     id: m,
     label: m === "delete-all" ? `${MORE_LABEL[m]}…` : MORE_LABEL[m],
-    Icon: MORE_ICON[m],
+    icon: MORE_ICON[m],
     run: () => more(m),
     rule: i === 0 && first.length > 0,
   }));
@@ -205,7 +197,7 @@ function ActionMenu({ quick, layer, onClosed }: PanelProps) {
               className="flex h-8 w-full items-center gap-2.5 rounded-md px-2 text-left text-[13px] font-medium text-ink hover:bg-hover focus-visible:bg-hover active:bg-press pointer-coarse:h-11"
             >
               <span className="text-ink-2">
-                <entry.Icon />
+                <QuickIcon name={entry.icon} />
               </span>
               <span className="min-w-0 flex-1 truncate">{entry.label}</span>
               {entry.key && (
@@ -447,7 +439,7 @@ function LabelsPanel({ quick, layer, onClosed }: PanelProps) {
             series={item.series !== "none"}
             add={async (id, name) => {
               const result = await quick.actions.addTag(id, name);
-              if (result.ok) setTags((t) => [...t, name as TagName]);
+              if (result.ok) setTags((t) => (t.some((x) => x.toLowerCase() === name.toLowerCase()) ? t : [...t, name as TagName]));
               return result;
             }}
             remove={async (id, name) => {
@@ -484,7 +476,7 @@ function DeleteAsk({ quick, layer, onClosed }: PanelProps) {
           <p className="text-[13px] text-ink-2">{prompt}</p>
           <div className="mt-2.5 flex flex-wrap gap-2">
             <button type="button" className={`${choice} inline-flex items-center gap-2`} onClick={() => go("all")}>
-              <DeleteIcon />
+              <QuickIcon name="delete" />
               Delete every time
             </button>
             <button type="button" data-autofocus="" className={choice} onClick={() => quick.close(true)}>
@@ -497,11 +489,11 @@ function DeleteAsk({ quick, layer, onClosed }: PanelProps) {
           <p className="text-[13px] text-ink-2">It repeats.</p>
           <div className="mt-2.5 flex flex-wrap gap-2">
             <button type="button" className={`${choice} inline-flex items-center gap-2`} onClick={() => go("one")}>
-              <SkipIcon />
+              <QuickIcon name="skip" />
               Skip this day
             </button>
             <button type="button" className={`${choice} inline-flex items-center gap-2`} onClick={() => setAll(true)}>
-              <DeleteIcon />
+              <QuickIcon name="delete" />
               Delete every time…
             </button>
           </div>

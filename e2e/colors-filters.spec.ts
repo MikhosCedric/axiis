@@ -183,7 +183,7 @@ signedIn.describe("colours and filters on a phone", () => {
     await page.goto(DAY);
     const sheet = page.getByRole("dialog", { name: "More" });
     await hydrated(page);
-    await page.getByRole("button", { name: "More" }).click();
+    await page.getByRole("button", { name: "More", exact: true }).click();
     await expect(sheet).toBeVisible();
     const work = sheet.getByRole("link", { name: /^Work/ });
     await expect(work).toBeVisible();
