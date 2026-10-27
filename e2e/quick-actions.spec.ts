@@ -117,8 +117,11 @@ signedIn.describe("quick actions on a row", () => {
       "Make it an event",
       "Move to the Inbox",
       "Open details",
+      /^Choose/,
     ]);
     await expect(menu.getByRole("menuitem").first()).toBeFocused();
+    await page.keyboard.press("ArrowUp");
+    await expect(menu.getByRole("menuitem", { name: /^Choose/ })).toBeFocused();
     await page.keyboard.press("ArrowUp");
     await expect(menu.getByRole("menuitem", { name: "Open details" })).toBeFocused();
     await page.keyboard.press("Escape");

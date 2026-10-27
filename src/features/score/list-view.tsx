@@ -58,7 +58,7 @@ export function ListView({
     const state = patch?.done === undefined ? saved : patch.done ? "done" : saved === "done" ? "planned" : saved;
     const title = patch?.title ?? item.title;
     const qi = { ...quickItem(item, timeZone), title };
-    const hooks = { onOpen: () => onSelect(item.id), onToggleDone: () => onToggleDone(item), inlineRename: "list", doneBox: true };
+    const hooks = { onOpen: () => onSelect(item.id), onToggleDone: () => onToggleDone(item), inlineRename: "list", doneBox: true, swipe: true };
     const count = childCounts[item.id];
     const s = item.schedule;
     const selected = selectedId === item.id;

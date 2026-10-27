@@ -119,7 +119,7 @@ function ListRowView({
   const patch = quick?.patched(row.id);
   const title = patch?.title ?? row.title;
   const qi = { ...row.quick, title };
-  const hooks = { onOpen: onSelect, onToggleDone: row.repeats ? undefined : onToggleDone, doneBox: !row.repeats, inlineRename: "lists" };
+  const hooks = { onOpen: onSelect, onToggleDone: row.repeats ? undefined : onToggleDone, doneBox: !row.repeats, inlineRename: "lists", swipe: true };
   // The quietest ink is too faint to read on the accent wash of a selected row.
   const quiet = selected ? "text-ink-2" : "text-ink-3";
   if (patch?.hidden) return null;
