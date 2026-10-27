@@ -450,7 +450,7 @@ Small caps (`font-variant-caps: all-small-caps`, 0.1em tracking, 600, Ink Quiet)
 | Arrival: beams | each beam slides 18px in and fades | 640ms, from 520ms, 65ms apart in staff order |
 | Arrival: now | the now line and its flag sweep from the window's first hour to now, the flag fading in | 1.8s, `cubic-bezier(0.65, 0, 0.35, 1)`, from 450ms |
 | The minute | the now line steps to the new minute | 700ms transition |
-| The loop | the first Inbox chip lifts 3px and fades to 35% (a held chip), its dashed verdigris ghost slides 28px onto Health with its time, settles as a dashed beam, and all goes back | every 14s from 3.2s; paused while the score is off screen |
+| The loop | the first Inbox chip lifts 3px and fades to 70% (a held chip, kept legible: its words hold 4.5:1 while it is held), its dashed verdigris ghost slides 28px onto Health with its time, settles as a dashed beam, and all goes back | every 14s from 3.2s; paused while the score is off screen |
 | Headline staff | the five lines under "on one page." rule in from the left | 1100ms, 70ms apart |
 | Sections | a held section rises 22px and fades in as it enters | 700ms fade, 900ms rise, 90ms between a movement's text and its demo |
 | Section heads | each word rises out of its own clipped line, then a five-line staff is ruled in under the head | 1000ms, 70ms a word; staff 1100ms from 250ms |
