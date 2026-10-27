@@ -38,8 +38,44 @@ signedIn.describe("surfaces", () => {
     expect(await style(page, "header.glass", "position")).toBe("sticky");
     expect(await style(page, "header.glass", "backdrop-filter")).toMatch(/blur\(14px\)/);
     expect(await style(page, "nav.glass-rail", "backdrop-filter")).toMatch(/blur\(14px\)/);
-    await page.mouse.wheel(0, 600);
+    await page.evaluate((y) => window.scrollBy(0, y), 600);
     await expect(page.locator("header.glass")).toBeInViewport();
+  });
+});
+
+signedIn.describe("large titles", () => {
+  for (const { path, width } of [
+    { path: "/today?view=list", width: 1440 },
+    { path: "/week", width: 1440 },
+    { path: "/today", width: 375 },
+  ]) {
+    signedIn(`${path} at ${width} folds its title into a glass bar once the heading scrolls away, and back`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 700 });
+      await page.goto(path);
+      await hydrated(page);
+      const bar = page.locator(".title-bar");
+      await expect(bar).not.toHaveAttribute("data-folded");
+      await expect(bar.locator(".title-bar-text")).toHaveCSS("opacity", "0");
+      await page.evaluate((y) => window.scrollBy(0, y), 700);
+      await expect(bar).toHaveAttribute("data-folded");
+      await expect(bar).toBeInViewport();
+      expect(await bar.evaluate((el) => getComputedStyle(el).backdropFilter)).toMatch(/blur/);
+      const heading = await page.getByRole("heading", { level: 1 }).innerText();
+      await expect(bar).toHaveText(heading.replace(/\s+/g, " "));
+      await page.evaluate((y) => window.scrollBy(0, y), -2000);
+      await expect(bar).not.toHaveAttribute("data-folded");
+    });
+  }
+
+  signedIn("the Score's hour axis sticks under the bar, not behind it", async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 700 });
+    await page.goto("/today");
+    await hydrated(page);
+    await page.evaluate((y) => window.scrollBy(0, y), 500);
+    await expect(page.locator(".title-bar")).toHaveAttribute("data-folded");
+    const bar = (await page.locator(".title-bar").boundingBox())!;
+    const axis = (await page.getByRole("region", { name: "Score", exact: true }).locator(".sticky").first().boundingBox())!;
+    expect(axis.y).toBeGreaterThanOrEqual(bar.y + bar.height - 1);
   });
 });
 
