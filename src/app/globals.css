@@ -234,10 +234,10 @@
   }
 }
 
-/* A row chosen for a change to many: the selected wash, and its edge in Verdigris on the leading side. */
+/* A row chosen for a change to many: the selected wash, held in a Verdigris ring so a choice never rests on the wash alone. */
 [data-picked] {
   background: var(--accent-wash);
-  box-shadow: inset 3px 0 0 var(--accent);
+  box-shadow: inset 0 0 0 1.5px var(--accent);
   --row-ground: color-mix(in srgb, var(--accent) 15%, var(--paper));
   /* The quietest ink is too faint to read on the wash, as on a selected row. */
   --ink-3: var(--ink-2);
