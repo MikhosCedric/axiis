@@ -40,4 +40,4 @@ Also seen in the screenshots, not as a single number: the "How it works" head le
 | Hero sheet width | 333 | 680 | 1135 | 1277 | 1697 | 1694 | 1998 | the column, `--content-max` |
 | Emptiest band (reduced motion) | 181 | 180 | 239 | 251 | 279 | 279 | 279 | under half a screen |
 
-The scale and the column are tokens in `src/app/globals.css` (`--fs-*`, `--sp-*`, `--section-y`, `--content-max`), set out in DESIGN.md, Landing and motion on the public pages. `e2e/landing.spec.ts` holds each role to its ceiling at 1920, 2560 and 3440, holds prose to about 75 characters a line, and, scrolling a screen at a time at 1440 and 1920 with motion on, fails if any half screen has no line of text.
+The scale and the column are tokens in `src/app/globals.css` (`--fs-*`, `--sp-*`, `--section-y`, `--content-max`), set out in DESIGN.md, Landing and motion on the public pages. `e2e/landing.spec.ts` holds each role to its ceiling at 1920, 2560 and 3440, holds prose to about 75 characters a line, and, scrolling half a screen at a time at 1440, 1920 and 2560 with motion on, fails if any half screen has no line of text.

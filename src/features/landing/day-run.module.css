@@ -330,7 +330,7 @@
       position: sticky;
       top: 76px;
       min-height: calc(100svh - 76px);
-      align-content: start;
+      align-content: space-evenly;
       padding-block: var(--sp-5) var(--sp-3);
     }
 
