@@ -35,7 +35,7 @@ export function TagField({
   remove: (id: string, name: string) => Promise<ActionResult>;
 }) {
   const [shown, change] = useOptimistic(tags, (current: TagName[], c: Change) =>
-    c.kind === "add" ? [...current, c.name] : current.filter((t) => !sameTag(t, c.name)),
+    c.kind === "add" ? (current.some((t) => sameTag(t, c.name)) ? current : [...current, c.name]) : current.filter((t) => !sameTag(t, c.name)),
   );
   const [input, setInput] = useState("");
   const [open, setOpen] = useState(false);

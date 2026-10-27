@@ -1,3 +1,4 @@
+import { quickItem } from "@/features/actions/quick-item";
 import type { Clock } from "@/lib/clock";
 import { repeats } from "@/domain/item";
 import { displayTitle } from "@/features/notes/model";
@@ -12,6 +13,7 @@ export async function loadLists(repo: ItemsRepo, timeZone: string, clock: Clock)
   const areaOf = new Map(areas.map((a) => [a.id as string, a]));
   return {
     rows: items.map((item) => ({
+      quick: { ...quickItem(item, timeZone), title: displayTitle(item) },
       id: item.id,
       title: displayTitle(item),
       done: item.status === "done",

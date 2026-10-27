@@ -50,7 +50,7 @@ signedIn.describe("time format", () => {
     await expect(page.getByRole("button", { name: new RegExp(`^${TITLE}, `) })).toContainText(/9:30\sPM/);
 
     await page.goto("/month/2099-03");
-    const mark = page.getByRole("gridcell", { name: /^Tuesday 10 March/ }).getByRole("button", { name: new RegExp(`${TITLE}`) });
+    const mark = page.getByRole("gridcell", { name: /^Tuesday 10 March/ }).getByRole("button", { name: new RegExp(`${TITLE}, `) });
     await expect(mark).toContainText(/9:30\sPM/);
 
     await page.reload();

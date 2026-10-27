@@ -65,6 +65,6 @@ signedIn.describe("account deletion", () => {
     await now.getByLabel("To confirm, type delete my account").fill("delete my account");
     await deleteNow.click();
     await expect(page).toHaveURL(/\/login\?deleted=1$/);
-    await expect(page.getByRole("status")).toContainText("Your account and its data are gone.");
+    await expect(page.getByRole("status").filter({ hasText: "Your account" })).toContainText("Your account and its data are gone.");
   });
 });

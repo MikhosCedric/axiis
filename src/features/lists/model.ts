@@ -1,9 +1,12 @@
+import { type QuickItem } from "@/features/actions/model";
 import type { AreaColor } from "@/domain/area-color";
 import type { AreaId, ItemId } from "@/domain/item";
 import type { ChildCount } from "@/lib/items/repo";
 
 /** One checklist on the Lists page, ready to draw. */
 export type ListRow = {
+  /** What the row's quick actions act on. */
+  quick: QuickItem;
   id: ItemId;
   title: string;
   done: boolean;

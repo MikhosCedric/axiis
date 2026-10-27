@@ -255,3 +255,20 @@
     transition: none;
   }
 }
+
+/* A beam's quick actions: beside its end, past the resize grip, while the beam is hovered or holds focus. */
+.actions {
+  position: absolute;
+  display: none;
+  height: 25px;
+  padding: 0 2px;
+  border: 1px solid var(--rule-soft);
+  background: var(--sheet);
+}
+
+.beam:hover + .actions,
+.beam:focus-visible + .actions,
+.actions:hover,
+.actions:focus-within {
+  display: flex;
+}

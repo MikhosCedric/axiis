@@ -111,6 +111,8 @@ export interface ItemsRepo {
   create(input: NewItem): Promise<Item>;
   update(id: ItemId, patch: ItemPatch): Promise<Item>;
   softDelete(id: ItemId): Promise<void>;
+  /** Undoes `softDelete`: a soft-deleted item is live again. One that is live already is left as it is. */
+  restore(id: ItemId): Promise<void>;
   /**
    * Hard-deletes up to 500 of the account's items soft-deleted more than 30
    * days ago (`purge_deleted_items`, migration 0008), so an account at its

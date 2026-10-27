@@ -1,5 +1,8 @@
 "use client";
 
+import { quickItem } from "@/features/actions/quick-item";
+import { renameKey, useQuick } from "@/features/actions/context";
+import { RenameField, RowActions, rowProps } from "@/features/actions/row-actions";
 import { AreaLabel } from "@/components/area-mark";
 import { ProgressLine } from "@/components/progress-line";
 import { useClock } from "@/components/shell/clock-context";
@@ -56,6 +59,7 @@ export function NextUp({
   onToggleDone: (item: ShownItem) => void;
 }) {
   const clock = useClock();
+  const quick = useQuick();
   if (entries.length === 0) return null;
   return (
     <section aria-labelledby="next-up-h" className="mb-6 max-w-[760px]">
@@ -66,29 +70,41 @@ export function NextUp({
         {entries.map((entry) => {
           const { item, state } = entry;
           const area = areas.find((a) => a.id === item.areaId);
+          const patch = quick?.patched(item.id);
+          if (patch?.hidden) return null;
+          const title = patch?.title ?? item.title;
+          const qi = { ...quickItem(item, timeZone), title };
+          const hooks = { onOpen: () => onSelect(item.id), onToggleDone: () => onToggleDone(item), inlineRename: "next-up", doneBox: true };
           return (
             <li
               key={item.id}
               data-next={item.id}
-              className="grid grid-cols-[48px_minmax(0,1fr)] items-start gap-x-3 border-b border-rule-soft py-(--row-y)"
+              {...rowProps(quick, qi, hooks)}
+              className="group/row relative grid grid-cols-[48px_minmax(0,1fr)] items-start gap-x-3 border-b border-rule-soft py-(--row-y) pointer-coarse:grid-cols-[48px_minmax(0,1fr)_auto]"
             >
               <span className="-my-1 grid place-items-center">
-                <DoneToggle type={item.type} title={item.title} done={state === "done"} justDone={justDone === item.id} onToggle={() => onToggleDone(item)} />
+                <DoneToggle type={item.type} title={title} done={state === "done"} justDone={justDone === item.id} onToggle={() => onToggleDone(item)} />
               </span>
               <div className="min-w-0">
+                {quick?.renaming === renameKey("next-up", item.id) ? (
+                  <RenameField item={qi} className="font-medium" />
+                ) : (
                 <button
                   type="button"
+                  data-quick-focus
                   onClick={() => onSelect(item.id)}
                   className={`cursor-pointer rounded text-left tap-y break-words hover:underline ${state === "live" ? "font-bold text-ink" : "font-medium text-ink"}`}
                 >
-                  {item.title}
+                  {title}
                 </button>
+                )}
                 <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-ink-3">
                   <span className={`tabular ${state === "live" ? "font-semibold text-accent" : ""}`}>{whenWords(entry, timeZone, clock)}</span>
                   {item.dueOn && <DueMark dueOn={item.dueOn} today={date} />}
                   {area && <AreaLabel name={area.name} color={area.color} />}
                 </p>
               </div>
+              <RowActions item={qi} hooks={hooks} className="quick-over" />
             </li>
           );
         })}

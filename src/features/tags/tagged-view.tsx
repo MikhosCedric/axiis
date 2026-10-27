@@ -1,5 +1,7 @@
 "use client";
 
+import { renameKey, useQuick } from "@/features/actions/context";
+import { RenameField, RowActions, rowProps } from "@/features/actions/row-actions";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { AreaLabel, AreaMark } from "@/components/area-mark";
@@ -26,6 +28,7 @@ export function TaggedView({
   setDone?: SetDone;
 }) {
   const { selectedParam, selectedId, select } = useItemSelection();
+  const quick = useQuick();
   const ticks = useDoneToggles(setDone);
 
   return (
@@ -49,6 +52,17 @@ export function TaggedView({
         {data.rows.length > 0 && (
           <ul className="mt-2 max-w-[760px] border-t border-rule">
             {data.rows.map((row) => {
+              const patch = quick?.patched(row.id);
+              if (patch?.hidden) return null;
+              const title = patch?.title ?? row.title;
+              const qi = { ...row.quick, title };
+              const tickable = !(row.repeats || row.type === "note");
+              const hooks = {
+                onOpen: () => select(row.id),
+                onToggleDone: tickable ? () => ticks.toggle(row.id, title, !ticks.isDone(row.id, row.done)) : undefined,
+                doneBox: tickable,
+                inlineRename: "tagged",
+              };
               const selected = selectedId === row.id;
               const done = ticks.isDone(row.id, row.done);
               const others = tagLine(row.tags);
@@ -56,8 +70,9 @@ export function TaggedView({
               return (
                 <li
                   key={row.id}
-                  className={`grid grid-cols-[48px_minmax(0,1fr)] items-start gap-x-3 border-b border-rule-soft py-(--row-y) ${
-                    selected ? "bg-accent-wash" : ""
+                  {...rowProps(quick, qi, hooks)}
+                  className={`group/row relative grid grid-cols-[48px_minmax(0,1fr)] items-start gap-x-3 border-b border-rule-soft py-(--row-y) pointer-coarse:grid-cols-[48px_minmax(0,1fr)_auto] ${
+                    selected ? "row-selected" : ""
                   }`}
                 >
                   {/* A series is ticked one day at a time, on that day, and a note is never done. */}
@@ -69,7 +84,7 @@ export function TaggedView({
                     <span className="-my-1 grid place-items-center">
                       <DoneToggle
                         type={row.type}
-                        title={row.title}
+                        title={title}
                         done={done}
                         justDone={ticks.justDone === row.id}
                         onToggle={() => ticks.toggle(row.id, row.title, !done)}
@@ -77,15 +92,19 @@ export function TaggedView({
                     </span>
                   )}
                   <div className="min-w-0">
+                    {quick?.renaming === renameKey("tagged", row.id) ? (
+                      <RenameField item={qi} className="font-medium" />
+                    ) : (
                     <button
                       type="button"
+                      data-quick-focus
                       aria-pressed={selected}
                       onClick={() => select(row.id)}
                       className={`cursor-pointer rounded text-left tap-y break-words hover:underline ${
                         done ? "font-normal text-ink-3" : "font-medium text-ink"
                       }`}
                     >
-                      {row.title}
+                      {title}
                       {row.repeats && (
                         <>
                           <RepeatMark className="ml-1.5 text-ink-3" />
@@ -94,6 +113,7 @@ export function TaggedView({
                       )}
                       {done && <span className="sr-only">, done</span>}
                     </button>
+                    )}
                     {meta.length > 0 && (
                       <p className={`mt-0.5 flex flex-wrap gap-x-2 text-xs ${selected ? "text-ink-2" : "text-ink-3"}`}>
                         {row.when && <span className="tabular">{row.when}</span>}
@@ -107,6 +127,7 @@ export function TaggedView({
                       </p>
                     )}
                   </div>
+                  <RowActions item={qi} hooks={hooks} className="quick-over" />
                 </li>
               );
             })}

@@ -19,6 +19,7 @@ import {
   setTime,
   setType,
   stopRepeating,
+  type DeleteResult,
 } from "./commands";
 
 // The repo is bound to the signed-in user's session and RLS scopes every
@@ -70,8 +71,10 @@ export async function promoteSubtaskAction(id: string): Promise<ActionResult> {
   return refreshed(await promoteSubtask(await getItemsRepo(), id));
 }
 
-export async function deleteItemAction(id: string, scope?: unknown): Promise<ActionResult> {
-  return refreshed(await deleteItem(await getItemsRepo(), id, await getTimeZone(), scope));
+export async function deleteItemAction(id: string, scope?: unknown): Promise<DeleteResult> {
+  const result = await deleteItem(await getItemsRepo(), id, await getTimeZone(), scope);
+  if (result.ok) refresh();
+  return result;
 }
 
 export async function setRepeatAction(id: string, choice: unknown): Promise<ActionResult> {

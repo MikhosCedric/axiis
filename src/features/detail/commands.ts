@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { idSchema, repeats, type AreaId, type Item, type ItemId, type ItemPatch, type LocalDate, type Schedule } from "@/domain/item";
-import { parseItemKey, type ParsedItemKey } from "@/domain/item-key";
+import { occurrenceKey, parseItemKey, type OccurrenceKey, type ParsedItemKey } from "@/domain/item-key";
 import { addDays, DATE_RANGE_ERROR, firstShownMinute, instantAt, localMinutes, outOfRange, parseLocalDate, toLocalDate, wallSpanOn } from "@/lib/dates";
 import { formatDayHeading } from "@/features/today/format";
 import { formatMinutes, type Clock } from "@/lib/clock";
@@ -341,26 +341,40 @@ export async function promoteSubtask(repo: ItemsRepo, rawId: unknown): Promise<A
  * so a failure part way leaves the parent in place and running it again
  * finishes the job.
  */
-export async function deleteItem(repo: ItemsRepo, rawKey: unknown, timeZone: string, rawScope?: unknown): Promise<ActionResult> {
+export async function deleteItem(repo: ItemsRepo, rawKey: unknown, timeZone: string, rawScope?: unknown): Promise<DeleteResult> {
   const key = parseItemKey(rawKey);
   const scope = scopeSchema.safeParse(rawScope);
   if (!key || !scope.success) return { ok: false, error: MISSING };
-  return attempt(async () => {
+  try {
     const items = await targets(repo, key, scope.data, timeZone);
     if (items.length === 0) return { ok: false, error: MISSING };
     const [first] = items;
     if (scope.data === "one" && first.recurrence.kind === "override" && (await seriesOf(repo, first))) {
       await repo.update(first.id, { status: "dropped" });
-      return;
+      return { ok: true, deleted: [], skipped: occurrenceKey(first.recurrence.seriesId, first.recurrence.originalOn) };
     }
+    const deleted: ItemId[] = [];
     for (const item of items) {
-      for (const child of await repo.listChildren(item.id)) await repo.softDelete(child.id);
+      for (const child of await repo.listChildren(item.id)) {
+        await repo.softDelete(child.id);
+        deleted.push(child.id);
+      }
       await repo.softDelete(item.id);
+      deleted.push(item.id);
     }
     // Frees room under the item cap. Housekeeping, so a failure never fails the delete.
     await repo.purgeDeleted().catch(() => undefined);
-  });
+    return { ok: true, deleted, skipped: null };
+  } catch (error) {
+    return { ok: false, error: saveFailure(error, NOT_SAVED) };
+  }
 }
+
+/**
+ * What a delete did, so it can be undone: the items it soft-deleted, children
+ * before their parent, or the occurrence it skipped instead.
+ */
+export type DeleteResult = { ok: true; deleted: ItemId[]; skipped: OccurrenceKey | null } | { ok: false; error: string };
 
 /**
  * Brings back a skipped occurrence, named by its occurrence key. The override

@@ -1,3 +1,4 @@
+import { type QuickItem } from "@/features/actions/model";
 import type { AreaColor } from "@/domain/area-color";
 import type { AreaId, ItemId, ItemType, LocalDate } from "@/domain/item";
 import { formatDayIn } from "@/features/today/format";
@@ -9,6 +10,8 @@ export type DueGroup = "past" | "week" | "later";
 
 /** One item on the Due page, already worded for the user's zone. */
 export type DueRow = {
+  /** What the row's quick actions act on. */
+  quick: QuickItem;
   id: ItemId;
   type: ItemType;
   title: string;

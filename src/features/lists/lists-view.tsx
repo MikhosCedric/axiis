@@ -1,5 +1,7 @@
 "use client";
 
+import { renameKey, useQuick } from "@/features/actions/context";
+import { RenameField, RowActions, rowProps } from "@/features/actions/row-actions";
 import { useId, type ReactNode } from "react";
 import { AreaLabel } from "@/components/area-mark";
 import { ProgressLine } from "@/components/progress-line";
@@ -113,11 +115,18 @@ function ListRowView({
   onToggleDone: () => void;
 }) {
   const metaId = useId();
+  const quick = useQuick();
+  const patch = quick?.patched(row.id);
+  const title = patch?.title ?? row.title;
+  const qi = { ...row.quick, title };
+  const hooks = { onOpen: onSelect, onToggleDone: row.repeats ? undefined : onToggleDone, doneBox: !row.repeats, inlineRename: "lists" };
   // The quietest ink is too faint to read on the accent wash of a selected row.
   const quiet = selected ? "text-ink-2" : "text-ink-3";
+  if (patch?.hidden) return null;
   return (
     <li
-      className={`grid grid-cols-[48px_minmax(0,1fr)] items-start gap-x-3 border-b border-rule-soft py-(--row-y) ${selected ? "bg-accent-wash" : ""}`}
+      {...rowProps(quick, qi, hooks)}
+      className={`group/row relative grid grid-cols-[48px_minmax(0,1fr)] items-start gap-x-3 border-b border-rule-soft py-(--row-y) pointer-coarse:grid-cols-[48px_minmax(0,1fr)_auto] ${selected ? "row-selected" : ""}`}
     >
       {/* A repeating checklist is ticked one day at a time, on that day. */}
       {row.repeats ? (
@@ -126,18 +135,22 @@ function ListRowView({
         </span>
       ) : (
         <span className="-my-1 grid place-items-center">
-          <DoneToggle type="checklist" title={row.title} done={row.done} justDone={justDone} onToggle={onToggleDone} />
+          <DoneToggle type="checklist" title={title} done={row.done} justDone={justDone} onToggle={onToggleDone} />
         </span>
       )}
       <div className="min-w-0">
+        {quick?.renaming === renameKey("lists", row.id) ? (
+          <RenameField item={qi} className="font-medium" />
+        ) : (
         <button
           type="button"
+          data-quick-focus
           aria-pressed={selected}
           aria-describedby={metaId}
           onClick={onSelect}
           className={`cursor-pointer rounded text-left tap-y break-words hover:underline ${row.done ? `font-normal ${quiet}` : "font-medium text-ink"}`}
         >
-          {row.title}
+          {title}
           {row.repeats && (
             <>
               <RepeatMark className={`ml-1.5 ${quiet}`} />
@@ -146,6 +159,7 @@ function ListRowView({
           )}
           {row.done && <span className="sr-only">, done</span>}
         </button>
+        )}
         <p id={metaId} className={`mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs ${quiet}`}>
           {row.progress && (
             <span className="flex items-center gap-2">
@@ -157,6 +171,7 @@ function ListRowView({
           {row.area && <AreaLabel name={row.area} color={row.areaColor} />}
         </p>
       </div>
+      <RowActions item={qi} hooks={hooks} className="quick-over" />
     </li>
   );
 }

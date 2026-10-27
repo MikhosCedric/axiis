@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { ItemId, LocalDate } from "@/domain/item";
 import type { TagName } from "@/domain/tag";
 import type { SearchRow } from "@/features/notes/model";
+import { quickNote } from "@/features/actions/quick-item";
 import { actedLine, actSections, FIND_MAX, findQuery, findStatus, paletteSections, type Find, type Target } from "./model";
 
 const today = "2026-10-06" as LocalDate;
@@ -16,6 +17,7 @@ const row = (n: number, over: Partial<SearchRow> = {}): SearchRow => ({
   snippet: "",
   done: false,
   href: `/notes/${n}`,
+  quick: quickNote({ id: `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`, title: `Row ${n}` }),
   ...over,
 });
 

@@ -212,9 +212,13 @@ export function fakeRepo(items: Item[] = [], areas: Area[] = []) {
     async softDelete(id) {
       const at = items.findIndex((i) => i.id === id);
       if (at !== -1) {
-        items.splice(at, 1);
+        trash.push(...items.splice(at, 1));
         deleted += 1;
       }
+    },
+    async restore(id) {
+      const at = trash.findIndex((i) => i.id === id);
+      if (at !== -1) items.push(...trash.splice(at, 1));
     },
     async purgeDeleted() {
       calls.purgeDeleted += 1;
@@ -274,6 +278,7 @@ export function fakeRepo(items: Item[] = [], areas: Area[] = []) {
   const single = () => items.filter((i) => i.recurrence.kind !== "series");
   // Soft-deleted rows leave `items`, but the database keeps them.
   let deleted = 0;
+  const trash: Item[] = [];
   const tags: Tag[] = [];
   const itemTags: { itemId: ItemId; tagId: TagId }[] = [];
   function link(itemId: ItemId, name: TagName): Tag {
@@ -292,6 +297,8 @@ export function fakeRepo(items: Item[] = [], areas: Area[] = []) {
     items,
     tags,
     itemTags,
+    /** Soft-deleted items, which `restore` brings back. */
+    trash,
     /** Puts tags on an item directly, for arranging a test. */
     tag(itemId: ItemId, ...names: string[]) {
       for (const name of names) link(itemId, name as TagName);

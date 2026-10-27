@@ -1,5 +1,9 @@
 "use client";
 
+import { type QuickItem } from "@/features/actions/model";
+import { quickItem } from "@/features/actions/quick-item";
+import { useQuick, type RowHooks } from "@/features/actions/context";
+import { RowActions, rowProps } from "@/features/actions/row-actions";
 import {
   useEffect,
   useLayoutEffect,
@@ -91,6 +95,7 @@ export function ScoreView({
   justDone: string | null;
 } & ScoreHandlers) {
   const clock = useClock();
+  const quick = useQuick();
   const root = useRef<HTMLElement>(null);
   const scroller = useRef<HTMLDivElement>(null);
   const ticks = useRef<HTMLDivElement>(null);
@@ -182,7 +187,17 @@ export function ScoreView({
     if (el) refocus.current = null;
   });
 
+  /** What the quick actions act on for a beam or chip. Delete and Backspace keep their meaning here: back to the Inbox. */
+  const quickOf = (item: ShownItem): { item: QuickItem; hooks: RowHooks } => ({
+    item: { ...quickItem(item, timeZone), title: quick?.patched(item.id)?.title ?? item.title },
+    hooks: { onOpen: () => onSelect(item.id), onToggleDone: () => onToggleDone(item), deleteKeys: false },
+  });
+
   function keyDown(e: KeyboardEvent<HTMLElement>, item: ShownItem) {
+    if (quick) {
+      const q = quickOf(item);
+      if (quick.keyDown(e, q.item, q.hooks)) return;
+    }
     if (e.key === "Enter") {
       e.preventDefault();
       onSelect(item.id);
@@ -201,9 +216,13 @@ export function ScoreView({
     }
   }
 
-  const chip = (entry: TodayEntry, where: string) => (
-    <li key={entry.item.id} className="min-w-0">
+  const chip = (entry: TodayEntry, where: string) => {
+    if (quick?.patched(entry.item.id)?.hidden) return null;
+    const q = quickOf(entry.item);
+    return (
+    <li key={entry.item.id} className="group/row relative min-w-0">
       <Chip
+        quick={q}
         entry={entry}
         count={childCounts[entry.item.id]}
         tags={tags[entry.item.id]}
@@ -216,8 +235,12 @@ export function ScoreView({
         onPointerDown={(e) => start(e, "place", entry.item)}
         onKeyDown={(e) => keyDown(e, entry.item)}
       />
+      {preview === null && (
+        <RowActions item={q.item} hooks={q.hooks} touch={false} className="absolute top-1/2 left-full -translate-y-1/2 border border-rule-soft bg-sheet pl-0.5" />
+      )}
     </li>
-  );
+    );
+  };
 
   /** Open chips, then the done ones folded into one quiet "Done (n)". A chip just ticked stays put until it settles. */
   function chips(entries: TodayEntry[], where: string) {
@@ -325,9 +348,11 @@ export function ScoreView({
 
           <div ref={layer} className="absolute top-0 left-[var(--lw)]" style={{ width, height: totalHeight }}>
             {staves.flatMap((staff) =>
-              staff.beams.map((beam) => (
+              staff.beams.map((beam) =>
+                quick?.patched(beam.value.item.id)?.hidden ? null : (
                 <BeamView
                   key={beam.value.item.id}
+                  quick={quickOf(beam.value.item)}
                   beam={beam}
                   staff={staff}
                   ctx={ctx}
@@ -413,6 +438,7 @@ export function ScoreView({
 }
 
 function BeamView({
+  quick,
   beam,
   staff,
   ctx,
@@ -434,9 +460,12 @@ function BeamView({
   justDone: boolean;
   onPointerDown: (e: ReactPointerEvent<HTMLElement>, kind: "move" | "resize") => void;
   onKeyDown: (e: KeyboardEvent<HTMLElement>) => void;
+  quick: { item: QuickItem; hooks: RowHooks };
 }) {
   const clock = useClock();
-  const { item, state } = beam.value;
+  const actions = useQuick();
+  const { item: shown, state } = beam.value;
+  const item = { ...shown, title: quick.item.title };
   const mine = preview?.item.id === item.id;
   const resizing = mine && preview.kind === "resize" && preview.target?.kind === "resize";
   const span = (resizing && spanOf({ ...item, schedule: preview.target!.placement.schedule }, ctx.date, ctx.timeZone)) || beam.span;
@@ -468,20 +497,21 @@ function BeamView({
     mine ? styles.tracking : "",
   ].join(" ");
 
+  const left = xAt(ctx.axis, span.start);
+  const width = Math.max(14, (span.end - span.start) * PX_PER_MINUTE);
+  const top = staff.top + beamTop(beam.row);
   return (
+    <>
     <div
       data-item={item.id}
+      {...rowProps(actions, quick.item, quick.hooks)}
       role="button"
       tabIndex={0}
       aria-pressed={selected}
       aria-label={words.name}
       aria-describedby={KEYS_ID}
       className={cls}
-      style={{
-        left: xAt(ctx.axis, span.start),
-        top: staff.top + beamTop(beam.row),
-        width: Math.max(14, (span.end - span.start) * PX_PER_MINUTE),
-      }}
+      style={{ left, top, width }}
       onPointerDown={(e) => onPointerDown(e, "move")}
       onKeyDown={onKeyDown}
     >
@@ -503,6 +533,9 @@ function BeamView({
       </ViewTransition>
       <span className={styles.grip} aria-hidden="true" onPointerDown={(e) => onPointerDown(e, "resize")} />
     </div>
+    {/* Beside the beam's end, past its resize grip, so it never takes a drag; shown by the CSS while the beam is hovered or focused. */}
+    {!preview && <RowActions item={quick.item} hooks={quick.hooks} reveal="self" touch={false} className={styles.actions} style={{ left: left + width + 6, top }} />}
+    </>
   );
 }
 
@@ -571,6 +604,7 @@ export function DoneFold({
 }
 
 function Chip({
+  quick,
   entry,
   count,
   tags,
@@ -594,13 +628,17 @@ function Chip({
   color: AreaColor | null;
   onPointerDown: (e: ReactPointerEvent<HTMLElement>) => void;
   onKeyDown: (e: KeyboardEvent<HTMLElement>) => void;
+  quick: { item: QuickItem; hooks: RowHooks };
 }) {
-  const { item, state } = entry;
+  const actions = useQuick();
+  const { state } = entry;
+  const item = { ...entry.item, title: quick.item.title };
   const due = item.dueOn && state !== "done" ? item.dueOn : null;
   const words = chipWords({ title: item.title, state, repeats: repeats(item), dueOn: due, today, tags: tags ?? [], where, count });
   return (
     <div
       data-item={item.id}
+      {...rowProps(actions, quick.item, quick.hooks)}
       role="button"
       tabIndex={0}
       aria-pressed={selected}

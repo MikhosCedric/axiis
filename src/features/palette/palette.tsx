@@ -42,6 +42,7 @@ import {
 import { GuideBody, GuideContext, Kbd, type GuideTopic } from "./guide";
 import styles from "./palette.module.css";
 import { parseVisits, RECENT_KEY, remember, visitTitle, worthRemembering, type Visit } from "./recent";
+import { setSequencePending } from "./sequence";
 import { areaShortcut, CAPTURE_KEY, globalShortcut, goShortcut, GO_KEY, GO_WINDOW_MS } from "./shortcuts";
 import { areaHref } from "@/features/filter/href";
 
@@ -157,8 +158,10 @@ export function PaletteProvider({
       const step = goShortcut(goTimer !== undefined, press);
       clearTimeout(goTimer);
       goTimer = undefined;
+      setSequencePending(false);
       if (step === "wait") {
-        goTimer = setTimeout(() => (goTimer = undefined), GO_WINDOW_MS);
+        goTimer = setTimeout(() => ((goTimer = undefined), setSequencePending(areaTimer !== undefined)), GO_WINDOW_MS);
+        setSequencePending(true);
         return;
       }
       if (step) {
@@ -172,7 +175,8 @@ export function PaletteProvider({
       clearTimeout(areaTimer);
       areaTimer = undefined;
       if (pick === "wait") {
-        areaTimer = setTimeout(() => (areaTimer = undefined), GO_WINDOW_MS);
+        areaTimer = setTimeout(() => ((areaTimer = undefined), setSequencePending(goTimer !== undefined)), GO_WINDOW_MS);
+        setSequencePending(true);
         return;
       }
       if (pick) {

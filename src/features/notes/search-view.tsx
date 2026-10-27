@@ -1,7 +1,7 @@
-import Link from "next/link";
 import { QUERY_MAX } from "./commands";
 import { SearchIcon } from "./icons";
-import { TYPE_WORD, type SearchRow } from "./model";
+import { type SearchRow } from "./model";
+import { SearchResult } from "./search-result";
 
 /** Results across every item type. A plain GET form, so it works before any script loads. */
 export function SearchView({ query, rows, basePath = "/search" }: { query: string; rows: SearchRow[]; basePath?: string }) {
@@ -47,16 +47,7 @@ export function SearchView({ query, rows, basePath = "/search" }: { query: strin
           </p>
           <ul className="mt-2 grid grid-cols-[minmax(0,1fr)] border-t border-rule">
             {rows.map((r) => (
-              <li key={r.id} className="border-b border-rule-soft">
-                <Link href={r.href} className="block rounded-md px-2 py-3 hover:bg-hover active:bg-press">
-                  <span className={`block truncate font-medium ${r.done ? "text-ink-3" : "text-ink"}`}>{r.title}</span>
-                  {r.snippet && <span className="mt-0.5 line-clamp-2 block text-ink-2">{r.snippet}</span>}
-                  <span className="mt-1 block text-[13px] text-ink-3">
-                    {TYPE_WORD[r.type]}
-                    {r.done ? ", done" : ""}
-                  </span>
-                </Link>
-              </li>
+              <SearchResult key={r.id} row={r} />
             ))}
           </ul>
         </>

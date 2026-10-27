@@ -1,5 +1,8 @@
 "use client";
 
+import { quickMark } from "@/features/actions/quick-item";
+import { useQuick } from "@/features/actions/context";
+import { RowActions, rowProps } from "@/features/actions/row-actions";
 import { gridStep } from "./grid-step";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -110,6 +113,7 @@ export function MonthView({
   const router = useRouter();
   const keep = useKeepFilter();
   const { selectedParam, selectedId: selected, select } = useItemSelection();
+  const quick = useQuick();
   const [, startTransition] = useTransition();
   const [status, setStatus] = useState<{ text: string; error: boolean } | null>(null);
   const [preview, setPreview] = useState<WeekDragPreview<MonthMark & { from: LocalDate }> | null>(null);
@@ -203,9 +207,21 @@ export function MonthView({
     }
   }
 
-  const mark = (m: MonthMark, date: LocalDate, focusable: boolean, variant: "cell" | "row") => (
+  const mark = (shown: MonthMark, date: LocalDate, focusable: boolean, variant: "cell" | "row") => {
+    const patch = quick?.patched(shown.key);
+    if (patch?.hidden) return null;
+    const m: MonthMark = {
+      ...shown,
+      title: patch?.title ?? shown.title,
+      state: patch?.done === undefined ? shown.state : patch.done ? "done" : shown.state === "done" ? "planned" : shown.state,
+    };
+    const qi = quickMark(m, date);
+    const hooks = { onOpen: () => select(m.key) };
+    return (
+    <>
     <MarkButton
       key={`${m.key}-${m.due}`}
+      quickProps={rowProps(quick, qi, hooks)}
       mark={m}
       variant={variant}
       focusable={focusable}
@@ -216,9 +232,20 @@ export function MonthView({
         e.stopPropagation();
         if (!m.movable) select(m.key);
       }}
-      onKeyDown={(e) => markKeyDown(e, m)}
+      onKeyDown={(e) => {
+        if (quick?.keyDown(e, qi, hooks)) return;
+        markKeyDown(e, m);
+      }}
     />
-  );
+    {preview === null && (
+      <RowActions item={qi} hooks={hooks} compact
+        touch={false}
+        className={variant === "row" ? "quick-over" : "absolute top-1/2 left-full -translate-y-1/2 border border-rule-soft bg-sheet pl-0.5"}
+      />
+    )}
+    </>
+    );
+  };
 
   const weeks = Array.from({ length: cells.length / 7 }, (_, w) => cells.slice(w * 7, w * 7 + 7));
   const activeCell = cells.find((c) => c.date === active) ?? cells[0];
@@ -293,7 +320,7 @@ export function MonthView({
                     onKeyDown={(e) => cellKeyDown(e, cell.date, w * 7 + i)}
                   >
                     {cell.marks.map((m) => (
-                      <li key={`${m.key}-${m.due}`} className="min-w-0">
+                      <li key={`${m.key}-${m.due}`} className="group/row relative min-w-0">
                         {mark(m, cell.date, cell.date === active, "cell")}
                       </li>
                     ))}
@@ -312,7 +339,9 @@ export function MonthView({
             {activeCell.marks.length > 0 && (
               <ul className="mt-2 grid gap-0.5">
                 {activeCell.marks.map((m) => (
-                  <li key={`${m.key}-${m.due}`}>{mark(m, activeCell.date, false, "row")}</li>
+                  <li key={`${m.key}-${m.due}`} className="group/row relative">
+                    {mark(m, activeCell.date, false, "row")}
+                  </li>
                 ))}
               </ul>
             )}
@@ -441,6 +470,7 @@ function Dot({ state }: { state: BeamState }) {
 const TITLE = { planned: "font-medium text-ink", live: "font-bold text-ink", done: "font-normal text-ink-3" };
 
 function MarkButton({
+  quickProps,
   mark,
   variant,
   focusable,
@@ -458,6 +488,7 @@ function MarkButton({
   onPointerDown?: (e: ReactPointerEvent<HTMLElement>) => void;
   onClick: (e: MouseEvent<HTMLElement>) => void;
   onKeyDown: (e: KeyboardEvent<HTMLElement>) => void;
+  quickProps: ReturnType<typeof rowProps>;
 }) {
   const label = monthMarkName(mark, variant);
   const shape =
@@ -467,6 +498,7 @@ function MarkButton({
   return (
     <div
       data-item={mark.key}
+      {...quickProps}
       role="button"
       tabIndex={variant === "row" || focusable ? 0 : -1}
       aria-pressed={selected}

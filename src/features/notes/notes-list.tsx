@@ -1,5 +1,8 @@
 "use client";
 
+import { quickNote } from "@/features/actions/quick-item";
+import { useQuick } from "@/features/actions/context";
+import { RowActions, rowProps } from "@/features/actions/row-actions";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState, useTransition } from "react";
@@ -29,6 +32,7 @@ export function NotesList({
   filter?: ViewFilter;
 }) {
   const router = useRouter();
+  const quick = useQuick();
   const keep = useKeepFilter();
   const pathname = usePathname();
   const [draft, setDraft] = useState(query);
@@ -103,18 +107,26 @@ export function NotesList({
         </p>
       ) : (
         <ul className="mt-2 grid grid-cols-[minmax(0,1fr)] border-t border-rule">
-          {rows.map((r) => (
-            <li key={r.id} className="border-b border-rule-soft">
-              <Link href={`${basePath}/${r.id}`} className="block rounded-md px-2 py-3 hover:bg-hover active:bg-press">
-                <span className="block truncate font-medium text-ink">{r.title}</span>
+          {rows.map((r) => {
+            const patch = quick?.patched(r.id);
+            if (patch?.hidden) return null;
+            const title = patch?.title ?? r.title;
+            const qi = quickNote({ id: r.id, title, areaId: r.areaId });
+            const hooks = { onOpen: () => router.push(`${basePath}/${r.id}`) };
+            return (
+            <li key={r.id} {...rowProps(quick, qi, hooks)} className="group/row relative border-b border-rule-soft">
+              <Link href={`${basePath}/${r.id}`} data-quick-focus className="block rounded-md px-2 py-3 hover:bg-hover active:bg-press pointer-coarse:pr-14">
+                <span className="block truncate font-medium text-ink">{title}</span>
                 {r.firstLine && <span className="mt-0.5 block truncate text-ink-2">{r.firstLine}</span>}
                 <span className="mt-1 block text-[13px] text-ink-3 tabular">
                   <AreaMark color={r.areaColor} className="mr-1.5 mb-px align-middle" />
                   {r.areaName ? `${r.areaName}, ${r.edited.charAt(0).toLowerCase()}${r.edited.slice(1)}` : r.edited}
                 </span>
               </Link>
+              <RowActions item={qi} hooks={hooks} className="absolute top-2 right-2 bg-paper" />
             </li>
-          ))}
+            );
+          })}
         </ul>
       )}
     </div>

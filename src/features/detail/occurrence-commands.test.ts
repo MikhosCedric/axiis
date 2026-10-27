@@ -106,10 +106,10 @@ describe("per-occurrence writes", () => {
 describe("delete and skip", () => {
   it("deleting one occurrence skips it, and it does not come back", async () => {
     const w = world();
-    expect(await deleteItem(w.repo, w.key("2026-10-07"), TZ)).toEqual({ ok: true });
+    expect(await deleteItem(w.repo, w.key("2026-10-07"), TZ)).toEqual({ ok: true, deleted: [], skipped: w.key("2026-10-07") });
     expect(w.overrides()[0].status).toBe("dropped");
     expect(await w.shown("2026-10-07", "2026-10-08")).toEqual([]);
-    expect(await deleteItem(w.repo, w.overrides()[0].id, TZ)).toEqual({ ok: true });
+    expect(await deleteItem(w.repo, w.overrides()[0].id, TZ)).toEqual({ ok: true, deleted: [], skipped: w.key("2026-10-07") });
     expect(w.overrides()).toHaveLength(1);
     expect(await w.shown("2026-10-07", "2026-10-08")).toEqual([]);
   });
@@ -117,7 +117,7 @@ describe("delete and skip", () => {
   it("deleting all of them removes the series and keeps the overrides", async () => {
     const w = world();
     await setDone(w.repo, w.key("2026-10-06"), true, TZ);
-    expect(await deleteItem(w.repo, w.key("2026-10-07"), TZ, "all")).toEqual({ ok: true });
+    expect(await deleteItem(w.repo, w.key("2026-10-07"), TZ, "all")).toEqual({ ok: true, deleted: [w.series.id], skipped: null });
     expect(w.items.find((i) => i.id === w.series.id)).toBeUndefined();
     expect(w.overrides().map((o) => o.status)).toEqual(["done"]);
   });
@@ -127,7 +127,7 @@ describe("delete and skip", () => {
     await setDone(w.repo, w.key("2026-10-06"), true, TZ);
     await renameItem(w.repo, w.key("2026-10-07"), "In view", TZ);
     const inView = w.overrides()[1];
-    expect(await deleteItem(w.repo, inView.id, TZ, "all")).toEqual({ ok: true });
+    expect(await deleteItem(w.repo, inView.id, TZ, "all")).toEqual({ ok: true, deleted: [w.series.id, inView.id], skipped: null });
     expect(w.items.some((i) => i.id === w.series.id || i.id === inView.id)).toBe(false);
     expect(w.overrides().map((o) => o.status)).toEqual(["done"]);
   });
