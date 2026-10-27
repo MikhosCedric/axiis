@@ -55,6 +55,15 @@ export type RowHooks = {
 
 export type LayerKind = "more" | "context" | "plan" | "labels" | "delete" | "delete-all" | "rename";
 
+/** A row as the actions know it: what it shows and how its view answers. */
+export type RowEntry = { item: QuickItem; hooks: RowHooks };
+
+/**
+ * Each drawn row's entry, by its element, kept by `rowProps` as rows mount, so code that starts from the
+ * page (a swipe, a click with Shift) can find what a row is.
+ */
+export const rowEntries = new WeakMap<Element, RowEntry>();
+
 /** What is open over the page: a menu or a popover, for one item, placed at `at`. */
 export type OpenLayer = { kind: LayerKind; item: QuickItem; hooks: RowHooks; at: Box; row: HTMLElement | null };
 
@@ -84,6 +93,16 @@ export type Quick = {
   remove: (item: QuickItem, scope: "one" | "all", row: HTMLElement | null) => void;
   tell: (text: string, undo?: () => void) => void;
   prefetch: () => void;
+  /** The rows chosen for one change to many, by key, in the order chosen. */
+  picked: ReadonlyMap<string, RowEntry>;
+  /** Adds a row to the chosen ones or takes it out; "range" also takes every row drawn between it and the last one chosen. */
+  pick: (row: HTMLElement, how: "toggle" | "range") => void;
+  clearPicked: () => void;
+  /** Taps choose rows instead of opening them: Select mode, on a touch screen. */
+  selecting: boolean;
+  setSelecting: (on: boolean) => void;
+  /** Saves several changes as one: each key's patch drawn at once, then one note with `news` from `work`, and Undo when given. */
+  batch: (patches: [string, Patch][], work: () => Promise<{ news: string; undo?: () => void }>) => void;
 };
 
 export const QuickContext = createContext<Quick | null>(null);

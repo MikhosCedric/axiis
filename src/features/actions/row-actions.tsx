@@ -2,7 +2,7 @@
 
 import { lazy, Suspense, type ComponentProps, type KeyboardEvent, type MouseEvent } from "react";
 import type { QuickItem } from "./model";
-import type { Quick, RowHooks } from "./context";
+import { rowEntries, type Quick, type RowHooks } from "./context";
 
 const Cluster = lazy(() => import("./cluster").then((m) => ({ default: m.Cluster })));
 const TitleField = lazy(() => import("./cluster").then((m) => ({ default: m.TitleField })));
@@ -16,6 +16,10 @@ export function rowProps(quick: Quick | null, item: QuickItem, hooks: RowHooks) 
   if (!quick) return {};
   return {
     "data-quick": item.key,
+    "data-picked": quick.picked.has(item.key) ? "" : undefined,
+    ref: (el: HTMLElement | null) => {
+      if (el) rowEntries.set(el, { item, hooks });
+    },
     onKeyDown: (e: KeyboardEvent<HTMLElement>) => void quick.keyDown(e, item, hooks),
     onContextMenu: (e: MouseEvent<HTMLElement>) => quick.contextMenu(e, item, hooks),
   };

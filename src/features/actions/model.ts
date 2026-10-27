@@ -75,10 +75,10 @@ export type RowPress = {
 /**
  * The action a key asks for on a row in focus: E renames, P plans, D ticks,
  * Delete or Backspace deletes, `.` opens More (as do the menu key and Shift
- * F10). `deletes` is false where those keys already mean something else (the
+ * F10), X chooses it for a change to many. `deletes` is false where those keys already mean something else (the
  * Score and the Week send an item back to the Inbox with them).
  */
-export function rowKeyAction(press: RowPress, deletes = true): QuickAction | null {
+export function rowKeyAction(press: RowPress, deletes = true): QuickAction | "pick" | null {
   if (press.typing || press.defaultPrevented || press.sequence || press.altKey || press.ctrlKey || press.metaKey) return null;
   if (press.key === "ContextMenu" || (press.shiftKey && press.key === "F10")) return "more";
   if (press.shiftKey) return null;
@@ -91,6 +91,8 @@ export function rowKeyAction(press: RowPress, deletes = true): QuickAction | nul
       return "done";
     case ".":
       return "more";
+    case "x":
+      return "pick";
     case "delete":
     case "backspace":
       return deletes ? "delete" : null;
