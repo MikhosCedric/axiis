@@ -255,3 +255,23 @@ signedIn.describe("quick actions have no axe violations", () => {
     });
   }
 });
+
+signedIn.describe("quick actions under a coarse pointer", () => {
+  signedIn.use({ isMobile: true, hasTouch: true, viewport: { width: 375, height: 812 } });
+
+  signedIn("keep one 44px More button per row, whose menu holds every action", async ({ page }) => {
+    await openList(page);
+    const plumber = row(page, "Call the plumber");
+    await expect(plumber.getByRole("button", { name: "Rename Call the plumber" })).toBeHidden();
+    const more = plumber.getByRole("button", { name: "More Call the plumber" });
+    await expect(more).toBeVisible();
+    expect((await more.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+    await more.click();
+    const menu = page.getByRole("menu", { name: "Actions for Call the plumber" });
+    await expect(menu.getByRole("menuitem", { name: /^Rename/ })).toBeVisible();
+    await menu.getByRole("menuitem", { name: /^Delete/ }).click();
+    await expect(list(page).getByRole("button", { name: /^Call the plumber/ })).toHaveCount(0);
+    await page.getByRole("button", { name: "Undo" }).click();
+    await expect(list(page).getByRole("button", { name: /^Call the plumber/ })).toBeVisible();
+  });
+});

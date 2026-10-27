@@ -201,6 +201,10 @@ export function QuickActionsProvider({
           if (deleteKind(item) === "now") remove(item, "one", row);
           else open("delete", item, hooks, at, row);
           return;
+        case "more":
+          // Under a coarse pointer the cluster is only this button, so its menu holds every action.
+          open(window.matchMedia("(pointer: coarse)").matches ? "context" : "more", item, hooks, at, row);
+          return;
         default:
           open(action, item, hooks, at, row);
       }
