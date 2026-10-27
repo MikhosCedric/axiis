@@ -285,7 +285,7 @@ export function ScoreView({
         </div>
       )}
 
-      <div className="sticky top-0 z-10 flex h-[34px] border-y border-rule bg-paper" aria-hidden="true">
+      <div className="sticky top-14 z-10 flex h-[34px] border-y border-rule bg-paper rail:top-0" aria-hidden="true">
         <div className="w-[var(--lw)] flex-none border-r border-rule" />
         <div className="relative min-w-0 flex-1 overflow-hidden">
           <div ref={ticks} className="absolute inset-y-0 left-0" style={{ width }}>
