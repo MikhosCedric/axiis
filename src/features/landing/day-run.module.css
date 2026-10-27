@@ -75,7 +75,7 @@
 }
 
 .score {
-  --lw: 76px;
+  --lw: 88px;
   --row: 60px;
   display: flex;
   border-block: 1px solid var(--rule);
