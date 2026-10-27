@@ -227,6 +227,23 @@
   }
 }
 
+/* A row of the lists swipes sideways on a touch screen; a vertical drag that starts on it still scrolls the page. */
+@media (pointer: coarse) {
+  [data-swipe] {
+    touch-action: pan-y;
+  }
+}
+
+/* A row chosen for a change to many: the selected wash, and its edge in Verdigris on the leading side. */
+[data-picked] {
+  background: var(--accent-wash);
+  box-shadow: inset 3px 0 0 var(--accent);
+  --row-ground: color-mix(in srgb, var(--accent) 15%, var(--paper));
+  /* The quietest ink is too faint to read on the wash, as on a selected row. */
+  --ink-3: var(--ink-2);
+  --color-ink-3: var(--ink-2);
+}
+
 /* The ground under a selected row, as Verdigris Wash lies over Paper. */
 @utility row-selected {
   background: var(--accent-wash);

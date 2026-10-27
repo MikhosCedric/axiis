@@ -29,7 +29,7 @@ import { addTagAction, removeTagAction } from "@/features/tags/actions";
 import { setDoneAction } from "@/features/today/actions";
 import { duplicateItemAction, restoreItemsAction, tagChoicesAction } from "./actions";
 import { canDo, deleteKind, rowKeyAction, type Box, type QuickAction, type QuickItem } from "./model";
-import { QuickContext, renameKey, type LayerKind, type OpenLayer, type Patch, type Quick, type QuickActions, type QuickArea, type RowHooks } from "./context";
+import { QuickContext, renameKey, rowEntries, type LayerKind, type RowEntry, type OpenLayer, type Patch, type Quick, type QuickActions, type QuickArea, type RowHooks } from "./context";
 
 const serverActions: QuickActions = {
   setDone: setDoneAction,
@@ -55,6 +55,7 @@ const noSubscribe = () => () => {};
 const layerHost = () => document.getElementById("main") ?? document.body;
 const noHost = () => null;
 const Layer = lazy(loadLayer);
+const Bulk = lazy(() => import("./bulk"));
 
 /** The element a row is reached by from the keyboard: the row itself when it takes focus, else its first control. */
 export function focusTarget(row: HTMLElement): HTMLElement | null {
@@ -114,6 +115,11 @@ export function QuickActionsProvider({
   const [note, setNote] = useState<UndoNote | null>(null);
   const [layer, setLayer] = useState<OpenLayer | null>(null);
   const [renaming, setRenaming] = useState<string | null>(null);
+  const [picked, setPicked] = useState<ReadonlyMap<string, RowEntry>>(() => new Map());
+  const [selecting, setSelecting] = useState(false);
+  const lastPicked = useRef<HTMLElement | null>(null);
+  // The actions as of the last render, for the gesture listeners, which are attached once.
+  const gestureApi = useRef<Quick | null>(null);
   const notes = useRef(0);
   const host = useSyncExternalStore(noSubscribe, layerHost, noHost);
   const layerRef = useRef(layer);
@@ -131,6 +137,33 @@ export function QuickActionsProvider({
 
   const tell = useCallback((text: string, undo?: () => void) => setNote({ id: ++notes.current, text, undo }), []);
   const prefetch = useCallback(() => void loadLayer(), []);
+
+  const pick = useCallback((row: HTMLElement, how: "toggle" | "range") => {
+    const rows = [...document.querySelectorAll<HTMLElement>("[data-quick]")];
+    const from = how === "range" && lastPicked.current ? rows.indexOf(lastPicked.current) : -1;
+    const to = rows.indexOf(row);
+    const span = from === -1 || to === -1 ? [row] : rows.slice(Math.min(from, to), Math.max(from, to) + 1);
+    lastPicked.current = row;
+    setPicked((now) => {
+      const next = new Map(now);
+      const key = row.dataset.quick ?? "";
+      const adding = how === "range" || !next.has(key);
+      for (const el of span) {
+        const entry = rowEntries.get(el);
+        if (!entry) continue;
+        if (adding) next.set(entry.item.key, entry);
+        else next.delete(entry.item.key);
+      }
+      return next;
+    });
+  }, []);
+
+  const clearPicked = useCallback(() => {
+    setPicked(new Map());
+    setSelecting(false);
+    lastPicked.current = null;
+  }, []);
+
 
   const save = useCallback(
     (item: QuickItem, p: Patch, call: () => Promise<ActionResult>, news?: string | null, undo?: () => void) => {
@@ -230,12 +263,17 @@ export function QuickActionsProvider({
         },
         hooks.deleteKeys ?? true,
       );
+      if (action === "pick") {
+        e.preventDefault();
+        pick(e.currentTarget, "toggle");
+        return true;
+      }
       if (!action || !canDo(item, action)) return false;
       e.preventDefault();
       run(action === "more" ? "more" : action, item, hooks, e.currentTarget);
       return true;
     },
-    [run],
+    [run, pick],
   );
 
   const contextMenu = useCallback(
@@ -266,6 +304,58 @@ export function QuickActionsProvider({
     refocusRow.current = row;
   }, []);
 
+  const batch = useCallback(
+    (patches: [string, Patch][], work: () => Promise<{ news: string; undo?: () => void }>) => {
+      startTransition(async () => {
+        for (const p of patches) patch(p);
+        const { news, undo } = await work();
+        tell(news, undo);
+      });
+    },
+    [patch, tell],
+  );
+
+  // Shift, Ctrl or Cmd with a click chooses rows, as do taps in Select mode; Escape lets them go.
+  const choosing = picked.size > 0 || selecting;
+  useEffect(() => {
+    function onClick(e: globalThis.MouseEvent) {
+      const target = e.target as HTMLElement;
+      const row = target.closest<HTMLElement>("[data-quick]");
+      // Beams, chips and marks answer a tap through their own pointer handling, so they are chosen with X instead.
+      if (!row || row.matches("[role=button]") || target.closest("[data-quick-cluster], [popover], input, textarea, label")) return;
+      const range = e.shiftKey;
+      if (!(range || e.ctrlKey || e.metaKey || choosing)) return;
+      e.preventDefault();
+      e.stopPropagation();
+      pick(row, range ? "range" : "toggle");
+    }
+    function onKey(e: globalThis.KeyboardEvent) {
+      if (e.key !== "Escape" || !choosing || e.defaultPrevented || document.querySelector(":popover-open")) return;
+      e.preventDefault();
+      clearPicked();
+    }
+    document.addEventListener("click", onClick, true);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("click", onClick, true);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [choosing, pick, clearPicked]);
+
+  // On a touch screen, rows on the lists swipe and a long press opens their menu (gestures.ts, loaded only there).
+  useEffect(() => {
+    if (!window.matchMedia("(pointer: coarse)").matches) return;
+    let detach: (() => void) | undefined;
+    let live = true;
+    import("./gestures").then((m) => {
+      if (live) detach = m.attachGestures(gestureApi);
+    });
+    return () => {
+      live = false;
+      detach?.();
+    };
+  }, []);
+
   const value = useMemo<Quick>(
     () => ({
       areas,
@@ -285,9 +375,18 @@ export function QuickActionsProvider({
       remove,
       tell,
       prefetch,
+      picked,
+      pick,
+      clearPicked,
+      selecting,
+      setSelecting,
+      batch,
     }),
-    [areas, today, actions, overlay, renaming, layer, run, open, close, keyDown, contextMenu, commitRename, stopRenaming, save, remove, tell, prefetch],
+    [areas, today, actions, overlay, renaming, layer, run, open, close, keyDown, contextMenu, commitRename, stopRenaming, save, remove, tell, prefetch, picked, pick, clearPicked, selecting, batch],
   );
+  useEffect(() => {
+    gestureApi.current = value;
+  });
 
   return (
     <QuickContext.Provider value={value}>
@@ -299,6 +398,11 @@ export function QuickActionsProvider({
             {layer && (
               <Suspense fallback={null}>
                 <Layer key={`${layer.kind}-${layer.item.key}`} layer={layer} />
+              </Suspense>
+            )}
+            {choosing && (
+              <Suspense fallback={null}>
+                <Bulk />
               </Suspense>
             )}
             <UndoToast note={note} onDone={() => setNote(null)} />

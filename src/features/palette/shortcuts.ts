@@ -97,6 +97,7 @@ export const SHORTCUTS: ShortcutGroup[] = [
       { chords: [k("Delete"), k("Backspace")], does: "Delete it, with Undo (on the Score and the Week, back to the Inbox)", handler: "row" },
       { chords: [k(".")], does: "More: duplicate, make an event or a task, move to the Inbox, open details", handler: "row" },
       { chords: [k("ContextMenu"), k("F10", { shift: true })], does: "Every action, as a menu", handler: "row" },
+      { chords: [k("x")], does: "Choose it for a change to many; Shift or Ctrl with a click chooses too, and Escape lets them go", handler: "row" },
     ],
   },
   {

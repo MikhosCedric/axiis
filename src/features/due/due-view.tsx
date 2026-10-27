@@ -104,7 +104,7 @@ function DueRowView({
   const patch = quick?.patched(row.id);
   const title = patch?.title ?? row.title;
   const qi = { ...row.quick, title };
-  const hooks = { onOpen: onSelect, onToggleDone, inlineRename: "due", doneBox: true };
+  const hooks = { onOpen: onSelect, onToggleDone, inlineRename: "due", doneBox: true, swipe: true };
   // The quietest ink is too faint to read on the accent wash of a selected row.
   const quiet = selected ? "text-ink-2" : "text-ink-3";
   if (patch?.hidden) return null;

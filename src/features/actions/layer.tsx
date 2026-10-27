@@ -96,7 +96,25 @@ function ActionMenu({ quick, layer, onClosed }: PanelProps) {
     run: () => more(m),
     rule: i === 0 && first.length > 0,
   }));
-  const entries = [...first, ...rest];
+  // Choosing rows for a change to many: on a touch screen this is how Select mode starts.
+  const select: Entry[] =
+    layer.kind === "context" && row
+      ? [
+          {
+            id: "select",
+            label: quick.picked.has(item.key) ? "Unchoose" : "Choose",
+            key: "X",
+            icon: "done",
+            run: () => {
+              quick.close(true);
+              quick.setSelecting(true);
+              quick.pick(row, "toggle");
+            },
+            rule: true,
+          },
+        ]
+      : [];
+  const entries = [...first, ...rest, ...select];
 
   function onKeyDown(e: KeyboardEvent<HTMLDivElement>) {
     if (e.key === "Tab") {

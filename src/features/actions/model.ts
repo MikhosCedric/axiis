@@ -123,3 +123,14 @@ export function menuStep(key: string, at: number, labels: readonly string[]): nu
 }
 
 export type { Box } from "@/lib/placement";
+
+/** "1 item" or "3 items"; with a state, "1 is done" or "3 are done", for news about a change to many. */
+export function bulkWords(count: number, state?: string): string {
+  if (!state) return count === 1 ? "1 item" : `${count} items`;
+  return `${count} ${count === 1 ? "is" : "are"} ${state}`;
+}
+
+/** How many rows are chosen, as the bar for a change to many says it. */
+export function chosenWords(count: number): string {
+  return `${count} chosen`;
+}

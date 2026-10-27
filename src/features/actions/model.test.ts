@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { ItemId, LocalDate, VirtualItem } from "@/domain/item";
 import { makeItem } from "@/features/today/test-support";
-import { canDo, deleteKind, menuStep, moreEntries, rowKeyAction, type RowPress } from "./model";
+import { bulkWords, canDo, chosenWords, deleteKind, menuStep, moreEntries, rowKeyAction, type RowPress } from "./model";
 import { quickItem, quickNote } from "./quick-item";
 
 const TZ = "Europe/London";
@@ -104,7 +104,8 @@ describe("rowKeyAction", () => {
     expect(rowKeyAction(press("D", { shiftKey: true }))).toBeNull();
     expect(rowKeyAction(press("d", { defaultPrevented: true }))).toBeNull();
     expect(rowKeyAction(press("d", { sequence: true }))).toBeNull();
-    expect(rowKeyAction(press("x"))).toBeNull();
+    expect(rowKeyAction(press("q"))).toBeNull();
+    expect(rowKeyAction(press("x"))).toBe("pick");
   });
 });
 
@@ -125,5 +126,13 @@ describe("menuStep", () => {
     expect(menuStep("z", 0, labels)).toBeNull();
     expect(menuStep("Enter", 0, labels)).toBeNull();
     expect(menuStep(" ", 0, labels)).toBeNull();
+  });
+});
+
+describe("words for a change to many", () => {
+  it("counts items and agrees the verb with the count", () => {
+    expect([bulkWords(1), bulkWords(3)]).toEqual(["1 item", "3 items"]);
+    expect([bulkWords(1, "done"), bulkWords(2, "done")]).toEqual(["1 is done", "2 are done"]);
+    expect(chosenWords(4)).toBe("4 chosen");
   });
 });

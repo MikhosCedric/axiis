@@ -51,6 +51,8 @@ export type RowHooks = {
   inlineRename?: string;
   /** False where Delete and Backspace already mean "back to the Inbox" (the Score and the Week). */
   deleteKeys?: boolean;
+  /** A row of the lists, which swipes on a touch screen (never the Score, whose axis scrolls sideways). */
+  swipe?: boolean;
 };
 
 export type LayerKind = "more" | "context" | "plan" | "labels" | "delete" | "delete-all" | "rename";

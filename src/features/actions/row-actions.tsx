@@ -21,6 +21,7 @@ export function rowProps(quick: Quick | null, item: QuickItem, hooks: RowHooks) 
   return {
     "data-quick": item.key,
     "data-picked": quick.picked.has(item.key) ? "" : undefined,
+    "data-swipe": hooks.swipe ? "" : undefined,
     ref: (el: HTMLElement | null) => {
       if (el) rowEntries.set(el, { item, hooks });
     },
