@@ -194,7 +194,7 @@ export function RichText({
 
   return (
     <div className={styles.measure}>
-      <div className="sticky top-0 z-10 -mx-1 border-b border-rule-soft bg-paper px-1 py-1 text-[14px]">
+      <div className="sticky top-14 z-10 -mx-1 border-b border-rule-soft bg-paper px-1 py-1 text-[14px] rail:top-0">
         {linking && editor ? (
           <LinkField editor={editor} initial={marks?.href ?? ""} onClose={() => setLinking(false)} />
         ) : (
