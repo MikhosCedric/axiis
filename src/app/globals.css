@@ -262,8 +262,8 @@
   background: var(--paper);
   @supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)) {
     background: var(--bar);
-    -webkit-backdrop-filter: saturate(1.4) blur(14px);
-    backdrop-filter: saturate(1.4) blur(14px);
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
   }
   @media (prefers-reduced-transparency: reduce) {
     background: var(--paper);
@@ -276,8 +276,8 @@
   background: var(--paper-2);
   @supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)) {
     background: var(--bar-rail);
-    -webkit-backdrop-filter: saturate(1.4) blur(14px);
-    backdrop-filter: saturate(1.4) blur(14px);
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
   }
   @media (prefers-reduced-transparency: reduce) {
     background: var(--paper-2);
