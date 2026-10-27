@@ -36,6 +36,14 @@ export const RUN_STAVES: RunStaff[] = [
       { title: "Yoga class", start: 20.75, end: 21.75 },
     ],
   },
+  {
+    name: "Errands",
+    beams: [
+      { title: "Pick up the parcel", start: 10.25, end: 10.75 },
+      { title: "Pharmacy", start: 15.5, end: 16 },
+      { title: "Post the letter", start: 17.75, end: 18.25 },
+    ],
+  },
 ];
 
 export const PHASES = [

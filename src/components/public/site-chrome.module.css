@@ -1,27 +1,52 @@
+.page {
+  display: flex;
+  min-height: 100dvh;
+  flex-direction: column;
+}
+
+/* The public column: the width between the gutters, up to `--content-max`, centred. */
+.wrap {
+  width: min(100% - 2 * var(--gutter), var(--content-max));
+  margin-inline: auto;
+}
+
+/* In-page links glide to their place; the reader's own scrolling is never changed. */
+@media (prefers-reduced-motion: no-preference) {
+  :global(html):has(.page) {
+    scroll-behavior: smooth;
+  }
+}
+
 /*
- * The public way in. Verdigris, the one call to start. It answers a press by sinking 1px and the pointer
- * by turning its small beam from dashed (planned) to solid (live). No glow, no bounce.
+ * The public way in. Verdigris, the one call to start. The pointer turns its beam from dashed (planned)
+ * to solid (live) and carries it a step on; a press sinks it, and letting go springs it back.
  */
 .primary,
 .quiet {
+  position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 12px;
-  min-height: 48px;
-  border-radius: 6px;
-  padding: 12px 20px;
-  font-size: 15px;
+  min-height: clamp(48px, 2.6rem + 0.4vw, 54px);
+  border-radius: 999px;
+  padding: 12px clamp(20px, 1.1rem + 0.4vw, 28px);
+  font-size: var(--fs-body);
+  letter-spacing: 0.01em;
   transition:
     background-color 150ms cubic-bezier(0.16, 1, 0.3, 1),
     border-color 150ms cubic-bezier(0.16, 1, 0.3, 1),
-    transform 120ms cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow 220ms cubic-bezier(0.16, 1, 0.3, 1),
+    transform 420ms cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .primary {
   background: var(--accent);
   font-weight: 600;
   color: var(--on-accent);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.14),
+    0 1px 2px light-dark(rgb(28 27 34 / 0.18), rgb(0 0 0 / 0.4));
 }
 
 .primary:hover {
@@ -39,9 +64,25 @@
   background: var(--hover);
 }
 
+/* The quiet way's arrow points where it goes, and steps that way under the pointer. */
+.arrow {
+  display: inline-block;
+  transition: transform 420ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.quiet:hover .arrow,
+.quiet:focus-visible .arrow {
+  transform: translateY(2px);
+}
+
 .primary:active,
 .quiet:active {
-  transform: translateY(1px);
+  transform: translateY(1px) scale(0.97);
+  transition-duration: 90ms;
+}
+
+.primary:active {
+  box-shadow: inset 0 2px 4px rgb(0 0 0 / 0.22);
 }
 
 .actionBeam {
@@ -50,6 +91,7 @@
   height: 5px;
   flex: none;
   overflow: hidden;
+  transition: transform 420ms cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .actionBeam::before,
@@ -74,6 +116,11 @@
   transform-origin: left;
 }
 
+.primary:hover .actionBeam,
+.primary:focus-visible .actionBeam {
+  transform: translateX(3px);
+}
+
 .primary:hover .actionBeam::before,
 .primary:focus-visible .actionBeam::before {
   opacity: 0;
@@ -85,25 +132,239 @@
   transform: none;
 }
 
+/* A text link whose underline is drawn in from the left under the pointer or focus. */
+.drawn {
+  background: linear-gradient(currentColor, currentColor) left bottom / 0 1px no-repeat;
+  text-decoration: none;
+  transition:
+    background-size 320ms cubic-bezier(0.16, 1, 0.3, 1),
+    color 140ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.drawn:hover,
+.drawn:focus-visible,
+:hover > .drawn,
+:focus-visible > .drawn {
+  background-size: 100% 1px;
+}
+
+/*
+ * The header. It stays at the top; once the page moves, its row draws together into a pill of Sheet
+ * paper that holds the movements' letters and a hairline for how far down the page is. All of it is a
+ * scroll-driven animation of transform, opacity and clip, so nothing in the row is laid out again.
+ */
+.bar {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  --row: min(100vw - 2 * var(--gutter), var(--content-max));
+  --compact: min(var(--row), 64rem);
+  --pull: calc((var(--row) - var(--compact)) / 2);
+}
+
+.barRow {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 76px;
+  padding-inline: 4px;
+}
+
+/* Centred by transform, so as it narrows only its size changes, never where it starts (no layout shift). */
+.pill {
+  position: absolute;
+  inset-block: 12px;
+  left: 50%;
+  width: calc(var(--row) + 24px);
+  transform: translateX(-50%);
+  z-index: -1;
+  border: 1px solid var(--rule-soft);
+  border-radius: 999px;
+  background: var(--sheet);
+  box-shadow:
+    0 1px 1px light-dark(rgb(28 27 34 / 0.05), rgb(0 0 0 / 0.3)),
+    0 12px 32px -14px light-dark(rgb(28 27 34 / 0.28), rgb(0 0 0 / 0.7));
+  pointer-events: none;
+}
+
+.progress {
+  position: absolute;
+  bottom: 12px;
+  left: calc(var(--pull) + 28px);
+  right: calc(var(--pull) + 28px);
+  height: 1.5px;
+  border-radius: 1px;
+  background: var(--ink-2);
+  transform: scaleX(0);
+  transform-origin: left;
+  pointer-events: none;
+}
+
+.ends {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* The movements' letters: an ink tab slides under the one being read. */
+.letters {
+  position: relative;
+  display: none;
+  align-items: center;
+  --at: 0;
+}
+
+@media (min-width: 900px) {
+  .letters {
+    display: flex;
+  }
+}
+
+.letter {
+  position: relative;
+  z-index: 1;
+  display: inline-grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 999px;
+  font-family: var(--font-serif);
+  font-size: 17px;
+  font-weight: 500;
+  color: var(--ink-2);
+  transition:
+    color 220ms cubic-bezier(0.16, 1, 0.3, 1),
+    font-weight 220ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.letter:hover {
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.letter[aria-current] {
+  font-weight: 600;
+  color: var(--paper);
+}
+
+.letter:active {
+  transform: scale(0.92);
+}
+
+.indicator {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+  background: var(--ink);
+  transform: translate(calc(var(--at) * var(--step-x, 44px)), calc(var(--at) * var(--step-y, 0px)));
+  transition:
+    transform 520ms cubic-bezier(0.34, 1.3, 0.64, 1),
+    opacity 220ms cubic-bezier(0.16, 1, 0.3, 1);
+  pointer-events: none;
+}
+
+[data-none] > .indicator {
+  opacity: 0;
+}
+
+@supports (animation-timeline: scroll()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .pill {
+      animation: pill-in linear both;
+      animation-timeline: scroll(root);
+      animation-range: 0 120px;
+    }
+
+    .barRow > :global(a:first-of-type) {
+      animation: pull-in linear both;
+      animation-timeline: scroll(root);
+      animation-range: 0 120px;
+    }
+
+    .ends {
+      animation: pull-in-end linear both;
+      animation-timeline: scroll(root);
+      animation-range: 0 120px;
+    }
+
+    .progress {
+      animation: progress linear both;
+      animation-timeline: scroll(root);
+    }
+  }
+}
+
+@keyframes pill-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+    width: calc(var(--compact) + 24px);
+  }
+}
+
+@keyframes pull-in {
+  to {
+    transform: translateX(var(--pull));
+  }
+}
+
+@keyframes pull-in-end {
+  to {
+    transform: translateX(calc(-1 * var(--pull)));
+  }
+}
+
+@keyframes progress {
+  to {
+    transform: none;
+  }
+}
+
+/* Without scroll-driven animation, or with reduced motion, the pill is simply there, the width of the row. */
+@media (prefers-reduced-motion: reduce) {
+  .progress {
+    display: none;
+  }
+}
+
+@supports not (animation-timeline: scroll()) {
+  .progress {
+    display: none;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .primary,
   .quiet,
+  .arrow,
+  .actionBeam,
   .actionBeam::before,
-  .actionBeam::after {
+  .actionBeam::after,
+  .drawn,
+  .letter,
+  .indicator {
     transition: none;
   }
 
   .primary:active,
-  .quiet:active {
+  .quiet:active,
+  .letter:active {
     transform: none;
   }
 }
 
 .footer {
+  margin-top: var(--section-y);
   position: relative;
   isolation: isolate;
   overflow: clip;
-  margin-top: 96px;
 }
 
 /*
@@ -158,14 +419,12 @@
   display: inline-flex;
   min-height: 36px;
   align-items: center;
-  font-size: 15px;
+  font-size: var(--fs-small);
   color: var(--ink-2);
-  text-underline-offset: 4px;
 }
 
 .footerLink:hover {
   color: var(--ink);
-  text-decoration: underline;
 }
 
 @media (pointer: coarse) {

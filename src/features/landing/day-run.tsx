@@ -11,6 +11,13 @@ const FLAGS = Array.from({ length: SPAN / FLAG_STEP + 1 }, (_, i) => RUN_AXIS.fr
 
 const vars = (v: Record<string, number | string>) => v as CSSProperties;
 
+/** The three line forms the run passes each beam through, in the order now gives them. */
+const KEY = [
+  { state: "planned", term: "Dashed", words: "its time has not come" },
+  { state: "live", term: "Solid", words: "it is on now" },
+  { state: "done", term: "Hollow", words: "it is over" },
+] as const;
+
 /** Two ranges on the run's scroll: where a change starts (`--a`, `--a2`) and where the next one does (`--b`, `--b2`). */
 function ranges(from: number, to: number) {
   const a = rangeAt(from);
@@ -91,6 +98,18 @@ export function DayRun({ clock, titleClassName }: { clock: Clock; titleClassName
             </div>
           </div>
         </div>
+
+        <dl className={styles.key}>
+          {KEY.map((k) => (
+            <div key={k.state}>
+              <dt>
+                <Glyph type="task" state={k.state} className={styles.keyGlyph} />
+                {k.term}
+              </dt>
+              <dd>{k.words}</dd>
+            </div>
+          ))}
+        </dl>
       </div>
     </div>
   );

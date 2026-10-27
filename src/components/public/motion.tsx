@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { currentSection } from "@/features/landing/sections";
 
 /**
  * The public pages' script-driven motion, in one listener set, so each page pays for it once. CSS does all
@@ -11,15 +12,78 @@ import { useEffect } from "react";
  * - `data-parallax="<px>"`: shifted up to that many pixels against a fine pointer, so layers part as it moves.
  * - `data-glow`: a sheet whose lamp (`data-glow-spot`) follows the pointer across it, and whose shadow
  *   (`data-glow-shadow`) falls away from it.
+ *
+ * With any motion setting:
+ * - `data-sections`: a nav of letters; the one for the `data-section` being read is marked `aria-current`.
+ * - `data-anchor`: a place an in-page link goes to. The link scrolls there, puts the address in the bar
+ *   without a jump, moves focus to its heading and, with motion, plays its arrival (`data-arrive`).
  */
 export function PublicMotion() {
   useEffect(() => {
-    if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-    const stops = [reveal(), loops()];
-    if (matchMedia("(pointer: fine)").matches) stops.push(parallax(), glow());
+    const stops = [sections(), anchors()];
+    if (!matchMedia(REDUCED).matches) {
+      stops.push(reveal(), loops());
+      if (matchMedia("(pointer: fine)").matches) stops.push(parallax(), glow());
+    }
     return () => stops.forEach((stop) => stop());
   }, []);
   return null;
+}
+
+const REDUCED = "(prefers-reduced-motion: reduce)";
+
+/** How far down the window the reader's eye is taken to be when choosing the section being read. */
+const PROBE = 0.35;
+
+function sections() {
+  const navs = [...document.querySelectorAll<HTMLElement>("[data-sections]")];
+  const targets = [...document.querySelectorAll<HTMLElement>("[data-section]")];
+  if (navs.length === 0 || targets.length === 0) return () => {};
+  let at = -2;
+  const mark = () => {
+    const next = currentSection(
+      targets.map((t) => t.getBoundingClientRect()),
+      innerHeight * PROBE,
+    );
+    if (next === at) return;
+    at = next;
+    for (const nav of navs) {
+      if (next >= 0) nav.style.setProperty("--at", String(next));
+      nav.toggleAttribute("data-none", next < 0);
+      nav.querySelectorAll("a").forEach((a, i) => a.toggleAttribute("aria-current", i === next));
+    }
+  };
+  // Crossing the probe line is the only time the answer can change, so only then are the boxes read.
+  const io = new IntersectionObserver(mark, { rootMargin: `-${PROBE * 100}% 0px -${99 - PROBE * 100}% 0px` });
+  for (const t of targets) io.observe(t);
+  return () => io.disconnect();
+}
+
+function anchors() {
+  const click = (e: MouseEvent) => {
+    if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+    const link = (e.target as Element | null)?.closest<HTMLAnchorElement>('a[href^="#"]');
+    if (!link) return;
+    const target = document.getElementById(decodeURIComponent(link.hash.slice(1)));
+    if (!target?.hasAttribute("data-anchor")) return;
+    e.preventDefault();
+    const reduced = matchMedia(REDUCED).matches;
+    target.scrollIntoView({ behavior: reduced ? "instant" : "smooth", block: "start" });
+    if (location.hash !== link.hash) history.pushState(history.state, "", link.hash);
+    target.querySelector<HTMLElement>("h2, h3")?.focus({ preventScroll: true });
+    if (reduced) return;
+    target.removeAttribute("data-arrive");
+    requestAnimationFrame(() => target.setAttribute("data-arrive", ""));
+  };
+  const settled = (e: AnimationEvent) => {
+    if (e.animationName.includes("arrive-done")) (e.target as Element).closest("[data-arrive]")?.removeAttribute("data-arrive");
+  };
+  document.addEventListener("click", click);
+  document.addEventListener("animationend", settled);
+  return () => {
+    document.removeEventListener("click", click);
+    document.removeEventListener("animationend", settled);
+  };
 }
 
 function reveal() {

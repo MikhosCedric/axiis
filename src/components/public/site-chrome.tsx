@@ -9,12 +9,24 @@ export const primaryAction = styles.primary;
 
 export const quietAction = styles.quiet;
 
-/** The public pages run the width of the window, inside a margin that grows with it (`--gutter`). */
-export const siteWrap = "w-full px-(--gutter)";
+/** A text link whose underline is drawn in under the pointer or focus. */
+export const drawnLink = styles.drawn;
+
+/** The public column: between the gutters (`--gutter`), up to `--content-max`, centred. */
+export const siteWrap = styles.wrap;
 
 /** The beam inside the primary action: dashed at rest, solid under the pointer, as a planned item turns live. */
 export function ActionBeam() {
   return <span className={styles.actionBeam} aria-hidden="true" />;
+}
+
+/** The arrow after a quiet in-page link, pointing down the page to where it goes. */
+export function DownArrow() {
+  return (
+    <span className={styles.arrow} aria-hidden="true">
+      ↓
+    </span>
+  );
 }
 
 /**
@@ -36,7 +48,7 @@ export function BrandHome({ className = "" }: { className?: string }) {
 export function PageTurn({ children }: { children: ReactNode }) {
   return (
     <ViewTransition enter="public-in" exit="public-out" default="none">
-      <div className="flex min-h-dvh flex-col">
+      <div className={styles.page}>
         <PublicMotion />
         {children}
       </div>
@@ -44,15 +56,53 @@ export function PageTurn({ children }: { children: ReactNode }) {
   );
 }
 
-export function SiteHeader() {
+/** A part of the page the header can jump to: its address, its letter, and the name said with the letter. */
+export type Contents = readonly { id: string; letter: string; name: string }[];
+
+/**
+ * The movements' letters as links. Script marks the one being read (`aria-current`) and sets `--at`, which
+ * slides the ink tab under it; with no movement on screen the tab is put away (`data-none`).
+ */
+export function SectionLetters({
+  contents,
+  label,
+  className = styles.letters,
+  linkClassName = styles.letter,
+  nameClassName = "sr-only",
+}: {
+  contents: Contents;
+  label: string;
+  className?: string;
+  linkClassName?: string;
+  nameClassName?: string;
+}) {
   return (
-    <header className={`${siteWrap} relative z-10 flex items-center justify-between gap-4 py-5`}>
-      <BrandHome />
-      <div className="flex items-center gap-1.5">
-        <DayNight />
-        <Link href="/login" className="inline-flex min-h-11 items-center rounded-md px-3 font-medium text-ink underline-offset-4 hover:underline">
-          Sign in
-        </Link>
+    <nav aria-label={label} className={className} data-sections="" data-none="">
+      <span className={styles.indicator} aria-hidden="true" />
+      {contents.map((c) => (
+        <a key={c.id} href={`#${c.id}`} className={linkClassName} title={c.name}>
+          {c.letter}
+          <span className={nameClassName}> {c.name}</span>
+        </a>
+      ))}
+    </nav>
+  );
+}
+
+export function SiteHeader({ contents }: { contents?: Contents }) {
+  return (
+    <header className={styles.bar}>
+      <div className={`${siteWrap} ${styles.barRow}`}>
+        <span className={styles.pill} aria-hidden="true" />
+        <BrandHome />
+        {contents && <SectionLetters contents={contents} label="Movements" />}
+        <div className={styles.ends}>
+          <DayNight />
+          <Link href="/login" className="inline-flex min-h-11 items-center rounded-full px-3 font-medium text-ink">
+            <span className={styles.drawn}>Sign in</span>
+          </Link>
+        </div>
+        <span className={styles.progress} aria-hidden="true" />
       </div>
     </header>
   );
@@ -100,7 +150,7 @@ export function SiteFooter() {
                   {group.links.map((l) => (
                     <li key={l.href}>
                       <Link href={l.href} className={styles.footerLink}>
-                        {l.label}
+                        <span className={styles.drawn}>{l.label}</span>
                       </Link>
                     </li>
                   ))}

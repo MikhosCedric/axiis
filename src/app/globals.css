@@ -2,9 +2,12 @@
 
 /*
  * Every token is declared once, as light-dark(day, night). color-scheme picks the side:
- * the device's setting, unless the theme cookie has put data-theme on <html>.
+ * the device's setting, unless the theme cookie has put data-theme on <html>. A part of a page marked
+ * data-scheme="night" takes the night side whatever the theme: the tokens are declared on it too, so they
+ * are worked out again there (the build turns light-dark() into variables resolved where they are declared).
  */
-:root {
+:root,
+[data-scheme="night"] {
   color-scheme: light dark;
   /* Ground, the recessed rail, and the raised sheet. At night the steps widen so depth reads as tone, not as lines. */
   --paper: light-dark(#ebe4d4, #14131a);
@@ -49,13 +52,37 @@
   --row-y: 0.625rem;
   /* The public pages' side margin: it grows with the window, so a wide screen is used, not banded. */
   --gutter: clamp(16px, 4vw, 96px);
+  /* The public pages' column: it spans the window between the gutters up to here, then sits centred. */
+  --content-max: clamp(1760px, 60vw, 2160px);
+  /*
+   * The public pages' type scale: about 1.25 between steps from a 17px body at the widest, each role fluid
+   * between a phone and a wide screen and held to its ceiling past that (e2e/landing.spec.ts checks it).
+   */
+  --fs-caption: clamp(0.75rem, 0.7rem + 0.12vw, 0.8125rem);
+  --fs-small: clamp(0.8125rem, 0.77rem + 0.12vw, 0.875rem);
+  --fs-body: clamp(0.9375rem, 0.87rem + 0.2vw, 1.0625rem);
+  --fs-lead: clamp(1.0625rem, 0.94rem + 0.36vw, 1.3125rem);
+  --fs-h3: clamp(1.375rem, 1.06rem + 0.95vw, 2.0625rem);
+  --fs-h2: clamp(1.75rem, 1.1rem + 1.9vw, 3.25rem);
+  --fs-numeral: clamp(2.5rem, 1.7rem + 2.4vw, 4rem);
+  --fs-display: clamp(2.6rem, 1.4rem + 5.2vw, 8rem);
+  /* Spacing on an 8px base, and one rhythm between the public pages' sections. */
+  --sp-1: 8px;
+  --sp-2: 16px;
+  --sp-3: 24px;
+  --sp-4: 32px;
+  --sp-5: 48px;
+  --sp-6: 64px;
+  --sp-7: 96px;
+  --section-y: clamp(4rem, 6vw, 7rem);
 }
 
 :root[data-theme="light"] {
   color-scheme: light;
 }
 
-:root[data-theme="dark"] {
+:root[data-theme="dark"],
+[data-scheme="night"] {
   color-scheme: dark;
 }
 

@@ -3,7 +3,18 @@ import type { CSSProperties, ReactNode } from "react";
 import Link from "next/link";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { ActionBeam, PageTurn, SiteFooter, SiteHeader, primaryAction, quietAction, siteWrap } from "@/components/public/site-chrome";
+import {
+  ActionBeam,
+  DownArrow,
+  PageTurn,
+  SectionLetters,
+  SiteFooter,
+  SiteHeader,
+  drawnLink,
+  primaryAction,
+  quietAction,
+  siteWrap,
+} from "@/components/public/site-chrome";
 import { CLOCK_COOKIE, readClock } from "@/components/shell/cookies";
 import { AREA_COLORS } from "@/domain/area-color";
 import { DELETION_GRACE_DAYS } from "@/features/account/commands";
@@ -15,6 +26,7 @@ import { HeroDrift, Seam } from "@/features/landing/drift";
 import { FocusDemo } from "@/features/landing/focus-demo";
 import { LiveScore } from "@/features/landing/live-score";
 import { MonthDemo } from "@/features/landing/month-demo";
+import { SECTIONS, type Section } from "@/features/landing/sections";
 import { Tally } from "@/features/landing/tally";
 import { formatMonthHeading, monthGrid, monthOf } from "@/features/month/model";
 import { toLocalDate } from "@/lib/dates";
@@ -56,13 +68,32 @@ const NOW = [
   "Export all your data, or delete your account with 14 days to change your mind",
 ];
 
-/** Numbers the page can stand behind: each is read from the code that makes it true. */
+/**
+ * Numbers the page can stand behind: each is read from the code that makes it true, and a tile draws
+ * what it counts where it can (the colours themselves, a ruler of the days).
+ */
 const TALLIES = [
-  { value: NOW.length, words: "things it does today, listed below" },
-  { value: AREA_COLORS.length, words: "muted colours for areas and tags" },
-  { value: DELETION_GRACE_DAYS, words: "days to change your mind after deleting" },
-  { value: 0, words: "ads, analytics or trackers" },
-];
+  { value: NOW.length, words: "things it does today, each one listed here", draw: "tally" },
+  { value: AREA_COLORS.length, words: "muted colours for areas and tags", draw: "colours" },
+  { value: DELETION_GRACE_DAYS, words: "days to change your mind after deleting", draw: "days" },
+  { value: 0, words: "ads, analytics or trackers", draw: "none" },
+] as const;
+
+/** What each movement's demo answers to. */
+const KEYS: Record<Section["id"], readonly (readonly [keys: readonly string[], does: string])[]> = {
+  capture: [[["Enter"], "says where the line lands"]],
+  drag: [
+    [["←", "→"], "a quarter hour"],
+    [["Shift", "← →"], "moves its end"],
+    [["Esc"], "lets go of a drag"],
+  ],
+  done: [[["Space"], "ticks it done, or back"]],
+  focus: [[["Enter"], "folds the day, or opens the fold"]],
+  month: [
+    [["←", "→", "↑", "↓"], "a day or a week"],
+    [["Home", "End"], "the week's ends"],
+  ],
+};
 
 const vars = (v: Record<string, number | string>) => v as CSSProperties;
 
@@ -74,17 +105,18 @@ export default async function Home() {
 
   const month = monthOf(toLocalDate(new Date(), "UTC"));
   const { clock } = readClock((await cookies()).get(CLOCK_COOKIE)?.value);
+  const [capture, drag, done, focus, wide] = SECTIONS;
 
   return (
     <PageTurn>
-      <SiteHeader />
+      <SiteHeader contents={SECTIONS} />
       <main id="main">
         <section className={styles.hero} aria-labelledby="hero-title">
           <div className={styles.depth} aria-hidden="true">
             <span className={styles.farStaff} />
             <span className={styles.nearStaff} />
           </div>
-          <div className={`${siteWrap} relative pt-8 pb-12 sm:pt-14 sm:pb-14`}>
+          <div className={`${siteWrap} ${styles.heroText}`}>
             <HeroDrift />
             <h1 id="hero-title" className={styles.display}>
               <span className={styles.firstLine}>Your tasks and your time,</span>{" "}
@@ -112,9 +144,10 @@ export default async function Home() {
                   </Link>
                   <a href="#how" className={quietAction}>
                     See it work
+                    <DownArrow />
                   </a>
                 </div>
-                <p className="mt-3 text-[13px] text-ink-3">{TERMS}</p>
+                <p className={styles.terms}>{TERMS}</p>
               </div>
             </div>
           </div>
@@ -128,104 +161,129 @@ export default async function Home() {
           </div>
         </section>
 
-        <Seam
-          beams={[
-            { x: "18%", w: 120, state: "done", rate: 1 },
-            { x: "52%", w: 200, state: "planned", rate: -0.6 },
-            { x: "81%", w: 80, state: "planned", rate: 1.6 },
-          ]}
-        />
-
-        <section id="how" className={`${siteWrap} ${styles.story}`} aria-labelledby="how-title">
-          <div className={styles.storyHead}>
-            <Rise as="h2" id="how-title" className={styles.heading} text="How it works" />
-            <p className={`${styles.storyLead} ${styles.reveal}`} data-reveal="">
-              Five things it does, each one working here. Nothing you do on this page is saved.
-            </p>
+        <section id="how" className={styles.how} aria-labelledby="how-title" data-anchor="">
+          <div className={siteWrap}>
+            <div className={styles.storyHead}>
+              <Rise as="h2" id="how-title" className={styles.heading} text="How it works" />
+              <p className={`${styles.storyLead} ${styles.reveal}`} data-reveal="">
+                Five things it does, each one working here, lettered A to E as a score marks its passages. Nothing you
+                do on this page is saved.
+              </p>
+            </div>
+            <DayRun clock={clock} titleClassName={styles.runTitle} />
           </div>
 
-          <DayRun clock={clock} titleClassName={styles.movementTitle} />
+          <div className={styles.band}>
+            <Seam
+              beams={[
+                { x: "18%", w: 120, state: "done", rate: 1 },
+                { x: "52%", w: 200, state: "planned", rate: -0.6 },
+                { x: "81%", w: 80, state: "planned", rate: 1.6 },
+              ]}
+            />
+            <div className={styles.bandGrid}>
+              <div className={styles.rail}>
+                <p className={styles.railHead} aria-hidden="true">
+                  Contents
+                </p>
+                <SectionLetters contents={SECTIONS} label="Contents" className={styles.railLetters} linkClassName={styles.railLink} nameClassName={styles.railName} />
+              </div>
+              <div className={`${siteWrap} ${styles.movements}`}>
+                <Movement section={capture} title="Write it the way you would say it." demo={<CaptureDemo />}>
+                  Type a line and press Enter. A day, a time, a length and{" "}
+                  <span className="font-medium text-ink">#tags</span> are read from the words you use, and the rest is
+                  the title. Leave the day out and it waits in the Inbox until you decide. This field runs the same
+                  reader the app does.
+                </Movement>
 
-          <div className={styles.movements}>
-            <Movement mark="A" title="Write it the way you would say it." demo={<CaptureDemo />}>
-              Type a line and press Enter. A day, a time, a length and <span className="font-medium text-ink">#tags</span>{" "}
-              are read from the words you use, and the rest is the title. Leave the day out and it waits in the Inbox
-              until you decide. This field runs the same reader the app does.
-            </Movement>
+                <Movement section={drag} title="Drag it onto a line." demo={<DragDemo />}>
+                  Where you let go is when it starts. Pull its right end to say how long it takes. Every move on the
+                  Score works from the keyboard too.
+                </Movement>
 
-            <Movement mark="B" title="Drag it onto a line." demo={<DragDemo />}>
-              Where you let go is when it starts. Pull its right end to say how long it takes. Every move on the Score
-              works from the keyboard too.
-            </Movement>
+                <Movement section={done} title="Done is a hollow line." demo={<DoneDemo />}>
+                  Dashed is planned, solid is happening now, hollow is done. A tick turns the beam over, and nothing
+                  turns red when a day runs late.
+                </Movement>
 
-            <Movement mark="C" title="Done is a hollow line." demo={<DoneDemo />}>
-              Dashed is planned, solid is happening now, hollow is done. A tick turns the beam over, and nothing turns
-              red when a day runs late.
-            </Movement>
+                <Movement section={focus} title="Fold the day to what is next." demo={<FocusDemo />}>
+                  When a day is full, Focus keeps what is happening and the next three in view, and folds the rest
+                  behind one line that counts it. Next up sits at the top of Today either way.
+                </Movement>
 
-            <Movement mark="D" title="Fold the day to what is next." demo={<FocusDemo />}>
-              When a day is full, Focus keeps what is happening and the next three in view, and folds the rest behind
-              one line that counts it. Next up sits at the top of Today either way.
-            </Movement>
+                <Movement
+                  section={wide}
+                  title="Step back to the month."
+                  demo={<MonthDemo days={monthGrid(month)} month={month} title={formatMonthHeading(month)} />}
+                >
+                  The Week and the Month show the same items further out. Rest on a day, or walk the grid with the
+                  arrow keys, and its items are listed beside it.
+                </Movement>
+              </div>
+            </div>
           </div>
-
-          <Movement
-            mark="E"
-            title="Step back to the month."
-            wide
-            demo={<MonthDemo days={monthGrid(month)} month={month} title={formatMonthHeading(month)} />}
-          >
-            The Week and the Month show the same items further out. Rest on a day, or walk the grid with the arrow keys,
-            and its items are listed beside it.
-          </Movement>
         </section>
 
-        <Seam
-          beams={[
-            { x: "9%", w: 64, state: "planned", rate: 1.4 },
-            { x: "38%", w: 150, state: "done", rate: -1 },
-            { x: "70%", w: 110, state: "done", rate: 0.7 },
-          ]}
-        />
-
-        <section className={siteWrap} aria-labelledby="state-title">
-          <div className={styles.stateHead}>
-            <Rise as="h2" id="state-title" className={styles.heading} text="What it does today" />
-            <dl className={styles.tallies}>
-              {TALLIES.map((t, i) => (
-                <div key={t.words} className={styles.reveal} data-reveal="" style={vars({ "--i": i })}>
-                  <dt className={styles.tally}>
-                    <Tally value={t.value} />
-                  </dt>
-                  <dd className={styles.tallyWords}>{t.words}</dd>
-                </div>
+        <section className={styles.night} aria-labelledby="state-title" data-scheme="night">
+          <div className={siteWrap}>
+            <div className={styles.stateGrid}>
+              <div className={styles.stateHead}>
+                <Rise as="h2" id="state-title" className={styles.heading} text="What it does today" />
+                <p className={`${styles.storyLead} ${styles.reveal}`} data-reveal="">
+                  Only what ships. Each number is read from the code that makes it true.
+                </p>
+              </div>
+              <dl className={styles.tallies}>
+                {TALLIES.map((t, i) => (
+                  <div key={t.words} className={`${styles.tile} ${styles.reveal}`} data-reveal="" style={vars({ "--i": i })}>
+                    <dt className={styles.tally}>
+                      <Tally value={t.value} />
+                    </dt>
+                    <dd className={styles.tallyWords}>{t.words}</dd>
+                    {t.draw === "colours" && (
+                      <dd className={styles.swatches} aria-hidden="true">
+                        {AREA_COLORS.map((c) => (
+                          <span key={c} style={{ background: `var(--area-${c})` }} />
+                        ))}
+                      </dd>
+                    )}
+                    {t.draw === "days" && <dd className={styles.days} aria-hidden="true" />}
+                    {t.draw === "tally" && (
+                      <dd className={styles.strokes} aria-hidden="true">
+                        {Array.from({ length: Math.ceil(t.value / 5) }, (_, g) => (
+                          <span key={g} data-gate={t.value - g * 5 >= 5 ? "" : undefined}>
+                            {Array.from({ length: Math.min(4, t.value - g * 5) }, (_, s) => (
+                              <i key={s} />
+                            ))}
+                          </span>
+                        ))}
+                      </dd>
+                    )}
+                  </div>
+                ))}
+              </dl>
+            </div>
+            <ul className={styles.ledger}>
+              {NOW.map((line, i) => (
+                <li key={line} className={styles.reveal} data-reveal="" style={vars({ "--i": i % 4 })}>
+                  {line}
+                </li>
               ))}
-            </dl>
+            </ul>
           </div>
-          <ul className={styles.ledger}>
-            {NOW.map((line, i) => (
-              <li key={line} className={styles.reveal} data-reveal="" style={vars({ "--i": i % 4 })}>
-                {line}
-              </li>
-            ))}
-          </ul>
         </section>
-
-        <Seam
-          beams={[
-            { x: "24%", w: 96, state: "planned", rate: -1.2 },
-            { x: "63%", w: 180, state: "planned", rate: 0.8 },
-          ]}
-        />
 
         <section className={siteWrap} aria-labelledby="data-title">
-          <div className={styles.close}>
+          <div className={styles.close} data-glow="">
+            <span className={styles.lamp} aria-hidden="true">
+              <span data-glow-spot="" />
+            </span>
             <div className="max-w-[36rem]">
               <Rise as="h2" id="data-title" className={styles.heading} text="Yours, and only yours" />
               <p className={`${styles.closeBody} ${styles.reveal}`} data-reveal="">
                 Your email and the items you make are stored with Supabase, where each row can be read only by your
                 account. No ads, no analytics, no trackers. The{" "}
-                <Link href="/privacy" className="text-ink underline">
+                <Link href="/privacy" className={`text-ink underline decoration-(--rule) underline-offset-4 ${drawnLink}`}>
                   privacy page
                 </Link>{" "}
                 says the rest in plain words.
@@ -236,7 +294,7 @@ export default async function Home() {
                 Start with today
                 <ActionBeam />
               </Link>
-              <p className="text-[13px] text-ink-3">{TERMS}</p>
+              <p className={styles.terms}>{TERMS}</p>
             </div>
           </div>
         </section>
@@ -247,13 +305,14 @@ export default async function Home() {
 }
 
 /**
- * A heading whose words rise one after another out of their own line, as it scrolls into view, over a
- * short staff that is ruled in under it. The words are the heading's text, so it reads as one line.
+ * A heading whose words rise one after another out of their own line, as it scrolls into view or as an
+ * in-page link arrives at it, over a short staff that is ruled in under it. The words are the heading's
+ * text, so it reads as one line. It takes focus when a link brings the reader to it.
  */
 function Rise({ as: Tag, id, className, text }: { as: "h2" | "h3"; id: string; className: string; text: string }) {
   const words = text.split(" ");
   return (
-    <Tag id={id} className={`${className} ${styles.rise}`} data-reveal="">
+    <Tag id={id} className={`${className} ${styles.rise}`} data-reveal="" tabIndex={-1}>
       {words.map((word, w) => (
         <span key={w}>
           <span className={styles.word}>
@@ -267,31 +326,40 @@ function Rise({ as: Tag, id, className, text }: { as: "h2" | "h3"; id: string; c
   );
 }
 
-/** One part of the story: a rehearsal mark, a title, a few sentences, and the thing itself, working. */
-function Movement({
-  mark,
-  title,
-  demo,
-  wide = false,
-  children,
-}: {
-  mark: string;
-  title: string;
-  demo: ReactNode;
-  wide?: boolean;
-  children: ReactNode;
-}) {
-  const id = `movement-${mark}`;
+/**
+ * One part of the story, as a spread: a rehearsal mark and its tempo, a title, a few sentences and the
+ * keys it answers to, laid on an under sheet, with the thing itself working on a sheet lifted over it.
+ */
+function Movement({ section, title, demo, children }: { section: Section; title: string; demo: ReactNode; children: ReactNode }) {
+  const headId = `movement-${section.letter}`;
   return (
-    <article className={`${styles.movement} ${wide ? styles.wide : ""}`} aria-labelledby={id}>
+    <article
+      id={section.id}
+      className={`${styles.movement} ${styles[section.id] ?? ""}`}
+      aria-labelledby={headId}
+      data-section=""
+      data-anchor=""
+    >
+      <span className={styles.underSheet} aria-hidden="true" />
       <div className={`${styles.movementText} ${styles.reveal}`} data-reveal="">
-        <span className={styles.mark} aria-hidden="true">
-          {mark}
-        </span>
-        <h3 id={id} className={styles.movementTitle}>
-          {title}
-        </h3>
+        <p className={styles.markRow} aria-hidden="true">
+          <span className={styles.mark}>{section.letter}</span>
+          <span className={styles.tempo}>{section.tempo}</span>
+        </p>
+        <Rise as="h3" id={headId} className={styles.movementTitle} text={title} />
         <p className={styles.movementBody}>{children}</p>
+        <dl className={styles.keys}>
+          {KEYS[section.id].map(([keys, does]) => (
+            <div key={does}>
+              <dt>
+                {keys.map((k) => (
+                  <kbd key={k}>{k}</kbd>
+                ))}
+              </dt>
+              <dd>{does}</dd>
+            </div>
+          ))}
+        </dl>
       </div>
       <div className={`${styles.movementDemo} ${styles.reveal}`} data-reveal="" data-glow="" style={vars({ "--i": 1 })}>
         <span className={styles.sheetShadow} data-glow-shadow="" aria-hidden="true" />
