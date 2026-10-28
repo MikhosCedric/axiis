@@ -109,10 +109,10 @@ function busyFixtures(areas: Area[], now: Date): Item[] {
  * in areas, the same again with a tag for the filter tests, a busy week, a second busy week for the navigation tests
  * to change, or a copy of the fixtures for the account deletion tests.
  */
-export type FakeAccountKind = "fixtures" | "empty" | "areas" | "filters" | "busy" | "navigation" | "gestures" | "polish" | "deletion";
+export type FakeAccountKind = "fixtures" | "empty" | "areas" | "filters" | "busy" | "navigation" | "gestures" | "polish" | "actions" | "deletion";
 
 function createAccount(kind: FakeAccountKind) {
-  const busy = kind === "busy" || kind === "navigation" || kind === "gestures" || kind === "polish";
+  const busy = kind === "busy" || kind === "navigation" || kind === "gestures" || kind === "polish" || kind === "actions";
   const areas =
     busy
       ? fakeAreasRepo([

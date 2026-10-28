@@ -6,7 +6,7 @@ import { hydrated, SESSION_COOKIE, sessionSecret, signedIn } from "./session";
 const zone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
 const reset = (request: APIRequestContext) =>
-  request.post("/dev/e2e-session", { headers: { cookie: `${SESSION_COOKIE}=${sessionSecret()}; axiis-e2e-account=busy` } });
+  request.post("/dev/e2e-session", { headers: { cookie: `${SESSION_COOKIE}=${sessionSecret()}; axiis-e2e-account=actions` } });
 
 // One in-memory account is shared by every worker, and these tests change it, so they run one at a time.
 signedIn.describe.configure({ mode: "serial" });
@@ -14,7 +14,7 @@ signedIn.use({ timezoneId: zone });
 
 signedIn.beforeEach(async ({ page, request, baseURL }) => {
   expect((await reset(request)).status()).toBe(204);
-  await page.context().addCookies([{ name: "axiis-e2e-account", value: "busy", url: baseURL }]);
+  await page.context().addCookies([{ name: "axiis-e2e-account", value: "actions", url: baseURL }]);
 });
 
 /** Today's List; Next up above it can hold the same items, depending on the hour. */
@@ -213,10 +213,20 @@ signedIn.describe("quick actions on the Score", () => {
 
     const moved = page.locator("[data-quick][role=button]").filter({ hasText: "Call the plumber" }).first();
     const label = await moved.getAttribute("aria-label");
-    const box = (await moved.boundingBox())!;
+    // A move slides the beam to its new place; press where it has come to rest, not where it was.
+    let box = (await moved.boundingBox())!;
+    await expect(async () => {
+      const again = (await moved.boundingBox())!;
+      const still = JSON.stringify(again) === JSON.stringify(box);
+      box = again;
+      expect(still).toBe(true);
+    }).toPass({ intervals: [150, 150, 250, 500] });
+    // Drag toward the side with room: by the hour the page opens at, 18:15 can sit at the Score's right edge.
+    const edge = (await score(page).boundingBox())!;
+    const to = box.x + box.width / 3 + 76 < edge.x + edge.width - 24 ? 76 : -76;
     await page.mouse.move(box.x + box.width / 3, box.y + box.height / 2);
     await page.mouse.down();
-    await page.mouse.move(box.x + box.width / 3 + 76, box.y + box.height / 2, { steps: 10 });
+    await page.mouse.move(box.x + box.width / 3 + to, box.y + box.height / 2, { steps: 10 });
     await page.mouse.up();
     await expect(page.locator("[data-quick][role=button]").filter({ hasText: "Call the plumber" }).first()).not.toHaveAttribute("aria-label", label!);
   });
