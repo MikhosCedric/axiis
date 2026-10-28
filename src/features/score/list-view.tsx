@@ -147,7 +147,7 @@ export function ListView({
       <>
         <ul>{entries.filter((e) => !done.includes(e)).map(row)}</ul>
         {done.length > 0 && (
-          <div className="pt-2">
+          <div className="py-1.5">
             <DoneFold count={done.length} listClassName="mt-1">
               {done.map(row)}
             </DoneFold>
@@ -162,21 +162,17 @@ export function ListView({
       <h2 id="list-h" className="sr-only">
         List
       </h2>
-      <h3 className="border-b border-rule pb-2.5 font-serif text-lg font-medium">Planned</h3>
-      {view.scheduled.length ? (
-        rows(view.scheduled)
-      ) : (
-        <p className="py-3 text-ink-2">Nothing has a time yet.</p>
-      )}
+      <h3 className="pb-2.5 font-serif text-lg font-medium">Planned</h3>
+      <div className="surface overflow-hidden px-3 [&_li:last-child]:border-b-0">
+        {view.scheduled.length ? rows(view.scheduled) : <p className="py-3 text-ink-2">Nothing has a time yet.</p>}
+      </div>
       <h3 className="mt-10 font-serif text-lg font-medium">{INBOX}</h3>
-      <p className="mt-1 border-b border-rule pb-2.5 text-[13px] text-ink-2">
+      <p className="mt-1 pb-2.5 text-[13px] text-ink-2">
         Captured and safe, with no day yet. Plan these when you are ready. <SameInInbox />
       </p>
-      {view.waiting.length ? (
-        rows(view.waiting)
-      ) : (
-        <p className="py-3 text-ink-2">{EMPTY_TRAY}</p>
-      )}
+      <div className="surface overflow-hidden px-3 [&_li:last-child]:border-b-0">
+        {view.waiting.length ? rows(view.waiting) : <p className="py-3 text-ink-2">{EMPTY_TRAY}</p>}
+      </div>
       {waitingFull && <p className="mt-3 text-[13px] text-ink-3">{TRAY_FULL}</p>}
     </section>
   );

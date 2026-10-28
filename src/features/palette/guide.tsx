@@ -37,7 +37,7 @@ export function GuideButton({ topics, className = "" }: { topics: readonly Guide
       aria-haspopup="dialog"
       aria-keyshortcuts={HELP_KEY}
       title="Guide ( ? )"
-      className={`inline-flex flex-none items-center gap-1.5 rounded-lg border border-rule px-3 py-2 font-medium text-ink-2 hover:bg-hover hover:text-ink active:bg-press pointer-coarse:py-3 ${className}`}
+      className={`press inline-flex flex-none items-center gap-1.5 rounded-lg border border-rule px-3 py-2 font-medium text-ink-2 hover:bg-hover hover:text-ink active:bg-press pointer-coarse:py-3 ${className}`}
     >
       <svg viewBox="0 0 16 16" width={16} height={16} aria-hidden="true" fill="none" stroke="currentColor" strokeWidth={1.4} strokeLinecap="round">
         <circle cx="8" cy="8" r="6.4" />

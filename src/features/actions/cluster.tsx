@@ -84,7 +84,7 @@ export function Cluster({
             aria-haspopup={action === "more" ? "menu" : action === "plan" || action === "labels" ? "dialog" : undefined}
             aria-expanded={popup.has(action) ? popup.get(action)!.includes(open ?? "") : undefined}
             onClick={(e) => quick.run(action, item, hooks, e.currentTarget)}
-            className={`grid size-7 place-items-center rounded-md text-ink-2 hover:bg-hover hover:text-ink active:bg-press [&:active>svg]:translate-y-px pointer-coarse:size-11 ${
+            className={`press grid size-7 place-items-center rounded-md text-ink-2 hover:bg-hover hover:text-ink active:bg-press [&:active>svg]:translate-y-px pointer-coarse:size-11 ${
               action === "more" ? "" : "pointer-coarse:hidden"
             }`}
           >

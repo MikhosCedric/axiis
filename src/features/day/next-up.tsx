@@ -62,11 +62,11 @@ export function NextUp({
   const quick = useQuick();
   if (entries.length === 0) return null;
   return (
-    <section aria-labelledby="next-up-h" className="mb-6 max-w-[760px]">
+    <section aria-labelledby="next-up-h" className="mb-7 max-w-[760px]">
       <h2 id="next-up-h" className="font-serif text-lg leading-tight font-medium">
         Next up
       </h2>
-      <ul className="mt-2 border-t border-rule">
+      <ul className="surface overflow-hidden px-3 [&_li:last-child]:border-b-0 mt-2.5">
         {entries.map((entry) => {
           const { item, state } = entry;
           const area = areas.find((a) => a.id === item.areaId);

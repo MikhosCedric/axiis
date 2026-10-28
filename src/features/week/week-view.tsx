@@ -303,8 +303,8 @@ export function WeekView({
         <section
           data-drop="tray"
           aria-labelledby="week-tray-h"
-          className={`mt-7 rounded-lg px-3 pt-2 pb-3 -mx-3 transition-colors ${
-            preview?.over === "tray" ? "bg-accent-wash outline-2 outline-dashed outline-accent" : ""
+          className={`surface mt-7 px-4 pt-3 pb-4 transition-colors ${
+            preview?.over === "tray" ? "!bg-accent-wash outline-2 outline-dashed outline-accent" : ""
           }`}
         >
           <h2 id="week-tray-h" className="font-serif text-lg leading-tight font-medium">
