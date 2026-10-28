@@ -202,7 +202,8 @@ signedIn.describe("comfort and access", () => {
     await expect(page.locator(".title-bar")).toHaveAttribute("data-folded");
     for (const selector of ["header.glass", "nav.glass-rail", ".title-bar"]) {
       expect(await style(page, selector, "backdrop-filter"), selector).toBe("none");
-      expect(await style(page, selector, "background-color"), selector).toMatch(/^rgb\(/);
+      // Solid: no alpha, or an alpha of 1 (how a colour mid-transition is written).
+      expect(await style(page, selector, "background-color"), selector).toMatch(/^rgba?\(\d+, \d+, \d+(, 1)?\)$/);
     }
   });
 
@@ -231,10 +232,10 @@ signedIn.describe("no axe violations on the polished surfaces", () => {
     { width: 375, colorScheme: "dark" as const },
     { width: 375, colorScheme: "light" as const },
   ]) {
-    signedIn(`Today's List and the Week at ${width} in ${colorScheme}`, async ({ page }) => {
+    signedIn(`Today's List, the Week, the Inbox, Due and Lists at ${width} in ${colorScheme}`, async ({ page }) => {
       await page.setViewportSize({ width, height: 812 });
       await page.emulateMedia({ colorScheme, reducedMotion: "reduce" });
-      for (const path of ["/today?view=list", "/week"]) {
+      for (const path of ["/today?view=list", "/week", "/inbox", "/due", "/lists"]) {
         await page.goto(path);
         await hydrated(page);
         expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
