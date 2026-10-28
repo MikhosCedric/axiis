@@ -1,13 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { startTransition, useId, useOptimistic, useState } from "react";
+import { startTransition, useId, useMemo, useOptimistic, useState } from "react";
 import { ColorPicker, SwatchButton } from "@/components/color-picker";
 import type { AreaColor } from "@/domain/area-color";
 import { parseTagName, TAG_NAME_MAX, type TagId, type TagName, type TagSummary } from "@/domain/tag";
 import { ConfirmDelete } from "@/features/detail/confirm-delete";
 import type { ActionResult } from "@/features/today/commands";
 import { openCount, tagHref } from "./model";
+import { latestSave } from "@/lib/latest-save";
 import { reach } from "@/lib/reach";
 
 export type TagActions = {
@@ -46,6 +47,8 @@ export function TagsSection({
   const [error, setError] = useState<string | null>(null);
   const prefix = useId();
   const [picking, setPicking] = useState<TagId | null>(null);
+  // Arrow keys through the palette choose a colour per press; only the last of a run needs to reach the server.
+  const saveColor = useMemo(() => latestSave((id: string, color: AreaColor | null) => actions.color(id, color)), [actions]);
 
   function run(optimistic: Change, work: () => Promise<ActionResult>) {
     setError(null);
@@ -102,7 +105,7 @@ export function TagsSection({
                   id={`${prefix}-colors-${tag.id}`}
                   name={`#${tag.name}`}
                   color={tag.color}
-                  onPick={(color) => run({ kind: "color", id: tag.id, color }, () => actions.color(tag.id, color))}
+                  onPick={(color) => run({ kind: "color", id: tag.id, color }, () => saveColor(tag.id, color))}
                 />
               )}
             </li>
