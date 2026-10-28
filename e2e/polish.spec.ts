@@ -129,6 +129,27 @@ signedIn.describe("segmented controls", () => {
   });
 });
 
+/**
+ * Counts the animations and transitions the page starts on rows other than a leaving one, from now on.
+ * Asking what is running at one instant would miss a short one on a slow run.
+ */
+const watchMotion = (page: Page) =>
+  page.evaluate(() => {
+    const w = window as unknown as { __motion: number };
+    w.__motion = 0;
+    const count = (e: Event) => {
+      if (!(e.target as Element).closest?.("[data-ghost]")) w.__motion++;
+    };
+    document.addEventListener("animationstart", count, true);
+    document.addEventListener("transitionrun", count, true);
+    const animate = Element.prototype.animate;
+    Element.prototype.animate = function (this: Element, ...args: Parameters<Element["animate"]>) {
+      if (!this.closest("[data-ghost]")) w.__motion++;
+      return animate.apply(this, args);
+    };
+  });
+const motion = (page: Page) => page.evaluate(() => (window as unknown as { __motion: number }).__motion);
+
 signedIn.describe("rows that move", () => {
   const list = (page: Page) => page.getByRole("region", { name: "List", exact: true });
 
@@ -139,12 +160,10 @@ signedIn.describe("rows that move", () => {
     const first = list(page).locator("ul").first().locator(":scope > li[data-quick]").first();
     const key = (await first.getAttribute("data-quick"))!;
     await first.getByRole("button").first().focus();
+    await watchMotion(page);
     await page.keyboard.press("Delete");
     await expect(list(page).locator("li[data-ghost]")).toHaveCount(1);
-    const moving = await list(page).evaluate((el) =>
-      el.getAnimations({ subtree: true }).filter((a) => !(a.effect as KeyframeEffect).target?.closest("[data-ghost]")).length,
-    );
-    expect(moving).toBeGreaterThan(0);
+    await expect.poll(() => motion(page)).toBeGreaterThan(0);
     await expect(list(page).locator("li[data-ghost]")).toHaveCount(0);
 
     await page.getByRole("button", { name: "Undo" }).click();
