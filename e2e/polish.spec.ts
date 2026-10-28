@@ -79,12 +79,21 @@ signedIn.describe("large titles", () => {
   });
 });
 
-/** Whether the thumb of the segmented control named `label` is moving now. */
-const sliding = (page: Page, label: string) =>
-  page.evaluate(
-    (name) => (document.querySelector(`[aria-label="${name}"] .segment-thumb`)?.getAnimations().length ?? 0) > 0,
-    label,
-  );
+/**
+ * Counts the thumb slides the page starts from now on. Asking whether one is running at some instant would
+ * miss a slide that ends before a slow run gets to ask.
+ */
+const watchSlides = (page: Page) =>
+  page.evaluate(() => {
+    const w = window as unknown as { __slides: number };
+    w.__slides = 0;
+    const animate = Element.prototype.animate;
+    Element.prototype.animate = function (this: Element, ...args: Parameters<Element["animate"]>) {
+      if (this.classList.contains("segment-thumb")) w.__slides++;
+      return animate.apply(this, args);
+    };
+  });
+const slides = (page: Page) => page.evaluate(() => (window as unknown as { __slides: number }).__slides);
 
 signedIn.describe("segmented controls", () => {
   signedIn("the chosen span sits under an Ink thumb, which slides to the new span before the page turns", async ({ page }) => {
@@ -93,8 +102,9 @@ signedIn.describe("segmented controls", () => {
     const span = page.getByRole("group", { name: "Day, week or month" });
     await expect(span.getByRole("link", { name: "Day" }).locator(".segment-thumb")).toHaveCount(1);
     await expect(span.getByRole("link", { name: "Day" })).toHaveCSS("color", await page.evaluate(() => getComputedStyle(document.body).backgroundColor));
+    await watchSlides(page);
     await span.getByRole("link", { name: "Week" }).click();
-    expect(await sliding(page, "Day, week or month")).toBe(true);
+    await expect.poll(() => slides(page)).toBeGreaterThan(0);
     await expect(page).toHaveURL(/week/);
     await expect(span.getByRole("link", { name: "Week" }).locator(".segment-thumb")).toHaveCount(1);
     await expect(span.getByRole("link", { name: "Week" })).toHaveAttribute("aria-current", "page");
@@ -104,14 +114,17 @@ signedIn.describe("segmented controls", () => {
     await page.goto("/today");
     await hydrated(page);
     const view = page.getByRole("group", { name: "View" });
+    await watchSlides(page);
     await view.getByRole("button", { name: "List" }).click();
-    expect(await sliding(page, "View")).toBe(true);
+    await expect.poll(() => slides(page)).toBeGreaterThan(0);
     await expect(view.getByRole("button", { name: "List" })).toHaveAttribute("aria-pressed", "true");
     await expect(page).toHaveURL(/view=list/);
 
     await page.emulateMedia({ reducedMotion: "reduce" });
+    const slid = await slides(page);
     await view.getByRole("button", { name: "Score" }).click();
-    expect(await sliding(page, "View")).toBe(false);
+    await expect(view.getByRole("button", { name: "Score" })).toHaveAttribute("aria-pressed", "true");
+    expect(await slides(page)).toBe(slid);
     await expect(view.getByRole("button", { name: "Score" })).toHaveAttribute("aria-pressed", "true");
   });
 });
