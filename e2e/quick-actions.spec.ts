@@ -6,7 +6,7 @@ import { hydrated, SESSION_COOKIE, sessionSecret, signedIn } from "./session";
 const zone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
 const reset = (request: APIRequestContext) =>
-  request.post("/dev/e2e-session", { headers: { cookie: `${SESSION_COOKIE}=${sessionSecret()}; axiis-e2e-account=busy` } });
+  request.post("/dev/e2e-session", { headers: { cookie: `${SESSION_COOKIE}=${sessionSecret()}; axiis-e2e-account=actions` } });
 
 // One in-memory account is shared by every worker, and these tests change it, so they run one at a time.
 signedIn.describe.configure({ mode: "serial" });
@@ -14,7 +14,7 @@ signedIn.use({ timezoneId: zone });
 
 signedIn.beforeEach(async ({ page, request, baseURL }) => {
   expect((await reset(request)).status()).toBe(204);
-  await page.context().addCookies([{ name: "axiis-e2e-account", value: "busy", url: baseURL }]);
+  await page.context().addCookies([{ name: "axiis-e2e-account", value: "actions", url: baseURL }]);
 });
 
 /** Today's List; Next up above it can hold the same items, depending on the hour. */
