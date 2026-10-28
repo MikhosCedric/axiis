@@ -36,8 +36,8 @@ signedIn.describe("surfaces", () => {
     await page.goto("/today?view=list");
     await hydrated(page);
     expect(await style(page, "header.glass", "position")).toBe("sticky");
-    expect(await style(page, "header.glass", "backdrop-filter")).toMatch(/blur\(14px\)/);
-    expect(await style(page, "nav.glass-rail", "backdrop-filter")).toMatch(/blur\(14px\)/);
+    expect(await style(page, "header.glass", "backdrop-filter")).toMatch(/blur\(10px\)/);
+    expect(await style(page, "nav.glass-rail", "backdrop-filter")).toMatch(/blur\(10px\)/);
     await page.evaluate((y) => window.scrollBy(0, y), 600);
     await expect(page.locator("header.glass")).toBeInViewport();
   });
@@ -191,6 +191,40 @@ signedIn.describe("rows that move", () => {
   });
 });
 
+signedIn.describe("comfort and access", () => {
+  signedIn("asking for less transparency makes every bar solid, with nothing blurred", async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 812 });
+    const cdp = await page.context().newCDPSession(page);
+    await cdp.send("Emulation.setEmulatedMedia", { features: [{ name: "prefers-reduced-transparency", value: "reduce" }] });
+    await page.goto("/today?view=list");
+    await hydrated(page);
+    await page.evaluate(() => window.scrollBy(0, 700));
+    await expect(page.locator(".title-bar")).toHaveAttribute("data-folded");
+    for (const selector of ["header.glass", "nav.glass-rail", ".title-bar"]) {
+      expect(await style(page, selector, "backdrop-filter"), selector).toBe("none");
+      // Solid: no alpha, or an alpha of 1 (how a colour mid-transition is written).
+      expect(await style(page, selector, "background-color"), selector).toMatch(/^rgba?\(\d+, \d+, \d+(, 1)?\)$/);
+    }
+  });
+
+  for (const colorScheme of ["light", "dark"] as const) {
+    signedIn(`a segment in focus shows the Verdigris ring in ${colorScheme}`, async ({ page }) => {
+      await page.emulateMedia({ colorScheme });
+      await page.goto("/today");
+      await hydrated(page);
+      const list = page.getByRole("group", { name: "View" }).getByRole("button", { name: "List" });
+      await list.focus();
+      await page.keyboard.press("Shift+Tab");
+      await page.keyboard.press("Tab");
+      await expect(list).toBeFocused();
+      const accent = await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue("--accent"));
+      expect(accent).toBeTruthy();
+      await expect(list).toHaveCSS("outline-style", "solid");
+      await expect(list).toHaveCSS("outline-width", "2px");
+    });
+  }
+});
+
 signedIn.describe("no axe violations on the polished surfaces", () => {
   for (const { width, colorScheme } of [
     { width: 1440, colorScheme: "light" as const },
@@ -198,10 +232,10 @@ signedIn.describe("no axe violations on the polished surfaces", () => {
     { width: 375, colorScheme: "dark" as const },
     { width: 375, colorScheme: "light" as const },
   ]) {
-    signedIn(`Today's List and the Week at ${width} in ${colorScheme}`, async ({ page }) => {
+    signedIn(`Today's List, the Week, the Inbox, Due and Lists at ${width} in ${colorScheme}`, async ({ page }) => {
       await page.setViewportSize({ width, height: 812 });
       await page.emulateMedia({ colorScheme, reducedMotion: "reduce" });
-      for (const path of ["/today?view=list", "/week"]) {
+      for (const path of ["/today?view=list", "/week", "/inbox", "/due", "/lists"]) {
         await page.goto(path);
         await hydrated(page);
         expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
