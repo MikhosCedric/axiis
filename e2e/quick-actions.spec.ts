@@ -224,9 +224,12 @@ signedIn.describe("quick actions on the Score", () => {
       box = again;
       expect(still).toBe(true);
     }).toPass({ intervals: [150, 150, 250, 500] });
+    // Drag toward the side with room: by the hour the page opens at, 18:15 can sit at the Score's right edge.
+    const edge = (await score(page).boundingBox())!;
+    const to = box.x + box.width / 3 + 76 < edge.x + edge.width - 24 ? 76 : -76;
     await page.mouse.move(box.x + box.width / 3, box.y + box.height / 2);
     await page.mouse.down();
-    await page.mouse.move(box.x + box.width / 3 + 76, box.y + box.height / 2, { steps: 10 });
+    await page.mouse.move(box.x + box.width / 3 + to, box.y + box.height / 2, { steps: 10 });
     await page.mouse.up();
     await expect(page.locator("[data-quick][role=button]").filter({ hasText: "Call the plumber" }).first()).not.toHaveAttribute("aria-label", label!);
   });
