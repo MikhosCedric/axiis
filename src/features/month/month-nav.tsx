@@ -12,7 +12,7 @@ import { MonthPicker } from "./month-picker";
 import { anchorOf, formatMonthHeading, monthHref, monthNavTarget, monthOf, type YearMonth } from "./model";
 
 const step =
-  "inline-flex h-9 min-w-11 pointer-coarse:h-11 flex-none items-center justify-center gap-1.5 rounded-md border border-rule px-3 font-medium text-ink hover:bg-hover active:bg-press";
+  "inline-flex h-9 min-w-11 pointer-coarse:h-11 flex-none items-center justify-center gap-1.5 rounded-md border border-rule bg-sheet px-3 font-medium text-ink shadow-raise hover:bg-paper-2 active:translate-y-px active:bg-press";
 
 function Chevron({ back }: { back?: boolean }) {
   return (
