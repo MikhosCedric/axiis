@@ -1,5 +1,6 @@
 "use client";
 
+import { TitleBar } from "@/components/shell/title-bar";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Fragment, useEffect, useMemo, useOptimistic, useState, useTransition, type ReactNode } from "react";
 import type { ShownItem } from "@/domain/item";
@@ -254,11 +255,12 @@ export function DayView({
   return (
     <div className={selectedParam ? "min-[1180px]:grid min-[1180px]:grid-cols-[minmax(0,1fr)_328px]" : ""}>
       <div className="@container/page min-w-0 px-4 pt-6 pb-14 rail:px-9 rail:pt-8">
+        <TitleBar heading="day-title">{formatDayHeading(date)}</TitleBar>
         <header className="page-head">
           {/* A server element can arrive late as a lazy chunk, which React then checks for a key among its siblings. */}
           <Fragment key="nav">{nav}</Fragment>
           <div className="min-w-0">
-            <h1 className="headline">
+            <h1 id="day-title" className="headline">
               <DayHeading date={date} />
             </h1>
             <GlanceLine glance={glance} timeZone={timeZone} scope={scopeWords(filter)} />

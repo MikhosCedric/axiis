@@ -1,5 +1,6 @@
 "use client";
 
+import { TitleBar } from "@/components/shell/title-bar";
 import { type QuickItem } from "@/features/actions/model";
 import { quickItem } from "@/features/actions/quick-item";
 import { useQuick, type RowHooks } from "@/features/actions/context";
@@ -236,11 +237,12 @@ export function WeekView({
   return (
     <div className={selectedParam ? "min-[1180px]:grid min-[1180px]:grid-cols-[minmax(0,1fr)_328px]" : ""}>
       <div className="@container/page min-w-0 px-4 pt-6 pb-14 rail:px-9 rail:pt-8">
+        <TitleBar heading="week-title">{formatWeekHeading(days)}</TitleBar>
         <header className="page-head">
           {/* A server element can arrive late as a lazy chunk, which React then checks for a key among its siblings. */}
           <Fragment key="nav">{nav}</Fragment>
           <div className="min-w-0">
-            <h1 className="headline">
+            <h1 id="week-title" className="headline">
               {formatWeekHeading(days)}
             </h1>
             <p className="page-summary">{weekSummary(week, waiting, today, scopeWords(filter))}</p>
