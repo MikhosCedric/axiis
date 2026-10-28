@@ -1,5 +1,6 @@
 "use client";
 
+import { MotionList } from "@/components/motion-list";
 import { quickItem } from "@/features/actions/quick-item";
 import { renameKey, useQuick } from "@/features/actions/context";
 import { RenameField, RowActions, rowProps } from "@/features/actions/row-actions";
@@ -66,7 +67,7 @@ export function NextUp({
       <h2 id="next-up-h" className="font-serif text-lg leading-tight font-medium">
         Next up
       </h2>
-      <ul className="surface overflow-hidden px-3 [&_li:last-child]:border-b-0 mt-2.5">
+      <MotionList className="surface overflow-hidden px-3 [&_li:last-child]:border-b-0 mt-2.5">
         {entries.map((entry) => {
           const { item, state } = entry;
           const area = areas.find((a) => a.id === item.areaId);
@@ -108,7 +109,7 @@ export function NextUp({
             </li>
           );
         })}
-      </ul>
+      </MotionList>
     </section>
   );
 }

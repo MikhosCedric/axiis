@@ -79,12 +79,21 @@ signedIn.describe("large titles", () => {
   });
 });
 
-/** Whether the thumb of the segmented control named `label` is moving now. */
-const sliding = (page: Page, label: string) =>
-  page.evaluate(
-    (name) => (document.querySelector(`[aria-label="${name}"] .segment-thumb`)?.getAnimations().length ?? 0) > 0,
-    label,
-  );
+/**
+ * Counts the thumb slides the page starts from now on. Asking whether one is running at some instant would
+ * miss a slide that ends before a slow run gets to ask.
+ */
+const watchSlides = (page: Page) =>
+  page.evaluate(() => {
+    const w = window as unknown as { __slides: number };
+    w.__slides = 0;
+    const animate = Element.prototype.animate;
+    Element.prototype.animate = function (this: Element, ...args: Parameters<Element["animate"]>) {
+      if (this.classList.contains("segment-thumb")) w.__slides++;
+      return animate.apply(this, args);
+    };
+  });
+const slides = (page: Page) => page.evaluate(() => (window as unknown as { __slides: number }).__slides);
 
 signedIn.describe("segmented controls", () => {
   signedIn("the chosen span sits under an Ink thumb, which slides to the new span before the page turns", async ({ page }) => {
@@ -93,8 +102,9 @@ signedIn.describe("segmented controls", () => {
     const span = page.getByRole("group", { name: "Day, week or month" });
     await expect(span.getByRole("link", { name: "Day" }).locator(".segment-thumb")).toHaveCount(1);
     await expect(span.getByRole("link", { name: "Day" })).toHaveCSS("color", await page.evaluate(() => getComputedStyle(document.body).backgroundColor));
+    await watchSlides(page);
     await span.getByRole("link", { name: "Week" }).click();
-    expect(await sliding(page, "Day, week or month")).toBe(true);
+    await expect.poll(() => slides(page)).toBeGreaterThan(0);
     await expect(page).toHaveURL(/week/);
     await expect(span.getByRole("link", { name: "Week" }).locator(".segment-thumb")).toHaveCount(1);
     await expect(span.getByRole("link", { name: "Week" })).toHaveAttribute("aria-current", "page");
@@ -104,15 +114,80 @@ signedIn.describe("segmented controls", () => {
     await page.goto("/today");
     await hydrated(page);
     const view = page.getByRole("group", { name: "View" });
+    await watchSlides(page);
     await view.getByRole("button", { name: "List" }).click();
-    expect(await sliding(page, "View")).toBe(true);
+    await expect.poll(() => slides(page)).toBeGreaterThan(0);
     await expect(view.getByRole("button", { name: "List" })).toHaveAttribute("aria-pressed", "true");
     await expect(page).toHaveURL(/view=list/);
 
     await page.emulateMedia({ reducedMotion: "reduce" });
+    const slid = await slides(page);
     await view.getByRole("button", { name: "Score" }).click();
-    expect(await sliding(page, "View")).toBe(false);
     await expect(view.getByRole("button", { name: "Score" })).toHaveAttribute("aria-pressed", "true");
+    expect(await slides(page)).toBe(slid);
+    await expect(view.getByRole("button", { name: "Score" })).toHaveAttribute("aria-pressed", "true");
+  });
+});
+
+/**
+ * Counts the animations and transitions the page starts on rows other than a leaving one, from now on.
+ * Asking what is running at one instant would miss a short one on a slow run.
+ */
+const watchMotion = (page: Page) =>
+  page.evaluate(() => {
+    const w = window as unknown as { __motion: number };
+    w.__motion = 0;
+    const count = (e: Event) => {
+      if (!(e.target as Element).closest?.("[data-ghost]")) w.__motion++;
+    };
+    document.addEventListener("animationstart", count, true);
+    document.addEventListener("transitionrun", count, true);
+    const animate = Element.prototype.animate;
+    Element.prototype.animate = function (this: Element, ...args: Parameters<Element["animate"]>) {
+      if (!this.closest("[data-ghost]")) w.__motion++;
+      return animate.apply(this, args);
+    };
+  });
+const motion = (page: Page) => page.evaluate(() => (window as unknown as { __motion: number }).__motion);
+
+signedIn.describe("rows that move", () => {
+  const list = (page: Page) => page.getByRole("region", { name: "List", exact: true });
+
+  signedIn("a deleted row fades where it stood while the rows below close up, and comes back settling in", async ({ page }) => {
+    await page.goto("/today?view=list");
+    await hydrated(page);
+    // The first open row of the day, so there are rows below it to close up.
+    const first = list(page).locator("ul").first().locator(":scope > li[data-quick]").first();
+    const key = (await first.getAttribute("data-quick"))!;
+    await first.getByRole("button").first().focus();
+    await watchMotion(page);
+    await page.keyboard.press("Delete");
+    await expect(list(page).locator("li[data-ghost]")).toHaveCount(1);
+    await expect.poll(() => motion(page)).toBeGreaterThan(0);
+    await expect(list(page).locator("li[data-ghost]")).toHaveCount(0);
+
+    await page.getByRole("button", { name: "Undo" }).click();
+    await expect(list(page).locator(`li[data-quick="${key}"]`)).toBeVisible();
+  });
+
+  signedIn("under reduced motion rows change at once", async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    await page.goto("/today?view=list");
+    await hydrated(page);
+    await list(page).getByRole("button", { name: /^Call the plumber/ }).focus();
+    await page.keyboard.press("Delete");
+    await expect(list(page).getByRole("button", { name: /^Call the plumber/ })).toHaveCount(0);
+    await expect(list(page).locator("li[data-ghost]")).toHaveCount(0);
+    expect(await list(page).evaluate((el) => el.getAnimations({ subtree: true }).length)).toBe(0);
+  });
+
+  signedIn("a capture on the Inbox settles in at the top", async ({ page }) => {
+    await page.goto("/inbox");
+    await hydrated(page);
+    await page.locator("#capture").fill("Water the ferns");
+    await page.keyboard.press("Enter");
+    const row = page.locator("[data-quick]").filter({ has: page.getByRole("button", { name: /^Water the ferns/ }) });
+    await expect(row).toBeVisible();
   });
 });
 

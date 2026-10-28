@@ -1,5 +1,6 @@
 "use client";
 
+import { MotionList } from "@/components/motion-list";
 import {
   useEffect,
   useId,
@@ -222,7 +223,7 @@ export function InboxView({
             Items with no day
           </h2>
           {shown.length ? (
-            <ul className="surface overflow-hidden px-3 [&_li:last-child]:border-b-0 mt-4" onKeyDown={rowKeyDown} aria-describedby="inbox-keys">
+            <MotionList className="surface overflow-hidden px-3 [&_li:last-child]:border-b-0 mt-4" onKeyDown={rowKeyDown} aria-describedby="inbox-keys">
               {shown.map((item) => (
                 <InboxRow
                   key={item.id}
@@ -245,7 +246,7 @@ export function InboxView({
                   onPlan={(when) => plan(item, when)}
                 />
               ))}
-            </ul>
+            </MotionList>
           ) : (
             <p className="py-3 text-ink-2">
               {startedFull && "All planned. "}Anything you capture without a day lands here, safe until you plan it.
