@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { Segmented } from "@/components/segmented";
 import type { Span } from "./span";
 
 const SPANS: { span: Span; label: string }[] = [
@@ -10,23 +10,15 @@ const SPANS: { span: Span; label: string }[] = [
 /**
  * The one switch between the day, the week and the month that hold the same
  * date, first in the steps row of all three. The current one is marked, not
- * linked away from.
+ * linked away from; choosing another slides the thumb there as the page turns.
  */
 export function SpanSwitch({ current, hrefs }: { current: Span; hrefs: Record<Span, string> }) {
   return (
-    <div role="group" aria-label="Day, week or month" className="inline-flex h-9 flex-none overflow-hidden rounded-md border border-rule pointer-coarse:h-11">
-      {SPANS.map(({ span, label }) => (
-        <Link
-          key={span}
-          href={hrefs[span]}
-          aria-current={current === span ? "page" : undefined}
-          className={`inline-flex h-full items-center px-3 font-medium ${
-            current === span ? "bg-ink text-paper" : "text-ink-2 hover:bg-hover active:bg-press"
-          }`}
-        >
-          {label}
-        </Link>
-      ))}
-    </div>
+    <Segmented
+      label="Day, week or month"
+      chosen={current}
+      segments={SPANS.map(({ span, label }) => ({ key: span, label, href: hrefs[span] }))}
+      className="h-9 pointer-coarse:h-12"
+    />
   );
 }

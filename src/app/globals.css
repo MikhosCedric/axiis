@@ -286,6 +286,54 @@
   }
 }
 
+/*
+ * A segmented control (Day, Week, Month; Score, List; segmented.tsx): segments on a recessed Rail Paper
+ * track, the chosen one under an Ink thumb (the Ink-for-Selection Rule) that slides to a new choice.
+ */
+.segmented {
+  display: inline-flex;
+  flex: none;
+  gap: 2px;
+  padding: 2px;
+  border-radius: 10px;
+  background: var(--paper-2);
+  box-shadow: inset 0 0 0 1px var(--rule-soft);
+}
+
+.segment {
+  position: relative;
+  isolation: isolate;
+  display: inline-flex;
+  align-items: center;
+  border-radius: 8px;
+  padding-inline: 12px;
+  font-weight: 500;
+  color: var(--ink-2);
+}
+
+.segment:hover {
+  color: var(--ink);
+  background: var(--hover);
+}
+
+.segment:active {
+  background: var(--press);
+}
+
+.segment[data-on] {
+  color: var(--paper);
+  background: none;
+}
+
+.segment-thumb {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: 8px;
+  background: var(--ink);
+  box-shadow: 0 1px 2px light-dark(rgb(14 12 10 / 0.22), rgb(0 0 0 / 0.5));
+}
+
 /* A page's large title folded into its sticky bar (title-bar.tsx): the bar's ground and words arrive together. */
 .title-bar {
   pointer-events: none;

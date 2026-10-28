@@ -79,6 +79,43 @@ signedIn.describe("large titles", () => {
   });
 });
 
+/** Whether the thumb of the segmented control named `label` is moving now. */
+const sliding = (page: Page, label: string) =>
+  page.evaluate(
+    (name) => (document.querySelector(`[aria-label="${name}"] .segment-thumb`)?.getAnimations().length ?? 0) > 0,
+    label,
+  );
+
+signedIn.describe("segmented controls", () => {
+  signedIn("the chosen span sits under an Ink thumb, which slides to the new span before the page turns", async ({ page }) => {
+    await page.goto("/today");
+    await hydrated(page);
+    const span = page.getByRole("group", { name: "Day, week or month" });
+    await expect(span.getByRole("link", { name: "Day" }).locator(".segment-thumb")).toHaveCount(1);
+    await expect(span.getByRole("link", { name: "Day" })).toHaveCSS("color", await page.evaluate(() => getComputedStyle(document.body).backgroundColor));
+    await span.getByRole("link", { name: "Week" }).click();
+    expect(await sliding(page, "Day, week or month")).toBe(true);
+    await expect(page).toHaveURL(/week/);
+    await expect(span.getByRole("link", { name: "Week" }).locator(".segment-thumb")).toHaveCount(1);
+    await expect(span.getByRole("link", { name: "Week" })).toHaveAttribute("aria-current", "page");
+  });
+
+  signedIn("Score and List slide their thumb, and nothing slides under reduced motion", async ({ page }) => {
+    await page.goto("/today");
+    await hydrated(page);
+    const view = page.getByRole("group", { name: "View" });
+    await view.getByRole("button", { name: "List" }).click();
+    expect(await sliding(page, "View")).toBe(true);
+    await expect(view.getByRole("button", { name: "List" })).toHaveAttribute("aria-pressed", "true");
+    await expect(page).toHaveURL(/view=list/);
+
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    await view.getByRole("button", { name: "Score" }).click();
+    expect(await sliding(page, "View")).toBe(false);
+    await expect(view.getByRole("button", { name: "Score" })).toHaveAttribute("aria-pressed", "true");
+  });
+});
+
 signedIn.describe("no axe violations on the polished surfaces", () => {
   for (const { width, colorScheme } of [
     { width: 1440, colorScheme: "light" as const },

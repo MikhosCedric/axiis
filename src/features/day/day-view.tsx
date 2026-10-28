@@ -1,6 +1,7 @@
 "use client";
 
 import { TitleBar } from "@/components/shell/title-bar";
+import { Segmented } from "@/components/segmented";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Fragment, useEffect, useMemo, useOptimistic, useState, useTransition, type ReactNode } from "react";
 import type { ShownItem } from "@/domain/item";
@@ -290,19 +291,13 @@ export function DayView({
               }
             />
           </div>
-          <div role="group" aria-label="View" className="inline-flex overflow-hidden rounded-lg border border-rule">
-            {MODES.map(({ mode: m, label }) => (
-              <button
-                key={m}
-                type="button"
-                aria-pressed={shownMode === m}
-                onClick={() => switchMode(m)}
-                className={`px-3.5 py-2 font-medium pointer-coarse:py-3 ${shownMode === m ? "bg-ink text-paper" : "text-ink-2 hover:bg-hover active:bg-press"}`}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
+          <Segmented
+            label="View"
+            chosen={shownMode}
+            segments={MODES.map(({ mode, label }) => ({ key: mode, label }))}
+            onChoose={(m) => switchMode(m as DayViewMode)}
+            className="h-[38px] pointer-coarse:h-12"
+          />
           {isToday && !firstDay && (
             <button
               type="button"
