@@ -216,7 +216,14 @@ signedIn.describe("quick actions on the Score", () => {
 
     const moved = page.locator("[data-quick][role=button]").filter({ hasText: "Call the plumber" }).first();
     const label = await moved.getAttribute("aria-label");
-    const box = (await moved.boundingBox())!;
+    // A move slides the beam to its new place; press where it has come to rest, not where it was.
+    let box = (await moved.boundingBox())!;
+    await expect(async () => {
+      const again = (await moved.boundingBox())!;
+      const still = JSON.stringify(again) === JSON.stringify(box);
+      box = again;
+      expect(still).toBe(true);
+    }).toPass({ intervals: [150, 150, 250, 500] });
     await page.mouse.move(box.x + box.width / 3, box.y + box.height / 2);
     await page.mouse.down();
     await page.mouse.move(box.x + box.width / 3 + 76, box.y + box.height / 2, { steps: 10 });
