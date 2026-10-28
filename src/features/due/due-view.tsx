@@ -61,7 +61,7 @@ export function DueView({
                 <h2 id={`due-${group}`} className="mb-2 font-serif text-lg leading-[1.25] font-medium">
                   {GROUP_LABEL[group]}
                 </h2>
-                <ul className="border-t border-rule">
+                <ul className="surface overflow-hidden px-3 [&_li:last-child]:border-b-0">
                   {inThis.map((row) => (
                     <DueRowView
                       key={row.id}

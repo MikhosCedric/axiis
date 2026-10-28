@@ -280,7 +280,7 @@ export function WeekView({
               Jump to today, {weekdayName(today, "long")}
             </a>
           )}
-          <div className="grid border-y border-rule @min-[50rem]:grid-cols-7">
+          <div className="surface grid overflow-hidden @min-[50rem]:grid-cols-7">
             {week.map(({ date, entries }) => (
               <DayColumn key={date} date={date} today={today} over={preview?.over === date} empty={entries.length === 0}>
                 {entries.map((e) => (
@@ -373,7 +373,7 @@ function DayColumn({
       data-drop={date}
       aria-labelledby={headingId}
       className={`flex min-w-0 flex-col border-b border-rule transition-colors last:border-b-0 @min-[50rem]:min-h-64 @min-[50rem]:border-b-0 @min-[50rem]:border-l @min-[50rem]:first:border-l-0 ${
-        over ? "bg-accent-wash" : ""
+        over ? "bg-accent-wash" : isToday ? "bg-[color-mix(in_srgb,var(--ink)_4%,transparent)]" : ""
       }`}
     >
       <h3 id={headingId} className="px-2 pt-3 pb-2">

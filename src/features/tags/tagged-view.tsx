@@ -50,7 +50,7 @@ export function TaggedView({
         </p>
 
         {data.rows.length > 0 && (
-          <ul className="mt-2 max-w-[760px] border-t border-rule">
+          <ul className="surface overflow-hidden px-3 [&_li:last-child]:border-b-0 mt-2 max-w-[760px]">
             {data.rows.map((row) => {
               const patch = quick?.patched(row.id);
               if (patch?.hidden) return null;

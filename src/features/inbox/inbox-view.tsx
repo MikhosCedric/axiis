@@ -221,9 +221,8 @@ export function InboxView({
           <h2 id="inbox-list-h" className="sr-only">
             Items with no day
           </h2>
-          <div className="border-b border-rule" />
           {shown.length ? (
-            <ul onKeyDown={rowKeyDown} aria-describedby="inbox-keys">
+            <ul className="surface overflow-hidden px-3 [&_li:last-child]:border-b-0 mt-4" onKeyDown={rowKeyDown} aria-describedby="inbox-keys">
               {shown.map((item) => (
                 <InboxRow
                   key={item.id}

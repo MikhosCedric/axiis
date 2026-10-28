@@ -13,7 +13,7 @@ import { dayHref, isTypingTarget, navTarget, shortcutAction } from "./nav";
 import type { DayViewMode } from "./types";
 
 const step =
-  "inline-flex h-9 min-w-11 pointer-coarse:h-11 flex-none items-center justify-center gap-1.5 rounded-md border border-rule px-3 font-medium text-ink hover:bg-hover active:bg-press";
+  "inline-flex h-9 min-w-11 pointer-coarse:h-11 flex-none items-center justify-center gap-1.5 rounded-md border border-rule bg-sheet px-3 font-medium text-ink shadow-raise hover:bg-paper-2 active:translate-y-px active:bg-press";
 
 function Chevron({ back }: { back?: boolean }) {
   return (
@@ -73,7 +73,7 @@ export function DayNav({ date, today, mode }: { date: LocalDate; today: LocalDat
           href={keep(dayHref(today, today, mode))}
           aria-keyshortcuts="t"
           title="Back to today ( T )"
-          className="inline-flex h-9 pointer-coarse:h-11 items-center rounded-md border border-rule px-3 font-medium text-ink hover:bg-hover active:bg-press"
+          className="inline-flex h-9 pointer-coarse:h-11 items-center rounded-md border border-rule bg-sheet px-3 font-medium text-ink shadow-raise hover:bg-paper-2 active:translate-y-px active:bg-press"
         >
           Today
         </Link>
