@@ -1,5 +1,6 @@
 "use client";
 
+import { MotionList } from "@/components/motion-list";
 import { TitleBar } from "@/components/shell/title-bar";
 import { type QuickItem } from "@/features/actions/model";
 import { quickItem } from "@/features/actions/quick-item";
@@ -317,13 +318,13 @@ export function WeekView({
             <SameInInbox />
           </p>
           {waiting.length ? (
-            <ul className="flex flex-wrap gap-2.5">
+            <MotionList className="flex flex-wrap gap-2.5">
               {waiting.map((e) => (
                 <li key={e.item.id} className="group/row relative min-w-0">
                   {row(e, "chip")}
                 </li>
               ))}
-            </ul>
+            </MotionList>
           ) : (
             <p className="text-[13px] text-ink-3">{EMPTY_TRAY}</p>
           )}
@@ -400,7 +401,7 @@ function DayColumn({
       {empty ? (
         <p className="px-2 pb-3 text-[13px] text-ink-3">Nothing planned</p>
       ) : (
-        <ul className="grid gap-0.5 px-1 pb-3">{children}</ul>
+        <MotionList className="grid gap-0.5 px-1 pb-3">{children}</MotionList>
       )}
     </section>
   );

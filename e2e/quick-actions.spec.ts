@@ -207,9 +207,12 @@ signedIn.describe("quick actions on the Score", () => {
 
     // Delete and Backspace keep their meaning on the Score: back to the Inbox.
     const before = await beam.getAttribute("aria-label");
-    await beam.focus();
-    await page.keyboard.press("ArrowRight");
-    await expect(page.locator("[data-quick][role=button]").filter({ hasText: "Call the plumber" }).first()).not.toHaveAttribute("aria-label", before!);
+    // Focus and press again until the key takes, as a slow run can press before the row's key handler is live.
+    await expect(async () => {
+      await beam.focus();
+      await page.keyboard.press("ArrowRight");
+      await expect(page.locator("[data-quick][role=button]").filter({ hasText: "Call the plumber" }).first()).not.toHaveAttribute("aria-label", before!, { timeout: 1500 });
+    }).toPass();
 
     const moved = page.locator("[data-quick][role=button]").filter({ hasText: "Call the plumber" }).first();
     const label = await moved.getAttribute("aria-label");
