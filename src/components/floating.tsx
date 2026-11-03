@@ -26,7 +26,7 @@ export function Floating({
   onClosed,
   children,
 }: {
-  at: Box;
+  at: Box | (() => Box);
   label: string;
   role?: "dialog" | "menu" | "group";
   className?: string;
@@ -44,7 +44,9 @@ export function Floating({
     if (!el) return;
     el.showPopover();
     const { width, height } = el.getBoundingClientRect();
-    const { left, top } = placeNear(at, { width, height }, { width: window.innerWidth, height: window.innerHeight });
+    // A function is measured here, as it opens, so a caller never has to read a ref while rendering.
+    const anchor = typeof at === "function" ? at() : at;
+    const { left, top } = placeNear(anchor, { width, height }, { width: window.innerWidth, height: window.innerHeight });
     el.style.left = `${left}px`;
     el.style.top = `${top}px`;
     (el.querySelector<HTMLElement>("[data-autofocus]") ?? el.querySelector<HTMLElement>(FOCUSABLE))?.focus();

@@ -1,9 +1,11 @@
 "use client";
 
 import { Floating } from "@/components/floating";
+import type { Box } from "@/lib/placement";
 import { MotionList } from "@/components/motion-list";
 import {
   useEffect,
+  useCallback,
   useId,
   useMemo,
   useOptimistic,
@@ -323,11 +325,11 @@ function InboxRow({
     trigger.current?.focus();
   }
 
-  // Where the dropdown opens: under the Plan for button, measured once per opening so it is not placed again on every render.
-  const at = useMemo(() => {
-    const r = planning ? trigger.current?.getBoundingClientRect() : null;
-    return r ? { left: r.left, top: r.top, width: r.width, height: r.height } : null;
-  }, [planning]);
+  // Where the dropdown opens: under the Plan for button, measured as it opens.
+  const at = useCallback((): Box => {
+    const r = trigger.current?.getBoundingClientRect();
+    return r ? { left: r.left, top: r.top, width: r.width, height: r.height } : { left: 0, top: 0, width: 0, height: 0 };
+  }, []);
 
   if (patch?.hidden) return null;
   return (
@@ -390,7 +392,7 @@ function InboxRow({
         </button>
       )}
       </div>
-      {planning && !done && at && (
+      {planning && !done && (
         <PlanChoices
           id={panelId}
           at={at}
@@ -419,7 +421,7 @@ function PlanChoices({
   onDismissed,
 }: {
   id: string;
-  at: { left: number; top: number; width: number; height: number };
+  at: () => Box;
   title: string;
   today: LocalDate;
   first: RefObject<HTMLButtonElement | null>;

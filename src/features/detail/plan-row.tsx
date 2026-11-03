@@ -1,7 +1,8 @@
 "use client";
 
-import { useId, useMemo, useRef, useState, type FormEvent, type RefObject } from "react";
+import { useCallback, useId, useRef, useState, type FormEvent, type RefObject } from "react";
 import { Floating } from "@/components/floating";
+import type { Box } from "@/lib/placement";
 import type { LocalDate } from "@/domain/item";
 import { planDate, type PlanFor } from "@/features/inbox/model";
 import { FIRST_DATE, LAST_DATE, parseLocalDate } from "@/lib/dates";
@@ -44,11 +45,11 @@ export function PlanRow({
   const [picked, setPicked] = useState("");
   const verb = day === null ? "Plan for" : "Move to";
 
-  // Where the dropdown opens: under the trigger, measured once per opening so it is not placed again on every render.
-  const at = useMemo(() => {
-    const r = open ? trigger.current?.getBoundingClientRect() : null;
-    return r ? { left: r.left, top: r.top, width: r.width, height: r.height } : null;
-  }, [open, trigger]);
+  // Where the dropdown opens: under the trigger, measured as it opens.
+  const at = useCallback((): Box => {
+    const r = trigger.current?.getBoundingClientRect();
+    return r ? { left: r.left, top: r.top, width: r.width, height: r.height } : { left: 0, top: 0, width: 0, height: 0 };
+  }, [trigger]);
 
   function close() {
     setOpen(false);
@@ -87,7 +88,7 @@ export function PlanRow({
             </svg>
           </button>
         )}
-        {days && open && at && (
+        {days && open && (
           <Floating
             at={at}
             label={verb}
