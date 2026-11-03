@@ -67,7 +67,7 @@ export function NextUp({
       <h2 id="next-up-h" className="font-display text-lg leading-tight font-medium">
         Next up
       </h2>
-      <MotionList className="surface overflow-hidden px-3 [&_li:last-child]:border-b-0 mt-2.5">
+      <MotionList className="surface overflow-hidden px-3 py-1.5 [&_li:last-child]:border-b-0 mt-2.5">
         {entries.map((entry) => {
           const { item, state } = entry;
           const area = areas.find((a) => a.id === item.areaId);

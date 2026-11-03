@@ -223,7 +223,7 @@ export function InboxView({
             Items with no day
           </h2>
           {shown.length ? (
-            <MotionList className="surface overflow-hidden px-3 [&_li:last-child]:border-b-0 mt-4" onKeyDown={rowKeyDown} aria-describedby="inbox-keys">
+            <MotionList className="surface overflow-hidden px-3 py-1.5 [&_li:last-child]:border-b-0 mt-4" onKeyDown={rowKeyDown} aria-describedby="inbox-keys">
               {shown.map((item) => (
                 <InboxRow
                   key={item.id}

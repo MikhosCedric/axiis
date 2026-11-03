@@ -70,7 +70,7 @@ export function ListsView({
         </div>
 
         {data.rows.length > 0 ? (
-          <ul className="surface overflow-hidden px-3 [&_li:last-child]:border-b-0 mt-2 max-w-[760px]">
+          <ul className="surface overflow-hidden px-3 py-1.5 [&_li:last-child]:border-b-0 mt-2 max-w-[760px]">
             {data.rows.map((row) => {
               const done = ticks.isDone(row.id, row.done);
               return (
