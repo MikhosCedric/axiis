@@ -81,7 +81,7 @@ export function NextUp({
               key={item.id}
               data-next={item.id}
               {...rowProps(quick, qi, hooks)}
-              className={`group/row relative grid grid-cols-[48px_minmax(0,1fr)] items-start gap-x-3 border-b border-rule-soft py-(--row-y) pointer-coarse:grid-cols-[48px_minmax(0,1fr)_auto] ${state === "live" ? "-mx-3 rounded-lg bg-accent-wash px-3 [--row-ground:color-mix(in_srgb,var(--accent)_12%,var(--sheet))]" : ""}`}
+              className="group/row relative grid grid-cols-[48px_minmax(0,1fr)] items-start gap-x-3 border-b border-rule-soft py-(--row-y) pointer-coarse:grid-cols-[48px_minmax(0,1fr)_auto]"
             >
               <span className="-my-1 grid place-items-center">
                 <DoneToggle type={item.type} title={title} done={state === "done"} justDone={justDone === item.id} onToggle={() => onToggleDone(item)} />
