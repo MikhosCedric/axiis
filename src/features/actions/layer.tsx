@@ -190,7 +190,7 @@ function runMore(quick: Quick, item: QuickItem, entry: MoreEntry, onOpen: () => 
 }
 
 const choice =
-  "rounded-md border border-rule px-3 py-1.5 text-[13px] font-medium text-ink hover:bg-hover active:bg-press aria-pressed:bg-accent-wash disabled:cursor-default disabled:opacity-60 pointer-coarse:min-h-11";
+  "inline-flex h-9 items-center justify-center rounded-full bg-hover px-3.5 text-[13px] font-medium text-ink hover:bg-press active:bg-press aria-pressed:bg-ink aria-pressed:text-paper disabled:cursor-default disabled:opacity-60 pointer-coarse:h-11";
 const head = "text-xs font-medium text-ink-3";
 
 /** Today, Tomorrow, Next week or a date, and a time once it has a day. */

@@ -15,9 +15,9 @@ import type { QuickIconName } from "./icon-sprite";
 type Open = "plan" | "area" | "tag" | null;
 
 const tool =
-  "inline-flex h-9 items-center gap-1.5 rounded-md px-2.5 text-[13px] font-medium text-ink hover:bg-hover active:bg-press [&:active>svg]:translate-y-px pointer-coarse:h-11";
+  "inline-flex h-9 items-center gap-1.5 rounded-full px-3 text-[13px] font-medium text-ink hover:bg-hover active:bg-press [&:active>svg]:translate-y-px pointer-coarse:h-11";
 const choice =
-  "rounded-md border border-rule px-3 py-1.5 text-[13px] font-medium text-ink hover:bg-hover active:bg-press pointer-coarse:min-h-11";
+  "inline-flex h-9 items-center justify-center rounded-full bg-hover px-3.5 text-[13px] font-medium text-ink hover:bg-press active:bg-press pointer-coarse:h-11";
 
 /** Runs one call per item and counts how many saved. */
 async function each(items: QuickItem[], call: (item: QuickItem) => Promise<ActionResult>) {
@@ -60,7 +60,7 @@ export default function Bulk() {
       <div
         role="toolbar"
         aria-label={count === 0 ? "Choose rows" : chosenWords(count)}
-        className="pointer-events-auto flex max-w-full flex-wrap items-center gap-0.5 rounded-lg border border-rule bg-sheet p-1 text-ink shadow-float motion-safe:animate-pop-in"
+        className="pointer-events-auto flex max-w-full flex-wrap items-center gap-0.5 rounded-full border border-rule bg-sheet p-1.5 text-ink shadow-float motion-safe:animate-pop-in"
       >
         <p role="status" className="px-2.5 text-[13px] font-medium tabular">
           {count === 0 ? "Tap rows to choose them" : chosenWords(count)}
@@ -101,7 +101,7 @@ export default function Bulk() {
                 <button
                   key={a.id ?? "none"}
                   type="button"
-                  className="inline-flex h-8 items-center gap-1.5 rounded-full border border-rule px-2.5 text-[13px] font-medium text-ink hover:bg-hover active:bg-press pointer-coarse:h-11"
+                  className="inline-flex h-8 items-center gap-1.5 rounded-full bg-hover px-3 text-[13px] font-medium text-ink hover:bg-press active:bg-press pointer-coarse:h-11"
                   onClick={() => (shut(true), areaAll(quick, entries, a.id, a.name))}
                 >
                   {a.id !== null && <AreaMark color={a.color} />}
@@ -159,7 +159,7 @@ function TagForm({ onTag }: { onTag: (name: string) => void }) {
         placeholder="errands"
         value={name}
         onChange={(e) => setName(e.currentTarget.value)}
-        className="h-9 min-w-0 flex-1 rounded-md border border-rule bg-sheet px-2 text-ink"
+        className="h-9 min-w-0 flex-1 rounded-lg border border-rule bg-sheet px-2.5 text-ink"
       />
       <button type="submit" className={choice} disabled={!name.trim()}>
         Add

@@ -18,7 +18,10 @@ const KINDS: { type: ItemType; word: string }[] = [
 /** The printed key under a score: what each line form means, the now line where there is one, and each kind's shape. */
 export function LineLegend({ now }: { now: boolean }) {
   return (
-    <div className="mt-3 flex flex-wrap items-center gap-x-6 gap-y-1.5 text-xs text-ink-3">
+    <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs text-ink-3 [&>ul+span]:ml-3">
+      <span aria-hidden="true" className="font-medium text-ink-2">
+        State
+      </span>
       <ul aria-label="Key" className="flex flex-wrap items-center gap-x-4 gap-y-1.5">
         {STATES.map(({ state, word }) => (
           <li key={state} className="flex items-center gap-1.5">
@@ -33,6 +36,9 @@ export function LineLegend({ now }: { now: boolean }) {
           </li>
         )}
       </ul>
+      <span aria-hidden="true" className="font-medium text-ink-2">
+        Kind
+      </span>
       <ul aria-label="Kinds" className="flex flex-wrap items-center gap-x-4 gap-y-1.5">
         {KINDS.map(({ type, word }) => (
           <li key={type} className="flex items-center gap-1.5">
