@@ -1,5 +1,6 @@
 "use client";
 
+import { Floating } from "@/components/floating";
 import { MotionList } from "@/components/motion-list";
 import {
   useEffect,
@@ -54,7 +55,7 @@ const INBOX_GUIDE: GuideTopic[] = ["capture"];
 type Change = { kind: "hide" | "reopen"; id: string };
 
 const choice =
-  "inline-flex h-9 items-center justify-center rounded-full bg-hover px-3.5 @min-[44rem]/rows:px-5 font-medium text-ink hover:bg-press active:bg-press disabled:cursor-default disabled:opacity-60 pointer-coarse:h-11";
+  "inline-flex h-9 items-center justify-center rounded-full bg-hover px-2 font-medium text-ink hover:bg-press active:bg-press disabled:cursor-default disabled:opacity-60 pointer-coarse:h-11";
 
 export function InboxView({
   data,
@@ -223,7 +224,7 @@ export function InboxView({
             Items with no day
           </h2>
           {shown.length ? (
-            <MotionList className="@container/rows surface overflow-hidden px-3 py-1.5 [&_li:last-child]:border-b-0 mt-4" onKeyDown={rowKeyDown} aria-describedby="inbox-keys">
+            <MotionList className="surface overflow-hidden px-3 py-1.5 [&_li:last-child]:border-b-0 mt-4" onKeyDown={rowKeyDown} aria-describedby="inbox-keys">
               {shown.map((item) => (
                 <InboxRow
                   key={item.id}
@@ -322,6 +323,12 @@ function InboxRow({
     trigger.current?.focus();
   }
 
+  // Where the dropdown opens: under the Plan for button, measured once per opening so it is not placed again on every render.
+  const at = useMemo(() => {
+    const r = planning ? trigger.current?.getBoundingClientRect() : null;
+    return r ? { left: r.left, top: r.top, width: r.width, height: r.height } : null;
+  }, [planning]);
+
   if (patch?.hidden) return null;
   return (
     <li
@@ -383,15 +390,17 @@ function InboxRow({
         </button>
       )}
       </div>
-      {planning && !done && (
+      {planning && !done && at && (
         <PlanChoices
           id={panelId}
+          at={at}
           title={item.title}
           today={today}
           first={first}
           date={date}
           onPlan={onPlan}
           onClose={close}
+          onDismissed={() => onPlanning(false)}
         />
       )}
     </li>
@@ -400,20 +409,24 @@ function InboxRow({
 
 function PlanChoices({
   id,
+  at,
   title,
   today,
   first,
   date,
   onPlan,
   onClose,
+  onDismissed,
 }: {
   id: string;
+  at: { left: number; top: number; width: number; height: number };
   title: string;
   today: LocalDate;
   first: RefObject<HTMLButtonElement | null>;
   date: RefObject<HTMLInputElement | null>;
   onPlan: (when: PlanFor) => void;
   onClose: () => void;
+  onDismissed: () => void;
 }) {
   const dateId = useId();
   const [picked, setPicked] = useState("");
@@ -425,49 +438,52 @@ function PlanChoices({
   }
 
   return (
-    <div
-      id={id}
+    <Floating
+      at={at}
+      label={`Plan ${title} for`}
       role="group"
-      aria-label={`Plan ${title} for`}
-      onKeyDown={(e) => {
-        if (e.key === "Escape") {
-          e.preventDefault();
-          onClose();
-        }
-      }}
-      className="col-span-full mt-2.5 grid max-w-[32rem] grid-cols-3 gap-2 pl-[60px] max-rail:max-w-none max-rail:pl-0 @min-[44rem]/rows:flex @min-[44rem]/rows:max-w-none @min-[44rem]/rows:items-center"
+      onClosed={(refocus) => (refocus ? onClose() : onDismissed())}
+      className="w-[min(320px,calc(100vw-32px))] rounded-[14px]! p-2.5"
     >
-      {quickPlans(today).map((q, i) => (
-        <button key={q.key} ref={i === 0 ? first : undefined} type="button" aria-keyshortcuts={q.key} className={choice} onClick={() => onPlan(q.when)}>
-          {q.label}
-          <kbd aria-hidden="true" className="ml-2 font-sans text-xs text-ink-3 pointer-coarse:hidden">
-            {q.key}
-          </kbd>
-        </button>
-      ))}
-      <form onSubmit={submit} className="col-span-3 flex h-9 @min-[44rem]/rows:ml-auto @min-[44rem]/rows:w-[22rem] items-center gap-1.5 rounded-full border border-rule bg-sheet pr-1 pl-3.5 focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-accent pointer-coarse:h-11">
-        <label htmlFor={dateId} className="text-[13px] text-ink-2">
-          Another day
-          <kbd aria-hidden="true" className="ml-1.5 font-sans text-xs text-ink-3 pointer-coarse:hidden">
-            {PICK_KEY}
-          </kbd>
-        </label>
-        <input
-          ref={date}
-          id={dateId}
-          name="date"
-          type="date"
-          required
-          min={today}
-          max={LAST_DATE}
-          value={picked}
-          onChange={(e) => setPicked(e.currentTarget.value)}
-          className="h-full min-w-0 flex-1 bg-transparent px-1 text-ink tabular outline-none"
-        />
-        <button type="submit" className="h-7 rounded-full bg-ink px-3 text-[13px] font-medium text-paper hover:opacity-90 disabled:cursor-default disabled:bg-hover disabled:text-ink-3 pointer-coarse:h-9" disabled={!picked}>
-          Plan
-        </button>
-      </form>
-    </div>
+      <div id={id}>
+        <div data-roving className="grid grid-cols-3 gap-1.5">
+          {quickPlans(today).map((q, i) => (
+            <button key={q.key} ref={i === 0 ? first : undefined} type="button" aria-keyshortcuts={q.key} className={choice} onClick={() => onPlan(q.when)}>
+              {q.label}
+              <kbd aria-hidden="true" className="ml-1.5 font-sans text-xs text-ink-3 pointer-coarse:hidden">
+                {q.key}
+              </kbd>
+            </button>
+          ))}
+        </div>
+        <form onSubmit={submit} className="mt-2 flex h-9 items-center gap-1.5 rounded-full border border-rule bg-sheet pr-1 pl-3 focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-accent pointer-coarse:h-11">
+          <label htmlFor={dateId} className="text-[13px] text-ink-2">
+            Another day
+            <kbd aria-hidden="true" className="ml-1.5 font-sans text-xs text-ink-3 pointer-coarse:hidden">
+              {PICK_KEY}
+            </kbd>
+          </label>
+          <input
+            ref={date}
+            id={dateId}
+            name="date"
+            type="date"
+            required
+            min={today}
+            max={LAST_DATE}
+            value={picked}
+            onChange={(e) => setPicked(e.currentTarget.value)}
+            className="h-full min-w-0 flex-1 bg-transparent px-1 text-ink tabular outline-none"
+          />
+          <button
+            type="submit"
+            className="h-7 rounded-full bg-ink px-3 text-[13px] font-medium text-paper hover:opacity-90 disabled:cursor-default disabled:bg-hover disabled:text-ink-3 pointer-coarse:h-9"
+            disabled={!picked}
+          >
+            Plan
+          </button>
+        </form>
+      </div>
+    </Floating>
   );
 }

@@ -28,7 +28,7 @@ export function Floating({
 }: {
   at: Box;
   label: string;
-  role?: "dialog" | "menu";
+  role?: "dialog" | "menu" | "group";
   className?: string;
   onClosed: (refocus: boolean) => void;
   children: ReactNode;
