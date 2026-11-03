@@ -71,7 +71,7 @@ function DayHeading({ date }: { date: DayData["date"] }) {
     <time dateTime={date}>
       {gap > 0 ? (
         <>
-          <span className="text-ink-2">{text.slice(0, gap)}</span>
+          <span className="font-normal text-ink-2">{text.slice(0, gap)}</span>
           {text.slice(gap)}
         </>
       ) : (

@@ -347,6 +347,14 @@ export function ScoreView({
           ))}
 
           <div ref={layer} className="absolute top-0 left-[var(--lw)]" style={{ width, height: totalHeight }}>
+            {nowMinutes !== null && nowMinutes > axis.start && (
+              <div
+                aria-hidden="true"
+                data-past
+                className="pointer-events-none absolute inset-y-0 left-0 bg-[color-mix(in_srgb,var(--ink)_4.5%,transparent)]"
+                style={{ width: Math.min(xAt(axis, nowMinutes), width) }}
+              />
+            )}
             {staves.flatMap((staff) =>
               staff.beams.map((beam) =>
                 quick?.patched(beam.value.item.id)?.hidden ? null : (
