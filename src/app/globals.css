@@ -394,9 +394,11 @@
 
 /* The ground under a selected row, as Verdigris Wash lies over Paper. */
 @utility row-selected {
-  background: var(--accent-wash);
+  background: var(--press);
   border-radius: 10px;
-  --row-ground: color-mix(in srgb, var(--accent) 15%, var(--card, var(--paper)));
+  margin-inline: -0.5rem;
+  padding-inline: 0.5rem;
+  --row-ground: color-mix(in srgb, var(--ink) 10%, var(--card, var(--paper)));
 }
 
 @layer base {
