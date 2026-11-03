@@ -28,7 +28,7 @@ signedIn.describe("surfaces", () => {
     const card = page.getByRole("region", { name: "Next up" }).getByRole("list");
     const shadow = await card.evaluate((el) => getComputedStyle(el).boxShadow);
     expect(shadow).toMatch(/inset/);
-    expect(await card.evaluate((el) => getComputedStyle(el).borderRadius)).toBe("12px");
+    expect(await card.evaluate((el) => getComputedStyle(el).borderRadius)).toBe("18px");
   });
 
   signedIn("on a phone the header and the tab bar stay put, blurring the page behind them", async ({ page }) => {
