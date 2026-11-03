@@ -374,9 +374,12 @@ function InboxRow({
           aria-expanded={planning}
           aria-controls={panelId}
           onClick={() => onPlanning(!planning)}
-          className="rounded-md px-2.5 py-1.5 text-[13px] font-medium whitespace-nowrap text-ink-2 hover:bg-hover hover:text-ink active:bg-press pointer-coarse:min-h-11"
+          className="inline-flex items-center gap-1 rounded-full bg-hover py-1.5 pr-2 pl-3 text-[13px] font-medium whitespace-nowrap text-ink-2 hover:bg-press hover:text-ink active:bg-press pointer-coarse:min-h-11"
         >
           Plan for
+          <svg aria-hidden="true" viewBox="0 0 16 16" width={14} height={14} fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" className={planning ? "rotate-180" : ""}>
+            <path d="M4 6.5l4 4 4-4" />
+          </svg>
         </button>
       )}
       </div>
