@@ -162,12 +162,12 @@ export function DetailSheet({
   }, [eventHint]);
 
   return (
-    <div className="grid gap-5">
+    <div className="relative grid gap-4">
       <h2 className="sr-only">
         Details
       </h2>
 
-      <div className="flex min-h-8 items-center gap-2">
+      <div className={nesting.kind === "is-subtask" ? "flex min-h-8 items-center gap-2" : "absolute top-0 right-0 z-[1]"}>
         {nesting.kind === "is-subtask" &&
           (nesting.parent ? (
             <Link
@@ -183,7 +183,7 @@ export function DetailSheet({
         <CloseDetails />
       </div>
 
-      <div className="flex items-start gap-1.5">
+      <div className={`flex items-start gap-1.5 ${nesting.kind === "is-subtask" ? "" : "pr-9"}`}>
         {item.type !== "note" && !isSeries && (
           <span className="pt-1.5">
             <GlyphCheckbox
@@ -244,7 +244,7 @@ export function DetailSheet({
       )}
 
       <div>
-        <dl className="grid grid-cols-[5.5rem_minmax(0,1fr)] items-baseline gap-x-3 gap-y-3">
+        <dl className="grid grid-cols-[5.5rem_minmax(0,1fr)] items-baseline gap-x-3 gap-y-2.5 rounded-xl bg-[color-mix(in_srgb,var(--paper-2)_55%,var(--sheet))] px-3.5 py-3">
           {view.retype ? (
             <>
               <dt className="text-[13px] text-ink-3">
@@ -387,7 +387,7 @@ export function DetailSheet({
             />
           )}
         </dl>
-        <p role="status" className="mt-2 min-h-5 text-[13px] text-ink-2">
+        <p role="status" className="mt-1.5 min-h-5 px-1 text-[13px] text-ink-2 empty:hidden">
           {eventHint ?? status}
         </p>
       </div>
@@ -450,7 +450,7 @@ export function DetailSheet({
         <LinkedNotes itemId={view.notesFor} notes={linkedNotes} actions={actions} />
       )}
 
-      <div className="grid justify-items-start gap-1 border-t border-rule pt-4">
+      <div className="grid justify-items-start gap-1 border-t border-rule-soft pt-3">
         {isOccurrence ? (
           <>
             {scope === "one" && skipped ? (
