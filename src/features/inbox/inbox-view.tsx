@@ -221,7 +221,7 @@ export function InboxView({
           <GuideButton topics={INBOX_GUIDE} className="ml-auto" />
         </div>
 
-        <section aria-labelledby="inbox-list-h">
+        <section aria-labelledby="inbox-list-h" className="group/inbox">
           <h2 id="inbox-list-h" className="sr-only">
             Items with no day
           </h2>
@@ -255,8 +255,9 @@ export function InboxView({
               {startedFull && "All planned. "}Anything you capture without a day lands here, safe until you plan it.
             </p>
           )}
+          {/* Read out as the list's description always; drawn only while the keyboard is in the list, where the keys matter. */}
           {shown.length > 0 && (
-            <p id="inbox-keys" className="mt-3 text-[13px] text-ink-3 pointer-coarse:hidden">
+            <p id="inbox-keys" className="sr-only group-has-[:focus-visible]/inbox:not-sr-only group-has-[:focus-visible]/inbox:mt-3 text-[13px] text-ink-3 pointer-coarse:hidden">
               J and K move between items. 1 plans the one in focus for today, 2 for tomorrow, 3 for next week, 4 for another day.
             </p>
           )}
