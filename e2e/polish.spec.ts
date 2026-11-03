@@ -232,14 +232,14 @@ signedIn.describe("no axe violations on the polished surfaces", () => {
     { width: 375, colorScheme: "dark" as const },
     { width: 375, colorScheme: "light" as const },
   ]) {
-    signedIn(`Today's List, the Week, the Inbox, Due and Lists at ${width} in ${colorScheme}`, async ({ page }) => {
-      await page.setViewportSize({ width, height: 812 });
-      await page.emulateMedia({ colorScheme, reducedMotion: "reduce" });
-      for (const path of ["/today?view=list", "/week", "/inbox", "/due", "/lists"]) {
+    for (const path of ["/today?view=list", "/week", "/inbox", "/due", "/lists"]) {
+      signedIn(`${path} at ${width} in ${colorScheme}`, async ({ page }) => {
+        await page.setViewportSize({ width, height: 812 });
+        await page.emulateMedia({ colorScheme, reducedMotion: "reduce" });
         await page.goto(path);
         await hydrated(page);
         expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
-      }
-    });
+      });
+    }
   }
 });
