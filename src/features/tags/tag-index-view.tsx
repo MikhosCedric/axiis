@@ -14,7 +14,7 @@ export function TagIndexView({ tags, hrefFor = tagHref }: { tags: TagSummary[]; 
           : `${tags.length === 1 ? "One tag" : `${tags.length} tags`}. Open one to see everything that carries it.`}
       </p>
       {tags.length > 0 && (
-        <ul className="mt-6 border-t border-rule">
+        <ul className="surface mt-6 max-w-[760px] overflow-hidden px-3 py-1.5 [&_li:last-child]:border-b-0">
           {tags.map((t) => (
             <li key={t.id} className="border-b border-rule-soft">
               <Link
