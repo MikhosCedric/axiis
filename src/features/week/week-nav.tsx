@@ -59,11 +59,11 @@ export function WeekNav({ days, today }: { days: LocalDate[]; today: LocalDate }
       <span className="inline-flex flex-none">
         <Link href={keep(weekHref(previous, today))} className={`${step} rounded-r-none`} aria-keyshortcuts="[" title="Previous week ( [ )">
           <Chevron back />
-          <span aria-hidden="true" className="max-rail:hidden">Previous</span>
+          <span aria-hidden="true" className="@max-[40rem]/page:hidden">Previous</span>
           <span className="sr-only">Previous week, {formatWeekHeading(weekOf(previous))}</span>
         </Link>
         <Link href={keep(weekHref(next, today))} className={`${step} -ml-px rounded-l-none`} aria-keyshortcuts="]" title="Next week ( ] )">
-          <span aria-hidden="true" className="max-rail:hidden">Next</span>
+          <span aria-hidden="true" className="@max-[40rem]/page:hidden">Next</span>
           <Chevron />
           <span className="sr-only">Next week, {formatWeekHeading(weekOf(next))}</span>
         </Link>

@@ -270,7 +270,7 @@ export function DayView({
         </header>
 
         <div className="mt-6 mb-3 flex flex-wrap items-start gap-x-3 gap-y-1">
-          <div className="min-w-0 flex-[1_1_280px] rail:max-w-[440px]">
+          <div className="min-w-0 flex-[1_1_280px] rail:max-w-[440px] @max-[40rem]/page:flex-[1_1_100%]! @max-[40rem]/page:max-w-none!">
             <CaptureField
               captureAction={actions.capture}
               firstDay={firstDay}
