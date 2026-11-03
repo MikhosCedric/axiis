@@ -308,7 +308,7 @@ function InboxRow({
   const done = item.status === "done";
   const title = patch?.title ?? item.title;
   const qi = { ...quickItem(item, timeZone), title };
-  const hooks = { onOpen: onSelect, onToggleDone, inlineRename: "inbox", doneBox: true, swipe: true };
+  const hooks = { onOpen: onSelect, onToggleDone, inlineRename: "inbox", doneBox: true, planBox: true, swipe: true };
   // The quietest ink is too faint to read on the accent wash of a selected row.
   const quiet = selected ? "text-ink-2" : "text-ink-3";
   const panelId = useId();

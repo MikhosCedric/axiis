@@ -140,8 +140,9 @@ signedIn.describe("quick actions on a row", () => {
     await page.goto("/inbox");
     await hydrated(page);
     const title = page.getByRole("button", { name: /^Read the lease/ });
-    await title.hover();
-    await page.getByRole("button", { name: "Plan Read the lease" }).click();
+    // The Inbox row has its own Plan for button, so the cluster leaves its Plan icon out; P opens the same panel.
+    await title.focus();
+    await page.keyboard.press("p");
     const plan = page.getByRole("dialog", { name: "Plan Read the lease" });
     await expect(plan.getByRole("button", { name: "Today" })).toBeFocused();
     await plan.getByRole("button", { name: "Tomorrow" }).click();

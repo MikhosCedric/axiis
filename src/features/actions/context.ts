@@ -44,6 +44,8 @@ export type RowHooks = {
   onToggleDone?: () => void;
   /** The row draws its own done box, so the cluster leaves Done out. */
   doneBox?: boolean;
+  /** The row draws its own Plan control (the Inbox's Plan for), so the cluster leaves Plan out; the P key and More still plan it. */
+  planBox?: boolean;
   /**
    * Where the row is ("list", "next-up"), when its title can turn into a field in place, so a title
    * drawn twice on one page changes only where it was asked. Beams, chips and marks rename in a popover instead.
