@@ -54,7 +54,7 @@ const INBOX_GUIDE: GuideTopic[] = ["capture"];
 type Change = { kind: "hide" | "reopen"; id: string };
 
 const choice =
-  "inline-flex h-9 items-center rounded-full bg-hover px-3.5 font-medium text-ink hover:bg-press active:bg-press disabled:cursor-default disabled:opacity-60 pointer-coarse:h-11";
+  "inline-flex h-9 items-center justify-center rounded-full bg-hover px-3.5 font-medium text-ink hover:bg-press active:bg-press disabled:cursor-default disabled:opacity-60 pointer-coarse:h-11";
 
 export function InboxView({
   data,
@@ -435,7 +435,7 @@ function PlanChoices({
           onClose();
         }
       }}
-      className="col-span-full mt-2.5 flex flex-wrap items-center gap-2 pl-[60px] max-rail:pl-0"
+      className="col-span-full mt-2.5 grid max-w-[32rem] grid-cols-3 gap-2 pl-[60px] max-rail:max-w-none max-rail:pl-0"
     >
       {quickPlans(today).map((q, i) => (
         <button key={q.key} ref={i === 0 ? first : undefined} type="button" aria-keyshortcuts={q.key} className={choice} onClick={() => onPlan(q.when)}>
@@ -445,7 +445,7 @@ function PlanChoices({
           </kbd>
         </button>
       ))}
-      <form onSubmit={submit} className="flex h-9 items-center gap-1.5 rounded-full border border-rule bg-sheet pr-1 pl-3.5 focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-accent pointer-coarse:h-11">
+      <form onSubmit={submit} className="col-span-3 flex h-9 items-center gap-1.5 rounded-full border border-rule bg-sheet pr-1 pl-3.5 focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-accent pointer-coarse:h-11">
         <label htmlFor={dateId} className="text-[13px] text-ink-2">
           Another day
           <kbd aria-hidden="true" className="ml-1.5 font-sans text-xs text-ink-3 pointer-coarse:hidden">
@@ -462,7 +462,7 @@ function PlanChoices({
           max={LAST_DATE}
           value={picked}
           onChange={(e) => setPicked(e.currentTarget.value)}
-          className="h-full w-[8.75rem] bg-transparent px-1 text-ink tabular outline-none"
+          className="h-full min-w-0 flex-1 bg-transparent px-1 text-ink tabular outline-none"
         />
         <button type="submit" className="h-7 rounded-full bg-ink px-3 text-[13px] font-medium text-paper hover:opacity-90 disabled:cursor-default disabled:bg-hover disabled:text-ink-3 pointer-coarse:h-9" disabled={!picked}>
           Plan
