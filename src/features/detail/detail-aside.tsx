@@ -4,7 +4,7 @@ import { useEffect, useRef, type ReactNode } from "react";
 import { isTypingTarget } from "@/features/day/nav";
 import { useItemSelection } from "./use-item-selection";
 
-/** Below this width the panel stacks under the screen instead of sitting beside it. */
+/** Below this width the panel stacks under the screen instead of sitting beside it; on a phone it is a sheet over the page. */
 const STACKED = "(max-width: 1179px)";
 
 /**
@@ -70,7 +70,7 @@ export function DetailAside({ pending, children }: { pending: boolean; children:
       tabIndex={-1}
       aria-label="Details"
       aria-busy={pending}
-      className="scroll-mt-2 border-t border-rule bg-sheet outline-none motion-safe:animate-panel-rise min-[1180px]:min-h-dvh min-[1180px]:border-t-0 min-[1180px]:border-l min-[1180px]:shadow-edge min-[1180px]:motion-safe:animate-panel-in"
+      className="scroll-mt-2 border-t border-rule bg-sheet outline-none motion-safe:animate-panel-rise max-rail:fixed max-rail:inset-x-0 max-rail:top-14 max-rail:bottom-0 max-rail:z-50 max-rail:overflow-y-auto max-rail:overscroll-contain max-rail:rounded-t-2xl max-rail:border-t-0 max-rail:shadow-[0_0_0_100vmax_rgb(8_7_10/0.4)] min-[1180px]:min-h-dvh min-[1180px]:border-t-0 min-[1180px]:border-l min-[1180px]:shadow-edge min-[1180px]:motion-safe:animate-panel-in"
     >
       <div className="px-4 py-6 rail:px-9 min-[1180px]:sticky min-[1180px]:top-0 min-[1180px]:max-h-dvh min-[1180px]:overflow-y-auto min-[1180px]:px-6 min-[1180px]:py-8">
         {/* The fade waits a beat, so a quick switch does not flicker. */}
