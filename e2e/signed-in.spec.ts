@@ -206,7 +206,7 @@ signedIn.describe("signed in", () => {
     signedIn.use({ timezoneId: "America/New_York" });
 
     const details = (page: Page) => page.getByRole("complementary", { name: "Details" });
-    const when = (page: Page) => details(page).locator("dt", { hasText: "When" }).locator("+ dd > span").first();
+    const when = (page: Page) => details(page).locator("dt", { hasText: "Planned for" }).locator("+ dd > span").first();
 
     async function timeOnDay(page: Page, day: string, title: string) {
       await page.goto("/today");
