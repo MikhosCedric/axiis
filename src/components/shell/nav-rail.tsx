@@ -47,14 +47,14 @@ const ICONS: Record<PlaceId, ReactNode> = {
 const SEARCH = place("search");
 const SETTINGS = place("settings");
 
-const base = "flex items-center gap-2.5 rounded-md p-2 font-medium";
+const base = "flex items-center gap-2.5 rounded-lg px-2.5 py-2 font-medium";
 const quiet = `${base} text-ink-2 hover:bg-hover hover:text-ink active:bg-press`;
 /**
  * The current place: a sheet of paper raised off the rail, its label in full ink, with an ink tick
  * at its leading edge (the Ink-for-Selection rule). The tick carries the state on its own.
  */
 const current = `${base} relative bg-sheet text-ink font-semibold [--ground:var(--sheet)] shadow-[0_1px_2px_rgb(14_12_10/0.08),inset_0_0_0_1px_var(--rule-soft)] before:absolute before:inset-y-2 before:left-0 before:w-[3px] before:rounded-full before:bg-ink`;
-const overline = "text-xs font-semibold tracking-[0.06em] text-ink-3 uppercase";
+const overline = "text-xs font-medium text-ink-3";
 
 /** A place's link, keeping the page's area or tag filter when that place can show one. */
 function usePlaceHref(): (href: string) => string {
@@ -77,7 +77,7 @@ function Rail({ pathname, today, areas }: { pathname: string; today: LocalDate; 
   return (
     <nav
       aria-label="Primary"
-      className="sticky top-0 flex h-dvh flex-col gap-6 overflow-y-auto border-r border-rule bg-paper-2 px-4 py-6 max-rail:hidden"
+      className="sticky top-0 flex h-dvh flex-col gap-6 overflow-y-auto border-r border-rule-soft bg-paper-2 px-4 py-6 max-rail:hidden"
     >
       <Wordmark />
       <SearchField />
