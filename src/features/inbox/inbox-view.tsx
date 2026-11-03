@@ -54,7 +54,7 @@ const INBOX_GUIDE: GuideTopic[] = ["capture"];
 type Change = { kind: "hide" | "reopen"; id: string };
 
 const choice =
-  "rounded-md border border-rule px-3 py-1.5 font-medium text-ink hover:bg-hover active:bg-press disabled:cursor-default disabled:opacity-60";
+  "inline-flex h-9 items-center rounded-full bg-hover px-3.5 font-medium text-ink hover:bg-press active:bg-press disabled:cursor-default disabled:opacity-60 pointer-coarse:h-11";
 
 export function InboxView({
   data,
@@ -445,7 +445,7 @@ function PlanChoices({
           </kbd>
         </button>
       ))}
-      <form onSubmit={submit} className="flex items-center gap-2">
+      <form onSubmit={submit} className="flex items-center gap-2 border-l border-rule-soft pl-3 max-rail:border-l-0 max-rail:pl-0">
         <label htmlFor={dateId} className="text-[13px] text-ink-2">
           Another day
           <kbd aria-hidden="true" className="ml-1.5 font-sans text-xs text-ink-3 pointer-coarse:hidden">
@@ -462,7 +462,7 @@ function PlanChoices({
           max={LAST_DATE}
           value={picked}
           onChange={(e) => setPicked(e.currentTarget.value)}
-          className="h-9 rounded-md border border-rule bg-sheet px-2.5 text-ink tabular"
+          className="h-9 rounded-lg border border-rule bg-sheet px-2.5 text-ink tabular pointer-coarse:h-11"
         />
         <button type="submit" className={choice} disabled={!picked}>
           Plan
