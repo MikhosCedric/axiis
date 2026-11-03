@@ -99,6 +99,16 @@ export function DetailSheet({
   const planTrigger = useRef<HTMLButtonElement>(null);
   const timeStart = useRef<HTMLInputElement>(null);
   const areaFieldId = useId();
+  const card = useRef<HTMLDivElement>(null);
+  // Empty rows stay folded into "+ Due date", "+ Area" and "+ Repeat" until asked for; this is the set asked for, for this item.
+  const [opened, setOpened] = useState<{ id: string; rows: string[] }>({ id: item.id, rows: [] });
+  // The row just opened, so its control takes focus once it is on the page.
+  const focusRow = useRef<string | null>(null);
+  const isOpen = (row: string) => opened.id === item.id && opened.rows.includes(row);
+  function openRow(row: string, label: string) {
+    setOpened({ id: item.id, rows: [...(opened.id === item.id ? opened.rows : []), row] });
+    focusRow.current = label;
+  }
   const typeFieldId = useId();
 
   function write(save: () => Promise<ActionResult>, after?: () => void) {
@@ -155,6 +165,14 @@ export function DetailSheet({
   const plan = planOptions(view, scope);
   // An event is drawn by its time, so point at where one goes.
   const eventHint = !needsTime || view.time !== null ? null : plan.time ? EVENT_NEEDS_TIME : EVENT_NEEDS_DAY;
+
+  useEffect(() => {
+    const label = focusRow.current;
+    if (label === null) return;
+    focusRow.current = null;
+    const dt = [...(card.current?.querySelectorAll("dt") ?? [])].find((el) => el.textContent?.trim().startsWith(label));
+    (dt?.nextElementSibling?.querySelector("select, input, button") as HTMLElement | null)?.focus();
+  }, [opened]);
 
   useEffect(() => {
     if (eventHint === null) return;
@@ -244,7 +262,8 @@ export function DetailSheet({
       )}
 
       <div>
-        <dl className="grid grid-cols-[5.5rem_minmax(0,1fr)] items-baseline gap-x-3 gap-y-2.5 rounded-xl bg-[color-mix(in_srgb,var(--paper-2)_55%,var(--sheet))] px-3.5 py-3">
+        <div ref={card} className="rounded-xl bg-[color-mix(in_srgb,var(--paper-2)_55%,var(--sheet))] px-3.5 py-3">
+        <dl className="grid grid-cols-[5.5rem_minmax(0,1fr)] items-baseline gap-x-3 gap-y-2.5">
           {view.retype ? (
             <>
               <dt className="text-[13px] text-ink-3">
@@ -277,7 +296,7 @@ export function DetailSheet({
 
           {view.when !== null && (
             <PlanRow
-              label={isSeries ? "Starts" : "When"}
+              label={isSeries ? "Starts" : "Planned for"}
               when={view.when}
               day={view.day}
               today={view.today}
@@ -333,8 +352,9 @@ export function DetailSheet({
           )}
 
           {view.due.editable ? (
+            (view.due.on || isOpen("due")) && (
             <DateRow
-              label="Due"
+              label="Due by"
               on={view.due.on}
               save={(on) => write(() => actions.setDue(item.id, on), () => setStatus(`Due ${formatDayHeading(on)}.`))}
               clear={{
@@ -342,15 +362,18 @@ export function DetailSheet({
                 run: () => write(() => actions.setDue(item.id, null), () => setStatus("No due date now.")),
               }}
             />
+            )
           ) : (
             view.due.on && (
               <>
-                <dt className="text-[13px] text-ink-3">Due</dt>
+                <dt className="text-[13px] text-ink-3">Due by</dt>
                 <dd className="tabular">{formatDayHeading(view.due.on)}</dd>
               </>
             )
           )}
 
+          {(areaId !== null || isOpen("area") || view.areas.length === 0) && (
+            <>
           <dt className="text-[13px] text-ink-3">
             <label htmlFor={areaFieldId}>Area</label>
           </dt>
@@ -365,6 +388,8 @@ export function DetailSheet({
             </select>
             <AreaMark color={view.areas.find((a) => a.id === areaId)?.color ?? null} />
           </dd>
+            </>
+          )}
 
           {repeat.kind === "unavailable" && (
             <>
@@ -372,7 +397,7 @@ export function DetailSheet({
               <dd className="text-ink-2">{repeat.reason}</dd>
             </>
           )}
-          {(repeat.kind === "off" || isSeries || isOccurrence) && (
+          {((repeat.kind === "off" && isOpen("repeat")) || isSeries || isOccurrence) && (
             <RepeatRows
               repeat={repeat}
               save={(choice, show) =>
@@ -387,6 +412,31 @@ export function DetailSheet({
             />
           )}
         </dl>
+        {(() => {
+          const folded = [
+            view.due.editable && !view.due.on && !isOpen("due") ? { row: "due", label: "Due by", text: "Due date" } : null,
+            areaId === null && !isOpen("area") && view.areas.length > 0 ? { row: "area", label: "Area", text: "Area" } : null,
+            repeat.kind === "off" && !isOpen("repeat") ? { row: "repeat", label: "Repeat", text: "Repeat" } : null,
+          ].filter((f) => f !== null);
+          return (
+            folded.length > 0 && (
+              <div className="mt-3 flex flex-wrap gap-1.5">
+                {folded.map((f) => (
+                  <button
+                    key={f.row}
+                    type="button"
+                    onClick={() => openRow(f.row, f.label)}
+                    className="inline-flex h-8 items-center gap-1 rounded-full border border-dashed border-rule px-3 text-[13px] font-medium text-ink-2 hover:bg-hover hover:text-ink active:bg-press pointer-coarse:h-11"
+                  >
+                    <span aria-hidden="true">+</span>
+                    {f.text}
+                  </button>
+                ))}
+              </div>
+            )
+          );
+        })()}
+        </div>
         <p role="status" className="mt-1.5 min-h-5 px-1 text-[13px] text-ink-2 empty:hidden">
           {eventHint ?? status}
         </p>

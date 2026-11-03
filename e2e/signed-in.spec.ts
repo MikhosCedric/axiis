@@ -183,6 +183,7 @@ signedIn.describe("signed in", () => {
     await page.getByLabel("Capture anything").fill(`${title} today`);
     await page.getByLabel("Capture anything").press("Enter");
     await chip.click();
+    await details.getByRole("button", { name: "Repeat" }).click();
     await details.getByLabel("Repeat").selectOption("daily");
     await expect(details.getByRole("status").filter({ hasText: /^Repeats every day/ })).toBeVisible();
 

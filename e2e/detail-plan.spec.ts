@@ -11,7 +11,7 @@ const status = (page: Page, text: string) => details(page).getByRole("status").f
 
 test("detail: a waiting task is planned for today, timed, and taken off its day again", async ({ page }) => {
   await page.goto(WAITING_TASK);
-  await expect(row(page, "When")).toContainText("No day yet, in the Inbox");
+  await expect(row(page, "Planned for")).toContainText("No day yet, in the Inbox");
   await expect(details(page).getByRole("group", { name: "Time" })).toHaveCount(0);
 
   const planFor = details(page).getByRole("button", { name: "Plan for" });
@@ -31,17 +31,17 @@ test("detail: a waiting task is planned for today, timed, and taken off its day 
   await time.getByLabel("Starts at").fill("1430");
   await time.getByLabel("Starts at").press("Enter");
   await expect(status(page, "At 14:30 now.")).toBeVisible();
-  await expect(row(page, "When")).toContainText("14:30 to 15:00");
+  await expect(row(page, "Planned for")).toContainText("14:30 to 15:00");
 
   await details(page).getByRole("button", { name: "Any time", exact: true }).click();
   await expect(status(page, "At any time of day now.")).toBeVisible();
-  await expect(row(page, "When")).not.toContainText("14:30");
+  await expect(row(page, "Planned for")).not.toContainText("14:30");
 
   await moveTo.click();
   await expect(details(page).getByRole("button", { name: "Today" })).toHaveAttribute("aria-pressed", "true");
   await details(page).getByRole("button", { name: "No day" }).click();
   await expect(status(page, "It has no day now.")).toBeVisible();
-  await expect(row(page, "When")).toContainText("No day yet, in the Inbox");
+  await expect(row(page, "Planned for")).toContainText("No day yet, in the Inbox");
   await expect(planFor).toBeFocused();
   await expect(details(page).getByRole("group", { name: "Time" })).toHaveCount(0);
 });
@@ -54,7 +54,7 @@ test("detail: another day is picked from the date field", async ({ page }) => {
   await details(page).getByLabel("Another day").fill("2026-12-25");
   await plan.click();
   await expect(status(page, "Planned for Friday 25 December.")).toBeVisible();
-  await expect(row(page, "When")).toContainText("Friday 25 December");
+  await expect(row(page, "Planned for")).toContainText("Friday 25 December");
 });
 
 test("detail: a day past 2200 is refused and the task keeps waiting", async ({ page }) => {
@@ -64,7 +64,7 @@ test("detail: a day past 2200 is refused and the task keeps waiting", async ({ p
   await another.fill("9999-12-31");
   await details(page).getByRole("button", { name: "Plan", exact: true }).click();
   expect(await another.evaluate((el: HTMLInputElement) => el.validity.rangeOverflow)).toBe(true);
-  await expect(row(page, "When")).toContainText("No day yet, in the Inbox");
+  await expect(row(page, "Planned for")).toContainText("No day yet, in the Inbox");
 });
 
 test("detail: a failed plan says so and leaves it waiting", async ({ page }) => {
@@ -73,7 +73,7 @@ test("detail: a failed plan says so and leaves it waiting", async ({ page }) => 
   await details(page).getByRole("button", { name: "Plan for" }).click();
   await details(page).getByRole("button", { name: "Tomorrow" }).click();
   await expect(status(page, "That change did not save. Try again.")).toBeVisible();
-  await expect(row(page, "When")).toContainText("No day yet, in the Inbox");
+  await expect(row(page, "Planned for")).toContainText("No day yet, in the Inbox");
   await expect(details(page).getByRole("button", { name: "Plan for" })).toBeFocused();
 });
 
@@ -117,12 +117,16 @@ test("detail: a due date is set and cleared", async ({ page }) => {
 
   await details(page).getByRole("button", { name: "No due date" }).click();
   await expect(status(page, "No due date now.")).toBeVisible();
-  await expect(due).toHaveValue("");
+  // With no date the row folds back into a chip, and asking for it again brings back an empty field.
+  await expect(due).toHaveCount(0);
+  await details(page).getByRole("button", { name: "Due date" }).click();
+  await expect(details(page).getByLabel("Due by")).toHaveValue("");
   await expect(details(page).getByRole("button", { name: "No due date" })).toHaveCount(0);
 });
 
 test("detail: turning on Repeat for a waiting task says it starts today, and who ticks it done", async ({ page }) => {
   await page.goto(WAITING_TASK);
+  await details(page).getByRole("button", { name: "Repeat" }).click();
   await details(page).getByLabel("Repeat").selectOption("daily");
   await expect(status(page, "Repeats every day from today.")).toBeVisible();
   await expect(row(page, "Starts")).toBeVisible();
@@ -138,7 +142,7 @@ test("detail: one occurrence moves on its own with This one, and All of them kee
   await details(page).getByLabel("Another day").fill("2099-06-10");
   await details(page).getByRole("button", { name: "Move", exact: true }).click();
   await expect(status(page, "This one moved to Wednesday 10 June.")).toBeVisible();
-  await expect(row(page, "When")).toContainText("Wednesday 10 June");
+  await expect(row(page, "Planned for")).toContainText("Wednesday 10 June");
 
   await details(page).getByText("All of them").click();
   await expect(details(page).getByRole("button", { name: "Move to" })).toHaveCount(0);
