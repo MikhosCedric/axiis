@@ -66,7 +66,7 @@ function ChordKeys({ chord, mac }: { chord: Chord; mac: boolean }) {
 function Topic({ id, title, children }: { id: string; title: string; children: ReactNode }) {
   return (
     <section aria-labelledby={id} className="border-b border-rule-soft py-5 first:pt-4">
-      <h3 id={id} className="font-serif text-[17px] leading-tight font-medium">
+      <h3 id={id} className="font-display text-[17px] leading-tight font-medium">
         {title}
       </h3>
       <div className="mt-2 space-y-2 leading-relaxed text-ink-2">{children}</div>
@@ -248,7 +248,7 @@ export function GuideBody({ topics, onClose }: { topics: readonly GuideTopic[]; 
   return (
     <>
       <div className="flex items-center gap-3 border-b border-rule-soft px-5 py-3.5">
-        <h2 id={`${id}-h`} className="font-serif text-xl leading-tight font-medium">
+        <h2 id={`${id}-h`} className="font-display text-xl leading-tight font-medium">
           Guide
         </h2>
         <button
@@ -267,7 +267,7 @@ export function GuideBody({ topics, onClose }: { topics: readonly GuideTopic[]; 
         })}
         <KeyTopic id={`${id}-key`} onClose={onClose} />
         <section aria-labelledby={`${id}-keys`} className="pt-5 first:pt-4">
-          <h3 id={`${id}-keys`} className="font-serif text-[17px] leading-tight font-medium">
+          <h3 id={`${id}-keys`} className="font-display text-[17px] leading-tight font-medium">
             Keyboard shortcuts
           </h3>
           {SHORTCUTS.map((group) => (

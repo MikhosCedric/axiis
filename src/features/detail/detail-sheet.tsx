@@ -200,7 +200,7 @@ export function DetailSheet({
           label="Title"
           onSave={(title) => actions.rename(item.id, title, scope)}
           onError={setStatus}
-          className={`font-serif text-[clamp(22px,2.4vw,28px)] leading-[1.2] font-medium tracking-[-0.01em] ${
+          className={`font-display text-[clamp(22px,2.4vw,28px)] leading-[1.2] font-medium tracking-[-0.01em] ${
             done ? "text-ink-3" : "text-ink"
           }`}
         />

@@ -310,7 +310,7 @@ export function WeekView({
             preview?.over === "tray" ? "!bg-accent-wash outline-2 outline-dashed outline-accent" : ""
           }`}
         >
-          <h2 id="week-tray-h" className="font-serif text-lg leading-tight font-medium">
+          <h2 id="week-tray-h" className="font-display text-lg leading-tight font-medium">
             {INBOX}
           </h2>
           <p className="mt-1 mb-3.5 text-[13px] text-ink-3">
@@ -388,7 +388,7 @@ function DayColumn({
             <span className="hidden @min-[50rem]:inline">{weekdayName(date, "short")}</span>
           </span>
           <span
-            className={`font-serif text-xl leading-none font-medium tabular group-hover:underline ${
+            className={`font-display text-xl leading-none font-medium tabular group-hover:underline ${
               isToday ? "rounded bg-ink px-1.5 py-0.5 text-paper" : past ? "text-ink-3" : ""
             }`}
           >

@@ -23,7 +23,7 @@ export function DeleteAccountSection({ actions, deletesOn }: { actions: Deletion
   const id = useId();
   return (
     <section aria-labelledby={`${id}-heading`}>
-      <h2 id={`${id}-heading`} className="font-serif text-xl font-medium">
+      <h2 id={`${id}-heading`} className="font-display text-xl font-medium">
         Delete account
       </h2>
       <Scheduled actions={actions} deletesOn={deletesOn} />

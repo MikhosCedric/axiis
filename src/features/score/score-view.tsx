@@ -272,7 +272,7 @@ export function ScoreView({
           ref={strip}
           className={`mb-3 flex items-start border-y border-rule ${target?.kind === "anytime" ? "bg-accent-wash" : ""}`}
         >
-          <h3 className="w-[var(--lw)] flex-none border-r border-rule px-2 py-3 font-serif text-base leading-tight font-medium rail:px-3">
+          <h3 className="w-[var(--lw)] flex-none border-r border-rule px-2 py-3 font-display text-base leading-tight font-medium rail:px-3">
             Any time
           </h3>
           {score.anyTime.length ? (
@@ -329,7 +329,7 @@ export function ScoreView({
                 data-staff-label
                 className="sticky left-0 z-[4] w-[var(--lw)] flex-none border-r border-rule bg-paper px-2 py-3.5 rail:px-3"
               >
-                <span className="block font-serif text-base leading-tight font-medium [overflow-wrap:anywhere] rail:text-[19px]">
+                <span className="block font-display text-base leading-tight font-medium [overflow-wrap:anywhere] rail:text-[19px]">
                   <AreaMark color={staff.color} className="mr-1.5 mb-[0.15em] align-middle" />
                   {staff.name}
                 </span>
@@ -404,7 +404,7 @@ export function ScoreView({
             aria-labelledby="tray-h"
             className={`mt-7 pt-2 ${target?.kind === "tray" ? styles.dropZone : ""}`}
           >
-            <h3 id="tray-h" className="font-serif text-lg leading-tight font-medium">
+            <h3 id="tray-h" className="font-display text-lg leading-tight font-medium">
               {INBOX}
             </h3>
             <p className="mt-1 mb-3.5 text-[13px] text-ink-3">

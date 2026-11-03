@@ -64,7 +64,7 @@ export function NextUp({
   if (entries.length === 0) return null;
   return (
     <section aria-labelledby="next-up-h" className="mb-7 max-w-[760px]">
-      <h2 id="next-up-h" className="font-serif text-lg leading-tight font-medium">
+      <h2 id="next-up-h" className="font-display text-lg leading-tight font-medium">
         Next up
       </h2>
       <MotionList className="surface overflow-hidden px-3 [&_li:last-child]:border-b-0 mt-2.5">

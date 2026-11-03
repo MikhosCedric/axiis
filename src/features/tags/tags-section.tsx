@@ -61,7 +61,7 @@ export function TagsSection({
 
   return (
     <section aria-labelledby={`${prefix}-heading`}>
-      <h2 id={`${prefix}-heading`} className="font-serif text-xl font-medium">
+      <h2 id={`${prefix}-heading`} className="font-display text-xl font-medium">
         Tags
       </h2>
       <p className="mt-1.5 max-w-[60ch] text-ink-2">

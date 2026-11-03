@@ -1,7 +1,7 @@
 import { PAPER_LIGHT } from "@/lib/theme-colors";
 
-export const INK = "#1c1b22";
-export const ACCENT = "#0a675a";
+export const INK = "#14151b";
+export const ACCENT = "#066a5b";
 
 /**
  * The crossing-axes mark as an image-generation element (the same drawing as `src/app/icon.svg`, with

@@ -93,7 +93,7 @@ export function TagField({
 
   return (
     <section aria-labelledby={headingId} className="grid gap-2 border-t border-rule pt-4">
-      <h3 id={headingId} className="font-serif text-lg font-medium">
+      <h3 id={headingId} className="font-display text-lg font-medium">
         Tags
       </h3>
       {series && (

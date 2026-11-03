@@ -270,7 +270,7 @@ function Wordmark() {
   return (
     <div className="flex items-center gap-2.5 rail:px-2">
       <BrandMark />
-      <span className="font-serif text-xl leading-none font-semibold tracking-[-0.01em] rail:text-[22px]">Axiis</span>
+      <span className="font-display text-xl leading-none font-semibold tracking-[-0.01em] rail:text-[22px]">Axiis</span>
     </div>
   );
 }

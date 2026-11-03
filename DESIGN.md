@@ -1,77 +1,77 @@
 ---
 name: Axiis
-description: Tasks and time on one page, drawn as a score on warm music paper.
+description: Tasks and time on one page, drawn as a score on chalk-white paper.
 colors:
-  music-paper: "#ebe4d4"
-  rail-paper: "#e2dac6"
-  sheet: "#f3eee1"
-  engraving-ink: "#1c1b22"
+  music-paper: "#efeee8"
+  rail-paper: "#e5e4dc"
+  sheet: "#fcfcf9"
+  engraving-ink: "#14151b"
   ink-secondary: "#4a4741"
   ink-quiet: "#625e55"
   hairline: "rgba(28, 27, 34, 0.28)"
   hairline-soft: "rgba(28, 27, 34, 0.12)"
   field-stroke: "rgba(28, 27, 34, 0.55)"
-  verdigris: "#0a675a"
+  verdigris: "#066a5b"
   verdigris-wash: "rgba(10, 103, 90, 0.14)"
   hover-tint: "rgba(28, 27, 34, 0.06)"
   press-tint: "rgba(28, 27, 34, 0.11)"
-  on-verdigris: "#f3eee1"
+  on-verdigris: "#fcfcf9"
   scrim: "rgb(8 7 10 / 0.48)"
-  night-paper: "#14131a"
-  night-rail: "#0e0d13"
-  night-sheet: "#1f1e27"
-  night-ink: "#ece5d3"
+  night-paper: "#111218"
+  night-rail: "#0b0c10"
+  night-sheet: "#1b1c24"
+  night-ink: "#ecebe6"
   night-ink-secondary: "#bdb7a8"
   night-ink-quiet: "#9d978a"
   night-hairline: "rgba(236, 229, 211, 0.3)"
   night-hairline-soft: "rgba(236, 229, 211, 0.12)"
   night-field-stroke: "rgba(236, 229, 211, 0.5)"
-  night-verdigris: "#45c7b0"
+  night-verdigris: "#47d3b8"
   night-verdigris-wash: "rgba(69, 199, 176, 0.16)"
   night-hover-tint: "rgba(236, 229, 211, 0.07)"
   night-press-tint: "rgba(236, 229, 211, 0.12)"
   on-night-verdigris: "#10201d"
 typography:
   display:
-    fontFamily: "Besley, Georgia, serif"
+    fontFamily: "Bricolage Grotesque, system-ui, sans-serif"
     fontSize: "clamp(2.6rem, 1.4rem + 5.2vw, 8rem), from 900px min(8rem, (100vw - 2 * gutter) / 12.6, 17svh)"
     fontWeight: 500
     lineHeight: 1
     letterSpacing: "-0.03em"
   headline:
-    fontFamily: "Besley, Georgia, serif"
+    fontFamily: "Bricolage Grotesque, system-ui, sans-serif"
     fontSize: "clamp(28px, 3vw, 40px)"
     fontWeight: 500
     lineHeight: 1.1
     letterSpacing: "-0.015em"
   headline-public:
-    fontFamily: "Besley, Georgia, serif"
+    fontFamily: "Bricolage Grotesque, system-ui, sans-serif"
     fontSize: "clamp(1.75rem, 1.1rem + 1.9vw, 3.25rem)"
     fontWeight: 500
     lineHeight: 1.1
     letterSpacing: "-0.015em"
   headline-legal:
-    fontFamily: "Besley, Georgia, serif"
+    fontFamily: "Bricolage Grotesque, system-ui, sans-serif"
     fontSize: "clamp(2.2rem, 1.6rem + 2.4vw, 3.25rem)"
     fontWeight: 500
     lineHeight: 1.08
   title-large:
-    fontFamily: "Besley, Georgia, serif"
+    fontFamily: "Bricolage Grotesque, system-ui, sans-serif"
     fontSize: "22px"
     fontWeight: 500
     lineHeight: 1.2
   title:
-    fontFamily: "Besley, Georgia, serif"
+    fontFamily: "Bricolage Grotesque, system-ui, sans-serif"
     fontSize: "18px"
     fontWeight: 500
     lineHeight: 1.25
   staff-name:
-    fontFamily: "Besley, Georgia, serif"
+    fontFamily: "Bricolage Grotesque, system-ui, sans-serif"
     fontSize: "16px"
     fontWeight: 500
     lineHeight: 1.2
   staff-name-wide:
-    fontFamily: "Besley, Georgia, serif"
+    fontFamily: "Bricolage Grotesque, system-ui, sans-serif"
     fontSize: "19px"
     fontWeight: 500
     lineHeight: 1.2
@@ -197,7 +197,7 @@ components:
 
 Axiis draws a day the way an engraver sets a page of chamber music. Each area of life (Work, Home, Health) is a staff of five faint ruled lines. One hour axis runs across every staff, with a barline on each hour and a double barline where the day ends. Items are beams laid on those lines, and their line form, not a colour, says where they stand: dashed while planned, solid while happening, hollow once done. A single verdigris playhead marks now.
 
-The surface is warm music paper in light and a deep ink-blue night in dark, both on one set of shared tokens, each declared once as `light-dark(day, night)`. Depth comes from hairlines and tonal paper steps, almost never from shadow. Type pairs Besley, a bookish serif with high contrast, for headings, staff names and the wordmark, with Hanken Grotesk for everything a hand operates. The interface is quiet by default and spacious, and its one loud moment is the colour of now.
+The surface is chalk-white paper in light and a deep ink-blue night in dark, both on one set of shared tokens, each declared once as `light-dark(day, night)`. Depth comes from hairlines and tonal paper steps, almost never from shadow. Type pairs Besley, a bookish serif with high contrast, for headings, staff names and the wordmark, with Hanken Grotesk for everything a hand operates. The interface is quiet by default and spacious, and its one loud moment is the colour of now.
 
 This is the incumbent system as shipped in `src/app/globals.css`, `src/features/**` and `src/components/**`, extracted from code. It rejects the blank-canvas SaaS look, blue or purple gradients, guilt badges and per-type colour coding.
 
@@ -218,8 +218,8 @@ A two-ink, one-pigment palette: warm paper, near-black ink in three strengths, a
 
 ### Neutral
 - **Music Paper** (`music-paper` / `night-paper`): the page ground, also written into the browser theme colour and the manifest through `src/lib/theme-colors.ts`.
-- **Rail Paper** (`rail-paper` / `night-rail`): one step darker, used for the nav rail and the public header's hover. At night it is the darkest tone (`#0e0d13`), so the rail reads as recessed.
-- **Sheet** (`sheet` / `night-sheet`): one step lighter, for raised writing surfaces: the capture input, chips, the detail panel, the palette dialog, the current rail item, and the inner fill of a done glyph's head. At night it is the lightest ground (`#1f1e27`), so a raised thing is lighter, as it would be under a lamp.
+- **Rail Paper** (`rail-paper` / `night-rail`): one step darker, used for the nav rail and the public header's hover. At night it is the darkest tone (`#0b0c10`), so the rail reads as recessed.
+- **Sheet** (`sheet` / `night-sheet`): one step lighter, for raised writing surfaces: the capture input, chips, the detail panel, the palette dialog, the current rail item, and the inner fill of a done glyph's head. At night it is the lightest ground (`#1b1c24`), so a raised thing is lighter, as it would be under a lamp.
 - **Engraving Ink** (`engraving-ink` / `night-ink`): primary text, planned beams, the current nav item's fill and the ink button.
 - **Ink Secondary** (`ink-secondary`): supporting text, quiet control labels.
 - **Ink Quiet** (`ink-quiet`): metadata, hour numerals, placeholders, done items and their glyphs.
@@ -249,7 +249,7 @@ An area or a tag narrows a page to what belongs to it. The filter lives in the a
 ### Named Rules
 **The One Declaration Rule.** Every colour token is declared once on `:root` as `light-dark(day, night)`, and `color-scheme` picks the side: `light dark` by default (the device decides), forced by `data-theme="light"` or `"dark"` from the theme cookie. A token never has a second dark block to keep in sync. `src/lib/theme-colors.test.ts` reads the paper token from that one declaration.
 
-**The Tonal Depth Rule.** Depth is three tones, not lines or shadows: Rail Paper below the page, Music Paper the page, Sheet above it. At night the steps are wider than by day (recessed rail `#0e0d13`, page `#14131a`, sheet `#1f1e27`), because a hairline carries less at night.
+**The Tonal Depth Rule.** Depth is three tones, not lines or shadows: Rail Paper below the page, Music Paper the page, Sheet above it. At night the steps are wider than by day (recessed rail `#0b0c10`, page `#111218`, sheet `#1b1c24`), because a hairline carries less at night.
 
 **The Now Rule.** Verdigris means now, a drag target, or the focused or selected thing. It never marks an item type, an area, a category or a success message. A screen with no now and nothing focused carries almost no verdigris.
 
@@ -527,7 +527,7 @@ All help lives in one place. The Guide is the palette's dialog (same Sheet, widt
 
 ### Do:
 - **Do** show an item's state with its line form: dashed planned, solid live, hollow done.
-- **Do** reserve Verdigris (`#0a675a`, dark `#45c7b0`) for now, a drag target, focus or selection, and the public Start with today.
+- **Do** reserve Verdigris (`#066a5b`, dark `#47d3b8`) for now, a drag target, focus or selection, and the public Start with today.
 - **Do** mark the current navigation item in Engraving Ink (its tick), not verdigris.
 - **Do** draw structure with Hairline (28% ink) and Hairline Soft (12% ink), and close the end of a sequence with a `3px double` rule.
 - **Do** set every time, count and date numeral in tabular figures.

@@ -85,7 +85,7 @@ export function AreasSection({ areas, actions, colorHint = false }: { areas: Are
 
   return (
     <section aria-labelledby={`${prefix}-heading`} onPointerDown={() => (refocus.current = null)}>
-      <h2 id={`${prefix}-heading`} className="font-serif text-xl font-medium">
+      <h2 id={`${prefix}-heading`} className="font-display text-xl font-medium">
         Areas
       </h2>
       <p className="mt-1.5 max-w-[60ch] text-ink-2">

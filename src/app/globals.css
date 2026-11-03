@@ -10,21 +10,21 @@
 [data-scheme="night"] {
   color-scheme: light dark;
   /* Ground, the recessed rail, and the raised sheet. At night the steps widen so depth reads as tone, not as lines. */
-  --paper: light-dark(#ebe4d4, #14131a);
-  --paper-2: light-dark(#e2dac6, #0e0d13);
-  --sheet: light-dark(#f3eee1, #1f1e27);
-  --ink: light-dark(#1c1b22, #ece5d3);
-  --ink-2: light-dark(#4a4741, #bdb7a8);
-  --ink-3: light-dark(#625e55, #9d978a);
-  --rule: light-dark(rgba(28, 27, 34, 0.28), rgba(236, 229, 211, 0.3));
-  --rule-soft: light-dark(rgba(28, 27, 34, 0.12), rgba(236, 229, 211, 0.12));
-  --field: light-dark(rgba(28, 27, 34, 0.55), rgba(236, 229, 211, 0.5));
-  --accent: light-dark(#0a675a, #45c7b0);
-  --accent-wash: light-dark(rgba(10, 103, 90, 0.14), rgba(69, 199, 176, 0.16));
+  --paper: light-dark(#efeee8, #111218);
+  --paper-2: light-dark(#e5e4dc, #0b0c10);
+  --sheet: light-dark(#fcfcf9, #1b1c24);
+  --ink: light-dark(#14151b, #ecebe6);
+  --ink-2: light-dark(#44454e, #bcbcb6);
+  --ink-3: light-dark(#5a5c66, #9b9b96);
+  --rule: light-dark(rgba(20, 21, 27, 0.26), rgba(236, 235, 230, 0.3));
+  --rule-soft: light-dark(rgba(20, 21, 27, 0.1), rgba(236, 235, 230, 0.11));
+  --field: light-dark(rgba(20, 21, 27, 0.55), rgba(236, 235, 230, 0.5));
+  --accent: light-dark(#066a5b, #47d3b8);
+  --accent-wash: light-dark(rgba(6, 106, 91, 0.12), rgba(71, 211, 184, 0.16));
   /* Neutral ink tints for hover and press, so verdigris stays for now, drag, focus and selection. */
-  --hover: light-dark(rgba(28, 27, 34, 0.06), rgba(236, 229, 211, 0.07));
-  --press: light-dark(rgba(28, 27, 34, 0.11), rgba(236, 229, 211, 0.12));
-  --on-accent: light-dark(#f3eee1, #10201d);
+  --hover: light-dark(rgba(20, 21, 27, 0.055), rgba(236, 235, 230, 0.07));
+  --press: light-dark(rgba(20, 21, 27, 0.1), rgba(236, 235, 230, 0.12));
+  --on-accent: light-dark(#fcfcf9, #0b1f1b);
   /* What floats over the page: the palette, the Guide, a sheet. Deeper at night, where a shadow has less to show against. */
   --float:
     0 24px 56px -16px light-dark(rgb(14 12 10 / 0.38), rgb(0 0 0 / 0.72)),
@@ -41,13 +41,13 @@
     0 1px 2px light-dark(rgb(14 12 10 / 0.07), rgb(0 0 0 / 0.45)),
     0 10px 28px -14px light-dark(rgb(14 12 10 / 0.22), rgb(0 0 0 / 0.7));
   /* Light from above the page: a faint warm glow at its head, so the ground is not one flat tone. */
-  --glow: light-dark(rgb(255 252 240 / 0.5), rgb(255 255 255 / 0.035));
+  --glow: light-dark(rgb(255 255 255 / 0.7), rgb(255 255 255 / 0.035));
   /* A panel standing at the page edge (the detail panel): a soft shadow cast back onto the page. */
   --edge: -18px 0 38px -28px light-dark(rgb(14 12 10 / 0.4), rgb(0 0 0 / 0.75));
   --highlight: inset 0 1px 0 light-dark(rgb(255 255 255 / 0.6), rgb(255 255 255 / 0.045));
   /* The ground of a bar that stays on screen while the page moves under it: the page's own tone, see-through. */
-  --bar: light-dark(rgb(235 228 212 / 0.78), rgb(20 19 26 / 0.76));
-  --bar-rail: light-dark(rgb(226 218 198 / 0.82), rgb(14 13 19 / 0.8));
+  --bar: light-dark(rgb(239 238 232 / 0.78), rgb(17 18 24 / 0.76));
+  --bar-rail: light-dark(rgb(229 228 220 / 0.82), rgb(11 12 16 / 0.8));
   /*
    * Area colours, named in src/domain/area-color.ts. They tint a small mark beside an area's name (a dot),
    * never text, a fill or a line form, and each holds 3:1 on Rail Paper, Paper and Sheet (area-color.test.ts).
@@ -121,7 +121,7 @@
   --color-hover: var(--hover);
   --color-press: var(--press);
   --color-on-accent: var(--on-accent);
-  --font-serif: var(--font-besley), Georgia, serif;
+  --font-display: var(--font-bricolage), system-ui, sans-serif;
   --font-sans: var(--font-hanken), system-ui, -apple-system, "Segoe UI", sans-serif;
   --ease-axiis: cubic-bezier(0.16, 1, 0.3, 1);
   /* Leaving goes faster than arriving; the spring is only for something let go under a hand. */
@@ -182,7 +182,7 @@
 
 /* The Headline type step: every app page title. */
 @utility headline {
-  font-family: var(--font-serif);
+  font-family: var(--font-display);
   font-size: clamp(28px, 3vw, 40px);
   font-weight: 500;
   line-height: 1.1;
@@ -252,7 +252,7 @@
 @utility surface {
   background: var(--sheet);
   border: 1px solid var(--rule-soft);
-  border-radius: 12px;
+  border-radius: 18px;
   box-shadow: var(--raise), var(--highlight);
   --card: var(--sheet);
   --ground: var(--sheet);

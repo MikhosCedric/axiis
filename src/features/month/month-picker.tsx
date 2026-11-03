@@ -133,7 +133,7 @@ export function MonthPicker({ month, today, className }: { month: YearMonth; tod
           >
             <Chevron back />
           </button>
-          <p className="font-serif text-lg font-medium tabular" aria-live="polite">
+          <p className="font-display text-lg font-medium tabular" aria-live="polite">
             {year}
           </p>
           <button

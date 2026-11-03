@@ -9,7 +9,7 @@ export const contentType = "image/png";
 const QUIET = "#625e55";
 const RULE = "rgba(28, 27, 34, 0.14)";
 const BAR = "rgba(28, 27, 34, 0.28)";
-const SHEET = "#f3eee1";
+const SHEET = "#fcfcf9";
 
 /** Where the score sits on the card, and where now falls on it (a share of its width). */
 const SCORE = { left: 96, width: 1008, now: 0.47 };

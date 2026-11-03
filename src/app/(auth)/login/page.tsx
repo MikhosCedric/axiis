@@ -27,7 +27,7 @@ export default async function LoginPage({ searchParams }: PageProps<"/login">) {
       <div className="w-full max-w-sm space-y-8">
         <header className="space-y-2">
           <BrandHome className="mb-8" />
-          <h1 className="font-serif text-3xl text-ink">Sign in to Axiis</h1>
+          <h1 className="font-display text-3xl text-ink">Sign in to Axiis</h1>
           <p className="text-ink-2">Use your email or your Google account. There is no password to remember.</p>
           <p className="text-ink-2">New here? The same link makes your account.</p>
         </header>

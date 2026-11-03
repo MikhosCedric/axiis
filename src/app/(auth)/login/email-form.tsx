@@ -20,7 +20,7 @@ function EmailFormAttempt({ next, captcha, onRestart }: { next: string; captcha:
   if (state.status === "sent") {
     return (
       <div role="status" className="space-y-3">
-        <h2 className="font-serif text-xl text-ink">Check your email</h2>
+        <h2 className="font-display text-xl text-ink">Check your email</h2>
         <p className="text-ink-2">
           We sent a sign-in link to <span className="text-ink">{state.email}</span>. Open it in this browser. It works
           once and expires after a while.

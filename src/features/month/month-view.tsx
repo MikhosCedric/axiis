@@ -332,7 +332,7 @@ export function MonthView({
           {data.full && <p className="mt-2 text-[13px] text-ink-3">{MONTH_FULL}</p>}
 
           <section aria-labelledby="month-day-h" className="mt-5 @min-[36rem]/month:hidden">
-            <h2 id="month-day-h" className="font-serif text-lg leading-tight font-medium">
+            <h2 id="month-day-h" className="font-display text-lg leading-tight font-medium">
               {formatDayHeading(activeCell.date)}
             </h2>
             <p className="mt-0.5 text-[13px] text-ink-3">{countWords(dayTotal(activeCell))}</p>

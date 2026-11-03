@@ -104,7 +104,7 @@ export function DisplaySection({
 
   return (
     <section aria-labelledby="display-heading">
-      <h2 id="display-heading" className="font-serif text-xl font-medium">
+      <h2 id="display-heading" className="font-display text-xl font-medium">
         Display
       </h2>
       <p className="mt-1.5 max-w-[60ch] text-ink-2">How Axiis looks on this device.</p>

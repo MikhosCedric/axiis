@@ -62,7 +62,7 @@ export function InboxHarness({ items, areas, initial }: { items: Item[]; areas: 
           item ? (
             <div>
               <p className="text-[13px] text-ink-3">Detail slot</p>
-              <h2 className="mt-2 font-serif text-2xl font-medium text-balance">{item.title}</h2>
+              <h2 className="mt-2 font-display text-2xl font-medium text-balance">{item.title}</h2>
               <p className="mt-2 text-ink-2">
                 {item.type}, {item.schedule.kind}, {item.status}
               </p>

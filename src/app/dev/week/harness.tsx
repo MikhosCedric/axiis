@@ -64,7 +64,7 @@ export function WeekHarness({ items, areas, initial }: { items: Item[]; areas: A
           item ? (
             <div>
               <p className="text-[13px] text-ink-3">Detail slot</p>
-              <h2 className="mt-2 font-serif text-2xl font-medium text-balance">{item.title}</h2>
+              <h2 className="mt-2 font-display text-2xl font-medium text-balance">{item.title}</h2>
               <p className="mt-2 text-ink-2">
                 {item.schedule.kind}, {item.recurrence.kind}
               </p>

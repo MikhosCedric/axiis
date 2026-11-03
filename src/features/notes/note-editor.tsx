@@ -146,7 +146,7 @@ export function NoteEditor({ view, actions, basePath = "/notes" }: { view: NoteV
             }
           }}
           onBlur={() => void autosave.flush()}
-          className="mt-4 block w-full resize-none overflow-hidden rounded-md border border-transparent bg-transparent px-0 py-1 font-serif text-[clamp(28px,3.2vw,40px)] leading-[1.15] font-medium tracking-[-0.015em] text-ink [field-sizing:content] placeholder:text-ink-3 focus:border-transparent"
+          className="mt-4 block w-full resize-none overflow-hidden rounded-md border border-transparent bg-transparent px-0 py-1 font-display text-[clamp(28px,3.2vw,40px)] leading-[1.15] font-medium tracking-[-0.015em] text-ink [field-sizing:content] placeholder:text-ink-3 focus:border-transparent"
         />
         <p className="mt-1 text-[13px] text-ink-3 tabular">{view.edited}</p>
 

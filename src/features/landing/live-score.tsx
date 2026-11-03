@@ -48,7 +48,7 @@ export function LiveScore() {
     <figure className={styles.figure} aria-labelledby="sample-caption">
       <div className={styles.caption}>
         <figcaption id="sample-caption" className="flex flex-wrap items-baseline gap-x-3.5 gap-y-0.5">
-          <span className="font-serif text-lg font-medium text-ink">A sample day</span>
+          <span className="font-display text-lg font-medium text-ink">A sample day</span>
           <span className="text-ink-3">Made-up items, laid around your time now.</span>
         </figcaption>
         <div role="group" aria-label="Clock" className={styles.clockSwitch}>

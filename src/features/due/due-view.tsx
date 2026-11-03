@@ -58,7 +58,7 @@ export function DueView({
             if (inThis.length === 0) return null;
             return (
               <section key={group} aria-labelledby={`due-${group}`} className="mt-6 max-w-[760px]">
-                <h2 id={`due-${group}`} className="mb-2 font-serif text-lg leading-[1.25] font-medium">
+                <h2 id={`due-${group}`} className="mb-2 font-display text-lg leading-[1.25] font-medium">
                   {GROUP_LABEL[group]}
                 </h2>
                 <ul className="surface overflow-hidden px-3 [&_li:last-child]:border-b-0">

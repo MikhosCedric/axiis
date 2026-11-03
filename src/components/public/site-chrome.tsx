@@ -38,7 +38,7 @@ export function BrandHome({ className = "" }: { className?: string }) {
     <ViewTransition name="brand-mark" share="brand" default="none">
       <Link href="/" className={`flex w-fit items-center gap-2.5 rounded-sm text-ink no-underline ${className}`}>
         <BrandMark />
-        <span className="font-serif text-[22px] leading-none font-semibold tracking-[-0.01em]">Axiis</span>
+        <span className="font-display text-[22px] leading-none font-semibold tracking-[-0.01em]">Axiis</span>
       </Link>
     </ViewTransition>
   );
@@ -134,7 +134,7 @@ export function SiteFooter() {
       <div className={siteWrap}>
         <div className="grid gap-x-16 gap-y-8 py-10 sm:grid-cols-[minmax(0,1fr)_auto]">
           <div className="max-w-[30rem]">
-            <span className="font-serif text-[22px] font-semibold tracking-[-0.01em] text-ink">Axiis</span>
+            <span className="font-display text-[22px] font-semibold tracking-[-0.01em] text-ink">Axiis</span>
             <p className="mt-2 text-[15px] leading-relaxed text-ink-2">
               Tasks and time, on one page. Free, with no ads, no analytics and no trackers. Export everything, or
               delete your account, from Settings.

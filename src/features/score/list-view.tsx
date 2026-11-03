@@ -163,11 +163,11 @@ export function ListView({
       <h2 id="list-h" className="sr-only">
         List
       </h2>
-      <h3 className="pb-2.5 font-serif text-lg font-medium">Planned</h3>
+      <h3 className="pb-2.5 font-display text-lg font-medium">Planned</h3>
       <div className="surface overflow-hidden px-3 [&_li:last-child]:border-b-0">
         {view.scheduled.length ? rows(view.scheduled) : <p className="py-3 text-ink-2">Nothing has a time yet.</p>}
       </div>
-      <h3 className="mt-10 font-serif text-lg font-medium">{INBOX}</h3>
+      <h3 className="mt-10 font-display text-lg font-medium">{INBOX}</h3>
       <p className="mt-1 pb-2.5 text-[13px] text-ink-2">
         Captured and safe, with no day yet. Plan these when you are ready. <SameInInbox />
       </p>

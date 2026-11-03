@@ -92,7 +92,7 @@ export function SettingsView({
 
         <div id="your-data" className="space-y-12">
           <section aria-labelledby="export-heading">
-            <h2 id="export-heading" className="font-serif text-xl font-medium">
+            <h2 id="export-heading" className="font-display text-xl font-medium">
               Export your data
             </h2>
             <p className="mt-1.5 max-w-[60ch] text-ink-2">
