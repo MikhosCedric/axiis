@@ -45,7 +45,7 @@ export function SearchView({ query, rows, basePath = "/search" }: { query: strin
           <p className="mt-6 text-[13px] text-ink-3">
             {rows.length === 1 ? "One result" : `${rows.length} results`}, most recently edited first
           </p>
-          <ul className="mt-2 grid grid-cols-[minmax(0,1fr)] border-t border-rule">
+          <ul className="surface mt-2 grid max-w-[760px] grid-cols-[minmax(0,1fr)] overflow-hidden px-3 py-1.5 [&_li:last-child]:border-b-0">
             {rows.map((r) => (
               <SearchResult key={r.id} row={r} />
             ))}

@@ -106,7 +106,7 @@ export function NotesList({
             : "No notes yet. Start one when something is worth keeping, and link it to the tasks it belongs to."}
         </p>
       ) : (
-        <ul className="mt-2 grid grid-cols-[minmax(0,1fr)] border-t border-rule">
+        <ul className="surface mt-2 grid max-w-[760px] grid-cols-[minmax(0,1fr)] overflow-hidden px-3 py-1.5 [&_li:last-child]:border-b-0">
           {rows.map((r) => {
             const patch = quick?.patched(r.id);
             if (patch?.hidden) return null;
