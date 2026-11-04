@@ -277,6 +277,9 @@ export function DayView({
     ) : null;
   const pulseNode = isToday && !firstDay && pulse && pulse.total > 0 ? <WeekPulse pulse={pulse} today={today} /> : null;
 
+  // The side column exists only when something goes in it; a day with nothing beside it gets the full width.
+  const hasSide = Boolean(nextNode || planNode || leftNode || pulseNode);
+
   /** The day itself, then what is left over from earlier days: today's plan comes before yesterday's. */
   const rest = () => (
     <>
@@ -363,7 +366,7 @@ export function DayView({
         ) : (
           // Wide: the day takes the left, and what surrounds it (Next up, the plan, left-overs, the week) stacks on the right.
           // Narrow: one column, in the order they read, the week left out.
-          <div className="flex flex-col @min-[66rem]/page:grid @min-[66rem]/page:grid-cols-[minmax(0,1fr)_21rem] @min-[66rem]/page:grid-rows-[repeat(4,auto)_1fr] @min-[66rem]/page:gap-x-8">
+          <div className={`flex flex-col ${hasSide ? "@min-[66rem]/page:grid @min-[66rem]/page:grid-cols-[minmax(0,1fr)_21rem] @min-[66rem]/page:grid-rows-[repeat(4,auto)_1fr] @min-[66rem]/page:gap-x-8" : ""}`}>
             {nextNode && <div className="order-1 @min-[66rem]/page:col-start-2 @min-[66rem]/page:row-start-1">{nextNode}</div>}
             {planNode && <div className="order-2 @min-[66rem]/page:col-start-2 @min-[66rem]/page:row-start-2">{planNode}</div>}
             <div className="order-3 min-w-0 @min-[66rem]/page:col-start-1 @min-[66rem]/page:row-span-5 @min-[66rem]/page:row-start-1">{dayNode}</div>
