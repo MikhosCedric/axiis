@@ -251,9 +251,15 @@ export function InboxView({
               ))}
             </MotionList>
           ) : (
-            <p className="py-3 text-ink-2">
-              {startedFull && "All planned. "}Anything you capture without a day lands here, safe until you plan it.
-            </p>
+            <div className="mt-4 grid max-w-[760px] justify-items-center rounded-[18px] border border-dashed border-rule px-6 py-10 text-center">
+              <svg aria-hidden="true" viewBox="0 0 24 24" width={28} height={28} fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" className="mb-3 text-ink-3">
+                <path d="M3 13l3-8h12l3 8v6H3z" />
+                <path d="M3 13h5l1 2h6l1-2h5" />
+              </svg>
+              <p className="max-w-[44ch] text-ink-2">
+                {startedFull && "All planned. "}Anything you capture without a day lands here, safe until you plan it.
+              </p>
+            </div>
           )}
           {/* Read out as the list's description always; drawn only while the keyboard is in the list, where the keys matter. */}
           {shown.length > 0 && (
