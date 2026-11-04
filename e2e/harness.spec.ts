@@ -318,7 +318,6 @@ test("notes: the toolbar keeps to the text measure, in named groups, every tool 
   const groups = { Type: ["Heading", "Subheading", "Quote", "Code"], Style: ["Bold", "Italic", "Link"], Lists: ["Bulleted list", "Numbered list"] };
   for (const [name, tools] of Object.entries(groups)) {
     const group = bar.getByRole("group", { name, exact: true });
-    await expect(group.getByText(name, { exact: true })).toBeVisible();
     for (const tool of tools) await expect(group.getByRole("button", { name: tool, exact: true })).toBeVisible();
   }
 

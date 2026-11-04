@@ -45,12 +45,12 @@ function Tool({ label, keys, pressed, onClick, children }: { label: string; keys
   );
 }
 
-/** A named run of tools. The name is printed from 640px; below that it is spoken only, to keep the bar on one line. */
+/** A named run of tools. The name is spoken only: the divider and the icons carry the grouping on screen. */
 function ToolGroup({ name, children }: { name: string; children: ReactNode }) {
   const id = useId();
   return (
     <div role="group" aria-labelledby={id} className="flex flex-none items-center gap-0.5">
-      <span id={id} className="mr-1 text-xs text-ink-3 max-sm:sr-only">
+      <span id={id} className="sr-only">
         {name}
       </span>
       {children}
