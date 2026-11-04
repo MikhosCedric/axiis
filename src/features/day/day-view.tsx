@@ -19,6 +19,7 @@ import { STATE_WORD } from "@/features/today/item-name";
 import { captureAction, setDoneAction } from "@/features/today/actions";
 import { CaptureField } from "@/features/today/capture-field";
 import { LeftoverStrip } from "./leftover-strip";
+import { PLAN_DAY_SHOWN, PlanDayStrip } from "./plan-day-strip";
 import type { LeftoverData } from "./leftover-model";
 import type { ActionResult } from "@/features/today/commands";
 import { formatDayHeading } from "@/features/today/format";
@@ -237,9 +238,21 @@ export function DayView({
     onToggleDone: toggleDone,
   };
 
+  // An empty day with things waiting in the Inbox gets a nudge to pull some in.
+  const waitingOpen = view.waiting.filter((e) => e.item.status === "open");
+  const nudge = isToday && !firstDay && view.scheduled.length === 0 && waitingOpen.length > 0;
+
   /** The day itself, then what is left over from earlier days: today's plan comes before yesterday's. */
   const rest = () => (
     <>
+      {nudge && (
+        <PlanDayStrip
+          rows={waitingOpen.slice(0, PLAN_DAY_SHOWN).map((e) => ({ id: e.item.id, type: e.item.type, title: e.item.title }))}
+          total={waitingOpen.length}
+          onSelect={select}
+          onStatus={(text, error) => setStatus({ text, error })}
+        />
+      )}
       {shownMode === "score" ? (
         <ScoreView {...shared} date={date} nowMinutes={nowMinutes} firstDay={firstDay} onPlace={place} />
       ) : (
