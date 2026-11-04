@@ -274,12 +274,13 @@ signedIn.describe("signed in", () => {
     const row = strip.getByRole("button", { name: "Return the library books", exact: true });
     await expect(row).toBeVisible();
     await expect(strip.getByText("Planned Monday 3 February 2020")).toBeVisible();
-    // A ruled section of the page, not a card: hairlines above and below, no fill, square corners.
+    // A card like the rest of Today: a hairline all round, a filled sheet, the house corner radius.
     const drawn = await strip.evaluate((el) => {
       const s = getComputedStyle(el);
       return { top: s.borderTopWidth, bottom: s.borderBottomWidth, left: s.borderLeftWidth, fill: s.backgroundColor, radius: s.borderTopLeftRadius };
     });
-    expect(drawn).toEqual({ top: "1px", bottom: "1px", left: "0px", fill: "rgba(0, 0, 0, 0)", radius: "0px" });
+    expect(drawn).toMatchObject({ top: "1px", bottom: "1px", left: "1px", radius: "18px" });
+    expect(drawn.fill).not.toBe("rgba(0, 0, 0, 0)");
     await strip.getByRole("button", { name: /^Move to today\s*: Return the library books$/ }).click();
     await expect(page.getByRole("status").filter({ hasText: "Return the library books is on today." })).toBeVisible();
     await expect(row).toHaveCount(0);
