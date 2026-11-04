@@ -19,6 +19,7 @@ import { PlanRow } from "./plan-row";
 import { startsRepeating } from "./repeat";
 import { dayWords, planDate } from "@/features/inbox/model";
 import { RepeatRows } from "./repeat-control";
+import { addDays } from "@/lib/dates";
 import { SkippedDates } from "./skipped-dates";
 import { Subtasks } from "./subtasks";
 import { DateRow, TimeRow } from "./time-row";
@@ -356,6 +357,11 @@ export function DetailSheet({
             <DateRow
               label="Due by"
               on={view.due.on}
+              picks={[
+                { label: "Today", on: view.today },
+                { label: "Tomorrow", on: addDays(view.today, 1) },
+                { label: "Next week", on: addDays(view.today, 7) },
+              ]}
               save={(on) => write(() => actions.setDue(item.id, on), () => setStatus(`Due ${formatDayHeading(on)}.`))}
               clear={{
                 label: "No due date",

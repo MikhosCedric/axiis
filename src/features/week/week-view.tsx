@@ -399,7 +399,8 @@ function DayColumn({
         </Link>
       </h3>
       {empty ? (
-        <p className="px-2 pb-3 text-[13px] text-ink-3">Nothing planned</p>
+        // Said aloud for every empty day, drawn only for today: seven repeats of the same line are noise.
+        <p className={isToday ? "px-2 pb-3 text-[13px] text-ink-3" : "sr-only"}>Nothing planned</p>
       ) : (
         <MotionList className="grid gap-0.5 px-1 pb-3">{children}</MotionList>
       )}
