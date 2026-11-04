@@ -384,7 +384,7 @@ export function ScoreView({
             {nowMinutes !== null && nowMinutes >= axis.start && nowMinutes <= axis.end && (
               <div
                 aria-hidden="true"
-                className="pointer-events-none absolute inset-y-0 z-[2] -ml-px w-0.5 bg-accent"
+                className="pointer-events-none absolute inset-y-0 z-[2] -ml-px w-0.5 bg-accent shadow-[0_0_10px_color-mix(in_srgb,var(--accent)_55%,transparent)]"
                 style={{ left: xAt(axis, nowMinutes) }}
               />
             )}

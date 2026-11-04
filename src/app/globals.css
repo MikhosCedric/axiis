@@ -250,7 +250,8 @@
  * ground from `--card` (a row's actions fade into it, a selected row's wash mixes over it).
  */
 @utility surface {
-  background: var(--sheet);
+  /* A faint light from above: the card is a touch brighter at its top edge, so it reads as a surface, not a flat fill. */
+  background: linear-gradient(180deg, color-mix(in srgb, light-dark(var(--sheet), var(--ink)) 2%, var(--sheet)) 0%, var(--sheet) 70%) var(--sheet);
   border: 1px solid var(--rule-soft);
   border-radius: 18px;
   box-shadow: var(--raise), var(--highlight);
@@ -260,7 +261,10 @@
 
 /* The page ground under the signed-in app: Paper with a soft warm glow at the top. */
 @utility ground {
-  background-image: radial-gradient(80rem 30rem at 50% -10rem, var(--glow), transparent 72%);
+  background-image:
+    radial-gradient(42rem 26rem at 8% -8rem, color-mix(in srgb, var(--accent) 9%, transparent), transparent 70%),
+    radial-gradient(40rem 24rem at 96% -6rem, color-mix(in srgb, #7a6cf0 8%, transparent), transparent 70%),
+    radial-gradient(80rem 30rem at 50% -10rem, var(--glow), transparent 72%);
   background-repeat: no-repeat;
 }
 
