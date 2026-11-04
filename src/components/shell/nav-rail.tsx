@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useEffect, useId, useRef, useState, type ReactNode } from "react";
+import { RAIL_COOKIE } from "./cookies";
 import { AreaMark } from "@/components/area-mark";
 import type { AreaColor } from "@/domain/area-color";
 import type { LocalDate } from "@/domain/item";
@@ -85,24 +86,46 @@ function Badge({ n, hot, className = "" }: { n: number; hot: boolean; className?
   );
 }
 
-export function NavRail({ today, areas, badges = NO_BADGES }: { today: LocalDate; areas: NavArea[]; badges?: NavBadges }) {
+export function NavRail({ today, areas, badges = NO_BADGES, min = false }: { today: LocalDate; areas: NavArea[]; badges?: NavBadges; min?: boolean }) {
   const pathname = usePathname();
   return (
     <>
       <PhoneHeader />
-      <Rail pathname={pathname} today={today} areas={areas} badges={badges} />
+      <Rail pathname={pathname} today={today} areas={areas} badges={badges} min={min} />
       <PhoneBar pathname={pathname} today={today} areas={areas} badges={badges} />
     </>
   );
 }
 
-function Rail({ pathname, today, areas, badges }: { pathname: string; today: LocalDate; areas: NavArea[]; badges: NavBadges }) {
+function Rail({ pathname, today, areas, badges, min: savedMin }: { pathname: string; today: LocalDate; areas: NavArea[]; badges: NavBadges; min: boolean }) {
+  // The sidebar folds to icons; the choice is remembered in a cookie the layout reads, so it never flashes the other way.
+  const [min, setMin] = useState(savedMin);
+  function toggle() {
+    const next = !min;
+    setMin(next);
+    document.cookie = `${RAIL_COOKIE}=${next ? "min" : "full"}; path=/; max-age=31536000; samesite=lax`;
+    document.getElementById("app-shell")?.style.setProperty("--rail-w", next ? "64px" : "216px");
+  }
   return (
     <nav
       aria-label="Primary"
-      className="sticky top-0 flex h-dvh flex-col gap-6 overflow-y-auto border-r border-rule-soft bg-paper-2 px-4 py-6 max-rail:hidden"
+      data-min={min ? "" : undefined}
+      className="group/rail sticky top-0 flex h-dvh flex-col gap-6 overflow-x-hidden overflow-y-auto border-r border-rule-soft bg-paper-2 px-4 py-6 data-[min]:px-2.5 max-rail:hidden"
     >
-      <Wordmark />
+      <div className="flex items-center justify-between group-data-[min]/rail:flex-col group-data-[min]/rail:gap-3">
+        <Wordmark />
+        <button
+          type="button"
+          onClick={toggle}
+          aria-label={min ? "Expand the sidebar" : "Collapse the sidebar"}
+          title={min ? "Expand the sidebar" : "Collapse the sidebar"}
+          className="flex size-8 flex-none items-center justify-center rounded-lg text-ink-3 hover:bg-hover hover:text-ink active:bg-press"
+        >
+          <svg aria-hidden="true" viewBox="0 0 16 16" width={16} height={16} fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" className={min ? "rotate-180" : ""}>
+            <path d="M9.5 4L5.5 8l4 4" />
+          </svg>
+        </button>
+      </div>
       <SearchField />
 
       <div className="grid gap-5">
@@ -112,7 +135,7 @@ function Rail({ pathname, today, areas, badges }: { pathname: string; today: Loc
       </div>
 
       {areas.length > 0 && (
-        <section aria-labelledby="areas-h" className="border-t border-rule-soft pt-4">
+        <section aria-labelledby="areas-h" className="border-t border-rule-soft pt-4 group-data-[min]/rail:hidden">
           <h2 id="areas-h" className={`mx-2 mb-2 ${overline}`}>
             Open today, by area
           </h2>
@@ -130,7 +153,7 @@ function PlaceList({ heading, places, pathname, today, badges }: { heading: stri
   const hrefOf = usePlaceHref();
   return (
     <div>
-      <h2 id={id} className={`mx-2 mb-1.5 ${overline}`}>
+      <h2 id={id} className={`mx-2 mb-1.5 group-data-[min]/rail:sr-only ${overline}`}>
         {heading}
       </h2>
       <ul aria-labelledby={id} className="grid gap-0.5">
@@ -144,11 +167,13 @@ function PlaceList({ heading, places, pathname, today, badges }: { heading: stri
                 title={p.hint}
                 aria-current={here ? "page" : undefined}
                 aria-describedby={badge ? `${id}-${p.id}` : undefined}
-                className={`${here ? current : quiet} pointer-coarse:min-h-11`}
+                className={`${here ? current : quiet} relative pointer-coarse:min-h-11 group-data-[min]/rail:justify-center`}
               >
                 {ICONS[p.id]}
-                {p.label}
-                {badge && <Badge n={badge.n} hot={badge.hot} className="ml-auto" />}
+                <span className="group-data-[min]/rail:sr-only">{p.label}</span>
+                {badge && (
+                  <Badge n={badge.n} hot={badge.hot} className="ml-auto group-data-[min]/rail:absolute group-data-[min]/rail:top-0 group-data-[min]/rail:right-0 group-data-[min]/rail:ml-0 group-data-[min]/rail:px-1 group-data-[min]/rail:text-[10px] group-data-[min]/rail:leading-4" />
+                )}
               </Link>
               {badge && (
                 <span id={`${id}-${p.id}`} className="sr-only">
@@ -172,11 +197,11 @@ function SearchField() {
       type="button"
       onClick={openPalette}
       aria-keyshortcuts={mac ? "Meta+K" : "Control+K"}
-      className="flex h-9 w-full items-center gap-1.5 rounded-lg border border-rule bg-sheet pr-1.5 pl-2 text-left text-[13px] text-ink-3 [--ground:var(--sheet)] hover:border-field hover:text-ink-2 pointer-coarse:min-h-11 [&>svg]:size-4"
+      className="flex h-9 w-full items-center gap-1.5 rounded-lg border border-rule bg-sheet pr-1.5 pl-2 text-left text-[13px] text-ink-3 [--ground:var(--sheet)] hover:border-field hover:text-ink-2 pointer-coarse:min-h-11 group-data-[min]/rail:justify-center group-data-[min]/rail:px-0 [&>svg]:size-4"
     >
       <SearchIcon />
-      <span className="min-w-0 flex-1 truncate">Search or go to…</span>
-      <kbd aria-hidden="true" className="flex-none rounded border border-rule px-1 font-sans text-[10.5px] leading-4 font-semibold text-ink-3">
+      <span className="min-w-0 flex-1 truncate group-data-[min]/rail:sr-only">Search or go to…</span>
+      <kbd aria-hidden="true" className="flex-none group-data-[min]/rail:hidden rounded border border-rule px-1 font-sans text-[10.5px] leading-4 font-semibold text-ink-3">
         {mac ? "⌘K" : "Ctrl K"}
       </kbd>
     </button>
@@ -259,10 +284,10 @@ function AccountMenu({ settingsHere }: { settingsHere: boolean }) {
 
   return (
     <div className="mt-auto">
-      <button type="button" popoverTarget={id} aria-expanded={open} className={`${settingsHere ? current : quiet} w-full pointer-coarse:min-h-11`}>
+      <button type="button" popoverTarget={id} aria-expanded={open} className={`${settingsHere ? current : quiet} w-full pointer-coarse:min-h-11 group-data-[min]/rail:justify-center`}>
         <SettingsIcon />
-        <span className="flex-1 text-left">Account</span>
-        <svg viewBox="0 0 12 12" width={12} height={12} aria-hidden="true" className="flex-none text-ink-3" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
+        <span className="flex-1 text-left group-data-[min]/rail:sr-only">Account</span>
+        <svg viewBox="0 0 12 12" width={12} height={12} aria-hidden="true" className="flex-none text-ink-3 group-data-[min]/rail:hidden" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
           <path d="M3 7.5L6 4.5l3 3" />
         </svg>
       </button>
@@ -299,9 +324,9 @@ function AccountMenu({ settingsHere }: { settingsHere: boolean }) {
 
 function Wordmark() {
   return (
-    <div className="flex items-center gap-2.5 rail:px-2">
+    <div className="flex items-center gap-2.5 rail:px-2 group-data-[min]/rail:justify-center group-data-[min]/rail:px-0">
       <BrandMark />
-      <span className="font-display text-xl leading-none font-semibold tracking-[-0.01em] rail:text-[22px]">Axiis</span>
+      <span className="group-data-[min]/rail:sr-only font-display text-xl leading-none font-semibold tracking-[-0.01em] rail:text-[22px]">Axiis</span>
     </div>
   );
 }
