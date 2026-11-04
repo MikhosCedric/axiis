@@ -437,6 +437,9 @@ export function DetailSheet({
           );
         })()}
         </div>
+        {!isSeries && view.day !== null && view.due.on !== null && view.day > view.due.on && (
+          <p className="mt-1.5 px-1 text-[13px] text-ink-2">Planned after it is due.</p>
+        )}
         <p role="status" className="mt-1.5 min-h-5 px-1 text-[13px] text-ink-2 empty:hidden">
           {eventHint ?? status}
         </p>
