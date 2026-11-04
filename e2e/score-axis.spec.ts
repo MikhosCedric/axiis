@@ -73,7 +73,8 @@ for (const width of [1920, 1280]) {
       await page.keyboard.press("Escape");
       await expect(details).toHaveCount(0);
       await expect.poll(async () => (await axis(page)).count).toBe(closed.count);
-      expect(await axis(page)).toEqual(closed);
+      // The gap at the right edge follows where the reader has scrolled to, which closing the panel does not undo; the rest is the axis.
+      expect(await axis(page)).toEqual({ ...closed, gap: expect.any(Number) });
     });
   });
 }
