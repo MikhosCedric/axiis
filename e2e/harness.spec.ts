@@ -289,7 +289,7 @@ test("detail: a new subtask can be renamed in place", async ({ page }) => {
   );
 });
 
-test("notes: at 1920px the notes pages start at the same left edge as the Inbox", async ({ page }) => {
+test("notes: at 1920px the notes lists start at the same left edge as the Inbox, and a note sits centred in its room", async ({ page }) => {
   await page.setViewportSize({ width: 1920, height: 1080 });
   const leftOf = async (path: string, heading = page.locator("h1").first()) => {
     await page.goto(path);
@@ -298,7 +298,11 @@ test("notes: at 1920px the notes pages start at the same left edge as the Inbox"
   const inbox = await leftOf("/dev/inbox");
   expect(await leftOf("/dev/notes")).toBe(inbox);
   expect(await leftOf("/dev/notes/search?q=bulbs")).toBe(inbox);
-  expect(await leftOf("/dev/notes/00000000-0000-4000-8000-000000000020", page.getByRole("textbox", { name: "Title" }))).toBe(inbox);
+  // A note has a side column of its own, so it is wider; it is centred in the room, as the lists are.
+  await page.goto("/dev/notes/00000000-0000-4000-8000-000000000020");
+  const room = { x: 0, width: page.viewportSize()!.width };
+  const note = (await page.locator("article").first().boundingBox())!;
+  expect(Math.abs(note.x - room.x - (room.x + room.width - note.x - note.width))).toBeLessThanOrEqual(2);
 });
 
 test("notes: the toolbar keeps to the text measure, in named groups, every tool reached by Tab", async ({ page }) => {
