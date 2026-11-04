@@ -426,7 +426,7 @@ function DayCell({
       <span className="sr-only">{cellLabel(cell)}</span>
       <span aria-hidden="true" className="flex items-center justify-center @min-[36rem]/month:justify-start">
         <span
-          className={`inline-flex h-6 min-w-6 items-center justify-center rounded-full px-1 text-[13px] tabular ${
+          className={`inline-flex h-7 min-w-7 items-center justify-center rounded-full px-1 font-display text-[15px] tabular ${
             isToday ? "bg-ink font-semibold text-paper" : inMonth ? "font-medium text-ink" : "text-ink-3"
           }`}
         >

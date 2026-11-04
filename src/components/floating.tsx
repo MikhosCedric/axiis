@@ -102,7 +102,7 @@ export function Floating({
       role={role}
       aria-label={label}
       onKeyDown={onKeyDown}
-      className={`pointer-events-auto fixed inset-auto m-0 rounded-lg border border-rule bg-sheet text-ink shadow-float [--ground:var(--sheet)] motion-safe:animate-pop-in ${className}`}
+      className={`pointer-events-auto fixed inset-auto m-0 rounded-lg border border-rule bg-[color-mix(in_srgb,var(--sheet)_86%,transparent)] text-ink shadow-float backdrop-blur-xl backdrop-saturate-150 [--ground:var(--sheet)] motion-safe:animate-pop-in ${className}`}
     >
       {children}
     </div>

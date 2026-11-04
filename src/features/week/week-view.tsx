@@ -39,7 +39,7 @@ import { GuideButton, type GuideTopic } from "@/features/palette/guide";
 import { LineLegend } from "@/features/today/line-legend";
 import { SameInInbox } from "@/features/inbox/same-in-inbox";
 import { buildToday, EMPTY_TRAY, stateOf, TRAY_FULL, INBOX, type TodayEntry } from "@/features/today/model";
-import { dayRangeFor } from "@/lib/dates";
+import { dayRangeFor, utcMidnight } from "@/lib/dates";
 import { moveAction } from "./actions";
 import type { WeekData } from "./load";
 import {
@@ -368,13 +368,20 @@ function DayColumn({
   const keep = useKeepFilter();
   // Days already gone are set a step quieter, so the eye finds today and what is still ahead.
   const past = date < today;
+  const weekend = [0, 6].includes(new Date(utcMidnight(date)).getUTCDay());
   const headingId = `day-${date}`;
   return (
     <section
       data-drop={date}
       aria-labelledby={headingId}
       className={`flex min-w-0 flex-col border-b border-rule transition-colors last:border-b-0 @min-[50rem]:min-h-64 @min-[50rem]:border-b-0 @min-[50rem]:border-l @min-[50rem]:first:border-l-0 ${
-        over ? "bg-accent-wash" : isToday ? "bg-[color-mix(in_srgb,var(--ink)_4%,transparent)]" : ""
+        over
+          ? "bg-accent-wash"
+          : isToday
+            ? "bg-gradient-to-b from-[color-mix(in_srgb,var(--accent)_9%,transparent)] to-[color-mix(in_srgb,var(--ink)_3%,transparent)]"
+            : weekend
+              ? "bg-[color-mix(in_srgb,var(--paper-2)_45%,transparent)]"
+              : ""
       }`}
     >
       <h3 id={headingId} className="px-2 pt-3 pb-2">
@@ -388,8 +395,8 @@ function DayColumn({
             <span className="hidden @min-[50rem]:inline">{weekdayName(date, "short")}</span>
           </span>
           <span
-            className={`font-display text-xl leading-none font-medium tabular group-hover:underline ${
-              isToday ? "rounded bg-ink px-1.5 py-0.5 text-paper" : past ? "text-ink-3" : ""
+            className={`font-display text-2xl leading-none font-semibold tracking-tight tabular group-hover:underline ${
+              isToday ? "rounded-lg bg-ink px-2 py-1 text-paper" : past ? "text-ink-3" : ""
             }`}
           >
             {Number(date.slice(8))}
