@@ -49,7 +49,7 @@ export function PlanDayStrip({
       <h2 id="plan-day-h" className="font-display text-lg leading-tight font-medium">
         Plan your day
       </h2>
-      <p className="mt-0.5 text-[13px] text-ink-3">Nothing is planned yet. Pull something in from the Inbox.</p>
+      <p className="mt-0.5 text-[13px] text-ink-3">Pull something in from the Inbox.</p>
       <ul className="mt-2">
         {rows.map((row) => (
           <li key={row.id} className="flex items-center gap-3 border-t border-rule-soft py-1.5 first:border-t-0">

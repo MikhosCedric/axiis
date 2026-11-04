@@ -20,6 +20,8 @@ import { captureAction, setDoneAction } from "@/features/today/actions";
 import { CaptureField } from "@/features/today/capture-field";
 import { LeftoverStrip } from "./leftover-strip";
 import { PLAN_DAY_SHOWN, PlanDayStrip } from "./plan-day-strip";
+import type { PulseData } from "./pulse";
+import { WeekPulse } from "./week-pulse";
 import type { LeftoverData } from "./leftover-model";
 import type { ActionResult } from "@/features/today/commands";
 import { formatDayHeading } from "@/features/today/format";
@@ -98,6 +100,7 @@ export function DayView({
   nav,
   detail,
   leftover,
+  pulse,
   focus: focusSaved = false,
   tour = false,
   filter = NO_FILTER,
@@ -109,6 +112,8 @@ export function DayView({
   detail?: ReactNode;
   /** What is still open from earlier days. Today's page passes it; no other day does. */
   leftover?: LeftoverData | null;
+  /** The week's planned and done counts a day at a time. Today's page passes it; it shows beside the day on wide screens. */
+  pulse?: PulseData | null;
   /** Focus, as this device last left it: today shows only Next up and folds the rest away. */
   focus?: boolean;
   /** Show the getting-started tour: a new account, or the Guide asked for it again. */
@@ -242,27 +247,42 @@ export function DayView({
   const waitingOpen = view.waiting.filter((e) => e.item.status === "open");
   const nudge = isToday && !firstDay && view.scheduled.length === 0 && waitingOpen.length > 0;
 
+  const planNode = nudge ? (
+    <PlanDayStrip
+      rows={waitingOpen.slice(0, PLAN_DAY_SHOWN).map((e) => ({ id: e.item.id, type: e.item.type, title: e.item.title }))}
+      total={waitingOpen.length}
+      onSelect={select}
+      onStatus={(text, error) => setStatus({ text, error })}
+    />
+  ) : null;
+  const dayNode =
+    shownMode === "score" ? (
+      <ScoreView {...shared} date={date} nowMinutes={nowMinutes} firstDay={firstDay} onPlace={place} />
+    ) : (
+      <ListView {...shared} />
+    );
+  const leftNode =
+    isToday && leftover ? <LeftoverStrip data={leftover} onSelect={select} onStatus={(text, error) => setStatus({ text, error })} /> : null;
+  const nextNode =
+    isToday && !firstDay ? (
+      <NextUp
+        entries={focus ? glance.focus : glance.next}
+        date={date}
+        timeZone={timeZone}
+        areas={areas}
+        justDone={justDone}
+        onSelect={select}
+        onToggleDone={toggleDone}
+      />
+    ) : null;
+  const pulseNode = isToday && !firstDay && pulse && pulse.total > 0 ? <WeekPulse pulse={pulse} today={today} /> : null;
+
   /** The day itself, then what is left over from earlier days: today's plan comes before yesterday's. */
   const rest = () => (
     <>
-      {nudge && (
-        <PlanDayStrip
-          rows={waitingOpen.slice(0, PLAN_DAY_SHOWN).map((e) => ({ id: e.item.id, type: e.item.type, title: e.item.title }))}
-          total={waitingOpen.length}
-          onSelect={select}
-          onStatus={(text, error) => setStatus({ text, error })}
-        />
-      )}
-      {shownMode === "score" ? (
-        <ScoreView {...shared} date={date} nowMinutes={nowMinutes} firstDay={firstDay} onPlace={place} />
-      ) : (
-        <ListView {...shared} />
-      )}
-      {isToday && leftover && (
-        <div className="mt-7">
-          <LeftoverStrip data={leftover} onSelect={select} onStatus={(text, error) => setStatus({ text, error })} />
-        </div>
-      )}
+      {planNode}
+      {dayNode}
+      {leftNode && <div className="mt-7">{leftNode}</div>}
     </>
   );
 
@@ -327,17 +347,7 @@ export function DayView({
 
         {isToday && tour && <Tour />}
 
-        {isToday && !firstDay && (
-          <NextUp
-            entries={focus ? glance.focus : glance.next}
-            date={date}
-            timeZone={timeZone}
-            areas={areas}
-            justDone={justDone}
-            onSelect={select}
-            onToggleDone={toggleDone}
-          />
-        )}
+        {focus && nextNode}
 
         {focus ? (
           <details className="group border-y border-rule">
@@ -351,7 +361,15 @@ export function DayView({
             <div className="pt-3 pb-4">{rest()}</div>
           </details>
         ) : (
-          rest()
+          // Wide: the day takes the left, and what surrounds it (Next up, the plan, left-overs, the week) stacks on the right.
+          // Narrow: one column, in the order they read, the week left out.
+          <div className="flex flex-col @min-[88rem]/page:grid @min-[88rem]/page:grid-cols-[minmax(0,1fr)_21rem] @min-[88rem]/page:grid-rows-[repeat(4,auto)_1fr] @min-[88rem]/page:gap-x-8">
+            {nextNode && <div className="order-1 @min-[88rem]/page:col-start-2 @min-[88rem]/page:row-start-1">{nextNode}</div>}
+            {planNode && <div className="order-2 @min-[88rem]/page:col-start-2 @min-[88rem]/page:row-start-2">{planNode}</div>}
+            <div className="order-3 min-w-0 @min-[88rem]/page:col-start-1 @min-[88rem]/page:row-span-5 @min-[88rem]/page:row-start-1">{dayNode}</div>
+            {leftNode && <div className="order-4 mt-7 @min-[88rem]/page:col-start-2 @min-[88rem]/page:row-start-3 @min-[88rem]/page:mt-0">{leftNode}</div>}
+            {pulseNode && <div className="order-5 hidden @min-[88rem]/page:col-start-2 @min-[88rem]/page:row-start-4 @min-[88rem]/page:block">{pulseNode}</div>}
+          </div>
         )}
       </div>
 
