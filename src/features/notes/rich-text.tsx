@@ -194,7 +194,7 @@ export function RichText({
 
   return (
     <div className={styles.measure}>
-      <div className="surface sticky top-14 z-10 px-1.5 py-1 text-[14px] rail:top-2">
+      <div className={`surface sticky top-14 z-10 max-w-full px-1.5 py-1 text-[14px] rail:top-2 ${linking ? "" : "w-fit"}`}>
         {linking && editor ? (
           <LinkField editor={editor} initial={marks?.href ?? ""} onClose={() => setLinking(false)} />
         ) : (
