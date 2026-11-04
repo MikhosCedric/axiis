@@ -36,7 +36,7 @@ export function DueView({
 
   return (
     <div className={selectedParam ? "min-[1180px]:grid min-[1180px]:grid-cols-[minmax(0,1fr)_328px]" : ""}>
-      <div className="min-w-0 px-4 pt-6 pb-14 rail:px-9 rail:pt-8">
+      <div className="mx-auto w-full max-w-[880px] min-w-0 px-4 pt-6 pb-14 rail:px-9 rail:pt-8">
         <h1 className="headline">Due</h1>
         <p className="page-summary">
           {place("due").hint}. {scopePrefix(filter)}
@@ -57,7 +57,7 @@ export function DueView({
             const inThis = inGroup(rows, group);
             if (inThis.length === 0) return null;
             return (
-              <section key={group} aria-labelledby={`due-${group}`} className="mt-6 max-w-[760px]">
+              <section key={group} aria-labelledby={`due-${group}`} className="mt-6">
                 <h2 id={`due-${group}`} className="mb-2 font-display text-lg leading-[1.25] font-medium">
                   {GROUP_LABEL[group]}
                 </h2>

@@ -191,7 +191,7 @@ export function InboxView({
 
   return (
     <div className={selectedParam ? "min-[1180px]:grid min-[1180px]:grid-cols-[minmax(0,1fr)_328px]" : ""}>
-      <div className="min-w-0 px-4 pt-6 pb-14 rail:px-9 rail:pt-8">
+      <div className="mx-auto w-full max-w-[880px] min-w-0 px-4 pt-6 pb-14 rail:px-9 rail:pt-8">
         <header>
           <h1
             ref={heading}
@@ -226,7 +226,7 @@ export function InboxView({
             Items with no day
           </h2>
           {shown.length ? (
-            <MotionList className="surface mt-4 max-w-[760px] overflow-hidden px-3 py-1.5 [&_li:last-child]:border-b-0" onKeyDown={rowKeyDown} aria-describedby="inbox-keys">
+            <MotionList className="surface mt-4 overflow-hidden px-3 py-1.5 [&_li:last-child]:border-b-0" onKeyDown={rowKeyDown} aria-describedby="inbox-keys">
               {shown.map((item) => (
                 <InboxRow
                   key={item.id}
@@ -251,7 +251,7 @@ export function InboxView({
               ))}
             </MotionList>
           ) : (
-            <div className="mt-4 grid max-w-[760px] justify-items-center rounded-[18px] border border-dashed border-rule px-6 py-10 text-center">
+            <div className="mt-4 grid justify-items-center rounded-[18px] border border-dashed border-rule px-6 py-10 text-center">
               <svg aria-hidden="true" viewBox="0 0 24 24" width={28} height={28} fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" className="mb-3 text-ink-3">
                 <path d="M3 13l3-8h12l3 8v6H3z" />
                 <path d="M3 13h5l1 2h6l1-2h5" />

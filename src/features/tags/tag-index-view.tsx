@@ -6,7 +6,7 @@ import { openCount, tagHref } from "./model";
 /** Every tag by name with how many open items carry it. Each opens its own page. */
 export function TagIndexView({ tags, hrefFor = tagHref }: { tags: TagSummary[]; hrefFor?: (name: string) => string }) {
   return (
-    <div className="max-w-[760px] px-4 pt-6 pb-14 rail:px-9 rail:pt-8">
+    <div className="mx-auto max-w-[880px] px-4 pt-6 pb-14 rail:px-9 rail:pt-8">
       <h1 className="headline">Tags</h1>
       <p className="page-summary">
         {tags.length === 0
@@ -14,7 +14,7 @@ export function TagIndexView({ tags, hrefFor = tagHref }: { tags: TagSummary[]; 
           : `${tags.length === 1 ? "One tag" : `${tags.length} tags`}. Open one to see everything that carries it.`}
       </p>
       {tags.length > 0 && (
-        <ul className="surface mt-6 max-w-[760px] overflow-hidden px-3 py-1.5 [&_li:last-child]:border-b-0">
+        <ul className="surface mt-6 overflow-hidden px-3 py-1.5 [&_li:last-child]:border-b-0">
           {tags.map((t) => (
             <li key={t.id} className="border-b border-rule-soft">
               <Link

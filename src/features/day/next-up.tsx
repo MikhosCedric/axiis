@@ -63,7 +63,7 @@ export function NextUp({
   const quick = useQuick();
   if (entries.length === 0) return null;
   return (
-    <section aria-labelledby="next-up-h" className="mb-7 max-w-[760px]">
+    <section aria-labelledby="next-up-h" className="mb-7">
       <h2 id="next-up-h" className="font-display text-lg leading-tight font-medium">
         Next up
       </h2>

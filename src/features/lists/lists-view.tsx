@@ -47,7 +47,7 @@ export function ListsView({
 
   return (
     <div className={selectedParam ? "min-[1180px]:grid min-[1180px]:grid-cols-[minmax(0,1fr)_328px]" : ""}>
-      <div className="min-w-0 px-4 pt-6 pb-14 rail:px-9 rail:pt-8">
+      <div className="mx-auto w-full max-w-[880px] min-w-0 px-4 pt-6 pb-14 rail:px-9 rail:pt-8">
         <h1 className="headline">Lists</h1>
         <p className="page-summary">
           {place("lists").hint}. {scopePrefix(filter)}
@@ -70,7 +70,7 @@ export function ListsView({
         </div>
 
         {data.rows.length > 0 ? (
-          <ul className="surface overflow-hidden px-3 py-1.5 [&_li:last-child]:border-b-0 mt-2 max-w-[760px]">
+          <ul className="surface overflow-hidden px-3 py-1.5 [&_li:last-child]:border-b-0 mt-2">
             {data.rows.map((row) => {
               const done = ticks.isDone(row.id, row.done);
               return (
