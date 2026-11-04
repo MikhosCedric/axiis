@@ -29,6 +29,9 @@ import styles from "./nav.module.css";
 import { place, PLACE_GROUPS, PLACES, type Place, type PlaceId } from "./places";
 import { ThemeToggle } from "./theme-toggle";
 
+/** Counts shown beside a place: the Inbox's waiting items, and the Due items already past their date. */
+export type NavBadges = { inbox: number; overdue: number };
+
 export type NavArea = { id: string; name: string; color: AreaColor | null; open: number };
 
 const ICONS: Record<PlaceId, ReactNode> = {
@@ -62,18 +65,38 @@ function usePlaceHref(): (href: string) => string {
   return (href) => (filterable(href) ? keep(href) : href);
 }
 
-export function NavRail({ today, areas }: { today: LocalDate; areas: NavArea[] }) {
+const NO_BADGES: NavBadges = { inbox: 0, overdue: 0 };
+
+/** The number for a place, if it has one: the Inbox counts quietly, overdue in full ink. */
+function badgeFor(id: PlaceId, badges: NavBadges): { n: number; word: string; hot: boolean } | null {
+  if (id === "inbox" && badges.inbox > 0) return { n: badges.inbox, word: `${badges.inbox} waiting for a day`, hot: false };
+  if (id === "due" && badges.overdue > 0) return { n: badges.overdue, word: `${badges.overdue} past due`, hot: true };
+  return null;
+}
+
+function Badge({ n, hot, className = "" }: { n: number; hot: boolean; className?: string }) {
+  return (
+    <span
+      aria-hidden="true"
+      className={`rounded-full px-1.5 text-xs leading-5 font-semibold tabular ${hot ? "bg-ink text-paper" : "bg-hover text-ink-2"} ${className}`}
+    >
+      {n > 99 ? "99+" : n}
+    </span>
+  );
+}
+
+export function NavRail({ today, areas, badges = NO_BADGES }: { today: LocalDate; areas: NavArea[]; badges?: NavBadges }) {
   const pathname = usePathname();
   return (
     <>
       <PhoneHeader />
-      <Rail pathname={pathname} today={today} areas={areas} />
-      <PhoneBar pathname={pathname} today={today} areas={areas} />
+      <Rail pathname={pathname} today={today} areas={areas} badges={badges} />
+      <PhoneBar pathname={pathname} today={today} areas={areas} badges={badges} />
     </>
   );
 }
 
-function Rail({ pathname, today, areas }: { pathname: string; today: LocalDate; areas: NavArea[] }) {
+function Rail({ pathname, today, areas, badges }: { pathname: string; today: LocalDate; areas: NavArea[]; badges: NavBadges }) {
   return (
     <nav
       aria-label="Primary"
@@ -84,7 +107,7 @@ function Rail({ pathname, today, areas }: { pathname: string; today: LocalDate; 
 
       <div className="grid gap-5">
         {PLACE_GROUPS.map((group) => (
-          <PlaceList key={group} heading={group} places={PLACES.filter((p) => p.group === group)} pathname={pathname} today={today} />
+          <PlaceList key={group} heading={group} places={PLACES.filter((p) => p.group === group)} pathname={pathname} today={today} badges={badges} />
         ))}
       </div>
 
@@ -102,7 +125,7 @@ function Rail({ pathname, today, areas }: { pathname: string; today: LocalDate; 
   );
 }
 
-function PlaceList({ heading, places, pathname, today }: { heading: string; places: Place[]; pathname: string; today: LocalDate }) {
+function PlaceList({ heading, places, pathname, today, badges }: { heading: string; places: Place[]; pathname: string; today: LocalDate; badges: NavBadges }) {
   const id = useId();
   const hrefOf = usePlaceHref();
   return (
@@ -113,17 +136,25 @@ function PlaceList({ heading, places, pathname, today }: { heading: string; plac
       <ul aria-labelledby={id} className="grid gap-0.5">
         {places.map((p) => {
           const here = p.here(pathname, today);
+          const badge = badgeFor(p.id, badges);
           return (
             <li key={p.id}>
               <Link
                 href={hrefOf(p.href)}
                 title={p.hint}
                 aria-current={here ? "page" : undefined}
+                aria-describedby={badge ? `${id}-${p.id}` : undefined}
                 className={`${here ? current : quiet} pointer-coarse:min-h-11`}
               >
                 {ICONS[p.id]}
                 {p.label}
+                {badge && <Badge n={badge.n} hot={badge.hot} className="ml-auto" />}
               </Link>
+              {badge && (
+                <span id={`${id}-${p.id}`} className="sr-only">
+                  {badge.word}
+                </span>
+              )}
             </li>
           );
         })}
@@ -316,7 +347,8 @@ const sheetRow = "min-h-12 px-3 text-[15px]";
  * The phone's places: four tabs a thumb reaches, and More, a sheet with the rest. The bar is fixed to the
  * bottom of the screen on Rail Paper; the page leaves room for it (see the (app) layout).
  */
-function PhoneBar({ pathname, today, areas }: { pathname: string; today: LocalDate; areas: NavArea[] }) {
+function PhoneBar({ pathname, today, areas, badges }: { pathname: string; today: LocalDate; areas: NavArea[]; badges: NavBadges }) {
+  const tabId = useId();
   const sheet = useRef<HTMLDialogElement>(null);
   const hrefOf = usePlaceHref();
   const button = useRef<HTMLButtonElement>(null);
@@ -339,12 +371,24 @@ function PhoneBar({ pathname, today, areas }: { pathname: string; today: LocalDa
       <ul className="flex h-16">
         {tabs.map((p) => {
           const here = p.here(pathname, today);
+          const badge = badgeFor(p.id, badges);
           return (
             <li key={p.id} className="flex flex-1">
-              <Link href={hrefOf(p.href)} aria-current={here ? "page" : undefined} className={here ? tabHere : tabQuiet}>
+              <Link
+                href={hrefOf(p.href)}
+                aria-current={here ? "page" : undefined}
+                aria-describedby={badge ? `${tabId}-${p.id}` : undefined}
+                className={here ? tabHere : tabQuiet}
+              >
                 {ICONS[p.id]}
                 {p.label}
+                {badge && <Badge n={badge.n} hot={badge.hot} className="absolute top-1.5 left-1/2 ml-1.5 min-w-5 text-center" />}
               </Link>
+              {badge && (
+                <span id={`${tabId}-${p.id}`} className="sr-only">
+                  {badge.word}
+                </span>
+              )}
             </li>
           );
         })}
