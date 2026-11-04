@@ -315,7 +315,7 @@ test("notes: the toolbar keeps to the text measure, in named groups, every tool 
   expect(barBox.x + barBox.width).toBeLessThanOrEqual(bodyBox.x + bodyBox.width + 1);
   expect(barBox.width).toBeLessThan(640);
 
-  const groups = { Type: ["Heading", "Subheading", "Quote", "Code"], Style: ["Bold", "Italic", "Link"], Lists: ["Bulleted list", "Numbered list"] };
+  const groups = { Type: ["Heading", "Subheading", "Quote", "Code"], Style: ["Bold", "Italic", "Link"], Lists: ["Bulleted list", "Numbered list", "Checklist"] };
   for (const [name, tools] of Object.entries(groups)) {
     const group = bar.getByRole("group", { name, exact: true });
     for (const tool of tools) await expect(group.getByRole("button", { name: tool, exact: true })).toBeVisible();
@@ -323,7 +323,7 @@ test("notes: the toolbar keeps to the text measure, in named groups, every tool 
 
   await page.getByRole("textbox", { name: "Title" }).focus();
   const reached: string[] = [];
-  for (let i = 0; i < 9; i++) {
+  for (let i = 0; i < 10; i++) {
     await page.keyboard.press("Tab");
     reached.push((await page.evaluate(() => document.activeElement?.getAttribute("aria-label"))) ?? "");
   }

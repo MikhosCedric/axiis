@@ -1,5 +1,6 @@
 "use client";
 
+import { TaskItem, TaskList } from "@tiptap/extension-list";
 import Placeholder from "@tiptap/extension-placeholder";
 import { EditorContent, useEditor, useEditorState, type Editor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
@@ -8,6 +9,7 @@ import styles from "./editor.module.css";
 import {
   BoldIcon,
   BulletListIcon,
+  ChecklistIcon,
   CodeIcon,
   HeadingIcon,
   ItalicIcon,
@@ -68,6 +70,7 @@ function useMarks(editor: Editor | null) {
       italic: e?.isActive("italic") ?? false,
       bullet: e?.isActive("bulletList") ?? false,
       ordered: e?.isActive("orderedList") ?? false,
+      tasks: e?.isActive("taskList") ?? false,
       quote: e?.isActive("blockquote") ?? false,
       code: e?.isActive("codeBlock") ?? false,
       href: (e?.getAttributes("link").href as string | undefined) ?? null,
@@ -168,6 +171,11 @@ export function RichText({
           HTMLAttributes: { rel: LINK_REL, target: null },
         },
       }),
+      TaskList,
+      TaskItem.configure({
+        nested: false,
+        a11y: { checkboxLabel: (node, checked) => `${node.textContent || "Empty item"}: ${checked ? "done" : "not done"}` },
+      }),
       Placeholder.configure({ placeholder: PLACEHOLDER }),
     ],
     content: (initial as object | null) ?? undefined,
@@ -232,6 +240,9 @@ export function RichText({
               </Tool>
               <Tool label="Numbered list" pressed={!!marks?.ordered} onClick={run((e) => chain(e).toggleOrderedList().run())}>
                 <NumberedListIcon />
+              </Tool>
+              <Tool label="Checklist" pressed={!!marks?.tasks} onClick={run((e) => chain(e).toggleTaskList().run())}>
+                <ChecklistIcon />
               </Tool>
             </ToolGroup>
             {marks?.href && safeHref(marks.href) && (

@@ -14,6 +14,8 @@ export const NODE_TYPES = [
   "bulletList",
   "orderedList",
   "listItem",
+  "taskList",
+  "taskItem",
   "blockquote",
   "codeBlock",
   "hardBreak",
