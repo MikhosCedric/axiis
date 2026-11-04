@@ -45,7 +45,7 @@ export function PlanDayStrip({
   }
 
   return (
-    <section aria-labelledby="plan-day-h" className="surface mb-5 px-4 py-3.5">
+    <section aria-labelledby="plan-day-h" className="surface mb-5 max-w-[720px] px-4 py-3.5">
       <h2 id="plan-day-h" className="font-display text-lg leading-tight font-medium">
         Plan your day
       </h2>
