@@ -351,7 +351,7 @@ export function ScoreView({
               <div
                 aria-hidden="true"
                 data-past
-                className="pointer-events-none absolute inset-y-0 left-0 bg-[color-mix(in_srgb,var(--ink)_4.5%,transparent)]"
+                className="pointer-events-none absolute inset-y-0 left-0 bg-[color-mix(in_srgb,var(--ink)_3.5%,transparent)]"
                 style={{ width: Math.min(xAt(axis, nowMinutes), width) }}
               />
             )}
