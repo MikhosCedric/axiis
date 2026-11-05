@@ -51,6 +51,12 @@ export function Floating({
     el.style.top = `${top}px`;
     (el.querySelector<HTMLElement>("[data-autofocus]") ?? el.querySelector<HTMLElement>(FOCUSABLE))?.focus();
     const away = () => el.hidePopover();
+    // A phone's address bar sliding in or out resizes the window in height only, and a layer opened by a long press
+    // would close a moment after it appeared. A change of width (rotating, resizing a window) is what moves things.
+    const width0 = window.innerWidth;
+    const resized = () => {
+      if (window.innerWidth !== width0) away();
+    };
     // A native listener: the toggle event of a popover that is not a `details` is not one React dispatches everywhere.
     const toggled = (e: Event) => {
       if ((e as ToggleEvent).newState !== "closed") return;
@@ -59,11 +65,11 @@ export function Floating({
     };
     el.addEventListener("toggle", toggled);
     // The page moving under it would leave it pointing at nothing, so it closes, as a native menu does.
-    window.addEventListener("resize", away);
+    window.addEventListener("resize", resized);
     window.addEventListener("scroll", away, true);
     return () => {
       el.removeEventListener("toggle", toggled);
-      window.removeEventListener("resize", away);
+      window.removeEventListener("resize", resized);
       window.removeEventListener("scroll", away, true);
       if (el.matches(":popover-open")) el.hidePopover();
     };

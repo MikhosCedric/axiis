@@ -25,6 +25,8 @@ test.describe("score", () => {
 
   test.beforeEach(async ({ page }) => {
     await page.goto("/dev/score");
+    // Drags aim at measured positions; a webfont landing later would move them.
+    await page.evaluate(() => document.fonts.ready);
   });
 
   test("dragging a waiting item onto an area gives it a time there", async ({ page }) => {
