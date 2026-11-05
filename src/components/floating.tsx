@@ -49,8 +49,14 @@ export function Floating({
     const { left, top } = placeNear(anchor, { width, height }, { width: window.innerWidth, height: window.innerHeight });
     el.style.left = `${left}px`;
     el.style.top = `${top}px`;
-    (el.querySelector<HTMLElement>("[data-autofocus]") ?? el.querySelector<HTMLElement>(FOCUSABLE))?.focus();
+    // Focusing must not scroll: a scroll right after it opens would close it again, as the page "moving under" it.
+    (el.querySelector<HTMLElement>("[data-autofocus]") ?? el.querySelector<HTMLElement>(FOCUSABLE))?.focus({ preventScroll: true });
     const away = () => el.hidePopover();
+    const openedAt = performance.now();
+    // The page settling in the moment after it opens (a sheet re-measuring) is not the reader scrolling away.
+    const scrolled = () => {
+      if (performance.now() - openedAt > 250) away();
+    };
     // A phone's address bar sliding in or out resizes the window in height only, and a layer opened by a long press
     // would close a moment after it appeared. A change of width (rotating, resizing a window) is what moves things.
     const width0 = window.innerWidth;
@@ -66,11 +72,11 @@ export function Floating({
     el.addEventListener("toggle", toggled);
     // The page moving under it would leave it pointing at nothing, so it closes, as a native menu does.
     window.addEventListener("resize", resized);
-    window.addEventListener("scroll", away, true);
+    window.addEventListener("scroll", scrolled, true);
     return () => {
       el.removeEventListener("toggle", toggled);
       window.removeEventListener("resize", resized);
-      window.removeEventListener("scroll", away, true);
+      window.removeEventListener("scroll", scrolled, true);
       if (el.matches(":popover-open")) el.hidePopover();
     };
   }, [at]);
