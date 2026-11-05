@@ -1,7 +1,8 @@
 import { type QuickItem } from "@/features/actions/model";
 import type { AreaColor } from "@/domain/area-color";
 import type { AreaId, ItemId, ItemType, LocalDate } from "@/domain/item";
-import { formatDayIn } from "@/features/today/format";
+import { formatDayIn, yearOf } from "@/features/today/format";
+import { utcMidnight } from "@/lib/dates";
 
 export const DUE_PATH = "/due";
 
@@ -62,6 +63,26 @@ export function dueWords(dueOn: LocalDate, today: LocalDate, done: boolean): str
   if (days === 0) return done ? "Was due today" : "Due today";
   if (days === 1) return "Due tomorrow";
   return `${days < 0 && !done ? "Was due" : "Due"} ${formatDayIn(dueOn, today)}`;
+}
+
+const short = new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short", timeZone: "UTC" });
+const weekday = new Intl.DateTimeFormat("en-GB", { weekday: "short", timeZone: "UTC" });
+
+/** How strongly a due date asks for notice: behind us, within the week, or far off. Drives the chip's look only. */
+export type DueTone = "past" | "soon" | "far" | "done";
+
+/**
+ * The due date as a chip: "Today", "Tomorrow", a weekday inside the week, otherwise "15 Jan" (with the year when
+ * it is not this one). The full sentence stays beside it for a screen reader. Never counts days late.
+ */
+export function dueChip(dueOn: LocalDate, today: LocalDate, done: boolean): { text: string; tone: DueTone } {
+  const days = daysBetween(today, dueOn);
+  const tone: DueTone = done ? "done" : days < 0 ? "past" : days < WEEK_DAYS ? "soon" : "far";
+  if (days === 0) return { text: "Today", tone };
+  if (days === 1) return { text: "Tomorrow", tone };
+  if (days > 1 && days < WEEK_DAYS) return { text: weekday.format(utcMidnight(dueOn)), tone };
+  const year = yearOf(dueOn) === yearOf(today) ? "" : ` ${yearOf(dueOn)}`;
+  return { text: `${short.format(utcMidnight(dueOn))}${year}`, tone };
 }
 
 /** The rows of one group, in the order they came. */

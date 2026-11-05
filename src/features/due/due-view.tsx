@@ -11,7 +11,9 @@ import { setDoneAction } from "@/features/today/actions";
 import { DoneToggle, useDoneToggles, type SetDone } from "@/features/today/done-toggle";
 import { FilterChips } from "@/features/filter/filter-chip";
 import { NO_FILTER, scopePrefix, type ViewFilter } from "@/features/filter/model";
-import { dueSummary, GROUP_LABEL, inGroup, type DueData, type DueGroup, type DueRow } from "./model";
+import type { LocalDate } from "@/domain/item";
+import { shortPlanned } from "@/features/day/leftover-model";
+import { dueChip, dueSummary, GROUP_LABEL, inGroup, type DueData, type DueGroup, type DueRow, type DueTone } from "./model";
 
 const GROUPS: DueGroup[] = ["past", "week", "later"];
 
@@ -66,6 +68,7 @@ export function DueView({
                     <DueRowView
                       key={row.id}
                       row={row}
+                      today={data.today}
                       selected={selectedId === row.id}
                       justDone={ticks.justDone === row.id}
                       onSelect={() => select(row.id)}
@@ -87,14 +90,33 @@ export function DueView({
   );
 }
 
+const CHIP_TONE: Record<DueTone, string> = {
+  past: "border border-ink-2 text-ink",
+  soon: "bg-hover text-ink",
+  far: "text-ink-2",
+  done: "text-ink-3",
+};
+
+/** The due date as a small chip: outlined once it is behind us, filled inside the week, plain beyond it. */
+function DueChip({ row, today }: { row: DueRow; today: LocalDate }) {
+  const { text, tone } = dueChip(row.dueOn, today, row.done);
+  return (
+    <span aria-hidden="true" className={`inline-flex items-center rounded-full px-2 py-px font-medium tabular ${CHIP_TONE[tone]}`}>
+      {text}
+    </span>
+  );
+}
+
 function DueRowView({
   row,
+  today,
   selected,
   justDone,
   onSelect,
   onToggleDone,
 }: {
   row: DueRow;
+  today: LocalDate;
   selected: boolean;
   justDone: boolean;
   onSelect: () => void;
@@ -132,8 +154,14 @@ function DueRowView({
         </button>
         )}
         <p className={`mt-0.5 flex flex-wrap gap-x-3 text-xs ${quiet}`}>
-          <span className="tabular">{row.due}</span>
-          {row.when && <span className="tabular">Planned {row.when}</span>}
+          <span className="sr-only">{row.due}</span>
+          <DueChip row={row} today={today} />
+          {row.when && (
+            <span className="tabular">
+              <span className="sr-only">Planned {row.when}</span>
+              <span aria-hidden="true">Planned {shortPlanned(`Planned ${row.when}`)}</span>
+            </span>
+          )}
           {row.area && <AreaLabel name={row.area} color={row.areaColor} />}
         </p>
       </div>

@@ -406,6 +406,8 @@ function DayCell({
   children: ReactNode;
 }) {
   const number = Number(cell.date.slice(8));
+  // A day whose every item is done wears a small tick beside its number: the day is finished, at a glance.
+  const allDone = cell.more === 0 && cell.marks.length > 0 && cell.marks.every((m) => m.state === "done");
   return (
     <div
       role="gridcell"
@@ -432,6 +434,11 @@ function DayCell({
         >
           {number}
         </span>
+        {allDone && (
+          <svg viewBox="0 0 16 16" width={14} height={14} fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" className="mr-1 ml-auto hidden text-ink-3 @min-[36rem]/month:block">
+            <path d="M3.5 8.5l3 3 6-7" />
+          </svg>
+        )}
         {number === 1 && <span className="ml-1 hidden text-xs text-ink-3 @min-[36rem]/month:inline">{formatDayHeading(cell.date).split(" ").at(-1)?.slice(0, 3)}</span>}
       </span>
 

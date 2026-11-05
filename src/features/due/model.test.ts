@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { LocalDate } from "@/domain/item";
-import { daysBetween, dueGroup, dueSummary, dueWords, GROUP_LABEL } from "./model";
+import { daysBetween, dueGroup, dueSummary, dueWords, GROUP_LABEL, dueChip } from "./model";
 
 const d = (s: string) => s as LocalDate;
 const today = d("2026-10-08");
@@ -73,5 +73,23 @@ describe("dueSummary", () => {
 
   it("leaves done items out of the counts", () => {
     expect(dueSummary([row("week", true), row("week")])).toBe("1 is due this week.");
+  });
+});
+
+describe("dueChip", () => {
+  it("says today, tomorrow and a weekday inside the week", () => {
+    expect(dueChip(d("2026-10-08"), today, false)).toEqual({ text: "Today", tone: "soon" });
+    expect(dueChip(d("2026-10-09"), today, false)).toEqual({ text: "Tomorrow", tone: "soon" });
+    expect(dueChip(d("2026-10-12"), today, false)).toEqual({ text: "Mon", tone: "soon" });
+  });
+
+  it("gives a short date beyond the week, with the year only when it is another year", () => {
+    expect(dueChip(d("2026-10-20"), today, false)).toEqual({ text: "20 Oct", tone: "far" });
+    expect(dueChip(d("2027-01-04"), today, false)).toEqual({ text: "4 Jan 2027", tone: "far" });
+  });
+
+  it("marks a date behind us as past, without counting how late, and a done item as done", () => {
+    expect(dueChip(d("2026-10-05"), today, false)).toEqual({ text: "5 Oct", tone: "past" });
+    expect(dueChip(d("2026-10-05"), today, true).tone).toBe("done");
   });
 });
