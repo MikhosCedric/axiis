@@ -1,4 +1,5 @@
 import { rowEntries, type Quick, type RowEntry } from "./context";
+import type { Box } from "./model";
 import { SWIPE, swipeAxis, swipeEnd, swipeReach } from "./gesture-model";
 
 type Track = {
@@ -10,6 +11,8 @@ type Track = {
   axis: "x" | "y" | null;
   dx: number;
   timer: number;
+  /** When the finger came down, so a press that lasted long enough still counts if the timer was late. */
+  since: number;
 };
 
 const STRIP =
@@ -29,6 +32,8 @@ export function attachGestures(api: { current: Quick | null }): () => void {
   let strip: HTMLElement | null = null;
   let shown: { row: HTMLElement; strip: HTMLElement } | null = null;
   let swallowClick = false;
+  /** A menu opened by a hold whose finger is still down. */
+  let held: { id: number; entry: RowEntry; row: HTMLElement; box: Box } | null = null;
 
   function clearStrip(el: HTMLElement | null) {
     el?.remove();
@@ -90,15 +95,24 @@ export function attachGestures(api: { current: Quick | null }): () => void {
       id: e.pointerId,
       axis: null,
       dx: 0,
+      since: performance.now(),
       timer: window.setTimeout(() => {
-        // A still finger: the row's menu, where it pressed. Android sends its own contextmenu for this, which
-        // the row already answers, so this only acts when no menu opened.
-        if (!track || track.axis !== null || quick().openFor(entry.item.key)) return;
-        swallowClick = true;
-        quick().open("context", entry.item, entry.hooks, { left: at.x, top: at.y, width: 0, height: 0 }, row);
-        track = null;
+        if (track) holdMenu(track);
       }, SWIPE.longPress),
     };
+  }
+
+  /**
+   * A still finger: the row's menu, where it pressed. Android sends its own contextmenu for this, which the row
+   * already answers, so this only acts when no menu opened.
+   */
+  function holdMenu(t: Track) {
+    if (t.axis !== null || quick().openFor(t.entry.item.key)) return;
+    swallowClick = true;
+    const box = { left: t.x, top: t.y, width: 0, height: 0 };
+    quick().open("context", t.entry.item, t.entry.hooks, box, t.row);
+    held = { id: t.id, entry: t.entry, row: t.row, box };
+    track = null;
   }
 
   function onMove(e: PointerEvent) {
@@ -123,8 +137,27 @@ export function attachGestures(api: { current: Quick | null }): () => void {
   }
 
   function onUp(e: PointerEvent) {
+    if (held && e.pointerId === held.id) {
+      // A popover is dismissed by a lift of the finger outside it, and this menu opened while the finger was down, so
+      // the lift that ends the hold would close it again. Put it back once the browser has done that.
+      const h = held;
+      held = null;
+      if (e.type === "pointerup") {
+        window.setTimeout(() => {
+          if (!quick().openFor(h.entry.item.key)) quick().open("context", h.entry.item, h.entry.hooks, h.box, h.row);
+        }, 80);
+      }
+      return;
+    }
     if (!track || e.pointerId !== track.id) return;
     window.clearTimeout(track.timer);
+    // Input is handled before timers, so on a busy page the finger can lift before a due timer has run: a press that
+    // lasted long enough still opens the menu, instead of being lost to the delay.
+    if (e.type === "pointerup" && track.axis === null && performance.now() - track.since >= SWIPE.longPress) {
+      holdMenu(track);
+      track = null;
+      return;
+    }
     const { row, entry, axis, dx } = track;
     track = null;
     if (axis !== "x" || !strip) return;

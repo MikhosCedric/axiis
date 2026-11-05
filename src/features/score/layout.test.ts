@@ -129,6 +129,15 @@ describe("packRows", () => {
     expect(placed.map((p) => p.row)).toEqual([0, 0]);
   });
 
+  it("gives a short item its head's width, so one starting on top of it takes the next sub-row", () => {
+    const { rows, placed } = pack([
+      ["a", 600, 602],
+      ["b", 608, 700],
+    ]);
+    expect(rows).toBe(2);
+    expect(placed.map((p) => p.row)).toEqual([0, 1]);
+  });
+
   it("stacks overlapping items and reuses the first sub-row that is free", () => {
     const { rows, placed } = pack([
       ["c", 720, 780],

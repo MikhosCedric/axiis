@@ -183,6 +183,7 @@ signedIn.describe("signed in", () => {
     await page.getByLabel("Capture anything").fill(`${title} today`);
     await page.getByLabel("Capture anything").press("Enter");
     await chip.click();
+    await details.getByRole("button", { name: "Repeat" }).click();
     await details.getByLabel("Repeat").selectOption("daily");
     await expect(details.getByRole("status").filter({ hasText: /^Repeats every day/ })).toBeVisible();
 
@@ -205,7 +206,7 @@ signedIn.describe("signed in", () => {
     signedIn.use({ timezoneId: "America/New_York" });
 
     const details = (page: Page) => page.getByRole("complementary", { name: "Details" });
-    const when = (page: Page) => details(page).locator("dt", { hasText: "When" }).locator("+ dd > span").first();
+    const when = (page: Page) => details(page).locator("dt", { hasText: "Planned for" }).locator("+ dd > span").first();
 
     async function timeOnDay(page: Page, day: string, title: string) {
       await page.goto("/today");
@@ -273,12 +274,13 @@ signedIn.describe("signed in", () => {
     const row = strip.getByRole("button", { name: "Return the library books", exact: true });
     await expect(row).toBeVisible();
     await expect(strip.getByText("Planned Monday 3 February 2020")).toBeVisible();
-    // A ruled section of the page, not a card: hairlines above and below, no fill, square corners.
+    // A card like the rest of Today: a hairline all round, a filled sheet, the house corner radius.
     const drawn = await strip.evaluate((el) => {
       const s = getComputedStyle(el);
       return { top: s.borderTopWidth, bottom: s.borderBottomWidth, left: s.borderLeftWidth, fill: s.backgroundColor, radius: s.borderTopLeftRadius };
     });
-    expect(drawn).toEqual({ top: "1px", bottom: "1px", left: "0px", fill: "rgba(0, 0, 0, 0)", radius: "0px" });
+    expect(drawn).toMatchObject({ top: "1px", bottom: "1px", left: "1px", radius: "18px" });
+    expect(drawn.fill).not.toBe("rgba(0, 0, 0, 0)");
     await strip.getByRole("button", { name: /^Move to today\s*: Return the library books$/ }).click();
     await expect(page.getByRole("status").filter({ hasText: "Return the library books is on today." })).toBeVisible();
     await expect(row).toHaveCount(0);

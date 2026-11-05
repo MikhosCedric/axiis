@@ -98,8 +98,8 @@ export function Subtasks({
 
   return (
     <section aria-labelledby={headingId}>
-      <div className="flex items-baseline justify-between gap-3 border-b border-rule pb-2">
-        <h3 id={headingId} className="font-display text-lg font-medium">
+      <div className="flex items-baseline justify-between gap-3 pb-1.5">
+        <h3 id={headingId} className="text-sm font-semibold text-ink">
           Subtasks
         </h3>
         {progress && <p className="text-[13px] text-ink-2 tabular">{progress}</p>}

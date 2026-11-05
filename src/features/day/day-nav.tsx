@@ -58,11 +58,11 @@ export function DayNav({ date, today, mode }: { date: LocalDate; today: LocalDat
       <span className="inline-flex flex-none">
         <Link href={keep(dayHref(previous, today, mode))} className={`${step} rounded-r-none`} aria-keyshortcuts="[" title="Previous day ( [ )">
           <Chevron back />
-          <span aria-hidden="true" className="max-rail:hidden">Previous</span>
+          <span aria-hidden="true" className="@max-[40rem]/page:hidden">Previous</span>
           <span className="sr-only">Previous day, {formatDayHeading(previous)}</span>
         </Link>
         <Link href={keep(dayHref(next, today, mode))} className={`${step} -ml-px rounded-l-none`} aria-keyshortcuts="]" title="Next day ( ] )">
-          <span aria-hidden="true" className="max-rail:hidden">Next</span>
+          <span aria-hidden="true" className="@max-[40rem]/page:hidden">Next</span>
           <Chevron />
           <span className="sr-only">Next day, {formatDayHeading(next)}</span>
         </Link>

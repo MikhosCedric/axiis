@@ -124,11 +124,14 @@ export function DateRow({
   on: initial,
   save,
   clear,
+  picks,
 }: {
   label: string;
   on: LocalDate | null;
   save: (on: LocalDate) => void;
   clear?: { label: string; run: () => void };
+  /** One-tap dates shown beside the field, such as Today and Tomorrow. */
+  picks?: { label: string; on: LocalDate }[];
 }) {
   const id = useId();
   const hintId = useId();
@@ -140,6 +143,14 @@ export function DateRow({
     const on = parseLocalDate(value);
     setFar(outOfRange(value));
     if (!on) return setValue(saved ?? "");
+    if (on === saved) return;
+    setSaved(on);
+    save(on);
+  }
+
+  function pick(on: LocalDate) {
+    setValue(on);
+    setFar(false);
     if (on === saved) return;
     setSaved(on);
     save(on);
@@ -171,6 +182,17 @@ export function DateRow({
           }}
           className={`-ml-2 ${field}`}
         />
+        {picks?.map((p) => (
+          <button
+            key={p.label}
+            type="button"
+            aria-pressed={saved === p.on}
+            onClick={() => pick(p.on)}
+            className="pill px-3 py-1"
+          >
+            {p.label}
+          </button>
+        ))}
         {clear && saved !== null && (
           <button
             type="button"

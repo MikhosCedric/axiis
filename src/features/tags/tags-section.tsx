@@ -69,7 +69,7 @@ export function TagsSection({
       </p>
 
       {shown.length > 0 ? (
-        <ul className="mt-4 border-t border-rule">
+        <ul className="surface mt-4 overflow-hidden px-3 py-1.5 [&_li:last-child]:border-b-0">
           {shown.map((tag) => (
             <li
               key={tag.id}

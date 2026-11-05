@@ -286,7 +286,7 @@ export function MonthView({
             role="grid"
             aria-labelledby="month-h"
             aria-describedby={KEYS_ID}
-            className="border-t border-l border-rule"
+            className="surface overflow-hidden [&>[role=row]]:-mr-px [&>[role=row]:last-child]:-mb-px"
           >
             <div role="row" className="grid grid-cols-7">
               {weeks[0].map((c) => (
@@ -294,7 +294,7 @@ export function MonthView({
                   key={c.date}
                   role="columnheader"
                   aria-label={weekdayName(c.date, "long")}
-                  className="border-r border-b border-rule px-1 py-1.5 text-center text-xs font-medium text-ink-2 @min-[36rem]/month:px-2 @min-[36rem]/month:text-left"
+                  className="border-r border-b border-rule-soft bg-[color-mix(in_srgb,var(--paper-2)_55%,var(--sheet))] px-1 py-1.5 text-center text-xs font-medium text-ink-2 @min-[36rem]/month:px-2 @min-[36rem]/month:text-left"
                 >
                   <span aria-hidden="true">
                     <span className="@min-[36rem]/month:hidden">{weekdayName(c.date, "short").slice(0, 2)}</span>
@@ -406,6 +406,8 @@ function DayCell({
   children: ReactNode;
 }) {
   const number = Number(cell.date.slice(8));
+  // A day whose every item is done wears a small tick beside its number: the day is finished, at a glance.
+  const allDone = cell.more === 0 && cell.marks.length > 0 && cell.marks.every((m) => m.state === "done");
   return (
     <div
       role="gridcell"
@@ -418,20 +420,25 @@ function DayCell({
       onPointerDown={onPointerDown}
       onClick={onClick}
       onKeyDown={onKeyDown}
-      className={`group/day relative flex min-h-14 min-w-0 cursor-pointer flex-col border-r border-b border-rule px-0.5 pt-1 pb-1 transition-colors focus-visible:outline-offset-[-3px] @min-[36rem]/month:min-h-32 @min-[36rem]/month:px-1 ${
+      className={`group/day relative flex min-h-14 min-w-0 cursor-pointer flex-col border-r border-b border-rule-soft px-0.5 pt-1 pb-1 transition-colors focus-visible:outline-offset-[-3px] @min-[36rem]/month:min-h-32 @min-[36rem]/month:px-1 ${
         over ? "bg-accent-wash" : active ? "bg-hover @min-[36rem]/month:bg-transparent" : "hover:bg-hover"
-      }`}
+      } ${inMonth ? (isToday ? "bg-[color-mix(in_srgb,var(--ink)_3.5%,transparent)]" : "") : "bg-[color-mix(in_srgb,var(--paper-2)_45%,transparent)]"}`}
     >
       {/* The cell is named by its content, not aria-label: its marks are drawn inside it, and a name must hold what it draws. */}
       <span className="sr-only">{cellLabel(cell)}</span>
       <span aria-hidden="true" className="flex items-center justify-center @min-[36rem]/month:justify-start">
         <span
-          className={`inline-flex h-6 min-w-6 items-center justify-center rounded-full px-1 text-[13px] tabular ${
+          className={`inline-flex h-7 min-w-7 items-center justify-center rounded-full px-1 font-display text-[15px] tabular ${
             isToday ? "bg-ink font-semibold text-paper" : inMonth ? "font-medium text-ink" : "text-ink-3"
           }`}
         >
           {number}
         </span>
+        {allDone && (
+          <svg viewBox="0 0 16 16" width={14} height={14} fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" className="mr-1 ml-auto hidden text-ink-3 @min-[36rem]/month:block">
+            <path d="M3.5 8.5l3 3 6-7" />
+          </svg>
+        )}
         {number === 1 && <span className="ml-1 hidden text-xs text-ink-3 @min-[36rem]/month:inline">{formatDayHeading(cell.date).split(" ").at(-1)?.slice(0, 3)}</span>}
       </span>
 

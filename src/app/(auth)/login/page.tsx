@@ -24,7 +24,7 @@ export default async function LoginPage({ searchParams }: PageProps<"/login">) {
   return (
     <PageTurn>
     <main id="main" className="flex min-h-full flex-1 items-center justify-center bg-paper px-6 py-16 font-sans">
-      <div className="w-full max-w-sm space-y-8">
+      <div className="surface w-full max-w-[26rem] space-y-7 px-8 py-9">
         <header className="space-y-2">
           <BrandHome className="mb-8" />
           <h1 className="font-display text-3xl text-ink">Sign in to Axiis</h1>
@@ -54,7 +54,7 @@ export default async function LoginPage({ searchParams }: PageProps<"/login">) {
 
         <form action={signInWithGoogle}>
           <input type="hidden" name="next" value={next} />
-          <button type="submit" className="w-full rounded-md border border-rule bg-sheet px-4 py-2 text-ink">
+          <button type="submit" className="w-full rounded-xl border border-rule bg-sheet px-4 py-2.5 text-ink">
             Continue with Google
           </button>
         </form>

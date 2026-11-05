@@ -43,6 +43,22 @@ describe("bodyText", () => {
 });
 
 describe("parseBody", () => {
+  it("keeps a checklist, with each box's state, and reads its lines as text", () => {
+    const list = {
+      type: "taskList",
+      content: [
+        { type: "taskItem", attrs: { checked: true }, content: [para(text("Pack the bulbs"))] },
+        { type: "taskItem", attrs: { checked: false }, content: [para(text("Buy twine"))] },
+      ],
+    };
+    const parsed = parseBody(doc(list));
+    expect(parsed.ok).toBe(true);
+    if (parsed.ok) {
+      expect(parsed.doc.content?.[0]).toEqual(list);
+      expect(parsed.text).toBe("Pack the bulbs\nBuy twine");
+    }
+  });
+
   it("accepts a document and returns its text", () => {
     expect(parseBody(doc(para(text("hello"))))).toEqual({ ok: true, doc: doc(para(text("hello"))), text: "hello" });
   });

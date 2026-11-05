@@ -61,6 +61,14 @@ export const NumberedListIcon = () => (
   </Icon>
 );
 
+export const ChecklistIcon = () => (
+  <Icon>
+    <rect x="2.25" y="3" width="3.5" height="3.5" rx="0.8" />
+    <path d="M2.6 12.5l1.2 1.2 2.2-2.4" />
+    <path d="M8.5 4.75h7M8.5 12.5h7" />
+  </Icon>
+);
+
 export const QuoteIcon = () => (
   <Icon>
     <path d="M3.5 3.5v11M7 5h7.5M7 9h7.5M7 13h4.5" />

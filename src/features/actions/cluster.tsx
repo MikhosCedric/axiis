@@ -56,7 +56,7 @@ export function Cluster({
   const quick = useQuick();
   if (!quick) return null;
   const shown = CLUSTER_ORDER.filter(
-    (a) => canDo(item, a) && !(a === "done" && hooks.doneBox) && (!compact || a === "done" || a === "more"),
+    (a) => canDo(item, a) && !(a === "done" && hooks.doneBox) && !(a === "plan" && hooks.planBox) && (!compact || a === "done" || a === "more"),
   );
   const done = quick.patched(item.key)?.done ?? item.done;
   const open = quick.openFor(item.key);

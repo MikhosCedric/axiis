@@ -161,8 +161,16 @@ signedIn.describe("rows that move", () => {
     const key = (await first.getAttribute("data-quick"))!;
     await first.getByRole("button").first().focus();
     await watchMotion(page);
+    // The ghost lives only as long as the fade, which a slow runner can outrun a poll, so watch for it instead of sampling.
+    await page.evaluate(() => {
+      const w = window as unknown as { __ghosts: number };
+      w.__ghosts = 0;
+      new MutationObserver(() => {
+        if (document.querySelector("li[data-ghost]")) w.__ghosts++;
+      }).observe(document.body, { childList: true, subtree: true, attributes: true });
+    });
     await page.keyboard.press("Delete");
-    await expect(list(page).locator("li[data-ghost]")).toHaveCount(1);
+    await expect.poll(() => page.evaluate(() => (window as unknown as { __ghosts: number }).__ghosts)).toBeGreaterThan(0);
     await expect.poll(() => motion(page)).toBeGreaterThan(0);
     await expect(list(page).locator("li[data-ghost]")).toHaveCount(0);
 

@@ -75,11 +75,11 @@ export function MonthNav({ month, today }: { month: YearMonth; today: LocalDate 
       <span className="inline-flex flex-none">
         <StepLink href={keep(monthHref(previous, today))} className={`${step} rounded-r-none`} aria-keyshortcuts="[" title="Previous month ( [ )">
           <Chevron back />
-          <span aria-hidden="true" className="max-rail:hidden">Previous</span>
+          <span aria-hidden="true" className="@max-[40rem]/page:hidden">Previous</span>
           <span className="sr-only">Previous month, {formatMonthHeading(previous)}</span>
         </StepLink>
         <StepLink href={keep(monthHref(next, today))} className={`${step} -ml-px rounded-l-none`} aria-keyshortcuts="]" title="Next month ( ] )">
-          <span aria-hidden="true" className="max-rail:hidden">Next</span>
+          <span aria-hidden="true" className="@max-[40rem]/page:hidden">Next</span>
           <Chevron />
           <span className="sr-only">Next month, {formatMonthHeading(next)}</span>
         </StepLink>

@@ -28,3 +28,14 @@ export const getRailAreas = cache(async () => {
   const [areas, open] = await Promise.all([getAreas(), loadRailCounts(repo, await getTodayDate(), await getTimeZone())]);
   return areas.map((a) => ({ id: a.id, name: a.name, color: a.color, open: open.get(a.id) ?? 0 }));
 });
+
+const DAY_MS = 86_400_000;
+
+/** What waits in the Inbox, and how many due dates have passed, for the badges on the places. Once per request. */
+export const getRailBadges = cache(async () => {
+  const repo = await getItemsRepo();
+  const now = getNow();
+  const today = await getTodayDate();
+  const [inbox, due] = await Promise.all([repo.listInbox(), repo.listDue(new Date(now.getTime() - DAY_MS))]);
+  return { inbox: inbox.length, overdue: due.filter((i) => i.status === "open" && i.dueOn !== null && i.dueOn < today).length };
+});

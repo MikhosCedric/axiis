@@ -183,10 +183,10 @@
 /* The Headline type step: every app page title. */
 @utility headline {
   font-family: var(--font-display);
-  font-size: clamp(28px, 3vw, 40px);
-  font-weight: 500;
-  line-height: 1.1;
-  letter-spacing: -0.015em;
+  font-size: clamp(30px, 3.4vw, 46px);
+  font-weight: 600;
+  line-height: 1.05;
+  letter-spacing: -0.03em;
   text-wrap: balance;
 }
 
@@ -250,7 +250,8 @@
  * ground from `--card` (a row's actions fade into it, a selected row's wash mixes over it).
  */
 @utility surface {
-  background: var(--sheet);
+  /* A faint light from above: the card is a touch brighter at its top edge, so it reads as a surface, not a flat fill. */
+  background: linear-gradient(180deg, color-mix(in srgb, light-dark(var(--sheet), var(--ink)) 2%, var(--sheet)) 0%, var(--sheet) 70%) var(--sheet);
   border: 1px solid var(--rule-soft);
   border-radius: 18px;
   box-shadow: var(--raise), var(--highlight);
@@ -258,9 +259,62 @@
   --ground: var(--sheet);
 }
 
+/*
+ * A soft pill: the one small action the app offers beside a line of text ("Plan for today", a day choice,
+ * a send-to-today arrow). One recipe, so it looks and answers the same everywhere: quiet at rest, ink on
+ * hover, inverted while it is the chosen one (aria-pressed), dimmed when disabled, a full touch target
+ * under a finger. Callers set only its size and spacing.
+ */
+@utility pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  background: var(--hover);
+  color: var(--ink-2);
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+  &:hover,
+  &:active {
+    background: var(--press);
+    color: var(--ink);
+  }
+  &[aria-pressed="true"] {
+    background: var(--ink);
+    color: var(--paper);
+  }
+  &:disabled {
+    cursor: default;
+    opacity: 0.6;
+  }
+  @media (pointer: coarse) {
+    min-height: 2.75rem;
+  }
+}
+
+/*
+ * A block that is its own card on a narrow page and a section of one shared panel beside the day on a wide
+ * one (Today's side column). The page container is named "page"; from 66rem the block gives up its own
+ * edge, shadow, fill and gap, and the panel's hairlines separate it from the next.
+ */
+@utility side-part {
+  @container page (min-width: 66rem) {
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    background: none !important;
+    margin-bottom: 0 !important;
+    max-width: none !important;
+  }
+}
+
 /* The page ground under the signed-in app: Paper with a soft warm glow at the top. */
 @utility ground {
-  background-image: radial-gradient(80rem 30rem at 50% -10rem, var(--glow), transparent 72%);
+  background-image:
+    radial-gradient(42rem 26rem at 8% -8rem, color-mix(in srgb, var(--accent) 9%, transparent), transparent 70%),
+    radial-gradient(40rem 24rem at 96% -6rem, color-mix(in srgb, var(--ink) 4%, transparent), transparent 70%),
+    radial-gradient(80rem 30rem at 50% -10rem, var(--glow), transparent 72%);
   background-repeat: no-repeat;
 }
 
@@ -394,8 +448,13 @@
 
 /* The ground under a selected row, as Verdigris Wash lies over Paper. */
 @utility row-selected {
-  background: var(--accent-wash);
-  --row-ground: color-mix(in srgb, var(--accent) 15%, var(--card, var(--paper)));
+  background: var(--press);
+  /* Inset 6px from a card whose corners are 18px, so the two curves share a centre. */
+  border-radius: 12px;
+  border-bottom-color: transparent;
+  margin-inline: -0.375rem;
+  padding-inline: 0.375rem;
+  --row-ground: color-mix(in srgb, var(--ink) 10%, var(--card, var(--paper)));
 }
 
 @layer base {

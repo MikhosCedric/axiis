@@ -25,6 +25,8 @@ test.describe("score", () => {
 
   test.beforeEach(async ({ page }) => {
     await page.goto("/dev/score");
+    // Drags aim at measured positions; a webfont landing later would move them.
+    await page.evaluate(() => document.fonts.ready);
   });
 
   test("dragging a waiting item onto an area gives it a time there", async ({ page }) => {
@@ -121,7 +123,7 @@ for (const view of ["", "&view=list"]) {
 test("detail: a time set for all of them moves the series and leaves other changed days alone", async ({ page }) => {
   const when = (label: string) => page.getByRole("complementary").locator("dt", { hasText: label }).locator("+ dd");
   await page.goto("/dev/detail?item=00000000-0000-4000-8000-000000000061");
-  const wednesday = await when("When").textContent();
+  const wednesday = await when("Planned for").textContent();
 
   await page.getByRole("link", { name: "Repeating: Friday's run, not touched yet" }).click();
   await expect(page.getByText("Repeats. This is the one for Friday 9 October.")).toBeVisible();
@@ -130,18 +132,18 @@ test("detail: a time set for all of them moves the series and leaves other chang
   await time.getByLabel("Starts at").fill("08:00");
   await time.getByLabel("Ends at").fill("08:30");
   await time.getByLabel("Ends at").press("Enter");
-  await expect(when("When")).toHaveText("Friday 9 October, 08:00 to 08:30");
+  await expect(when("Planned for")).toHaveText("Friday 9 October, 08:00 to 08:30");
 
   await page.getByRole("link", { name: "Repeating: the run series itself" }).click();
   await expect(when("Starts")).toHaveText("Monday 5 October, 08:00 to 08:30");
   await page.getByRole("link", { name: "Repeating: Wednesday's run, renamed and done" }).click();
-  await expect(when("When")).toHaveText(wednesday!);
+  await expect(when("Planned for")).toHaveText(wednesday!);
 });
 
 test("detail: all of them can go back to any time and start on another day", async ({ page }) => {
   const when = (label: string) => page.getByRole("complementary").locator("dt", { hasText: label }).locator("+ dd");
   await page.goto("/dev/detail?item=00000000-0000-4000-8000-000000000061");
-  const wednesday = await when("When").textContent();
+  const wednesday = await when("Planned for").textContent();
   await page.getByRole("link", { name: "Repeating: Friday's run, not touched yet" }).click();
   await expect(page.getByText("Repeats. This is the one for Friday 9 October.")).toBeVisible();
   await expect(page.getByLabel("First day")).toHaveCount(0);
@@ -149,7 +151,7 @@ test("detail: all of them can go back to any time and start on another day", asy
   await page.getByText("All of them").click();
   await page.getByRole("button", { name: "Any time" }).click();
   await expect(page.getByRole("status").filter({ hasText: "All of them are at any time of day now." })).toBeVisible();
-  await expect(when("When")).toHaveText("Friday 9 October");
+  await expect(when("Planned for")).toHaveText("Friday 9 October");
 
   const first = page.getByLabel("First day");
   await expect(first).toHaveValue("2026-10-05");
@@ -160,7 +162,7 @@ test("detail: all of them can go back to any time and start on another day", asy
   await page.getByRole("link", { name: "Repeating: the run series itself" }).click();
   await expect(when("Starts")).toHaveText("Wednesday 7 October");
   await page.getByRole("link", { name: "Repeating: Wednesday's run, renamed and done" }).click();
-  await expect(when("When")).toHaveText(wednesday!);
+  await expect(when("Planned for")).toHaveText(wednesday!);
 });
 
 test("detail: the series itself has a Time and a First day row", async ({ page }) => {
@@ -221,22 +223,22 @@ test("detail: times are typed either way and shown on the 24-hour clock, and an 
   await end.press("Enter");
   await expect(start).toHaveValue("14:30");
   await expect(end).toHaveValue("15:15");
-  await expect(when("When")).toHaveText("Sunday 11 October, 14:30 to 15:15");
+  await expect(when("Planned for")).toHaveText("Sunday 11 October, 14:30 to 15:15");
   await start.fill("930");
   await start.press("Enter");
   await expect(start).toHaveValue("09:30");
-  await expect(when("When")).toHaveText("Sunday 11 October, 09:30 to 15:15");
+  await expect(when("Planned for")).toHaveText("Sunday 11 October, 09:30 to 15:15");
 
   await end.fill("3pm");
   await end.press("Enter");
   await expect(end).toHaveValue("15:00");
-  await expect(when("When")).toHaveText("Sunday 11 October, 09:30 to 15:00");
+  await expect(when("Planned for")).toHaveText("Sunday 11 October, 09:30 to 15:00");
 
   await end.fill("3 xm");
   await end.press("Enter");
   await expect(end).toHaveAttribute("aria-invalid", "true");
   await expect(page.getByText("That time could not be read. 24-hour clock, like 14:30 or 1430. 2:30pm works too.")).toBeVisible();
-  await expect(when("When")).toHaveText("Sunday 11 October, 09:30 to 15:00");
+  await expect(when("Planned for")).toHaveText("Sunday 11 October, 09:30 to 15:00");
 });
 
 test("week: dragging an item to another day plans it there", async ({ page }) => {
@@ -289,7 +291,7 @@ test("detail: a new subtask can be renamed in place", async ({ page }) => {
   );
 });
 
-test("notes: at 1920px the notes pages start at the same left edge as the Inbox", async ({ page }) => {
+test("notes: at 1920px the notes lists start at the same left edge as the Inbox, and a note sits centred in its room", async ({ page }) => {
   await page.setViewportSize({ width: 1920, height: 1080 });
   const leftOf = async (path: string, heading = page.locator("h1").first()) => {
     await page.goto(path);
@@ -298,7 +300,11 @@ test("notes: at 1920px the notes pages start at the same left edge as the Inbox"
   const inbox = await leftOf("/dev/inbox");
   expect(await leftOf("/dev/notes")).toBe(inbox);
   expect(await leftOf("/dev/notes/search?q=bulbs")).toBe(inbox);
-  expect(await leftOf("/dev/notes/00000000-0000-4000-8000-000000000020", page.getByRole("textbox", { name: "Title" }))).toBe(inbox);
+  // A note has a side column of its own, so it is wider; it is centred in the room, as the lists are.
+  await page.goto("/dev/notes/00000000-0000-4000-8000-000000000020");
+  const room = { x: 0, width: page.viewportSize()!.width };
+  const note = (await page.locator("article").first().boundingBox())!;
+  expect(Math.abs(note.x - room.x - (room.x + room.width - note.x - note.width))).toBeLessThanOrEqual(2);
 });
 
 test("notes: the toolbar keeps to the text measure, in named groups, every tool reached by Tab", async ({ page }) => {
@@ -311,16 +317,15 @@ test("notes: the toolbar keeps to the text measure, in named groups, every tool 
   expect(barBox.x + barBox.width).toBeLessThanOrEqual(bodyBox.x + bodyBox.width + 1);
   expect(barBox.width).toBeLessThan(640);
 
-  const groups = { Type: ["Heading", "Subheading", "Quote", "Code"], Style: ["Bold", "Italic", "Link"], Lists: ["Bulleted list", "Numbered list"] };
+  const groups = { Type: ["Heading", "Subheading", "Quote", "Code"], Style: ["Bold", "Italic", "Link"], Lists: ["Bulleted list", "Numbered list", "Checklist"] };
   for (const [name, tools] of Object.entries(groups)) {
     const group = bar.getByRole("group", { name, exact: true });
-    await expect(group.getByText(name, { exact: true })).toBeVisible();
     for (const tool of tools) await expect(group.getByRole("button", { name: tool, exact: true })).toBeVisible();
   }
 
   await page.getByRole("textbox", { name: "Title" }).focus();
   const reached: string[] = [];
-  for (let i = 0; i < 9; i++) {
+  for (let i = 0; i < 10; i++) {
     await page.keyboard.press("Tab");
     reached.push((await page.evaluate(() => document.activeElement?.getAttribute("aria-label"))) ?? "");
   }
