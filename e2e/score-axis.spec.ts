@@ -40,7 +40,8 @@ test.describe("on a wide window", () => {
   test.use({ viewport: { width: 1920, height: 1080 } });
 
   test("the Score's hour axis runs past 19:00 and fills the width with no empty strip", async ({ page }) => {
-    await gotoScore(page);
+    // Pinned to midday: on the real clock, the axis also reaches back to now, which just after midnight is the whole morning.
+    await gotoScore(page, "?at=12:00");
     const a = await axis(page);
     expect(a.last).toBeGreaterThan(19);
     expect(a.first).toBeLessThanOrEqual(7);
@@ -53,7 +54,7 @@ for (const width of [1920, 1280]) {
     test.use({ viewport: { width, height: 900 } });
 
     test("the axis refills when the detail panel opens and closes", async ({ page }) => {
-      await gotoScore(page);
+      await gotoScore(page, "?at=12:00");
       const closed = await axis(page);
       // At 1920 the fixture's day always fits with the panel shut; at 1280 it always scrolls.
       if (width === 1920) expectFilled(closed);
