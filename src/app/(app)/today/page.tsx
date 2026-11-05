@@ -4,7 +4,9 @@ import { FOCUS_COOKIE, readFocus, readTour, TOUR_COOKIE } from "@/components/she
 import { DayNav } from "@/features/day/day-nav";
 import { DayView } from "@/features/day/day-view";
 import { readDayQuery } from "@/features/day/nav";
+import { weekPulse } from "@/features/day/pulse";
 import { getDay, getTimeZone, getTodayDate } from "@/features/day/server";
+import { getWeek } from "@/features/week/server";
 import { DetailPanel } from "@/features/detail/detail-panel";
 import { loadLeftover } from "@/features/day/leftover";
 import { filterDay } from "@/features/filter/apply";
@@ -18,10 +20,11 @@ export default async function TodayPage({ searchParams }: PageProps<"/today">) {
   const today = await getTodayDate();
   const { mode, itemId } = readDayQuery(await searchParams);
   const filter = await getFilter(searchParams, true);
-  const [data, leftover, jar] = await Promise.all([
+  const [data, leftover, jar, week] = await Promise.all([
     getDay(today),
     getItemsRepo().then(async (repo) => loadLeftover(repo, today, await getTimeZone(), filter)),
     cookies(),
+    getWeek(today),
   ]);
   return (
     <TagColorsProvider value={data.tagColors}>
@@ -29,6 +32,7 @@ export default async function TodayPage({ searchParams }: PageProps<"/today">) {
         data={filterDay(data, filter)}
         filter={filter}
         leftover={leftover}
+        pulse={weekPulse(week)}
         mode={mode}
         focus={readFocus(jar.get(FOCUS_COOKIE)?.value)}
         tour={readTour(jar.get(TOUR_COOKIE)?.value, data.firstDay)}

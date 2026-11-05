@@ -39,7 +39,7 @@ import { GuideButton, type GuideTopic } from "@/features/palette/guide";
 import { LineLegend } from "@/features/today/line-legend";
 import { SameInInbox } from "@/features/inbox/same-in-inbox";
 import { buildToday, EMPTY_TRAY, stateOf, TRAY_FULL, INBOX, type TodayEntry } from "@/features/today/model";
-import { dayRangeFor } from "@/lib/dates";
+import { dayRangeFor, utcMidnight } from "@/lib/dates";
 import { moveAction } from "./actions";
 import type { WeekData } from "./load";
 import {
@@ -265,6 +265,7 @@ export function WeekView({
           <GuideButton topics={WEEK_GUIDE} className="ml-auto" />
         </div>
 
+        <div className="surface overflow-clip">
         <section aria-labelledby="week-h" className="@container">
           <h2 id="week-h" className="sr-only">
             Days
@@ -273,7 +274,7 @@ export function WeekView({
           {days.includes(today) && today !== days[0] && (
             <a
               href={`#day-${today}`}
-              className="-ml-2 mb-2 inline-flex min-h-11 items-center gap-1.5 rounded-md px-2 font-medium text-ink-2 hover:bg-hover hover:text-ink active:bg-press @min-[50rem]:hidden"
+              className="mx-2 mt-1 mb-1 inline-flex min-h-11 items-center gap-1.5 rounded-md px-2 font-medium text-ink-2 hover:bg-hover hover:text-ink active:bg-press @min-[50rem]:hidden"
             >
               <svg viewBox="0 0 18 18" width={16} height={16} aria-hidden="true" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
                 <path d="M9 3v11M4.5 9.5L9 14l4.5-4.5" />
@@ -281,7 +282,7 @@ export function WeekView({
               Jump to today, {weekdayName(today, "long")}
             </a>
           )}
-          <div className="surface grid overflow-hidden @min-[50rem]:grid-cols-7">
+          <div className="grid @min-[50rem]:grid-cols-7">
             {week.map(({ date, entries }) => (
               <DayColumn key={date} date={date} today={today} over={preview?.over === date} empty={entries.length === 0}>
                 {entries.map((e) => (
@@ -301,16 +302,18 @@ export function WeekView({
           a day, Backspace sends it to the tray, Space marks it done and Enter opens it. On an item in the Inbox, Up gives it a
           day. The bracket keys change the week and T comes back to this one.
         </p>
-        <LineLegend now={false} />
+        <div className="border-t border-rule px-4 py-2.5 [&>div]:mt-0">
+          <LineLegend now={false} />
+        </div>
 
         <section
           data-drop="tray"
           aria-labelledby="week-tray-h"
-          className={`surface mt-7 px-4 pt-3 pb-4 transition-colors ${
+          className={`border-t border-rule px-4 pt-3 pb-4 transition-colors ${
             preview?.over === "tray" ? "!bg-accent-wash outline-2 outline-dashed outline-accent" : ""
           }`}
         >
-          <h2 id="week-tray-h" className="font-serif text-lg leading-tight font-medium">
+          <h2 id="week-tray-h" className="font-display text-lg leading-tight font-medium">
             {INBOX}
           </h2>
           <p className="mt-1 mb-3.5 text-[13px] text-ink-3">
@@ -330,6 +333,7 @@ export function WeekView({
           )}
           {data.waitingFull && <p className="mt-3 text-[13px] text-ink-3">{TRAY_FULL}</p>}
         </section>
+        </div>
 
         <div
           ref={fly}
@@ -368,13 +372,20 @@ function DayColumn({
   const keep = useKeepFilter();
   // Days already gone are set a step quieter, so the eye finds today and what is still ahead.
   const past = date < today;
+  const weekend = [0, 6].includes(new Date(utcMidnight(date)).getUTCDay());
   const headingId = `day-${date}`;
   return (
     <section
       data-drop={date}
       aria-labelledby={headingId}
       className={`flex min-w-0 flex-col border-b border-rule transition-colors last:border-b-0 @min-[50rem]:min-h-64 @min-[50rem]:border-b-0 @min-[50rem]:border-l @min-[50rem]:first:border-l-0 ${
-        over ? "bg-accent-wash" : isToday ? "bg-[color-mix(in_srgb,var(--ink)_4%,transparent)]" : ""
+        over
+          ? "bg-accent-wash"
+          : isToday
+            ? "bg-gradient-to-b from-[color-mix(in_srgb,var(--accent)_9%,transparent)] to-[color-mix(in_srgb,var(--ink)_3%,transparent)]"
+            : weekend
+              ? "bg-[color-mix(in_srgb,var(--paper-2)_45%,transparent)]"
+              : ""
       }`}
     >
       <h3 id={headingId} className="px-2 pt-3 pb-2">
@@ -388,8 +399,8 @@ function DayColumn({
             <span className="hidden @min-[50rem]:inline">{weekdayName(date, "short")}</span>
           </span>
           <span
-            className={`font-serif text-xl leading-none font-medium tabular group-hover:underline ${
-              isToday ? "rounded bg-ink px-1.5 py-0.5 text-paper" : past ? "text-ink-3" : ""
+            className={`font-display text-2xl leading-none font-semibold tracking-tight tabular group-hover:underline ${
+              isToday ? "rounded-lg bg-ink px-2 py-1 text-paper" : past ? "text-ink-3" : ""
             }`}
           >
             {Number(date.slice(8))}
@@ -399,7 +410,8 @@ function DayColumn({
         </Link>
       </h3>
       {empty ? (
-        <p className="px-2 pb-3 text-[13px] text-ink-3">Nothing planned</p>
+        // Said aloud for every empty day, drawn only for today: seven repeats of the same line are noise.
+        <p className={isToday ? "px-2 pb-3 text-[13px] text-ink-3" : "sr-only"}>Nothing planned</p>
       ) : (
         <MotionList className="grid gap-0.5 px-1 pb-3">{children}</MotionList>
       )}

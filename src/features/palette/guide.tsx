@@ -37,14 +37,14 @@ export function GuideButton({ topics, className = "" }: { topics: readonly Guide
       aria-haspopup="dialog"
       aria-keyshortcuts={HELP_KEY}
       title="Guide ( ? )"
-      className={`press inline-flex flex-none items-center gap-1.5 rounded-lg border border-rule px-3 py-2 font-medium text-ink-2 hover:bg-hover hover:text-ink active:bg-press pointer-coarse:py-3 ${className}`}
+      className={`press inline-flex size-[38px] flex-none items-center justify-center rounded-full text-ink-3 hover:bg-hover hover:text-ink active:bg-press pointer-coarse:size-12 ${className}`}
     >
-      <svg viewBox="0 0 16 16" width={16} height={16} aria-hidden="true" fill="none" stroke="currentColor" strokeWidth={1.4} strokeLinecap="round">
+      <svg viewBox="0 0 16 16" width={20} height={20} aria-hidden="true" fill="none" stroke="currentColor" strokeWidth={1.3} strokeLinecap="round">
         <circle cx="8" cy="8" r="6.4" />
         <path d="M6.3 6.4a1.75 1.75 0 1 1 2.4 1.62c-.42.18-.7.55-.7 1v.38" />
         <circle cx="8" cy="11.35" r=".2" fill="currentColor" strokeWidth={1.2} />
       </svg>
-      Guide
+      <span className="sr-only">Guide</span>
     </button>
   );
 }
@@ -66,7 +66,7 @@ function ChordKeys({ chord, mac }: { chord: Chord; mac: boolean }) {
 function Topic({ id, title, children }: { id: string; title: string; children: ReactNode }) {
   return (
     <section aria-labelledby={id} className="border-b border-rule-soft py-5 first:pt-4">
-      <h3 id={id} className="font-serif text-[17px] leading-tight font-medium">
+      <h3 id={id} className="font-display text-[17px] leading-tight font-medium">
         {title}
       </h3>
       <div className="mt-2 space-y-2 leading-relaxed text-ink-2">{children}</div>
@@ -248,7 +248,7 @@ export function GuideBody({ topics, onClose }: { topics: readonly GuideTopic[]; 
   return (
     <>
       <div className="flex items-center gap-3 border-b border-rule-soft px-5 py-3.5">
-        <h2 id={`${id}-h`} className="font-serif text-xl leading-tight font-medium">
+        <h2 id={`${id}-h`} className="font-display text-xl leading-tight font-medium">
           Guide
         </h2>
         <button
@@ -267,7 +267,7 @@ export function GuideBody({ topics, onClose }: { topics: readonly GuideTopic[]; 
         })}
         <KeyTopic id={`${id}-key`} onClose={onClose} />
         <section aria-labelledby={`${id}-keys`} className="pt-5 first:pt-4">
-          <h3 id={`${id}-keys`} className="font-serif text-[17px] leading-tight font-medium">
+          <h3 id={`${id}-keys`} className="font-display text-[17px] leading-tight font-medium">
             Keyboard shortcuts
           </h3>
           {SHORTCUTS.map((group) => (

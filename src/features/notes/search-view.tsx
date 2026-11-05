@@ -6,7 +6,7 @@ import { SearchResult } from "./search-result";
 /** Results across every item type. A plain GET form, so it works before any script loads. */
 export function SearchView({ query, rows, basePath = "/search" }: { query: string; rows: SearchRow[]; basePath?: string }) {
   return (
-    <div className="max-w-[760px] px-4 pt-6 pb-16 rail:px-9 rail:pt-8">
+    <div className="mx-auto max-w-[880px] px-4 pt-6 pb-16 rail:px-9 rail:pt-8">
       <h1 className="headline">Search</h1>
       <form role="search" action={basePath} className="mt-6 flex gap-2">
         <label htmlFor="search-q" className="sr-only">
@@ -45,7 +45,7 @@ export function SearchView({ query, rows, basePath = "/search" }: { query: strin
           <p className="mt-6 text-[13px] text-ink-3">
             {rows.length === 1 ? "One result" : `${rows.length} results`}, most recently edited first
           </p>
-          <ul className="mt-2 grid grid-cols-[minmax(0,1fr)] border-t border-rule">
+          <ul className="surface mt-2 grid grid-cols-[minmax(0,1fr)] overflow-hidden px-3 py-1.5 [&_li:last-child]:border-b-0">
             {rows.map((r) => (
               <SearchResult key={r.id} row={r} />
             ))}

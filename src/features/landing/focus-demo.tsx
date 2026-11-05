@@ -34,7 +34,7 @@ export function FocusDemo() {
   return (
     <div className={styles.demo}>
       <div className={styles.focusHead}>
-        <span className="font-serif text-[18px] font-medium text-ink">{focus ? "Next up" : "Today"}</span>
+        <span className="font-display text-[18px] font-medium text-ink">{focus ? "Next up" : "Today"}</span>
         <span className="text-ink-3 tabular">at {formatMinutes(NOW, clock)}</span>
         <button
           type="button"

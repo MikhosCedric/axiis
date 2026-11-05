@@ -4,7 +4,7 @@ import { fakeRepo, makeItem } from "@/features/today/test-support";
 import { instantAt } from "@/lib/dates";
 import { BEHIND_LIMIT } from "@/lib/items/repo";
 import { loadLeftover, moveLeftoverToToday } from "./leftover";
-import { LEFTOVER_SHOWN, leftoverHeading } from "./leftover-model";
+import { LEFTOVER_SHOWN, leftoverHeading, shortPlanned } from "./leftover-model";
 
 const d = (s: string) => s as LocalDate;
 const today = d("2026-10-08");
@@ -85,5 +85,17 @@ describe("moveLeftoverToToday", () => {
     };
     const result = await moveLeftoverToToday(fake.repo, new Date("2026-10-08T10:00:00Z"), "UTC");
     expect(result.ok).toBe(false);
+  });
+});
+
+describe("shortPlanned", () => {
+  it("drops the word Planned and shortens the weekday and month for the eye", () => {
+    expect(shortPlanned("Planned Friday 10 January 2020")).toBe("Fri 10 Jan 2020");
+    expect(shortPlanned("Planned Wednesday 3 September")).toBe("Wed 3 Sep");
+    expect(shortPlanned("Planned Tuesday 12 May")).toBe("Tue 12 May");
+  });
+
+  it("leaves a relative day as it is", () => {
+    expect(shortPlanned("Planned yesterday")).toBe("yesterday");
   });
 });

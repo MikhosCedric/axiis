@@ -140,7 +140,7 @@ export function Connected({ noteId, rows, actions }: { noteId: string; rows: Con
 
   return (
     <section aria-labelledby={headingId} className="grid gap-3">
-      <h2 id={headingId} className="font-serif text-lg font-medium">
+      <h2 id={headingId} className="font-display text-lg font-medium">
         Connected
       </h2>
       {shown.length === 0 ? (

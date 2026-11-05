@@ -25,6 +25,8 @@ const note = (page: Page) => page.getByRole("status").filter({ hasText: /\S/ }).
 async function openList(page: Page) {
   await page.goto("/today?view=list");
   await hydrated(page);
+  // The headings use a webfont; if it lands after a row is measured, the row moves under the finger.
+  await page.evaluate(() => document.fonts.ready);
   // On a touch screen the gestures attach after hydration, through two lazy imports.
   if (await page.evaluate(() => matchMedia("(pointer: coarse)").matches)) await page.locator("html[data-gestures]").waitFor({ state: "attached" });
 }

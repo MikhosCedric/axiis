@@ -2,6 +2,8 @@ import type { Clock } from "@/lib/clock";
 
 export const THEME_COOKIE = "theme";
 export const TZ_COOKIE = "tz";
+/** "min" once the sidebar is folded down to icons. */
+export const RAIL_COOKIE = "rail";
 export const DENSITY_COOKIE = "density";
 export const CLOCK_COOKIE = "clock";
 export const FOCUS_COOKIE = "focus";
@@ -35,6 +37,10 @@ export const THEMES = ["system", "light", "dark"] as const;
 export type Theme = (typeof THEMES)[number];
 
 /** The saved theme, or system for a missing or unknown value. */
+export function readRailMin(value: string | undefined): boolean {
+  return value === "min";
+}
+
 export function readTheme(value: string | undefined): Theme {
   return value === "light" || value === "dark" ? value : "system";
 }

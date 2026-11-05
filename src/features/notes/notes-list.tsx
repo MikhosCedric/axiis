@@ -59,7 +59,7 @@ export function NotesList({
   }
 
   return (
-    <div className="max-w-[760px] px-4 pt-6 pb-16 rail:px-9 rail:pt-8">
+    <div className="mx-auto max-w-[880px] px-4 pt-6 pb-16 rail:px-9 rail:pt-8">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <h1 className="headline">Notes</h1>
         <button
@@ -100,13 +100,19 @@ export function NotesList({
       </p>
 
       {rows.length === 0 ? (
-        <p className="mt-6 max-w-[52ch] text-ink-2">
-          {query
-            ? `Nothing matches “${query}”. Try fewer words, or search everything from the search page.`
-            : "No notes yet. Start one when something is worth keeping, and link it to the tasks it belongs to."}
-        </p>
+        <div className="mt-4 grid justify-items-center rounded-[18px] border border-dashed border-rule px-6 py-10 text-center">
+          <svg aria-hidden="true" viewBox="0 0 24 24" width={28} height={28} fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" className="mb-3 text-ink-3">
+            <path d="M6 3h9l4 4v14H6z" />
+            <path d="M14 3v5h5M9 13h6M9 17h6" />
+          </svg>
+          <p className="max-w-[44ch] text-ink-2">
+            {query
+              ? `Nothing matches “${query}”. Try fewer words, or search everything from the search page.`
+              : "No notes yet. Start one when something is worth keeping, and link it to the tasks it belongs to."}
+          </p>
+        </div>
       ) : (
-        <ul className="mt-2 grid grid-cols-[minmax(0,1fr)] border-t border-rule">
+        <ul className="surface mt-2 grid grid-cols-[minmax(0,1fr)] overflow-hidden px-3 py-1.5 [&_li:last-child]:border-b-0">
           {rows.map((r) => {
             const patch = quick?.patched(r.id);
             if (patch?.hidden) return null;

@@ -49,7 +49,7 @@ export function Tour() {
 
   return (
     <section aria-labelledby="tour-h" aria-describedby="tour-body" className="mb-6 max-w-[760px] border-y border-rule py-4">
-      <h2 id="tour-h" className="font-serif text-[17px] leading-tight font-medium">
+      <h2 id="tour-h" className="font-display text-[17px] leading-tight font-medium">
         {title}
       </h2>
       <p id="tour-body" className="mt-1.5 max-w-[62ch] leading-relaxed text-ink-2">

@@ -1,5 +1,6 @@
 "use client";
 
+import { TaskItem, TaskList } from "@tiptap/extension-list";
 import Placeholder from "@tiptap/extension-placeholder";
 import { EditorContent, useEditor, useEditorState, type Editor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
@@ -8,6 +9,7 @@ import styles from "./editor.module.css";
 import {
   BoldIcon,
   BulletListIcon,
+  ChecklistIcon,
   CodeIcon,
   HeadingIcon,
   ItalicIcon,
@@ -45,12 +47,12 @@ function Tool({ label, keys, pressed, onClick, children }: { label: string; keys
   );
 }
 
-/** A named run of tools. The name is printed from 640px; below that it is spoken only, to keep the bar on one line. */
+/** A named run of tools. The name is spoken only: the divider and the icons carry the grouping on screen. */
 function ToolGroup({ name, children }: { name: string; children: ReactNode }) {
   const id = useId();
   return (
     <div role="group" aria-labelledby={id} className="flex flex-none items-center gap-0.5">
-      <span id={id} className="mr-1 text-xs text-ink-3 max-sm:sr-only">
+      <span id={id} className="sr-only">
         {name}
       </span>
       {children}
@@ -68,6 +70,7 @@ function useMarks(editor: Editor | null) {
       italic: e?.isActive("italic") ?? false,
       bullet: e?.isActive("bulletList") ?? false,
       ordered: e?.isActive("orderedList") ?? false,
+      tasks: e?.isActive("taskList") ?? false,
       quote: e?.isActive("blockquote") ?? false,
       code: e?.isActive("codeBlock") ?? false,
       href: (e?.getAttributes("link").href as string | undefined) ?? null,
@@ -168,6 +171,11 @@ export function RichText({
           HTMLAttributes: { rel: LINK_REL, target: null },
         },
       }),
+      TaskList,
+      TaskItem.configure({
+        nested: false,
+        a11y: { checkboxLabel: (node, checked) => `${node.textContent || "Empty item"}: ${checked ? "done" : "not done"}` },
+      }),
       Placeholder.configure({ placeholder: PLACEHOLDER }),
     ],
     content: (initial as object | null) ?? undefined,
@@ -194,7 +202,7 @@ export function RichText({
 
   return (
     <div className={styles.measure}>
-      <div className="sticky top-14 z-10 -mx-1 border-b border-rule-soft bg-paper px-1 py-1 text-[14px] rail:top-0">
+      <div className={`surface sticky top-14 z-10 max-w-full px-1.5 py-1 text-[14px] rail:top-2 ${linking ? "" : "w-fit"}`}>
         {linking && editor ? (
           <LinkField editor={editor} initial={marks?.href ?? ""} onClose={() => setLinking(false)} />
         ) : (
@@ -232,6 +240,9 @@ export function RichText({
               </Tool>
               <Tool label="Numbered list" pressed={!!marks?.ordered} onClick={run((e) => chain(e).toggleOrderedList().run())}>
                 <NumberedListIcon />
+              </Tool>
+              <Tool label="Checklist" pressed={!!marks?.tasks} onClick={run((e) => chain(e).toggleTaskList().run())}>
+                <ChecklistIcon />
               </Tool>
             </ToolGroup>
             {marks?.href && safeHref(marks.href) && (

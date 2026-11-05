@@ -85,7 +85,7 @@ export function AreasSection({ areas, actions, colorHint = false }: { areas: Are
 
   return (
     <section aria-labelledby={`${prefix}-heading`} onPointerDown={() => (refocus.current = null)}>
-      <h2 id={`${prefix}-heading`} className="font-serif text-xl font-medium">
+      <h2 id={`${prefix}-heading`} className="font-display text-xl font-medium">
         Areas
       </h2>
       <p className="mt-1.5 max-w-[60ch] text-ink-2">
@@ -108,7 +108,7 @@ export function AreasSection({ areas, actions, colorHint = false }: { areas: Are
       )}
 
       {shown.length > 0 ? (
-        <ul className="mt-4 border-t border-rule">
+        <ul className="surface mt-4 overflow-hidden px-3 py-1.5 [&_li:last-child]:border-b-0">
           {shown.map((area, index) => (
             <li
               key={area.id}

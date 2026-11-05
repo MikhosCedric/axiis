@@ -102,7 +102,7 @@ export function NoteEditor({ view, actions, basePath = "/notes" }: { view: NoteV
   return (
     <article
       aria-labelledby={titleId}
-      className="grid max-w-[1120px] gap-x-12 gap-y-8 px-4 pt-5 pb-16 rail:px-9 rail:pt-8 min-[1100px]:grid-cols-[minmax(0,1fr)_280px]"
+      className="mx-auto grid max-w-[1120px] gap-x-12 gap-y-8 px-4 pt-5 pb-16 rail:px-9 rail:pt-8 min-[1100px]:grid-cols-[minmax(0,1fr)_280px]"
     >
       <div className="min-w-0">
         <div className="flex min-h-8 items-center justify-between gap-3">
@@ -146,7 +146,7 @@ export function NoteEditor({ view, actions, basePath = "/notes" }: { view: NoteV
             }
           }}
           onBlur={() => void autosave.flush()}
-          className="mt-4 block w-full resize-none overflow-hidden rounded-md border border-transparent bg-transparent px-0 py-1 font-serif text-[clamp(28px,3.2vw,40px)] leading-[1.15] font-medium tracking-[-0.015em] text-ink [field-sizing:content] placeholder:text-ink-3 focus:border-transparent"
+          className="mt-4 block w-full resize-none overflow-hidden rounded-md border border-transparent bg-transparent px-0 py-1 font-display text-[clamp(28px,3.2vw,40px)] leading-[1.15] font-medium tracking-[-0.015em] text-ink [field-sizing:content] placeholder:text-ink-3 focus:border-transparent"
         />
         <p className="mt-1 text-[13px] text-ink-3 tabular">{view.edited}</p>
 

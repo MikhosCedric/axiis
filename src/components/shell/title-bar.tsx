@@ -44,7 +44,7 @@ export function TitleBar({ heading, children }: { heading: string; children: Rea
         folded ? "glass border-rule-soft" : "border-transparent"
       }`}
     >
-      <span className="title-bar-text truncate font-serif text-[17px] leading-none font-medium">{children}</span>
+      <span className="title-bar-text truncate font-display text-[17px] leading-none font-medium">{children}</span>
     </div>
   );
 }

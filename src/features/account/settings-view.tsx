@@ -50,7 +50,7 @@ export function SettingsView({
 }) {
   return (
     <div
-      className="max-w-[640px] px-4 pt-6 pb-16 rail:px-9 rail:pt-8 min-[1180px]:grid min-[1180px]:max-w-[968px] min-[1180px]:grid-cols-[11rem_minmax(0,1fr)] min-[1180px]:gap-x-12"
+      className="max-w-[640px] px-4 pt-6 pb-16 rail:px-9 rail:pt-8 min-[1180px]:grid min-[1180px]:mx-auto min-[1180px]:max-w-[968px] min-[1180px]:grid-cols-[11rem_minmax(0,1fr)] min-[1180px]:gap-x-12"
     >
       <header className="min-[1180px]:col-span-2">
         <h1 className="headline">Settings</h1>
@@ -92,7 +92,7 @@ export function SettingsView({
 
         <div id="your-data" className="space-y-12">
           <section aria-labelledby="export-heading">
-            <h2 id="export-heading" className="font-serif text-xl font-medium">
+            <h2 id="export-heading" className="font-display text-xl font-medium">
               Export your data
             </h2>
             <p className="mt-1.5 max-w-[60ch] text-ink-2">

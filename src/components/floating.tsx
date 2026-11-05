@@ -26,9 +26,9 @@ export function Floating({
   onClosed,
   children,
 }: {
-  at: Box;
+  at: Box | (() => Box);
   label: string;
-  role?: "dialog" | "menu";
+  role?: "dialog" | "menu" | "group";
   className?: string;
   onClosed: (refocus: boolean) => void;
   children: ReactNode;
@@ -44,11 +44,25 @@ export function Floating({
     if (!el) return;
     el.showPopover();
     const { width, height } = el.getBoundingClientRect();
-    const { left, top } = placeNear(at, { width, height }, { width: window.innerWidth, height: window.innerHeight });
+    // A function is measured here, as it opens, so a caller never has to read a ref while rendering.
+    const anchor = typeof at === "function" ? at() : at;
+    const { left, top } = placeNear(anchor, { width, height }, { width: window.innerWidth, height: window.innerHeight });
     el.style.left = `${left}px`;
     el.style.top = `${top}px`;
-    (el.querySelector<HTMLElement>("[data-autofocus]") ?? el.querySelector<HTMLElement>(FOCUSABLE))?.focus();
+    // Focusing must not scroll: a scroll right after it opens would close it again, as the page "moving under" it.
+    (el.querySelector<HTMLElement>("[data-autofocus]") ?? el.querySelector<HTMLElement>(FOCUSABLE))?.focus({ preventScroll: true });
     const away = () => el.hidePopover();
+    const openedAt = performance.now();
+    // The page settling in the moment after it opens (a sheet re-measuring) is not the reader scrolling away.
+    const scrolled = () => {
+      if (performance.now() - openedAt > 250) away();
+    };
+    // A phone's address bar sliding in or out resizes the window in height only, and a layer opened by a long press
+    // would close a moment after it appeared. A change of width (rotating, resizing a window) is what moves things.
+    const width0 = window.innerWidth;
+    const resized = () => {
+      if (window.innerWidth !== width0) away();
+    };
     // A native listener: the toggle event of a popover that is not a `details` is not one React dispatches everywhere.
     const toggled = (e: Event) => {
       if ((e as ToggleEvent).newState !== "closed") return;
@@ -57,12 +71,12 @@ export function Floating({
     };
     el.addEventListener("toggle", toggled);
     // The page moving under it would leave it pointing at nothing, so it closes, as a native menu does.
-    window.addEventListener("resize", away);
-    window.addEventListener("scroll", away, true);
+    window.addEventListener("resize", resized);
+    window.addEventListener("scroll", scrolled, true);
     return () => {
       el.removeEventListener("toggle", toggled);
-      window.removeEventListener("resize", away);
-      window.removeEventListener("scroll", away, true);
+      window.removeEventListener("resize", resized);
+      window.removeEventListener("scroll", scrolled, true);
       if (el.matches(":popover-open")) el.hidePopover();
     };
   }, [at]);
@@ -100,7 +114,7 @@ export function Floating({
       role={role}
       aria-label={label}
       onKeyDown={onKeyDown}
-      className={`pointer-events-auto fixed inset-auto m-0 rounded-lg border border-rule bg-sheet text-ink shadow-float [--ground:var(--sheet)] motion-safe:animate-pop-in ${className}`}
+      className={`pointer-events-auto fixed inset-auto m-0 rounded-lg border border-rule bg-[color-mix(in_srgb,var(--sheet)_86%,transparent)] text-ink shadow-float backdrop-blur-xl backdrop-saturate-150 [--ground:var(--sheet)] motion-safe:animate-pop-in ${className}`}
     >
       {children}
     </div>

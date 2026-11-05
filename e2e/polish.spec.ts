@@ -28,7 +28,7 @@ signedIn.describe("surfaces", () => {
     const card = page.getByRole("region", { name: "Next up" }).getByRole("list");
     const shadow = await card.evaluate((el) => getComputedStyle(el).boxShadow);
     expect(shadow).toMatch(/inset/);
-    expect(await card.evaluate((el) => getComputedStyle(el).borderRadius)).toBe("12px");
+    expect(await card.evaluate((el) => getComputedStyle(el).borderRadius)).toBe("18px");
   });
 
   signedIn("on a phone the header and the tab bar stay put, blurring the page behind them", async ({ page }) => {
@@ -161,8 +161,16 @@ signedIn.describe("rows that move", () => {
     const key = (await first.getAttribute("data-quick"))!;
     await first.getByRole("button").first().focus();
     await watchMotion(page);
+    // The ghost lives only as long as the fade, which a slow runner can outrun a poll, so watch for it instead of sampling.
+    await page.evaluate(() => {
+      const w = window as unknown as { __ghosts: number };
+      w.__ghosts = 0;
+      new MutationObserver(() => {
+        if (document.querySelector("li[data-ghost]")) w.__ghosts++;
+      }).observe(document.body, { childList: true, subtree: true, attributes: true });
+    });
     await page.keyboard.press("Delete");
-    await expect(list(page).locator("li[data-ghost]")).toHaveCount(1);
+    await expect.poll(() => page.evaluate(() => (window as unknown as { __ghosts: number }).__ghosts)).toBeGreaterThan(0);
     await expect.poll(() => motion(page)).toBeGreaterThan(0);
     await expect(list(page).locator("li[data-ghost]")).toHaveCount(0);
 
@@ -232,14 +240,14 @@ signedIn.describe("no axe violations on the polished surfaces", () => {
     { width: 375, colorScheme: "dark" as const },
     { width: 375, colorScheme: "light" as const },
   ]) {
-    signedIn(`Today's List, the Week, the Inbox, Due and Lists at ${width} in ${colorScheme}`, async ({ page }) => {
-      await page.setViewportSize({ width, height: 812 });
-      await page.emulateMedia({ colorScheme, reducedMotion: "reduce" });
-      for (const path of ["/today?view=list", "/week", "/inbox", "/due", "/lists"]) {
+    for (const path of ["/today?view=list", "/week", "/inbox", "/due", "/lists"]) {
+      signedIn(`${path} at ${width} in ${colorScheme}`, async ({ page }) => {
+        await page.setViewportSize({ width, height: 812 });
+        await page.emulateMedia({ colorScheme, reducedMotion: "reduce" });
         await page.goto(path);
         await hydrated(page);
         expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
-      }
-    });
+      });
+    }
   }
 });

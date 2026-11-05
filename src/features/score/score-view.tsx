@@ -267,12 +267,14 @@ export function ScoreView({
         Score
       </h2>
 
+      {/* The day is one raised sheet: Any time, the hour axis and the staves. Clipped, not hidden, so the axis still sticks. */}
+      <div className="surface overflow-clip [--paper:var(--sheet)]">
       {!firstDay && (
         <div
           ref={strip}
-          className={`mb-3 flex items-start border-y border-rule ${target?.kind === "anytime" ? "bg-accent-wash" : ""}`}
+          className={`flex items-start border-b border-rule ${target?.kind === "anytime" ? "bg-accent-wash" : ""}`}
         >
-          <h3 className="w-[var(--lw)] flex-none border-r border-rule px-2 py-3 font-serif text-base leading-tight font-medium rail:px-3">
+          <h3 className="w-[var(--lw)] flex-none border-r border-rule px-2 py-3 font-display text-base leading-tight font-medium rail:px-3">
             Any time
           </h3>
           {score.anyTime.length ? (
@@ -285,7 +287,7 @@ export function ScoreView({
         </div>
       )}
 
-      <div className="sticky top-26 z-10 flex h-[34px] border-y border-rule bg-paper rail:top-12" aria-hidden="true">
+      <div className="sticky top-26 z-10 flex h-[34px] border-b border-rule bg-paper rail:top-12" aria-hidden="true">
         <div className="w-[var(--lw)] flex-none border-r border-rule" />
         <div className="relative min-w-0 flex-1 overflow-hidden">
           <div ref={ticks} className="absolute inset-y-0 left-0" style={{ width }}>
@@ -320,7 +322,7 @@ export function ScoreView({
         tabIndex={empty ? 0 : undefined}
         role={empty ? "region" : undefined}
         aria-label={empty ? "Hours of the day" : undefined}
-        className="overflow-x-auto overflow-y-hidden border-b border-rule"
+        className="overflow-x-auto overflow-y-hidden"
       >
         <div className="relative" style={{ width: `calc(var(--lw) + ${width}px)` }}>
           {staves.map((staff, i) => (
@@ -329,7 +331,7 @@ export function ScoreView({
                 data-staff-label
                 className="sticky left-0 z-[4] w-[var(--lw)] flex-none border-r border-rule bg-paper px-2 py-3.5 rail:px-3"
               >
-                <span className="block font-serif text-base leading-tight font-medium [overflow-wrap:anywhere] rail:text-[19px]">
+                <span className="block font-display text-base leading-tight font-medium [overflow-wrap:anywhere] rail:text-[19px]">
                   <AreaMark color={staff.color} className="mr-1.5 mb-[0.15em] align-middle" />
                   {staff.name}
                 </span>
@@ -347,6 +349,14 @@ export function ScoreView({
           ))}
 
           <div ref={layer} className="absolute top-0 left-[var(--lw)]" style={{ width, height: totalHeight }}>
+            {nowMinutes !== null && nowMinutes > axis.start && (
+              <div
+                aria-hidden="true"
+                data-past
+                className="pointer-events-none absolute inset-y-0 left-0 bg-[color-mix(in_srgb,var(--ink)_3.5%,transparent)]"
+                style={{ width: Math.min(xAt(axis, nowMinutes), width) }}
+              />
+            )}
             {staves.flatMap((staff) =>
               staff.beams.map((beam) =>
                 quick?.patched(beam.value.item.id)?.hidden ? null : (
@@ -376,12 +386,43 @@ export function ScoreView({
             {nowMinutes !== null && nowMinutes >= axis.start && nowMinutes <= axis.end && (
               <div
                 aria-hidden="true"
-                className="pointer-events-none absolute inset-y-0 z-[2] -ml-px w-0.5 bg-accent"
+                className="pointer-events-none absolute inset-y-0 z-[2] -ml-px w-0.5 bg-accent shadow-[0_0_10px_color-mix(in_srgb,var(--accent)_55%,transparent)]"
                 style={{ left: xAt(axis, nowMinutes) }}
               />
             )}
           </div>
         </div>
+      </div>
+      {!firstDay && (
+        <>
+          <div className="border-t border-rule px-3 py-2.5 [&>div]:mt-0">
+            <LineLegend now />
+          </div>
+    <section
+      ref={tray}
+      aria-labelledby="tray-h"
+      className={`border-t border-rule px-3 pt-3 pb-3.5 ${target?.kind === "tray" ? styles.dropZone : ""}`}
+    >
+      <h3 id="tray-h" className="font-display text-lg leading-tight font-medium">
+        {INBOX}
+      </h3>
+      <p className="mt-1 mb-3.5 text-[13px] text-ink-3">
+        No day yet.{" "}
+        <span className="pointer-coarse:hidden">Drag one onto an area to plan it for a time today.</span>
+        <span className="hidden pointer-coarse:inline">
+          Press and hold one, then drag it onto an area to plan it for a time today.
+        </span>{" "}
+        Drag a beam back here to clear its day. <SameInInbox />
+      </p>
+      {score.waiting.length ? (
+        <ul className="flex flex-wrap items-center gap-2.5">{chips(score.waiting, "in the Inbox")}</ul>
+      ) : (
+        <p className="text-[13px] text-ink-3">{EMPTY_TRAY}</p>
+      )}
+      {waitingFull && <p className="mt-3 text-[13px] text-ink-3">{TRAY_FULL}</p>}
+    </section>
+        </>
+      )}
       </div>
 
       {firstDay ? (
@@ -397,31 +438,6 @@ export function ScoreView({
             quarter hour, Shift with Left and Right changes its length, Up and Down change its area, Space marks it done,
             Enter opens it and Backspace sends it back to the Inbox. On an item in the Inbox, Up or Down gives it a time.
           </p>
-          <LineLegend now />
-
-          <section
-            ref={tray}
-            aria-labelledby="tray-h"
-            className={`mt-7 pt-2 ${target?.kind === "tray" ? styles.dropZone : ""}`}
-          >
-            <h3 id="tray-h" className="font-serif text-lg leading-tight font-medium">
-              {INBOX}
-            </h3>
-            <p className="mt-1 mb-3.5 text-[13px] text-ink-3">
-              No day yet.{" "}
-              <span className="pointer-coarse:hidden">Drag one onto an area to plan it for a time today.</span>
-              <span className="hidden pointer-coarse:inline">
-                Press and hold one, then drag it onto an area to plan it for a time today.
-              </span>{" "}
-              Drag a beam back here to clear its day. <SameInInbox />
-            </p>
-            {score.waiting.length ? (
-              <ul className="flex flex-wrap items-center gap-2.5">{chips(score.waiting, "in the Inbox")}</ul>
-            ) : (
-              <p className="text-[13px] text-ink-3">{EMPTY_TRAY}</p>
-            )}
-            {waitingFull && <p className="mt-3 text-[13px] text-ink-3">{TRAY_FULL}</p>}
-          </section>
         </>
       )}
 

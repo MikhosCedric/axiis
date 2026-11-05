@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { cookies, headers } from "next/headers";
-import { Besley, Hanken_Grotesk } from "next/font/google";
+import { Bricolage_Grotesque, Hanken_Grotesk } from "next/font/google";
 import { ClockProvider } from "@/components/shell/clock-context";
 import { HydratedMark } from "@/components/shell/hydrated-mark";
 import { CLOCK_COOKIE, DENSITY_COOKIE, readClock, readDensity, THEME_COOKIE } from "@/components/shell/cookies";
@@ -8,7 +8,7 @@ import { SITE_DESCRIPTION, SITE_NAME, siteUrl } from "@/lib/site";
 import { PAPER_DARK, PAPER_LIGHT } from "@/lib/theme-colors";
 import "./globals.css";
 
-const besley = Besley({ variable: "--font-besley", subsets: ["latin"] });
+const bricolage = Bricolage_Grotesque({ variable: "--font-bricolage", subsets: ["latin"], axes: ["opsz"] });
 const hanken = Hanken_Grotesk({ variable: "--font-hanken", subsets: ["latin"] });
 
 export const metadata: Metadata = {
@@ -52,7 +52,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
-      className={`${besley.variable} ${hanken.variable}`}
+      className={`${bricolage.variable} ${hanken.variable}`}
       data-density={density === "compact" ? "compact" : undefined}
       suppressHydrationWarning
     >

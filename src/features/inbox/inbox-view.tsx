@@ -1,8 +1,11 @@
 "use client";
 
+import { Floating } from "@/components/floating";
+import type { Box } from "@/lib/placement";
 import { MotionList } from "@/components/motion-list";
 import {
   useEffect,
+  useCallback,
   useId,
   useMemo,
   useOptimistic,
@@ -54,7 +57,7 @@ const INBOX_GUIDE: GuideTopic[] = ["capture"];
 type Change = { kind: "hide" | "reopen"; id: string };
 
 const choice =
-  "rounded-md border border-rule px-3 py-1.5 font-medium text-ink hover:bg-hover active:bg-press disabled:cursor-default disabled:opacity-60";
+  "pill h-9 px-2";
 
 export function InboxView({
   data,
@@ -188,7 +191,7 @@ export function InboxView({
 
   return (
     <div className={selectedParam ? "min-[1180px]:grid min-[1180px]:grid-cols-[minmax(0,1fr)_328px]" : ""}>
-      <div className="min-w-0 px-4 pt-6 pb-14 rail:px-9 rail:pt-8">
+      <div className="mx-auto w-full max-w-[880px] min-w-0 px-4 pt-6 pb-14 rail:px-9 rail:pt-8">
         <header>
           <h1
             ref={heading}
@@ -218,12 +221,12 @@ export function InboxView({
           <GuideButton topics={INBOX_GUIDE} className="ml-auto" />
         </div>
 
-        <section aria-labelledby="inbox-list-h">
+        <section aria-labelledby="inbox-list-h" className="group/inbox">
           <h2 id="inbox-list-h" className="sr-only">
             Items with no day
           </h2>
           {shown.length ? (
-            <MotionList className="surface overflow-hidden px-3 [&_li:last-child]:border-b-0 mt-4" onKeyDown={rowKeyDown} aria-describedby="inbox-keys">
+            <MotionList className="surface mt-4 overflow-hidden px-3 py-1.5 [&_li:last-child]:border-b-0" onKeyDown={rowKeyDown} aria-describedby="inbox-keys">
               {shown.map((item) => (
                 <InboxRow
                   key={item.id}
@@ -248,12 +251,19 @@ export function InboxView({
               ))}
             </MotionList>
           ) : (
-            <p className="py-3 text-ink-2">
-              {startedFull && "All planned. "}Anything you capture without a day lands here, safe until you plan it.
-            </p>
+            <div className="mt-4 grid justify-items-center rounded-[18px] border border-dashed border-rule px-6 py-10 text-center">
+              <svg aria-hidden="true" viewBox="0 0 24 24" width={28} height={28} fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" className="mb-3 text-ink-3">
+                <path d="M3 13l3-8h12l3 8v6H3z" />
+                <path d="M3 13h5l1 2h6l1-2h5" />
+              </svg>
+              <p className="max-w-[44ch] text-ink-2">
+                {startedFull && "All planned. "}Anything you capture without a day lands here, safe until you plan it.
+              </p>
+            </div>
           )}
+          {/* Read out as the list's description always; drawn only while the keyboard is in the list, where the keys matter. */}
           {shown.length > 0 && (
-            <p id="inbox-keys" className="mt-3 text-[13px] text-ink-3 pointer-coarse:hidden">
+            <p id="inbox-keys" className="sr-only group-has-[:focus-visible]/inbox:not-sr-only group-has-[:focus-visible]/inbox:mt-3 text-[13px] text-ink-3 pointer-coarse:hidden">
               J and K move between items. 1 plans the one in focus for today, 2 for tomorrow, 3 for next week, 4 for another day.
             </p>
           )}
@@ -305,7 +315,7 @@ function InboxRow({
   const done = item.status === "done";
   const title = patch?.title ?? item.title;
   const qi = { ...quickItem(item, timeZone), title };
-  const hooks = { onOpen: onSelect, onToggleDone, inlineRename: "inbox", doneBox: true, swipe: true };
+  const hooks = { onOpen: onSelect, onToggleDone, inlineRename: "inbox", doneBox: true, planBox: true, swipe: true };
   // The quietest ink is too faint to read on the accent wash of a selected row.
   const quiet = selected ? "text-ink-2" : "text-ink-3";
   const panelId = useId();
@@ -321,6 +331,12 @@ function InboxRow({
     onPlanning(false);
     trigger.current?.focus();
   }
+
+  // Where the dropdown opens: under the Plan for button, measured as it opens.
+  const at = useCallback((): Box => {
+    const r = trigger.current?.getBoundingClientRect();
+    return r ? { left: r.left, top: r.top, width: r.width, height: r.height } : { left: 0, top: 0, width: 0, height: 0 };
+  }, []);
 
   if (patch?.hidden) return null;
   return (
@@ -374,21 +390,26 @@ function InboxRow({
           aria-expanded={planning}
           aria-controls={panelId}
           onClick={() => onPlanning(!planning)}
-          className="rounded-md px-2.5 py-1.5 text-[13px] font-medium whitespace-nowrap text-ink-2 hover:bg-hover hover:text-ink active:bg-press pointer-coarse:min-h-11"
+          className="pill gap-1 py-1.5 pr-2 pl-3"
         >
           Plan for
+          <svg aria-hidden="true" viewBox="0 0 16 16" width={14} height={14} fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" className={planning ? "rotate-180" : ""}>
+            <path d="M4 6.5l4 4 4-4" />
+          </svg>
         </button>
       )}
       </div>
       {planning && !done && (
         <PlanChoices
           id={panelId}
+          at={at}
           title={item.title}
           today={today}
           first={first}
           date={date}
           onPlan={onPlan}
           onClose={close}
+          onDismissed={() => onPlanning(false)}
         />
       )}
     </li>
@@ -397,20 +418,24 @@ function InboxRow({
 
 function PlanChoices({
   id,
+  at,
   title,
   today,
   first,
   date,
   onPlan,
   onClose,
+  onDismissed,
 }: {
   id: string;
+  at: () => Box;
   title: string;
   today: LocalDate;
   first: RefObject<HTMLButtonElement | null>;
   date: RefObject<HTMLInputElement | null>;
   onPlan: (when: PlanFor) => void;
   onClose: () => void;
+  onDismissed: () => void;
 }) {
   const dateId = useId();
   const [picked, setPicked] = useState("");
@@ -422,49 +447,52 @@ function PlanChoices({
   }
 
   return (
-    <div
-      id={id}
+    <Floating
+      at={at}
+      label={`Plan ${title} for`}
       role="group"
-      aria-label={`Plan ${title} for`}
-      onKeyDown={(e) => {
-        if (e.key === "Escape") {
-          e.preventDefault();
-          onClose();
-        }
-      }}
-      className="col-span-full mt-2.5 flex flex-wrap items-center gap-2 pl-[60px] max-rail:pl-0"
+      onClosed={(refocus) => (refocus ? onClose() : onDismissed())}
+      className="w-[min(320px,calc(100vw-32px))] rounded-[14px]! p-2.5"
     >
-      {quickPlans(today).map((q, i) => (
-        <button key={q.key} ref={i === 0 ? first : undefined} type="button" aria-keyshortcuts={q.key} className={choice} onClick={() => onPlan(q.when)}>
-          {q.label}
-          <kbd aria-hidden="true" className="ml-2 font-sans text-xs text-ink-3 pointer-coarse:hidden">
-            {q.key}
-          </kbd>
-        </button>
-      ))}
-      <form onSubmit={submit} className="flex items-center gap-2">
-        <label htmlFor={dateId} className="text-[13px] text-ink-2">
-          Another day
-          <kbd aria-hidden="true" className="ml-1.5 font-sans text-xs text-ink-3 pointer-coarse:hidden">
-            {PICK_KEY}
-          </kbd>
-        </label>
-        <input
-          ref={date}
-          id={dateId}
-          name="date"
-          type="date"
-          required
-          min={today}
-          max={LAST_DATE}
-          value={picked}
-          onChange={(e) => setPicked(e.currentTarget.value)}
-          className="h-9 rounded-md border border-rule bg-sheet px-2.5 text-ink tabular"
-        />
-        <button type="submit" className={choice} disabled={!picked}>
-          Plan
-        </button>
-      </form>
-    </div>
+      <div id={id}>
+        <div data-roving className="grid grid-cols-3 gap-1.5">
+          {quickPlans(today).map((q, i) => (
+            <button key={q.key} ref={i === 0 ? first : undefined} type="button" aria-keyshortcuts={q.key} className={choice} onClick={() => onPlan(q.when)}>
+              {q.label}
+              <kbd aria-hidden="true" className="ml-1.5 font-sans text-xs text-ink-3 pointer-coarse:hidden">
+                {q.key}
+              </kbd>
+            </button>
+          ))}
+        </div>
+        <form onSubmit={submit} className="mt-2 flex h-9 items-center gap-1.5 rounded-full border border-rule bg-sheet pr-1 pl-3 focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-accent pointer-coarse:h-11">
+          <label htmlFor={dateId} className="text-[13px] text-ink-2">
+            Another day
+            <kbd aria-hidden="true" className="ml-1.5 font-sans text-xs text-ink-3 pointer-coarse:hidden">
+              {PICK_KEY}
+            </kbd>
+          </label>
+          <input
+            ref={date}
+            id={dateId}
+            name="date"
+            type="date"
+            required
+            min={today}
+            max={LAST_DATE}
+            value={picked}
+            onChange={(e) => setPicked(e.currentTarget.value)}
+            className="h-full min-w-0 flex-1 bg-transparent px-1 text-ink tabular outline-none"
+          />
+          <button
+            type="submit"
+            className="h-7 rounded-full bg-ink px-3 text-[13px] font-medium text-paper hover:opacity-90 disabled:cursor-default disabled:bg-hover disabled:text-ink-3 pointer-coarse:h-9"
+            disabled={!picked}
+          >
+            Plan
+          </button>
+        </form>
+      </div>
+    </Floating>
   );
 }

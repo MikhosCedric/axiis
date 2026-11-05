@@ -117,7 +117,7 @@ export function MonthDemo({ days, month, title }: { days: LocalDate[]; month: st
 function DayList({ date, marks, state, clock }: { date: LocalDate; marks: SampleMark[]; state: "done" | "planned"; clock: "12" | "24" }) {
   return (
     <section className={styles.dayList} aria-label="The day shown">
-      <h4 className="font-serif text-[18px] font-medium text-ink">{formatDayHeading(date)}</h4>
+      <h4 className="font-display text-[18px] font-medium text-ink">{formatDayHeading(date)}</h4>
       {marks.length === 0 ? (
         <p className="mt-2 text-ink-3">Nothing planned.</p>
       ) : (

@@ -11,6 +11,11 @@ export const ROW_PX = 64;
 export const BEAM_BOX_PX = 25;
 const STAFF_FOOT_PX = 20;
 const RULE_PX = 1;
+/**
+ * The least a beam claims of its sub-row: the width of its head, in minutes. A beam that starts inside another's
+ * head would hide behind it, so it takes the next sub-row instead.
+ */
+const HEAD_MINUTES = Math.ceil(BEAM_BOX_PX / PX_PER_MINUTE);
 /** Gap kept between a label and the next beam in its sub-row. */
 const LABEL_GAP_PX = 8;
 
@@ -72,8 +77,8 @@ export function packRows<T>(spans: { value: T; span: Span }[], axisEnd: number):
   const placed = sorted.map(({ value, span }) => {
     let row = rowEnds.findIndex((end) => end <= span.start);
     if (row < 0) row = rowEnds.push(0) - 1;
-    // A zero-length span still occupies its instant.
-    rowEnds[row] = Math.max(span.end, span.start + 1);
+    // A short or zero-length span still occupies its head, so one that starts on top of it cannot hide it.
+    rowEnds[row] = Math.max(span.end, span.start + HEAD_MINUTES);
     return { value, span, row, free: 0 };
   });
   for (const p of placed) {

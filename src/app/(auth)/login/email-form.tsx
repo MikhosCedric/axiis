@@ -20,7 +20,7 @@ function EmailFormAttempt({ next, captcha, onRestart }: { next: string; captcha:
   if (state.status === "sent") {
     return (
       <div role="status" className="space-y-3">
-        <h2 className="font-serif text-xl text-ink">Check your email</h2>
+        <h2 className="font-display text-xl text-ink">Check your email</h2>
         <p className="text-ink-2">
           We sent a sign-in link to <span className="text-ink">{state.email}</span>. Open it in this browser. It works
           once and expires after a while.
@@ -49,7 +49,7 @@ function EmailFormAttempt({ next, captcha, onRestart }: { next: string; captcha:
         defaultValue={email}
         aria-invalid={error ? true : undefined}
         aria-describedby={error ? "email-error" : undefined}
-        className="w-full rounded-md border border-rule bg-sheet px-3 py-2 text-ink"
+        className="w-full rounded-xl border border-rule bg-sheet px-3.5 py-2.5 text-ink"
       />
       {captcha && <TurnstileWidget siteKey={captcha.siteKey} nonce={captcha.nonce} attempt={state} />}
       {error && (
@@ -60,7 +60,7 @@ function EmailFormAttempt({ next, captcha, onRestart }: { next: string; captcha:
       <button
         type="submit"
         disabled={pending}
-        className="w-full rounded-md bg-accent px-4 py-2 text-on-accent disabled:opacity-60"
+        className="w-full rounded-xl bg-accent px-4 py-2.5 text-on-accent disabled:opacity-60"
       >
         {pending ? "Sending link" : "Email me a sign-in link"}
       </button>
