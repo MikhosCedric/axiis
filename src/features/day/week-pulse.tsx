@@ -9,9 +9,9 @@ import { dayHref } from "./nav";
 import type { PulseData } from "./pulse";
 
 /**
- * The week in one glance: a ring per day filling as that day's items get done, today inked, and one
+ * The week in one glance: each day's done and planned counts, today marked, and one
  * line of progress above them. It answers "how is my week going", which the day's own line does not,
- * and each ring is a way into that day. Shown beside Today on wide screens only.
+ * and each day is a way into it. Shown beside Today on wide screens only.
  */
 export function WeekPulse({ pulse, today }: { pulse: PulseData; today: LocalDate }) {
   const keep = useKeepFilter();
@@ -30,18 +30,20 @@ export function WeekPulse({ pulse, today }: { pulse: PulseData; today: LocalDate
       <ul className="mt-3.5 grid grid-cols-7 gap-1">
         {pulse.days.map((d) => {
           const isToday = d.date === today;
-          const fill = d.total ? d.done / d.total : 0;
+          const complete = d.total > 0 && d.done === d.total;
           return (
-            <li key={d.date} className="grid justify-items-center gap-1">
+            <li key={d.date}>
               <Link
                 href={keep(dayHref(d.date, today, "score"))}
                 title={`Open ${formatDayHeading(d.date)}`}
-                className="grid justify-items-center gap-1 rounded-lg px-1 py-1 hover:bg-hover active:bg-press"
+                className={`grid justify-items-center gap-0.5 rounded-lg py-1.5 hover:bg-hover active:bg-press ${isToday ? "bg-hover" : ""}`}
               >
                 <span className={`text-xs ${isToday ? "font-semibold text-ink" : "text-ink-3"}`} aria-hidden="true">
                   {weekdayName(d.date, "short").slice(0, 1)}
                 </span>
-                <Ring fill={fill} empty={d.total === 0} today={isToday} />
+                <span aria-hidden="true" className={`text-[13px] tabular ${d.total === 0 ? "text-ink-3" : complete ? "font-semibold text-ink" : "text-ink-2"}`}>
+                  {d.total === 0 ? "·" : `${d.done}/${d.total}`}
+                </span>
                 <span className="sr-only">
                   {formatDayHeading(d.date)}: {d.total === 0 ? "nothing planned" : `${d.done} of ${d.total} done`}
                 </span>
@@ -51,29 +53,5 @@ export function WeekPulse({ pulse, today }: { pulse: PulseData; today: LocalDate
         })}
       </ul>
     </section>
-  );
-}
-
-function Ring({ fill, empty, today }: { fill: number; empty: boolean; today: boolean }) {
-  const r = 9;
-  const c = 2 * Math.PI * r;
-  return (
-    <svg aria-hidden="true" viewBox="0 0 24 24" width={26} height={26} className={today ? "text-ink" : "text-ink-2"}>
-      <circle cx="12" cy="12" r={r} fill="none" stroke="currentColor" strokeWidth={2} opacity={empty ? 0.18 : 0.28} strokeDasharray={empty ? "2 3" : undefined} />
-      {!empty && fill > 0 && (
-        <circle
-          cx="12"
-          cy="12"
-          r={r}
-          fill="none"
-          stroke="currentColor"
-          strokeWidth={2.4}
-          strokeLinecap="round"
-          strokeDasharray={`${c * fill} ${c}`}
-          transform="rotate(-90 12 12)"
-        />
-      )}
-      {today && <circle cx="12" cy="12" r="2.2" fill="currentColor" />}
-    </svg>
   );
 }

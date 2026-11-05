@@ -155,13 +155,6 @@
     }
   }
 
-  @keyframes card-in {
-    from {
-      opacity: 0;
-      transform: translateY(6px);
-    }
-  }
-
   @keyframes panel-in {
     from {
       transform: translateX(16px);
@@ -178,13 +171,6 @@
     50% {
       opacity: 0.45;
     }
-  }
-}
-
-/* Cards settle in as a page opens. Not the sticky ones, which a moving transform would unpin. */
-@media (prefers-reduced-motion: no-preference) {
-  main .surface:not(.sticky) {
-    animation: card-in 360ms cubic-bezier(0.16, 1, 0.3, 1) both;
   }
 }
 
@@ -311,7 +297,7 @@
 @utility ground {
   background-image:
     radial-gradient(42rem 26rem at 8% -8rem, color-mix(in srgb, var(--accent) 9%, transparent), transparent 70%),
-    radial-gradient(40rem 24rem at 96% -6rem, color-mix(in srgb, #7a6cf0 8%, transparent), transparent 70%),
+    radial-gradient(40rem 24rem at 96% -6rem, color-mix(in srgb, var(--ink) 4%, transparent), transparent 70%),
     radial-gradient(80rem 30rem at 50% -10rem, var(--glow), transparent 72%);
   background-repeat: no-repeat;
 }
