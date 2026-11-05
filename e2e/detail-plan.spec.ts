@@ -1,5 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
+import { hydrated } from "./session";
 
 const WAITING_TASK = "/dev/detail?item=00000000-0000-4000-8000-000000000050";
 const TASK_WITH_SUBTASKS = "/dev/detail?item=00000000-0000-4000-8000-000000000001";
@@ -11,6 +12,7 @@ const status = (page: Page, text: string) => details(page).getByRole("status").f
 
 test("detail: a waiting task is planned for today, timed, and taken off its day again", async ({ page }) => {
   await page.goto(WAITING_TASK);
+  await hydrated(page);
   await expect(row(page, "Planned for")).toContainText("No day yet, in the Inbox");
   await expect(details(page).getByRole("group", { name: "Time" })).toHaveCount(0);
 
@@ -48,6 +50,7 @@ test("detail: a waiting task is planned for today, timed, and taken off its day 
 
 test("detail: another day is picked from the date field", async ({ page }) => {
   await page.goto(WAITING_TASK);
+  await hydrated(page);
   await details(page).getByRole("button", { name: "Plan for" }).click();
   const plan = details(page).getByRole("button", { name: "Plan", exact: true });
   await expect(plan).toBeDisabled();
@@ -59,6 +62,7 @@ test("detail: another day is picked from the date field", async ({ page }) => {
 
 test("detail: a day past 2200 is refused and the task keeps waiting", async ({ page }) => {
   await page.goto(WAITING_TASK);
+  await hydrated(page);
   await details(page).getByRole("button", { name: "Plan for" }).click();
   const another = details(page).getByLabel("Another day");
   await another.fill("9999-12-31");
@@ -69,6 +73,7 @@ test("detail: a day past 2200 is refused and the task keeps waiting", async ({ p
 
 test("detail: a failed plan says so and leaves it waiting", async ({ page }) => {
   await page.goto(WAITING_TASK);
+  await hydrated(page);
   await page.getByLabel("Make every save fail").check();
   await details(page).getByRole("button", { name: "Plan for" }).click();
   await details(page).getByRole("button", { name: "Tomorrow" }).click();
@@ -79,6 +84,7 @@ test("detail: a failed plan says so and leaves it waiting", async ({ page }) => 
 
 test("detail: making a waiting task an event points at When, and a parent cannot be one", async ({ page }) => {
   await page.goto(WAITING_TASK);
+  await hydrated(page);
   const type = details(page).getByLabel("Type");
   await type.selectOption("event");
   await expect(status(page, "An event needs a day and a time. Plan it under When.")).toBeVisible();
@@ -102,6 +108,7 @@ test("detail: making a waiting task an event points at When, and a parent cannot
 test("detail: a note and a subtask keep their type", async ({ page }) => {
   for (const id of ["20", "4"]) {
     await page.goto(`/dev/detail?item=00000000-0000-4000-8000-0000000000${id.padStart(2, "0")}`);
+    await hydrated(page);
     await expect(row(page, "Type")).toBeVisible();
     await expect(details(page).getByLabel("Type")).toHaveCount(0);
   }
@@ -109,6 +116,7 @@ test("detail: a note and a subtask keep their type", async ({ page }) => {
 
 test("detail: a due date is set and cleared", async ({ page }) => {
   await page.goto(TASK_WITH_SUBTASKS);
+  await hydrated(page);
   const due = details(page).getByLabel("Due");
   await expect(due).toHaveValue("2026-10-12");
   await due.fill("2026-10-20");
@@ -126,6 +134,7 @@ test("detail: a due date is set and cleared", async ({ page }) => {
 
 test("detail: turning on Repeat for a waiting task says it starts today, and who ticks it done", async ({ page }) => {
   await page.goto(WAITING_TASK);
+  await hydrated(page);
   await details(page).getByRole("button", { name: "Repeat" }).click();
   await details(page).getByLabel("Repeat").selectOption("daily");
   await expect(status(page, "Repeats every day from today.")).toBeVisible();
@@ -136,6 +145,7 @@ test("detail: turning on Repeat for a waiting task says it starts today, and who
 
 test("detail: one occurrence moves on its own with This one, and All of them keeps First day", async ({ page }) => {
   await page.goto(FRIDAYS_RUN);
+  await hydrated(page);
   await details(page).getByRole("button", { name: "Move to" }).click();
   await expect(details(page).getByRole("button", { name: "No day" })).toHaveCount(0);
   // The harness reads the real clock, and the app says "today" or "tomorrow" for those two days, so the target is far off.
@@ -159,6 +169,8 @@ for (const variant of [
 
     test("detail: the open plan choices, Type and Due have no serious or critical axe violations", async ({ page }) => {
       await page.goto(WAITING_TASK);
+      // A click before React has hydrated the page opens nothing.
+      await hydrated(page);
       await details(page).getByRole("button", { name: "Plan for" }).click();
       await expect(details(page).getByRole("button", { name: "Today" })).toBeVisible();
       const { violations } = await new AxeBuilder({ page }).analyze();
