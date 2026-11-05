@@ -267,10 +267,12 @@ export function ScoreView({
         Score
       </h2>
 
+      {/* The day is one raised sheet: Any time, the hour axis and the staves. Clipped, not hidden, so the axis still sticks. */}
+      <div className="surface overflow-clip [--paper:var(--sheet)]">
       {!firstDay && (
         <div
           ref={strip}
-          className={`mb-3 flex items-start border-y border-rule ${target?.kind === "anytime" ? "bg-accent-wash" : ""}`}
+          className={`flex items-start border-b border-rule ${target?.kind === "anytime" ? "bg-accent-wash" : ""}`}
         >
           <h3 className="w-[var(--lw)] flex-none border-r border-rule px-2 py-3 font-display text-base leading-tight font-medium rail:px-3">
             Any time
@@ -285,7 +287,7 @@ export function ScoreView({
         </div>
       )}
 
-      <div className="sticky top-26 z-10 flex h-[34px] border-y border-rule bg-paper rail:top-12" aria-hidden="true">
+      <div className="sticky top-26 z-10 flex h-[34px] border-b border-rule bg-paper rail:top-12" aria-hidden="true">
         <div className="w-[var(--lw)] flex-none border-r border-rule" />
         <div className="relative min-w-0 flex-1 overflow-hidden">
           <div ref={ticks} className="absolute inset-y-0 left-0" style={{ width }}>
@@ -320,7 +322,7 @@ export function ScoreView({
         tabIndex={empty ? 0 : undefined}
         role={empty ? "region" : undefined}
         aria-label={empty ? "Hours of the day" : undefined}
-        className="overflow-x-auto overflow-y-hidden border-b border-rule"
+        className="overflow-x-auto overflow-y-hidden"
       >
         <div className="relative" style={{ width: `calc(var(--lw) + ${width}px)` }}>
           {staves.map((staff, i) => (
@@ -390,6 +392,7 @@ export function ScoreView({
             )}
           </div>
         </div>
+      </div>
       </div>
 
       {firstDay ? (
