@@ -10,7 +10,7 @@ import { reach } from "@/lib/reach";
 import { BEHIND_LIMIT } from "@/lib/items/repo";
 
 const pill =
-  "inline-flex h-8 items-center rounded-full bg-hover text-[13px] font-medium text-ink-2 hover:bg-press hover:text-ink active:bg-press pointer-coarse:min-h-11 disabled:opacity-50";
+  "pill h-8";
 
 /**
  * What was planned for an earlier day and is still open, with a way to bring it to today. Quiet on

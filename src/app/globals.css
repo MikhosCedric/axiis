@@ -273,6 +273,40 @@
   --ground: var(--sheet);
 }
 
+/*
+ * A soft pill: the one small action the app offers beside a line of text ("Plan for today", a day choice,
+ * a send-to-today arrow). One recipe, so it looks and answers the same everywhere: quiet at rest, ink on
+ * hover, inverted while it is the chosen one (aria-pressed), dimmed when disabled, a full touch target
+ * under a finger. Callers set only its size and spacing.
+ */
+@utility pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  background: var(--hover);
+  color: var(--ink-2);
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+  &:hover,
+  &:active {
+    background: var(--press);
+    color: var(--ink);
+  }
+  &[aria-pressed="true"] {
+    background: var(--ink);
+    color: var(--paper);
+  }
+  &:disabled {
+    cursor: default;
+    opacity: 0.6;
+  }
+  @media (pointer: coarse) {
+    min-height: 2.75rem;
+  }
+}
+
 /* The page ground under the signed-in app: Paper with a soft warm glow at the top. */
 @utility ground {
   background-image:

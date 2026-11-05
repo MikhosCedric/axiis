@@ -188,7 +188,7 @@ export function DateRow({
             type="button"
             aria-pressed={saved === p.on}
             onClick={() => pick(p.on)}
-            className="rounded-full bg-hover px-3 py-1 text-[13px] font-medium text-ink-2 hover:bg-press hover:text-ink active:bg-press aria-pressed:bg-ink aria-pressed:text-paper pointer-coarse:min-h-11"
+            className="pill px-3 py-1"
           >
             {p.label}
           </button>

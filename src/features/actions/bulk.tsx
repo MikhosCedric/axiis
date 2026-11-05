@@ -17,7 +17,7 @@ type Open = "plan" | "area" | "tag" | null;
 const tool =
   "inline-flex h-9 items-center gap-1.5 rounded-full px-3 text-[13px] font-medium text-ink hover:bg-hover active:bg-press [&:active>svg]:translate-y-px pointer-coarse:h-11";
 const choice =
-  "inline-flex h-9 items-center justify-center rounded-full bg-hover px-3.5 text-[13px] font-medium text-ink hover:bg-press active:bg-press pointer-coarse:h-11";
+  "pill h-9 px-3.5";
 
 /** Runs one call per item and counts how many saved. */
 async function each(items: QuickItem[], call: (item: QuickItem) => Promise<ActionResult>) {
@@ -101,7 +101,7 @@ export default function Bulk() {
                 <button
                   key={a.id ?? "none"}
                   type="button"
-                  className="inline-flex h-8 items-center gap-1.5 rounded-full bg-hover px-3 text-[13px] font-medium text-ink hover:bg-press active:bg-press pointer-coarse:h-11"
+                  className="pill h-8 gap-1.5 px-3"
                   onClick={() => (shut(true), areaAll(quick, entries, a.id, a.name))}
                 >
                   {a.id !== null && <AreaMark color={a.color} />}

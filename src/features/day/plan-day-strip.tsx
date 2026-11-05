@@ -13,7 +13,7 @@ export type PlanDayRow = { id: string; type: ItemType; title: string };
 export const PLAN_DAY_SHOWN = 3;
 
 const button =
-  "rounded-full bg-hover px-3 py-1 text-[13px] font-medium text-ink-2 hover:bg-press hover:text-ink active:bg-press pointer-coarse:min-h-11 disabled:opacity-50";
+  "pill px-3 py-1";
 
 /**
  * A morning nudge for a day with nothing on it while the Inbox has something waiting: the first few

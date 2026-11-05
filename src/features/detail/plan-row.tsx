@@ -8,7 +8,7 @@ import { planDate, type PlanFor } from "@/features/inbox/model";
 import { FIRST_DATE, LAST_DATE, parseLocalDate } from "@/lib/dates";
 
 const choice =
-  "inline-flex h-9 items-center justify-center rounded-full bg-hover px-3.5 text-[13px] font-medium text-ink hover:bg-press active:bg-press aria-pressed:bg-ink aria-pressed:text-paper disabled:cursor-default disabled:opacity-60 pointer-coarse:h-11";
+  "pill h-9 px-3.5";
 
 /**
  * The When row: where the item sits in time, and when `days` is on, a way to
@@ -80,7 +80,7 @@ export function PlanRow({
             aria-expanded={open}
             aria-controls={panelId}
             onClick={() => setOpen(!open)}
-            className="inline-flex items-center gap-1 rounded-full bg-hover py-1.5 pr-2 pl-3 text-[13px] font-medium text-ink-2 hover:bg-press hover:text-ink active:bg-press pointer-coarse:min-h-11"
+            className="pill gap-1 py-1.5 pr-2 pl-3"
           >
             {verb}
             <svg aria-hidden="true" viewBox="0 0 16 16" width={14} height={14} fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" className={open ? "rotate-180" : ""}>

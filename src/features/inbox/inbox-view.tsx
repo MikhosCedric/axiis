@@ -57,7 +57,7 @@ const INBOX_GUIDE: GuideTopic[] = ["capture"];
 type Change = { kind: "hide" | "reopen"; id: string };
 
 const choice =
-  "inline-flex h-9 items-center justify-center rounded-full bg-hover px-2 font-medium text-ink hover:bg-press active:bg-press disabled:cursor-default disabled:opacity-60 pointer-coarse:h-11";
+  "pill h-9 px-2";
 
 export function InboxView({
   data,
@@ -390,7 +390,7 @@ function InboxRow({
           aria-expanded={planning}
           aria-controls={panelId}
           onClick={() => onPlanning(!planning)}
-          className="inline-flex items-center gap-1 rounded-full bg-hover py-1.5 pr-2 pl-3 text-[13px] font-medium whitespace-nowrap text-ink-2 hover:bg-press hover:text-ink active:bg-press pointer-coarse:min-h-11"
+          className="pill gap-1 py-1.5 pr-2 pl-3"
         >
           Plan for
           <svg aria-hidden="true" viewBox="0 0 16 16" width={14} height={14} fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" className={planning ? "rotate-180" : ""}>
