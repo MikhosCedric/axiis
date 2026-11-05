@@ -366,12 +366,16 @@ export function DayView({
         ) : (
           // Wide: the day takes the left, and what surrounds it (Next up, the plan, left-overs, the week) stacks on the right.
           // Narrow: one column, in the order they read, the week left out.
-          <div className={`flex flex-col ${hasSide ? "@min-[66rem]/page:grid @min-[66rem]/page:grid-cols-[minmax(0,1fr)_21rem] @min-[66rem]/page:grid-rows-[repeat(4,auto)_1fr] @min-[66rem]/page:gap-x-8" : ""}`}>
-            {nextNode && <div className="order-1 @min-[66rem]/page:col-start-2 @min-[66rem]/page:row-start-1">{nextNode}</div>}
-            {planNode && <div className="order-2 @min-[66rem]/page:col-start-2 @min-[66rem]/page:row-start-2">{planNode}</div>}
-            <div className="order-3 min-w-0 @min-[66rem]/page:col-start-1 @min-[66rem]/page:row-span-5 @min-[66rem]/page:row-start-1">{dayNode}</div>
-            {leftNode && <div className="order-4 mt-7 @min-[66rem]/page:col-start-2 @min-[66rem]/page:row-start-3 @min-[66rem]/page:mt-0">{leftNode}</div>}
-            {pulseNode && <div className="order-5 hidden @min-[66rem]/page:col-start-2 @min-[66rem]/page:row-start-4 @min-[66rem]/page:block">{pulseNode}</div>}
+          <div className={`flex flex-col ${hasSide ? "@min-[66rem]/page:grid @min-[66rem]/page:grid-cols-[minmax(0,1fr)_21rem] @min-[66rem]/page:grid-rows-[auto_1fr] @min-[66rem]/page:gap-x-8" : ""}`}>
+            {hasSide && (
+            <div className="contents @min-[66rem]/page:surface @min-[66rem]/page:col-start-2 @min-[66rem]/page:row-start-1 @min-[66rem]/page:block @min-[66rem]/page:divide-y @min-[66rem]/page:divide-rule-soft @min-[66rem]/page:self-start @min-[66rem]/page:overflow-clip">
+              {nextNode && <div className="order-1">{nextNode}</div>}
+              {planNode && <div className="order-2">{planNode}</div>}
+              {leftNode && <div className="order-4 mt-7 @min-[66rem]/page:mt-0">{leftNode}</div>}
+              {pulseNode && <div className="order-5 hidden @min-[66rem]/page:block">{pulseNode}</div>}
+            </div>
+            )}
+            <div className="order-3 min-w-0 @min-[66rem]/page:col-start-1 @min-[66rem]/page:row-span-2 @min-[66rem]/page:row-start-1">{dayNode}</div>
           </div>
         )}
       </div>

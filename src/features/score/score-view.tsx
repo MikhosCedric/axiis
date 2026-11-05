@@ -393,6 +393,36 @@ export function ScoreView({
           </div>
         </div>
       </div>
+      {!firstDay && (
+        <>
+          <div className="border-t border-rule px-3 py-2.5 [&>div]:mt-0">
+            <LineLegend now />
+          </div>
+    <section
+      ref={tray}
+      aria-labelledby="tray-h"
+      className={`border-t border-rule px-3 pt-3 pb-3.5 ${target?.kind === "tray" ? styles.dropZone : ""}`}
+    >
+      <h3 id="tray-h" className="font-display text-lg leading-tight font-medium">
+        {INBOX}
+      </h3>
+      <p className="mt-1 mb-3.5 text-[13px] text-ink-3">
+        No day yet.{" "}
+        <span className="pointer-coarse:hidden">Drag one onto an area to plan it for a time today.</span>
+        <span className="hidden pointer-coarse:inline">
+          Press and hold one, then drag it onto an area to plan it for a time today.
+        </span>{" "}
+        Drag a beam back here to clear its day. <SameInInbox />
+      </p>
+      {score.waiting.length ? (
+        <ul className="flex flex-wrap items-center gap-2.5">{chips(score.waiting, "in the Inbox")}</ul>
+      ) : (
+        <p className="text-[13px] text-ink-3">{EMPTY_TRAY}</p>
+      )}
+      {waitingFull && <p className="mt-3 text-[13px] text-ink-3">{TRAY_FULL}</p>}
+    </section>
+        </>
+      )}
       </div>
 
       {firstDay ? (
@@ -408,31 +438,6 @@ export function ScoreView({
             quarter hour, Shift with Left and Right changes its length, Up and Down change its area, Space marks it done,
             Enter opens it and Backspace sends it back to the Inbox. On an item in the Inbox, Up or Down gives it a time.
           </p>
-          <LineLegend now />
-
-          <section
-            ref={tray}
-            aria-labelledby="tray-h"
-            className={`mt-7 pt-2 ${target?.kind === "tray" ? styles.dropZone : ""}`}
-          >
-            <h3 id="tray-h" className="font-display text-lg leading-tight font-medium">
-              {INBOX}
-            </h3>
-            <p className="mt-1 mb-3.5 text-[13px] text-ink-3">
-              No day yet.{" "}
-              <span className="pointer-coarse:hidden">Drag one onto an area to plan it for a time today.</span>
-              <span className="hidden pointer-coarse:inline">
-                Press and hold one, then drag it onto an area to plan it for a time today.
-              </span>{" "}
-              Drag a beam back here to clear its day. <SameInInbox />
-            </p>
-            {score.waiting.length ? (
-              <ul className="flex flex-wrap items-center gap-2.5">{chips(score.waiting, "in the Inbox")}</ul>
-            ) : (
-              <p className="text-[13px] text-ink-3">{EMPTY_TRAY}</p>
-            )}
-            {waitingFull && <p className="mt-3 text-[13px] text-ink-3">{TRAY_FULL}</p>}
-          </section>
         </>
       )}
 

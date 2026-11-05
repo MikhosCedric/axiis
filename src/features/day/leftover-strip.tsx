@@ -42,7 +42,7 @@ export function LeftoverStrip({
   }
 
   return (
-    <section aria-labelledby="leftover-h" className="surface mb-6 max-w-[720px] px-4 py-3">
+    <section aria-labelledby="leftover-h" className="surface side-part mb-6 max-w-[720px] px-4 py-3">
       <div className="flex items-center justify-between gap-3">
         <h2 id="leftover-h" className="flex items-center gap-2 text-[13px] font-semibold text-ink-2">
           {/* The full sentence is what a screen reader hears; the eye gets two words and a count. */}

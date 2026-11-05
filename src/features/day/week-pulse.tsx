@@ -17,7 +17,7 @@ export function WeekPulse({ pulse, today }: { pulse: PulseData; today: LocalDate
   const keep = useKeepFilter();
   const share = pulse.total ? pulse.done / pulse.total : 0;
   return (
-    <section aria-labelledby="pulse-h" className="surface px-4 py-3.5">
+    <section aria-labelledby="pulse-h" className="surface side-part px-4 py-3.5">
       <h2 id="pulse-h" className="font-display text-lg leading-tight font-medium">
         This week
       </h2>

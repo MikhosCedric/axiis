@@ -293,6 +293,22 @@
   }
 }
 
+/*
+ * A block that is its own card on a narrow page and a section of one shared panel beside the day on a wide
+ * one (Today's side column). The page container is named "page"; from 66rem the block gives up its own
+ * edge, shadow, fill and gap, and the panel's hairlines separate it from the next.
+ */
+@utility side-part {
+  @container page (min-width: 66rem) {
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    background: none !important;
+    margin-bottom: 0 !important;
+    max-width: none !important;
+  }
+}
+
 /* The page ground under the signed-in app: Paper with a soft warm glow at the top. */
 @utility ground {
   background-image:

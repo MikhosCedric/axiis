@@ -63,11 +63,11 @@ export function NextUp({
   const quick = useQuick();
   if (entries.length === 0) return null;
   return (
-    <section aria-labelledby="next-up-h" className="mb-7 max-w-[720px]">
+    <section aria-labelledby="next-up-h" className="side-part mb-7 max-w-[720px] @min-[66rem]/page:px-4 @min-[66rem]/page:py-3.5">
       <h2 id="next-up-h" className="font-display text-lg leading-tight font-medium">
         Next up
       </h2>
-      <MotionList className="surface overflow-hidden px-3 py-1.5 [&_li:last-child]:border-b-0 mt-2.5">
+      <MotionList className="surface side-part overflow-hidden px-3 py-1.5 [&_li:last-child]:border-b-0 mt-2.5 @min-[66rem]/page:px-0 @min-[66rem]/page:py-0">
         {entries.map((entry) => {
           const { item, state } = entry;
           const area = areas.find((a) => a.id === item.areaId);
