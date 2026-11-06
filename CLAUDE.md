@@ -33,6 +33,29 @@ It needs Bun 1.3.3 or newer.
 
 <!-- BEGIN:nextjs-agent-rules -->
 
+## Working efficiently
+
+Orient cheaply: read `docs/PROGRESS.md` lines 1–66 and its `In flight` and `Next up` sections only. Its `Log` is history (about 60 of 81 KB): search it, never read it whole.
+
+Checks: `npm run lint`, `npm run typecheck`, `npm test`, `npm run e2e` (a full run is about 6 min locally with `E2E_CHANNEL=msedge`). Run only the spec you touched while working; CI runs everything.
+
+CI: `scripts/ci-failures.sh [branch|run-id]` prints job results and each failed test's first error lines. Use it instead of reading logs. Do not poll; the auto-fix watcher reports failures.
+
+Pick gstack by risk, not habit:
+
+| Change | Use |
+|---|---|
+| Small fix, copy, test-only | Nothing; CI is the check |
+| Normal feature or fix | `/review` once on the final diff |
+| UI change | `/design-review` on the changed pages only |
+| Auth, data, RLS, privacy | `/cso` scoped to that diff |
+| Cause unknown | `/investigate` |
+| Before public launch | one `/cso` and one `/qa-only` |
+
+Give every run a target (branch diff or named routes). Run reviews in a subagent so only findings return. Do not rerun on an unchanged commit. Avoid `/autoplan` and the `/plan-*-review` chains except for a large feature. Report first (`/qa-only`), fix only what is accepted.
+
+Leave Impeccable's design hook on. It only acts after an edit to a UI file (`.tsx`, `.css` and similar), so non-UI work costs nothing; do not toggle it per task.
+
 # This is NOT the Next.js you know
 
 This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
