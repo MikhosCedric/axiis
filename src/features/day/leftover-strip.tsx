@@ -74,7 +74,7 @@ export function LeftoverStrip({
               <Glyph type={row.type} state="planned" />
             </span>
             <div className="min-w-0 flex-1">
-              <button type="button" onClick={() => onSelect(row.id)} className="block cursor-pointer rounded text-left font-medium break-words hover:underline">
+              <button type="button" onClick={() => onSelect(row.id)} className="block cursor-pointer rounded text-left tap-y font-medium break-words hover:underline">
                 {row.title}
               </button>
               <span className="mt-0.5 block text-xs text-ink-3">
