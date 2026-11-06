@@ -11,5 +11,12 @@
         "reason": "agent decision, not user confirmed: --ease-spring is documented as only for something let go under a hand (the phone swipe strip settling); every other move uses --ease-axiis or --ease-exit"
       }
     ]
+  },
+  "hook": {
+    "enabled": true,
+    "limits": {
+      "maxFindings": 5,
+      "maxChars": 8000
+    }
   }
 }
