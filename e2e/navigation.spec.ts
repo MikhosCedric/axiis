@@ -45,7 +45,8 @@ signedIn.describe("clearing the Inbox", () => {
     await expect(title(page, "Read the lease")).toBeFocused();
     await page.keyboard.press("j");
     await page.keyboard.press("3");
-    await expect(page.getByRole("status").filter({ hasText: /^Pick a birthday gift is planned for Monday \d+ \w+\.$/ })).toBeVisible();
+    // 3 is next week, which starts on the coming Monday; on a Sunday that is tomorrow, and the app says so.
+    await expect(page.getByRole("status").filter({ hasText: /^Pick a birthday gift is planned for (?:tomorrow|Monday \d+ \w+)\.$/ })).toBeVisible();
 
     await page.keyboard.press("ControlOrMeta+z");
     await expect(page.getByRole("status").filter({ hasText: "Pick a birthday gift is back in the Inbox." })).toBeVisible();
