@@ -24,9 +24,9 @@ function sendFailure(error: { status?: number; code?: string }): string {
 }
 
 /** The desktop shell sets this cookie on our pages. Anyone can set it; all it changes is where a sign-in comes back to. */
-export const DESKTOP_COOKIE = "axiis_desktop";
+const DESKTOP_COOKIE = "axiis_desktop";
 /** Where a desktop sign-in returns: the OS hands this link to the app, which finishes the exchange in its own window. */
-export const DESKTOP_CALLBACK = "axiis://auth/callback";
+const DESKTOP_CALLBACK = "axiis://auth/callback";
 
 /** Next rejects Server Function calls whose Origin does not match the host, so this header is trustworthy here. */
 async function callbackUrl(formData: FormData): Promise<string> {
