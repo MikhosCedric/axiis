@@ -6,7 +6,7 @@ import { memoryDeletionPort } from "@/lib/account/fake";
 import { fakeAreasRepo } from "@/lib/areas/fake";
 import { recurrenceToColumns, scheduleToColumns } from "@/lib/items/mappers";
 import { fakeNotesRepo, type NotesStore } from "@/lib/notes/fake";
-import { addDays, instantAt, localMinutes, toLocalDate } from "@/lib/dates";
+import { addDays, instantAt, localMinutes, toLocalDate, utcMidnight } from "@/lib/dates";
 
 // Loaded only through getFakeAccount in ./fake-session, which a production build drops.
 
@@ -75,7 +75,7 @@ function busyFixtures(areas: Area[], now: Date): Item[] {
       title: "Standup",
       areaId: work,
       schedule: timed(addDays(today, -14), [9, 30], [9, 45]),
-      recurrence: { kind: "series", rule: { freq: "weekly", interval: 1, byDay: ["MO", "TU", "WE", "TH", "FR"], end: { kind: "never" } } },
+      recurrence: { kind: "series", rule: { freq: "weekly", interval: 1, byDay: standupDays(today), end: { kind: "never" } } },
     }),
     make(3, { title: "Write the Q4 plan", areaId: work, schedule: timed(today, [10, 0], [11, 30]), ...doneAt(at(today, 11, 20)) }),
     make(4, { type: "event", title: "Dentist", areaId: health, schedule: timed(today, [12, 30], [13, 15]) }),
@@ -180,6 +180,18 @@ function createAccount(kind: FakeAccountKind) {
 }
 
 export type FakeAccount = ReturnType<typeof createAccount> & { reset(): void };
+
+const WEEKDAY_CODES = ["SU", "MO", "TU", "WE", "TH", "FR", "SA"] as const;
+
+/**
+ * The days Standup happens: Monday to Friday, and today's weekday as well when today is a weekend. Tests open
+ * Today and expect the series' row there, so a weekday-only series would leave them nothing to find on a Saturday
+ * or Sunday. On a weekday the rule is exactly Monday to Friday.
+ */
+function standupDays(today: LocalDate): (typeof WEEKDAY_CODES)[number][] {
+  const todayCode = WEEKDAY_CODES[new Date(utcMidnight(today)).getUTCDay()];
+  return [...new Set<(typeof WEEKDAY_CODES)[number]>(["MO", "TU", "WE", "TH", "FR", todayCode])];
+}
 
 // On globalThis so every route bundle in the one `next dev` process shares one account of each kind.
 const holder = globalThis as typeof globalThis & {
