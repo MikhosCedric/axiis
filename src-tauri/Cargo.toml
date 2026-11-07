@@ -1,0 +1,26 @@
+[package]
+name = "axiis-desktop"
+version = "0.1.0"
+description = "Axiis desktop shell"
+edition = "2021"
+rust-version = "1.80"
+
+[lib]
+name = "axiis_desktop_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = ["tray-icon"] }
+tauri-plugin-single-instance = "2"
+tauri-plugin-global-shortcut = "2"
+tauri-plugin-opener = "2"
+
+[profile.release]
+opt-level = "s"
+lto = true
+codegen-units = 1
+strip = true
+panic = "abort"
