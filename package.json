@@ -32,6 +32,7 @@
     "@electric-sql/pglite": "^0.5.9",
     "@playwright/test": "^1.64.0",
     "@tailwindcss/postcss": "^4",
+    "@tauri-apps/cli": "^2.12.4",
     "@types/node": "^24.19.2",
     "@types/react": "^19",
     "@types/react-dom": "^19",
