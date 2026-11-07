@@ -1,6 +1,6 @@
 # Axiis desktop app: plan
 
-Status: proposed, 2026-11-07. Decisions needed from the owner are in section 7.
+Status: decided 2026-11-07, Phase 1a built. Decisions are recorded in section 7.
 
 The web app stays. The desktop app is the same code in a native shell, then grows native features and an offline data layer. Mobile follows from the same shell.
 
@@ -83,12 +83,26 @@ Pages are server-rendered and writes are Server Actions, so the app needs a serv
 - CI: keep `check` and the Playwright web e2e as they are; add a Windows build job that compiles the shell on every PR (no signing) and a release workflow that signs and publishes on tags. Shell smoke tests through `tauri-driver` (launch, sign-in stub, hotkey). Each phase ends with the existing 559 e2e tests green on the web build.
 - Observability: crash and update-failure logs written locally, uploaded only with consent.
 
-## 7. Decisions needed from the owner
-1. Tauri 2 (recommended) or Electron.
-2. Phase 1 on the hosted app (recommended) before any offline work: yes or no.
-3. Platform order: Windows first, then macOS: confirm. Linux: yes or no.
-4. Owner-only purchases and accounts: Windows code-signing certificate (about 100-400 USD a year), Apple developer account (99 USD a year, needed for macOS notarization and iOS), a domain for the update and deep-link origin.
-5. How much offline: capture-only (ADR-0001's first step) or full offline-first (Phase 2 as written).
+## 7. Decisions (owner, 2026-11-07: "your recommendations, but spend nothing for now")
+1. Shell: **Tauri 2**.
+2. **Phase 1 loads the hosted app** first.
+3. **Windows first**, then macOS; no Linux for now.
+4. **No spending yet.** So: unsigned Windows installers (SmartScreen will warn on first run), updates signed with a free minisign key, the existing Vercel origin (`axiis-lovat.vercel.app`) instead of a new domain, a reverse-DNS app id (`app.axiis.desktop`) that needs no domain, and no Apple account (so no macOS build or iOS until that changes).
+5. **Offline: capture-only first** (ADR-0001's first step). Full offline-first stays Phase 2 and needs its own go-ahead.
 
-## 8. Order of work if approved
-Phase 0 and 1 first; they ship a real installable app and settle the sign-in, hotkey and update story. Phase 2 starts only after we have used Phase 1 for a while and chosen the offline scope.
+## Status
+- **Phase 0:** already in place on the web: manifest (`start_url /today`, standalone), 192 and 512 PNG icons, public icon routes. No service worker is needed to install; it arrives with Phase 2.
+- **Phase 1a (built):** `src-tauri/` and `desktop/dist/`. A window on the hosted app, navigation locked to our origin (other links open in the system browser), our own offline page, single instance, tray with Open, Capture and Quit, closing hides to the tray, and the global hotkey Ctrl+Alt+A that brings Axiis forward with the capture field focused. The page gets no native API (empty capability file). Debug builds can point at a dev server with `AXIIS_URL`; release builds never read it. A Windows CI job (`.github/workflows/desktop.yml`) builds an unsigned installer when the shell changes.
+- **Phase 1b (next):** system-browser sign-in with a deep link back (`axiis://auth`), then keychain token storage, the taskbar badge from the Inbox and Due counts, and signed auto-update through GitHub Releases. The sign-in step needs one Supabase setting only the owner can change: adding `axiis://auth/callback` to the allowed redirect URLs.
+
+### Run it here
+```bash
+# once: Rust (rustup) and Visual Studio's C++ tools; WebView2 ships with Windows 11
+npm install
+cd src-tauri && cargo build            # debug build
+AXIIS_URL=http://localhost:3000/login ./target/debug/axiis-desktop.exe   # against a local dev server
+npx tauri build                        # unsigned NSIS installer in src-tauri/target/release/bundle/nsis/
+```
+
+## 8. Order of work
+Finish Phase 1b (sign-in, badge, updates), then use the app for a while. Phase 2 starts only after that and after the owner confirms the offline scope.
