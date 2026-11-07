@@ -2,8 +2,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const signInWithOtp = vi.fn();
 
+const shell = vi.hoisted(() => ({ desktop: false }));
+
 vi.mock("next/headers", () => ({
-  cookies: async () => ({ get: () => undefined, set: () => undefined }),
+  cookies: async () => ({
+    get: (name: string) => (name === "axiis_desktop" && shell.desktop ? { value: "1" } : undefined),
+    set: () => undefined,
+  }),
   headers: async () => new Headers({ origin: "https://axiis.test" }),
 }));
 vi.mock("@/lib/supabase/server", () => ({ createClient: async () => ({ auth: { signInWithOtp } }) }));
@@ -19,6 +24,7 @@ function form(fields: Record<string, string>): FormData {
 const send = (fields: Record<string, string>) => signInWithEmail({ status: "idle" }, form({ next: "/today", ...fields }));
 
 beforeEach(() => {
+  shell.desktop = false;
   signInWithOtp.mockReset();
   signInWithOtp.mockResolvedValue({ error: null });
 });
@@ -37,6 +43,18 @@ describe("signInWithEmail with no Turnstile site key", () => {
     expect(signInWithOtp).toHaveBeenCalledWith({
       email: "ana@example.com",
       options: { emailRedirectTo: "https://axiis.test/auth/callback?next=%2Ftoday" },
+    });
+  });
+});
+
+describe("signInWithEmail in the desktop shell", () => {
+  it("returns the sign-in link to the app through the deep link, not to a web origin", async () => {
+    vi.stubEnv("NEXT_PUBLIC_TURNSTILE_SITE_KEY", "");
+    shell.desktop = true;
+    expect((await send({ email: "ana@example.com" })).status).toBe("sent");
+    expect(signInWithOtp).toHaveBeenCalledWith({
+      email: "ana@example.com",
+      options: { emailRedirectTo: "axiis://auth/callback" },
     });
   });
 });
