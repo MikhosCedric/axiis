@@ -335,6 +335,7 @@ signedIn.describe("signed in", () => {
 
   signedIn("signing out returns to sign in and ends the session", async ({ page }) => {
     await page.goto("/today");
+    await hydrated(page);
     await page.getByRole("button", { name: "Account" }).click();
     await page.getByRole("button", { name: "Sign out" }).click();
     await expect(page).toHaveURL("/login");
