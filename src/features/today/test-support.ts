@@ -213,12 +213,16 @@ export function fakeRepo(items: Item[] = [], areas: Area[] = []) {
       const at = items.findIndex((i) => i.id === id);
       if (at !== -1) {
         trash.push(...items.splice(at, 1));
+        deletedAt.set(id, new Date());
         deleted += 1;
       }
     },
     async restore(id) {
       const at = trash.findIndex((i) => i.id === id);
       if (at !== -1) items.push(...trash.splice(at, 1));
+    },
+    async listDeleted() {
+      return [...trash].reverse().filter((i) => i.parentId === null).map((item) => ({ item, deletedAt: deletedAt.get(item.id) ?? new Date() }));
     },
     async purgeDeleted() {
       calls.purgeDeleted += 1;
@@ -279,6 +283,7 @@ export function fakeRepo(items: Item[] = [], areas: Area[] = []) {
   // Soft-deleted rows leave `items`, but the database keeps them.
   let deleted = 0;
   const trash: Item[] = [];
+  const deletedAt = new Map<ItemId, Date>();
   const tags: Tag[] = [];
   const itemTags: { itemId: ItemId; tagId: TagId }[] = [];
   function link(itemId: ItemId, name: TagName): Tag {

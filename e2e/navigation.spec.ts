@@ -200,3 +200,32 @@ signedIn.describe("the detail panel and history", () => {
     await expect(page).toHaveURL(/\/inbox$/);
   });
 });
+
+signedIn.describe("managing from the details", () => {
+  signedIn("an area is made from the details and then picked", async ({ page }) => {
+    await open(page, "/inbox");
+    await title(page, "Read the lease").click();
+    await expect(details(page)).toBeVisible();
+    const fold = details(page).getByRole("button", { name: "Area", exact: true });
+    if (await fold.count()) await fold.click();
+    await details(page).getByRole("button", { name: "New area" }).click();
+    await details(page).getByRole("textbox", { name: "New area name" }).fill("Studio");
+    await page.keyboard.press("Enter");
+    await expect(details(page).getByText("Studio added.")).toBeVisible();
+    await expect(details(page).getByRole("combobox", { name: "Area" }).getByRole("option", { name: "Studio" })).toBeAttached();
+  });
+
+  signedIn("a deleted item is listed under Recently deleted and can be restored", async ({ page }) => {
+    await open(page, "/inbox");
+    await title(page, "Read the lease").click();
+    await details(page).getByRole("button", { name: /^Delete this/ }).click();
+    await details(page).getByRole("group").getByRole("button", { name: "Yes" }).click();
+    await expect(details(page)).toBeHidden();
+
+    await open(page, "/trash");
+    await expect(page.getByRole("heading", { level: 1, name: "Recently deleted" })).toBeVisible();
+    await page.getByRole("button", { name: "Restore Read the lease" }).click();
+    await expect(page.getByRole("status").filter({ hasText: "Read the lease is back." })).toBeVisible();
+    await expect(page.getByText("Nothing deleted lately.")).toBeVisible();
+  });
+});

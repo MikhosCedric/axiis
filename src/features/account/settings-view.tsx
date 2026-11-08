@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { BackLink } from "@/components/back-link";
 import type { Area } from "@/domain/item";
 import type { ClockSetting, Density, Theme } from "@/components/shell/cookies";
@@ -93,6 +94,19 @@ export function SettingsView({
         </div>
 
         <div id="your-data" className="space-y-12">
+          <section aria-labelledby="trash-heading">
+            <h2 id="trash-heading" className="font-display text-xl font-medium">
+              Recently deleted
+            </h2>
+            <p className="mt-1.5 max-w-[60ch] text-ink-2">Items you deleted in the last 30 days can be brought back.</p>
+            <Link
+              href="/trash"
+              className="mt-4 inline-flex items-center rounded-lg border border-rule px-3.5 py-2 font-medium text-ink no-underline hover:bg-hover active:bg-press pointer-coarse:min-h-11"
+            >
+              Open recently deleted
+            </Link>
+          </section>
+
           <section aria-labelledby="export-heading">
             <h2 id="export-heading" className="font-display text-xl font-medium">
               Export your data

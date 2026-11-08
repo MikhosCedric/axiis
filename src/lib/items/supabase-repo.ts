@@ -24,6 +24,7 @@ import {
   TAGGED_LIMIT,
   WAITING_LIMIT,
   type ChildCount,
+  type DeletedItem,
   type ItemsRepo,
 } from "./repo";
 
@@ -305,6 +306,21 @@ export class SupabaseItemsRepo implements ItemsRepo {
   async restore(id: ItemId): Promise<void> {
     const result = await this.db.from("items").update({ deleted_at: null }).eq("id", id).not("deleted_at", "is", null);
     unwrap("restore", result, () => undefined);
+  }
+
+  async listDeleted(): Promise<DeletedItem[]> {
+    const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+    const result = await this.db
+      .from("items")
+      .select(`${LIST_COLUMNS},deleted_at`)
+      .not("deleted_at", "is", null)
+      .gte("deleted_at", since)
+      .is("parent_id", null)
+      .order("deleted_at", { ascending: false })
+      .limit(100);
+    return unwrap("listDeleted", result, (raw) =>
+      rowList.parse(raw).map((row) => ({ item: itemFromRow(row), deletedAt: new Date(z.object({ deleted_at: z.string() }).parse(row).deleted_at) })),
+    );
   }
 
   async purgeDeleted(): Promise<void> {

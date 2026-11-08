@@ -12,6 +12,7 @@ import type { ConnectedRow } from "@/features/notes/model";
 import { RepeatMark } from "@/features/today/repeat-mark";
 import { InlineTitle } from "./inline-title";
 import { LinkedNotes } from "./linked-notes";
+import { NewArea } from "./new-area";
 import { useItemHref } from "./item-href";
 import { useItemSelection } from "./use-item-selection";
 import { planOptions, TYPE_CHOICES, type TypeChoice, type DetailActions, type DetailView, type Scope, type SkippedDate } from "./model";
@@ -397,6 +398,7 @@ export function DetailSheet({
               Manage areas
             </Link>
           </dd>
+          {actions.addArea && <NewArea add={actions.addArea} onOpen={() => setOpened({ id: item.id, rows: [...(opened.id === item.id ? opened.rows : []), "area"] })} />}
             </>
           )}
 
