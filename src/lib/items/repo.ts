@@ -33,6 +33,9 @@ export type ChildCount = { total: number; done: number };
  * Persistence boundary for items. Callers speak domain types; the
  * implementation owns row mapping and error translation.
  */
+/** An item in the recently deleted list, with when it was deleted. */
+export type DeletedItem = { item: Item; deletedAt: Date };
+
 export interface ItemsRepo {
   listAreas(): Promise<Area[]>;
   /**
@@ -113,6 +116,8 @@ export interface ItemsRepo {
   softDelete(id: ItemId): Promise<void>;
   /** Undoes `softDelete`: a soft-deleted item is live again. One that is live already is left as it is. */
   restore(id: ItemId): Promise<void>;
+  /** Top-level items soft-deleted within the last 30 days (before `purgeDeleted` may remove them), newest deletion first, at most 100. */
+  listDeleted(): Promise<DeletedItem[]>;
   /**
    * Hard-deletes up to 500 of the account's items soft-deleted more than 30
    * days ago (`purge_deleted_items`, migration 0008), so an account at its

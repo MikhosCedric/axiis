@@ -165,6 +165,8 @@ export type DetailActions = {
   linkNote?: (itemId: string, otherId: string) => Promise<ActionResult>;
   unlinkNote?: (linkId: string) => Promise<ActionResult>;
   searchNotes?: (query: string) => Promise<SearchRow[]>;
+  /** Adds an area by name, so one can be made without leaving the panel. */
+  addArea?: (name: string) => Promise<ActionResult>;
 };
 
 /**

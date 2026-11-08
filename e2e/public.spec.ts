@@ -44,7 +44,7 @@ test("the landing page lists shipped features as shipped, and nothing as coming"
   await expect(page.getByText(/come next/)).toHaveCount(0);
 });
 
-for (const path of ["/today", "/day/2026-10-08", "/week", "/inbox", "/settings", "/notes", "/tags", "/tags/Deep%20work"]) {
+for (const path of ["/today", "/day/2026-10-08", "/week", "/inbox", "/settings", "/notes", "/tags", "/tags/Deep%20work", "/trash"]) {
   test(`${path} sends a stranger to sign in`, async ({ page }) => {
     await page.goto(path);
     await expect(page).toHaveURL(`/login?next=${encodeURIComponent(path)}`);

@@ -1,3 +1,4 @@
+import { addAreaAction } from "@/features/account/actions";
 import { createLinkedNoteAction, linkItemsAction, searchItemsAction, unlinkItemsAction } from "@/features/notes/actions";
 import { linkedNotes } from "@/features/notes/commands";
 import { getClock, getNow, getTimeZone } from "@/features/day/server";
@@ -50,6 +51,7 @@ const actions: DetailActions = {
   linkNote: linkItemsAction,
   unlinkNote: unlinkItemsAction,
   searchNotes: searchItemsAction,
+  addArea: addAreaAction,
 };
 
 /** Renders the selected item, or one occurrence of a repeating item, or nothing when nothing is selected. */

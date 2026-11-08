@@ -366,6 +366,36 @@ signedIn.describe("signed in", () => {
     await expect(details.getByRole("link", { name: "Garden through the winter" })).toHaveCount(0);
   });
 
+  signedIn("a deleted task is listed under Recently deleted and can be restored", async ({ page }) => {
+    await page.goto("/day/2099-05-20?item=e2e00000-0000-4000-8000-000000000007");
+    await hydrated(page);
+    const details = page.getByRole("complementary", { name: "Details" });
+    await details.getByRole("button", { name: /^Delete this/ }).click();
+    await details.getByRole("group").getByRole("button", { name: "Yes" }).click();
+    await expect(details).toBeHidden();
+
+    await page.goto("/trash");
+    await hydrated(page);
+    await expect(page.getByRole("heading", { level: 1, name: "Recently deleted" })).toBeVisible();
+    await expect(page.getByText("Task, deleted today")).toBeVisible();
+    await page.getByRole("button", { name: "Restore Renew the lease" }).click();
+    await expect(page.getByRole("status").filter({ hasText: "Renew the lease is back." })).toBeVisible();
+    await expect(page.getByText("Nothing deleted lately.")).toBeVisible();
+  });
+
+  signedIn("an area is made from the details and then picked", async ({ page }) => {
+    await page.goto("/day/2099-05-20?item=e2e00000-0000-4000-8000-000000000007");
+    await hydrated(page);
+    const details = page.getByRole("complementary", { name: "Details" });
+    const fold = details.getByRole("button", { name: "Area", exact: true });
+    if (await fold.count()) await fold.click();
+    await details.getByRole("button", { name: "New area" }).click();
+    await details.getByRole("textbox", { name: "New area name" }).fill("Studio");
+    await page.keyboard.press("Enter");
+    await expect(details.getByText("Studio added.")).toBeVisible();
+    await expect(details.getByRole("combobox", { name: "Area" }).getByRole("option", { name: "Studio" })).toBeAttached();
+  });
+
   signedIn("signing out returns to sign in and ends the session", async ({ page }) => {
     await page.goto("/today");
     await hydrated(page);
