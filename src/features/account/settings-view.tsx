@@ -1,3 +1,4 @@
+import { BackLink } from "@/components/back-link";
 import type { Area } from "@/domain/item";
 import type { ClockSetting, Density, Theme } from "@/components/shell/cookies";
 import type { Clock } from "@/lib/clock";
@@ -53,7 +54,8 @@ export function SettingsView({
       className="max-w-[640px] px-4 pt-6 pb-16 rail:px-9 rail:pt-8 min-[1180px]:grid min-[1180px]:mx-auto min-[1180px]:max-w-[968px] min-[1180px]:grid-cols-[11rem_minmax(0,1fr)] min-[1180px]:gap-x-12"
     >
       <header className="min-[1180px]:col-span-2">
-        <h1 className="headline">Settings</h1>
+        <BackLink />
+        <h1 className="mt-2 headline">Settings</h1>
         <p className="page-summary break-words">
           {email ? (
             <>

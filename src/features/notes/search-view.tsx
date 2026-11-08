@@ -1,4 +1,5 @@
 import { QUERY_MAX } from "./commands";
+import { BackLink } from "@/components/back-link";
 import { SearchIcon } from "./icons";
 import { type SearchRow } from "./model";
 import { SearchResult } from "./search-result";
@@ -7,7 +8,8 @@ import { SearchResult } from "./search-result";
 export function SearchView({ query, rows, basePath = "/search" }: { query: string; rows: SearchRow[]; basePath?: string }) {
   return (
     <div className="mx-auto max-w-[880px] px-4 pt-6 pb-16 rail:px-9 rail:pt-8">
-      <h1 className="headline">Search</h1>
+      <BackLink />
+      <h1 className="mt-2 headline">Search</h1>
       <form role="search" action={basePath} className="mt-6 flex gap-2">
         <label htmlFor="search-q" className="sr-only">
           Search everything

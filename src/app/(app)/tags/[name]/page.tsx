@@ -4,6 +4,7 @@ import { cache } from "react";
 import { readDayQuery } from "@/features/day/nav";
 import { getClock, getTimeZone } from "@/features/day/server";
 import { DetailPanel } from "@/features/detail/detail-panel";
+import { deleteTagAction, renameTagAction, setTagColorAction } from "@/features/tags/actions";
 import { loadTagged } from "@/features/tags/commands";
 import { tagFromSegment, TAGS_PATH } from "@/features/tags/model";
 import { TaggedView } from "@/features/tags/tagged-view";
@@ -30,5 +31,9 @@ export default async function TagPage({ params, searchParams }: PageProps<"/tags
       </div>
     );
   }
-  return <TaggedView data={data} detail={<DetailPanel itemId={readDayQuery(query).itemId} />} />;
+  return <TaggedView
+      data={data}
+      actions={{ rename: renameTagAction, remove: deleteTagAction, color: setTagColorAction }}
+      detail={<DetailPanel itemId={readDayQuery(query).itemId} />}
+    />;
 }

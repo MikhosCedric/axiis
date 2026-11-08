@@ -143,7 +143,27 @@ signedIn.describe("colours and filters", () => {
     await page.goto("/tags/errands");
     await expect(page.getByRole("heading", { level: 1 }).locator("[data-area-color]")).toHaveAttribute("data-area-color", "indigo");
     await page.goto("/tags");
-    await expect(page.getByRole("link", { name: /errands/ }).locator("[data-area-color]")).toHaveAttribute("data-area-color", "indigo");
+    await expect(page.getByRole("button", { name: "Colour for #errands: Indigo" })).toBeVisible();
+  });
+
+  signedIn("a tag is renamed and deleted from its own page, and the list has the same controls", async ({ page }) => {
+    await page.goto("/tags/errands");
+    await hydrated(page);
+    const name = page.getByRole("textbox", { name: "Rename #errands" });
+    await name.fill("chores");
+    await name.press("Enter");
+    await expect(page).toHaveURL(/\/tags\/chores$/);
+    await expect(page.getByRole("heading", { level: 1 })).toContainText("chores");
+
+    await page.getByRole("link", { name: "All tags" }).click();
+    await expect(page.getByRole("textbox", { name: "Rename #chores" })).toBeVisible();
+
+    await page.goto("/tags/chores");
+    await hydrated(page);
+    await page.getByRole("button", { name: "Delete #chores" }).click();
+    await page.getByRole("group", { name: "Delete #chores? Its items stay." }).getByRole("button", { name: "Yes" }).click();
+    await expect(page).toHaveURL(/\/tags$/);
+    await expect(page.getByRole("textbox", { name: "Rename #chores" })).toHaveCount(0);
   });
 
   signedIn("Settings suggests colours once, until Not now", async ({ page }) => {

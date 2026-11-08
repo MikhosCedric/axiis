@@ -2,9 +2,19 @@ import Link from "next/link";
 import { AreaMark } from "@/components/area-mark";
 import type { TagSummary } from "@/domain/tag";
 import { openCount, tagHref } from "./model";
+import { TagsSection, type TagActions } from "./tags-section";
 
 /** Every tag by name with how many open items carry it. Each opens its own page. */
-export function TagIndexView({ tags, hrefFor = tagHref }: { tags: TagSummary[]; hrefFor?: (name: string) => string }) {
+export function TagIndexView({
+  tags,
+  hrefFor,
+  actions,
+}: {
+  tags: TagSummary[];
+  hrefFor?: (name: string) => string;
+  /** When given, each tag can be renamed, recoloured and deleted right here. */
+  actions?: TagActions;
+}) {
   return (
     <div className="mx-auto max-w-[880px] px-4 pt-6 pb-14 rail:px-9 rail:pt-8">
       <h1 className="headline">Tags</h1>
@@ -13,12 +23,17 @@ export function TagIndexView({ tags, hrefFor = tagHref }: { tags: TagSummary[]; 
           ? "No tags yet. Add one from any item's details."
           : `${tags.length === 1 ? "One tag" : `${tags.length} tags`}. Open one to see everything that carries it.`}
       </p>
-      {tags.length > 0 && (
+      {actions && tags.length > 0 && (
+        <div className="mt-6">
+          <TagsSection bare tags={tags} actions={actions} hrefFor={hrefFor} />
+        </div>
+      )}
+      {!actions && tags.length > 0 && (
         <ul className="surface mt-6 overflow-hidden px-3 py-1.5 [&_li:last-child]:border-b-0">
           {tags.map((t) => (
             <li key={t.id} className="border-b border-rule-soft">
               <Link
-                href={hrefFor(t.name)}
+                href={(hrefFor ?? tagHref)(t.name)}
                 className="flex items-baseline justify-between gap-4 rounded-md px-2 py-2.5 hover:bg-hover pointer-coarse:min-h-11 pointer-coarse:items-center active:bg-press"
               >
                 <span className="min-w-0 font-medium break-words text-ink">

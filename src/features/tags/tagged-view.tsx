@@ -13,6 +13,7 @@ import { Glyph } from "@/features/today/glyph";
 import { RepeatMark } from "@/features/today/repeat-mark";
 import type { TaggedData } from "./commands";
 import { tagLine, taggedSummary, TAGS_PATH } from "./model";
+import { TagToolbar, type TagActions } from "./tags-section";
 
 /** One tag's page: everything carrying it, open first. A row opens the detail panel beside the list. */
 export function TaggedView({
@@ -20,12 +21,15 @@ export function TaggedView({
   detail,
   indexHref = TAGS_PATH,
   setDone = setDoneAction,
+  actions,
 }: {
   data: TaggedData;
   detail?: ReactNode;
   indexHref?: string;
   /** Defaults to the server action; the dev harness passes an in-memory one. */
   setDone?: SetDone;
+  /** When given, the tag can be renamed, recoloured and deleted from its own page. */
+  actions?: TagActions;
 }) {
   const { selectedParam, selectedId, select } = useItemSelection();
   const quick = useQuick();
@@ -45,6 +49,7 @@ export function TaggedView({
           {data.tag.name}
         </h1>
         <p className="page-summary">{taggedSummary(data.rows)}</p>
+        {actions && <TagToolbar key={data.tag.id} tag={data.tag} actions={actions} />}
         <p role="status" className={`mt-4 min-h-5 text-[13px] ${ticks.status?.error ? "font-medium text-ink" : "text-ink-2"}`}>
           {ticks.status?.text}
         </p>
