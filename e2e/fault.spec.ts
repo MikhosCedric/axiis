@@ -61,7 +61,7 @@ signedIn("a save that cannot reach the server says so and keeps the page", async
   await context.setOffline(false);
 });
 
-signedIn("a capture that cannot reach the server keeps the typed words and says so", async ({ page, context }) => {
+signedIn("a capture that cannot reach the server is kept on the device and says so", async ({ page, context }) => {
   await page.goto("/today");
   const field = page.locator("#capture");
   await hydrated(page);
@@ -69,9 +69,11 @@ signedIn("a capture that cannot reach the server keeps the typed words and says 
   await context.setOffline(true);
   await field.fill("call the bank about the card");
   await field.press("Enter");
-  await expect(page.locator("#capture-status")).toHaveText("Could not reach Axiis. Check your connection and try again.");
-  await expect(field).toHaveValue("call the bank about the card");
+  await expect(page.locator("#capture-status")).toHaveText("Saved on this device. It will be sent when you are back online.");
+  await expect(field).toHaveValue("");
   await expect(page.getByRole("heading", { level: 1, name: "This page did not load." })).toHaveCount(0);
+  // Drop the queued entry before the connection returns, so it is not sent into the account other tests share.
+  await page.evaluate(() => Object.keys(localStorage).filter((k) => k.startsWith("axiis-outbox:")).forEach((k) => localStorage.removeItem(k)));
   await context.setOffline(false);
 });
 
