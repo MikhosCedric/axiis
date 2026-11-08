@@ -248,3 +248,32 @@ signedIn.describe("capturing with no connection", () => {
     await expect(title(page, "Call the vet from the train")).toHaveCount(1);
   });
 });
+
+signedIn.describe("reading with no connection", () => {
+  signedIn("a page read lately opens offline from the saved copy, one never read says so, and sign-out drops them", async ({ page, context, baseURL }) => {
+    await context.addCookies([{ name: "axiis-sw", value: "1", url: baseURL }]);
+    await open(page, "/inbox");
+    // The worker takes the page over, then keeps it; wait until the copy exists before going offline.
+    await page.evaluate(() => navigator.serviceWorker.ready);
+    await expect
+      .poll(async () => page.evaluate(async () => (await (await caches.open("axiis-pages-v1")).keys()).map((r) => new URL(r.url).pathname)), { timeout: 15000 })
+      .toContain("/inbox");
+
+    await context.setOffline(true);
+    await page.goto("/inbox");
+    await expect(title(page, "Book flights to Lisbon")).toBeVisible();
+    await expect(page.getByRole("status").filter({ hasText: "Offline. You are seeing the last saved copy of this page." })).toBeVisible();
+
+    await page.goto("/week");
+    await expect(page.getByRole("heading", { name: "Axiis is offline" })).toBeVisible();
+    await context.setOffline(false);
+
+    await page.goto("/inbox");
+    await hydrated(page);
+    await page.getByRole("button", { name: "Account" }).click();
+    await page.getByRole("button", { name: "Sign out" }).click();
+    await expect(page).toHaveURL(/\/login/);
+    // The sign-in page re-fills only the cache of public, hashed assets; what was read is gone.
+    await expect.poll(() => page.evaluate(() => caches.has("axiis-pages-v1"))).toBe(false);
+  });
+});

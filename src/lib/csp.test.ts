@@ -22,6 +22,10 @@ describe("contentSecurityPolicy", () => {
     for (const rule of ["frame-ancestors 'none'", "object-src 'none'", "base-uri 'self'"]) expect(prod).toContain(rule);
   });
 
+  it("names the worker that keeps read pages, so strict-dynamic cannot leave it without a rule", () => {
+    expect(directive(prod, "worker-src")).toBe("worker-src 'self'");
+  });
+
   it("upgrades insecure requests in production only", () => {
     expect(prod).toContain("upgrade-insecure-requests");
     expect(dev).not.toContain("upgrade-insecure-requests");

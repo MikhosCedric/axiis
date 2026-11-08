@@ -27,6 +27,8 @@ export function contentSecurityPolicy(
     // The browser talks only to this origin: Supabase is reached from the server. Dev adds the reload socket.
     `connect-src 'self'${challenge}${development ? " ws: wss:" : ""}`,
     "manifest-src 'self'",
+    // The worker that keeps read pages for offline. Named here so strict-dynamic cannot leave it without a rule.
+    "worker-src 'self'",
     "object-src 'none'",
     "base-uri 'self'",
     "frame-ancestors 'none'",
