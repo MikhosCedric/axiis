@@ -109,4 +109,4 @@ npx tauri build --config '{"bundle":{"createUpdaterArtifacts":false}}'   # unsig
 ```
 
 ## 8. Order of work
-Finish Phase 1b (sign-in, badge, updates), then use the app for a while. Phase 2 starts only after that and after the owner confirms the offline scope.
+Phase 1 is done and verified (sign-in, badge, auto-update 0.1.1 to 0.1.2). Phase 2 started 2026-11-08 with the owner's go-ahead, in stages per `docs/adr/0002-offline-in-stages.md`: 2a offline capture queue (first), 2b read cache, 2c local-first (needs the client-rendered UI, decided later).
