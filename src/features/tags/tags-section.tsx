@@ -1,13 +1,14 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { startTransition, useId, useMemo, useOptimistic, useState } from "react";
 import { ColorPicker, SwatchButton } from "@/components/color-picker";
 import type { AreaColor } from "@/domain/area-color";
 import { parseTagName, TAG_NAME_MAX, type TagId, type TagName, type TagSummary } from "@/domain/tag";
 import { ConfirmDelete } from "@/features/detail/confirm-delete";
 import type { ActionResult } from "@/features/today/commands";
-import { openCount, tagHref } from "./model";
+import { openCount, TAGS_PATH, tagHref } from "./model";
 import { latestSave } from "@/lib/latest-save";
 import { reach } from "@/lib/reach";
 
@@ -38,10 +39,13 @@ export function TagsSection({
   tags,
   actions,
   hrefFor = tagHref,
+  bare = false,
 }: {
   tags: TagSummary[];
   actions: TagActions;
   hrefFor?: (name: string) => string;
+  /** Without its own heading and blurb, for a page that already has them. */
+  bare?: boolean;
 }) {
   const [shown, change] = useOptimistic(tags, apply);
   const [error, setError] = useState<string | null>(null);
@@ -60,13 +64,17 @@ export function TagsSection({
   }
 
   return (
-    <section aria-labelledby={`${prefix}-heading`}>
-      <h2 id={`${prefix}-heading`} className="font-display text-xl font-medium">
-        Tags
-      </h2>
-      <p className="mt-1.5 max-w-[60ch] text-ink-2">
-        Renaming a tag renames it on every item. A colour shows as a dot beside the tag wherever it appears. Deleting one takes it off its items and keeps the items.
-      </p>
+    <section aria-labelledby={bare ? undefined : `${prefix}-heading`} aria-label={bare ? "Tags" : undefined}>
+      {!bare && (
+        <>
+          <h2 id={`${prefix}-heading`} className="font-display text-xl font-medium">
+            Tags
+          </h2>
+          <p className="mt-1.5 max-w-[60ch] text-ink-2">
+            Renaming a tag renames it on every item. A colour shows as a dot beside the tag wherever it appears. Deleting one takes it off its items and keeps the items.
+          </p>
+        </>
+      )}
 
       {shown.length > 0 ? (
         <ul className="surface mt-4 overflow-hidden px-3 py-1.5 [&_li:last-child]:border-b-0">
@@ -126,12 +134,12 @@ export function TagsSection({
  * The tag's name, editable in place. Enter or leaving the field saves; Escape puts the saved name back.
  * `draft` is null whenever there is nothing unsaved, so a blur after Enter does not save twice.
  */
-function TagName({
+export function TagName({
   tag,
   onSave,
   onError,
 }: {
-  tag: TagSummary;
+  tag: Pick<TagSummary, "name">;
   onSave: (name: TagName) => void;
   onError: (message: string | null) => void;
 }) {
@@ -169,5 +177,56 @@ function TagName({
       }}
       className="w-full min-w-0 truncate rounded-md border border-transparent bg-transparent px-2 py-1.5 text-[15px] text-ink hover:border-rule-soft focus:border-field focus:bg-sheet"
     />
+  );
+}
+
+/**
+ * Rename, recolour or delete the tag a page is about. Renaming moves the page to the new name; deleting leaves it
+ * for the tag list, since the page would have nothing to show.
+ */
+export function TagToolbar({ tag, actions }: { tag: Pick<TagSummary, "id" | "name" | "color">; actions: TagActions }) {
+  const router = useRouter();
+  const prefix = useId();
+  const [error, setError] = useState<string | null>(null);
+  const [picking, setPicking] = useState(false);
+  const saveColor = useMemo(() => latestSave((id: string, color: AreaColor | null) => actions.color(id, color)), [actions]);
+
+  function after(work: Promise<ActionResult>, done?: () => void) {
+    setError(null);
+    startTransition(async () => {
+      const result = await reach(work);
+      if (!result.ok) setError(result.error);
+      else done?.();
+    });
+  }
+
+  return (
+    <div className="mt-3">
+      <div className="surface grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-x-1 px-3 py-1">
+        <TagName
+          tag={tag}
+          onSave={(name) => after(actions.rename(tag.id, name), () => router.replace(tagHref(name)))}
+          onError={setError}
+        />
+        <SwatchButton name={`#${tag.name}`} color={tag.color} open={picking} controls={`${prefix}-colors`} onToggle={() => setPicking((o) => !o)} />
+        <ConfirmDelete
+          compact
+          label={`Delete #${tag.name}`}
+          prompt={`Delete #${tag.name}? Its items stay.`}
+          onConfirm={() => after(actions.remove(tag.id), () => router.push(TAGS_PATH))}
+        />
+        {picking && (
+          <ColorPicker
+            id={`${prefix}-colors`}
+            name={`#${tag.name}`}
+            color={tag.color}
+            onPick={(color) => after(saveColor(tag.id, color))}
+          />
+        )}
+      </div>
+      <p role="status" className="mt-1.5 min-h-5 text-[13px] text-ink-2">
+        {error}
+      </p>
+    </div>
   );
 }
