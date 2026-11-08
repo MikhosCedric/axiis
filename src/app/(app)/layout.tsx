@@ -2,6 +2,7 @@ import { cookies } from "next/headers";
 import type { ReactNode } from "react";
 import { RAIL_COOKIE, readRailMin } from "@/components/shell/cookies";
 import { NavRail } from "@/components/shell/nav-rail";
+import { OutboxProvider, PendingCaptures } from "@/components/shell/outbox";
 import { PageTransition } from "@/components/shell/page-transition";
 import { TimeZoneSync } from "@/components/shell/time-zone-sync";
 import { undoDeletionAction } from "@/features/account/actions";
@@ -11,12 +12,20 @@ import { getRailAreas, getRailBadges, getTodayDate } from "@/features/day/server
 import { QuickIconSprite } from "@/features/actions/icon-sprite";
 import { QuickActionsProvider } from "@/features/actions/provider";
 import { PaletteProvider } from "@/features/palette/palette";
+import { getOutboxOwner } from "@/lib/account";
 
 export default async function AppLayout({ children }: { children: ReactNode }) {
   const min = readRailMin((await cookies()).get(RAIL_COOKIE)?.value);
-  const [today, areas, deletesOn, badges] = await Promise.all([getTodayDate(), getRailAreas(), getDeletionDay(), getRailBadges()]);
+  const [today, areas, deletesOn, badges, owner] = await Promise.all([
+    getTodayDate(),
+    getRailAreas(),
+    getDeletionDay(),
+    getRailBadges(),
+    getOutboxOwner(),
+  ]);
 
   return (
+    <OutboxProvider owner={owner}>
     <PaletteProvider today={today} areas={areas}>
       <QuickActionsProvider today={today} areas={areas}>
       <div
@@ -31,6 +40,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
         {/* On a phone the places bar is fixed to the bottom, so the page ends above it. */}
         <main id="main" className="ground min-w-0 overflow-x-clip max-rail:pb-[calc(4rem+env(safe-area-inset-bottom))]">
           {deletesOn && <DeletionBanner deletesOn={deletesOn} undo={undoDeletionAction} />}
+          <PendingCaptures />
           <PageTransition>{children}</PageTransition>
         </main>
         <TimeZoneSync />
@@ -38,5 +48,6 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
       </div>
       </QuickActionsProvider>
     </PaletteProvider>
+    </OutboxProvider>
   );
 }

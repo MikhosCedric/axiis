@@ -60,12 +60,31 @@ export async function captureChecklist(repo: ItemsRepo, raw: unknown): Promise<C
  * names no day lands on `defaultOn` when one is given (the Month's focused
  * day), else on today when it names a time, else nowhere.
  */
+/** A capture queued on the device: its own id, and the moment it was typed (ms since the epoch). */
+export type QueuedEntry = { id: string; at: number };
+
+const DAY_MS = 86_400_000;
+
+/** The moment a queued capture was typed if that is plausible (not in the future, within 30 days); else now. */
+export function typedAt(entry: QueuedEntry | undefined, now: Date): Date {
+  const at = entry?.at;
+  if (typeof at !== "number" || !Number.isFinite(at) || at > now.getTime() || at < now.getTime() - 30 * DAY_MS) return now;
+  return new Date(at);
+}
+
+/** The entry's id when it is a UUID; anything else is ignored and the server makes its own. */
+export function queuedId(entry: QueuedEntry | undefined): ItemId | undefined {
+  return entry && z.uuid().safeParse(entry.id).success ? (entry.id as ItemId) : undefined;
+}
+
 export async function captureTask(
   repo: ItemsRepo,
   raw: unknown,
   now: Date,
   timeZone: string,
   defaultOn: LocalDate | null = null,
+  /** Made on the device when the capture was typed; a resend of the same one stores a single item. */
+  clientId?: ItemId,
 ): Promise<CaptureResult> {
   const text = titleSchema.safeParse(raw);
   if (!text.success) return { ok: false, error: TOO_LONG };
@@ -88,7 +107,7 @@ export async function captureTask(
 
   let id: ItemId;
   try {
-    id = (await repo.create({ type: "task", title: said.title, schedule })).id;
+    id = (await repo.create({ ...(clientId && { id: clientId }), type: "task", title: said.title, schedule })).id;
   } catch (error) {
     return { ok: false, error: saveFailure(error, NOT_SAVED) };
   }

@@ -94,6 +94,8 @@ export type Area = {
 };
 
 export type NewItem = {
+  /** Made by the client so that sending the same create twice stores one item (offline capture resends). */
+  id?: ItemId;
   type: ItemType;
   title: string;
   body?: unknown | null;

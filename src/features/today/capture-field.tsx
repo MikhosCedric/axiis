@@ -8,7 +8,8 @@ import { captureAction as serverCapture } from "./actions";
 import type { ActionResult, CaptureResult } from "./commands";
 import { CAPTURE_EXAMPLES, CAPTURE_LEAD, capturedLine, firstCapturedLine, parseCapture, previewWords } from "./capture-syntax";
 import { TITLE_MAX } from "./model";
-import { reach } from "@/lib/reach";
+import { useQueueCapture } from "@/components/shell/outbox";
+import { reach, UNREACHABLE } from "@/lib/reach";
 
 /** How long a new item wears the accent ring once it shows up. */
 const MARK_MS = 2400;
@@ -91,6 +92,7 @@ export function CaptureField({
   const preview = plans ? previewWords(parseCapture(value), clock) : null;
   const example = useExample(firstDay);
   const pathname = usePathname();
+  const queue = useQueueCapture();
 
   useEffect(() => () => unmark.current(), []);
 
@@ -106,6 +108,17 @@ export function CaptureField({
     const first = firstDay;
     startTransition(async () => {
       const result = await reach(captureAction(title));
+      if (!result.ok && result.error === UNREACHABLE && captureAction === serverCapture && queue) {
+        // No connection: keep the words on this device and send them when it returns (ADR-0002).
+        const queued = queue(title);
+        if (queued.ok) {
+          setStatus({ text: "Saved on this device. It will be sent when you are back online.", error: false });
+          return;
+        }
+        setValue((current) => current || title);
+        setStatus({ text: queued.error, error: true });
+        return;
+      }
       if (!result.ok) {
         setValue((current) => current || title);
         setStatus({ text: result.error, error: true });
