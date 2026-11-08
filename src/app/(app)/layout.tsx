@@ -2,6 +2,7 @@ import { cookies } from "next/headers";
 import type { ReactNode } from "react";
 import { RAIL_COOKIE, readRailMin } from "@/components/shell/cookies";
 import { NavRail } from "@/components/shell/nav-rail";
+import { OfflineNotice, ServiceWorkerRegistration } from "@/components/shell/offline";
 import { OutboxProvider, PendingCaptures } from "@/components/shell/outbox";
 import { PageTransition } from "@/components/shell/page-transition";
 import { TimeZoneSync } from "@/components/shell/time-zone-sync";
@@ -40,10 +41,12 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
         {/* On a phone the places bar is fixed to the bottom, so the page ends above it. */}
         <main id="main" className="ground min-w-0 overflow-x-clip max-rail:pb-[calc(4rem+env(safe-area-inset-bottom))]">
           {deletesOn && <DeletionBanner deletesOn={deletesOn} undo={undoDeletionAction} />}
+          <OfflineNotice />
           <PendingCaptures />
           <PageTransition>{children}</PageTransition>
         </main>
         <TimeZoneSync />
+        <ServiceWorkerRegistration />
         <QuickIconSprite />
       </div>
       </QuickActionsProvider>
