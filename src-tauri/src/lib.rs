@@ -4,14 +4,17 @@
 //! the capture hotkey and the navigation rules, is driven from Rust.
 
 use std::net::{TcpStream, ToSocketAddrs};
-use std::time::Duration;
+use std::sync::atomic::{AtomicU64, Ordering};
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use tauri::menu::{Menu, MenuItem};
 use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
+use tauri::image::Image;
 use tauri::{AppHandle, Manager, Url, WebviewUrl, WebviewWindowBuilder, WindowEvent};
 use tauri_plugin_deep_link::DeepLinkExt;
 use tauri_plugin_global_shortcut::ShortcutState;
 use tauri_plugin_opener::OpenerExt;
+use tauri_plugin_updater::UpdaterExt;
 
 /// The one origin the window may show. Anything else opens in the system browser.
 const HOST: &str = "axiis-lovat.vercel.app";
@@ -26,6 +29,14 @@ const FOCUS_CAPTURE: &str = "(() => { const f = document.getElementById('capture
 /// Marks our pages as shown in the app. It carries no authority: anyone can set the cookie, and all it changes is
 /// where a sign-in link returns to.
 const DESKTOP_COOKIE_SCRIPT: &str = "(() => { const https = location.protocol === 'https:'; if (https || location.hostname === 'localhost') document.cookie = 'axiis_desktop=1; path=/; max-age=31536000; SameSite=Lax' + (https ? '; Secure' : ''); })();";
+
+/// Reads the two counts the app shell carries (`data-inbox`, `data-overdue`) and tells Rust, which draws the taskbar
+/// badge. Our pages can call this one command and nothing else (see `capabilities/default.json`).
+const BADGE_SCRIPT: &str = "(() => { if (!window.__TAURI_INTERNALS__) return; let last = ''; let queued = false; const send = () => { queued = false; if (document.readyState === 'loading') return; const shell = document.getElementById('app-shell'); const inbox = shell ? Number(shell.dataset.inbox) || 0 : 0; const overdue = shell ? Number(shell.dataset.overdue) || 0 : 0; const key = inbox + ',' + overdue; if (key === last) return; last = key; window.__TAURI_INTERNALS__.invoke('set_badge', { inbox, overdue }).catch(() => {}); }; const queue = () => { if (!queued) { queued = true; requestAnimationFrame(send); } }; new MutationObserver(queue).observe(document, { subtree: true, childList: true, attributes: true, attributeFilter: ['data-inbox', 'data-overdue'] }); document.addEventListener('DOMContentLoaded', queue); queue(); })();";
+
+/// How often a shell left running in the tray looks for a new version.
+const UPDATE_EVERY_SECS: u64 = 6 * 60 * 60;
+static LAST_UPDATE_CHECK: AtomicU64 = AtomicU64::new(0);
 
 /// Whether the window may navigate to `url`: our own origin and the bundled offline page, nothing else.
 fn allowed(url: &Url) -> bool {
@@ -98,11 +109,106 @@ fn online() -> bool {
         .unwrap_or(false)
 }
 
+/// Looks for a signed update and installs it. Release builds only, and at most every six hours, so a window kept in
+/// the tray picks up a new version without a timer running while nobody is looking.
+fn check_for_update(app: &AppHandle) {
+    if cfg!(debug_assertions) {
+        return;
+    }
+    let now = SystemTime::now().duration_since(UNIX_EPOCH).map(|d| d.as_secs()).unwrap_or(0);
+    if now.saturating_sub(LAST_UPDATE_CHECK.load(Ordering::Relaxed)) < UPDATE_EVERY_SECS {
+        return;
+    }
+    LAST_UPDATE_CHECK.store(now, Ordering::Relaxed);
+    let app = app.clone();
+    tauri::async_runtime::spawn(async move {
+        let Ok(updater) = app.updater() else { return };
+        // The signature is checked against the key in tauri.conf.json before anything is installed. On Windows the
+        // installer closes the app and starts the new version.
+        if let Ok(Some(update)) = updater.check().await {
+            let _ = update.download_and_install(|_, _| {}, || {}).await;
+        }
+    });
+}
+
 fn show_main(app: &AppHandle) {
+    check_for_update(app);
     if let Some(window) = app.get_webview_window("main") {
         let _ = window.show();
         let _ = window.unminimize();
         let _ = window.set_focus();
+    }
+}
+
+/// 3 by 5 pixel glyphs for 0 to 9 and "+", three bits a row.
+const GLYPHS: [[u8; 5]; 11] = [
+    [7, 5, 5, 5, 7],
+    [2, 6, 2, 2, 7],
+    [7, 1, 7, 4, 7],
+    [7, 1, 7, 1, 7],
+    [5, 5, 7, 1, 1],
+    [7, 4, 7, 1, 7],
+    [7, 4, 7, 5, 7],
+    [7, 1, 1, 1, 1],
+    [7, 5, 7, 5, 7],
+    [7, 5, 7, 1, 7],
+    [0, 2, 7, 2, 0],
+];
+
+const BADGE_SIZE: u32 = 32;
+
+/// A round badge with the count in white: red for what is past due, dark for the Inbox. Counts above 9 read "9+".
+fn badge_pixels(count: u32, hot: bool) -> Vec<u8> {
+    let glyphs: Vec<usize> = if count > 9 { vec![9, 10] } else { vec![count as usize] };
+    let scale: i32 = if glyphs.len() == 1 { 4 } else { 3 };
+    let width = glyphs.len() as i32 * 3 * scale + (glyphs.len() as i32 - 1) * scale;
+    let (left, top) = ((BADGE_SIZE as i32 - width) / 2, (BADGE_SIZE as i32 - 5 * scale) / 2);
+    let fill: [u8; 4] = if hot { [0xd9, 0x2d, 0x20, 0xff] } else { [0x2b, 0x2b, 0x33, 0xff] };
+    let mut rgba = vec![0u8; (BADGE_SIZE * BADGE_SIZE * 4) as usize];
+    let mid = (BADGE_SIZE as f32 - 1.0) / 2.0;
+    for y in 0..BADGE_SIZE as i32 {
+        for x in 0..BADGE_SIZE as i32 {
+            let (dx, dy) = (x as f32 - mid, y as f32 - mid);
+            if dx * dx + dy * dy > 15.5 * 15.5 {
+                continue;
+            }
+            let mut pixel = fill;
+            for (i, glyph) in glyphs.iter().enumerate() {
+                let gx = (x - left - i as i32 * 4 * scale).div_euclid(scale);
+                let gy = (y - top).div_euclid(scale);
+                let inside = x >= left + i as i32 * 4 * scale && (0..3).contains(&gx) && (0..5).contains(&gy);
+                if inside && GLYPHS[*glyph][gy as usize] >> (2 - gx) & 1 == 1 {
+                    pixel = [0xff, 0xff, 0xff, 0xff];
+                }
+            }
+            let at = ((y as u32 * BADGE_SIZE + x as u32) * 4) as usize;
+            rgba[at..at + 4].copy_from_slice(&pixel);
+        }
+    }
+    rgba
+}
+
+/// The one thing our pages may ask of the shell: show these two counts on the taskbar button and in the tray tooltip.
+#[tauri::command]
+fn set_badge(app: AppHandle, inbox: u32, overdue: u32) {
+    let (inbox, overdue) = (inbox.min(9999), overdue.min(9999));
+    if let Some(window) = app.get_webview_window("main") {
+        let icon = match (overdue, inbox) {
+            (0, 0) => None,
+            (0, n) => Some(Image::new_owned(badge_pixels(n, false), BADGE_SIZE, BADGE_SIZE)),
+            (n, _) => Some(Image::new_owned(badge_pixels(n, true), BADGE_SIZE, BADGE_SIZE)),
+        };
+        let _ = window.set_overlay_icon(icon);
+    }
+    if let Some(tray) = app.tray_by_id("main") {
+        let mut tip = String::from("Axiis");
+        if overdue > 0 {
+            tip.push_str(&format!(" · {overdue} past due"));
+        }
+        if inbox > 0 {
+            tip.push_str(&format!(" · {inbox} in Inbox"));
+        }
+        let _ = tray.set_tooltip(Some(tip));
     }
 }
 
@@ -116,6 +222,8 @@ fn capture(app: &AppHandle) {
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .invoke_handler(tauri::generate_handler![set_badge])
+        .plugin(tauri_plugin_updater::Builder::new().build())
         // A second launch brings the running app forward instead of opening another.
         .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| show_main(app)))
         .plugin(tauri_plugin_opener::init())
@@ -153,6 +261,7 @@ pub fn run() {
                 .min_inner_size(420.0, 560.0)
                 // Tells the sign-in page this is the app, so it returns to the app by deep link instead of a web page.
                 .initialization_script(DESKTOP_COOKIE_SCRIPT)
+                .initialization_script(BADGE_SCRIPT)
                 .on_navigation(move |url| {
                     if allowed(url) {
                         return true;
@@ -199,7 +308,7 @@ pub fn run() {
             let quit = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
             let menu = Menu::with_items(app, &[&open, &quick, &quit])?;
 
-            let mut tray = TrayIconBuilder::new()
+            let mut tray = TrayIconBuilder::with_id("main")
                 .tooltip("Axiis")
                 .menu(&menu)
                 .show_menu_on_left_click(false)
@@ -224,6 +333,7 @@ pub fn run() {
             }
             tray.build(app)?;
 
+            check_for_update(&handle);
             Ok(())
         })
         .run(tauri::generate_context!())
@@ -277,6 +387,19 @@ mod tests {
         assert_eq!(target("axiis://other/callback?code=abc"), None);
         assert_eq!(target("axiis://auth/elsewhere?code=abc"), None);
         assert_eq!(target("https://axiis-lovat.vercel.app/auth/callback?code=abc"), None);
+    }
+
+    #[test]
+    fn the_badge_is_a_round_icon_with_the_count_in_white() {
+        for (count, hot) in [(1, true), (7, false), (12, true), (9999, false)] {
+            let rgba = badge_pixels(count, hot);
+            assert_eq!(rgba.len(), (BADGE_SIZE * BADGE_SIZE * 4) as usize);
+            let at = |x: usize, y: usize| &rgba[(y * BADGE_SIZE as usize + x) * 4..][..4];
+            assert_eq!(at(0, 0)[3], 0, "corners stay clear");
+            assert_eq!(at(4, 16)[3], 255, "the disc is filled");
+            assert!(rgba.chunks(4).any(|p| p == [255, 255, 255, 255]), "the digits are drawn");
+        }
+        assert_eq!(badge_pixels(3, true)[(16 * 32 + 4) * 4..][..3], [0xd9, 0x2d, 0x20]);
     }
 
     #[test]

@@ -93,7 +93,11 @@ Pages are server-rendered and writes are Server Actions, so the app needs a serv
 ## Status
 - **Phase 0:** already in place on the web: manifest (`start_url /today`, standalone), 192 and 512 PNG icons, public icon routes. No service worker is needed to install; it arrives with Phase 2.
 - **Phase 1a (built):** `src-tauri/` and `desktop/dist/`. A window on the hosted app, navigation locked to our origin (other links open in the system browser), our own offline page, single instance, tray with Open, Capture and Quit, closing hides to the tray, and the global hotkey Ctrl+Alt+A that brings Axiis forward with the capture field focused. The page gets no native API (empty capability file). Debug builds can point at a dev server with `AXIIS_URL`; release builds never read it. A Windows CI job (`.github/workflows/desktop.yml`) builds an unsigned installer when the shell changes.
-- **Phase 1b (next):** system-browser sign-in with a deep link back (`axiis://auth`), then keychain token storage, the taskbar badge from the Inbox and Due counts, and signed auto-update through GitHub Releases. The sign-in step needs one Supabase setting only the owner can change: adding `axiis://auth/callback` to the allowed redirect URLs.
+- **Phase 1b (built):** system-browser sign-in with a deep link back (`axiis://auth/callback`, merged); the taskbar badge; signed auto-update.
+  - Badge: the app shell carries `data-inbox` and `data-overdue`; a small script in the window reads them and calls the one command our pages may call, `set_badge` (a custom permission in `capabilities/default.json`, allowed only for our origin). Rust draws a round overlay icon (red for past due, dark for the Inbox, "9+" above nine) and updates the tray tooltip. The page still has no other native API; the updater is refused to it.
+  - Updates: Rust checks at launch and when the window is shown, at most every six hours, in release builds only. The update is verified against the minisign public key in `tauri.conf.json` before it installs. To ship one, push a tag `desktop-vX.Y.Z`: `.github/workflows/desktop-release.yml` stamps the version, builds, signs, and publishes the installer, its signature and `latest.json` to a GitHub Release.
+  - One owner step: the private key is at `~/.axiis-keys/updater.key` on the build laptop (no password). Add it as the repository secret `TAURI_SIGNING_PRIVATE_KEY` (`gh secret set TAURI_SIGNING_PRIVATE_KEY < ~/.axiis-keys/updater.key`) and keep a backup; without it no update can be signed. Not done by the assistant because it writes a secret.
+  - Left: keychain token storage. Sessions stay in the webview's cookie store for now.
 
 ### Run it here
 ```bash
@@ -101,7 +105,7 @@ Pages are server-rendered and writes are Server Actions, so the app needs a serv
 npm install
 cd src-tauri && cargo build            # debug build
 AXIIS_URL=http://localhost:3000/login ./target/debug/axiis-desktop.exe   # against a local dev server
-npx tauri build                        # unsigned NSIS installer in src-tauri/target/release/bundle/nsis/
+npx tauri build --config '{"bundle":{"createUpdaterArtifacts":false}}'   # unsigned NSIS installer in src-tauri/target/release/bundle/nsis/
 ```
 
 ## 8. Order of work

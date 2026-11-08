@@ -15,15 +15,38 @@
   },
   "plugins": {
     "deep-link": {
-      "desktop": { "schemes": ["axiis"] }
+      "desktop": {
+        "schemes": [
+          "axiis"
+        ]
+      }
+    },
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDk1REM1QTYyMjQyOEJFOTYKUldTV3ZpZ2tZbHJjbFdTQUJoRkNyK0d0Z0tkUnlMWmNUNFF3b1FWbEpvd05iRkUrOGd6TlpPTUcK",
+      "endpoints": [
+        "https://github.com/MikhosCedric/axiis/releases/latest/download/latest.json"
+      ],
+      "windows": {
+        "installMode": "passive"
+      }
     }
   },
   "bundle": {
     "active": true,
-    "targets": ["nsis"],
-    "icon": ["icons/32x32.png", "icons/128x128.png", "icons/128x128@2x.png", "icons/icon.ico"],
+    "targets": [
+      "nsis"
+    ],
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.ico"
+    ],
     "windows": {
-      "nsis": { "installMode": "currentUser" }
-    }
+      "nsis": {
+        "installMode": "currentUser"
+      }
+    },
+    "createUpdaterArtifacts": true
   }
 }

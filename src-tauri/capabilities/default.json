@@ -1,7 +1,8 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
-  "description": "No page gets any native API. The shell acts from Rust only: the tray, the capture hotkey and navigation rules.",
+  "description": "Our own pages may set the taskbar badge and nothing else. Everything else native is driven from Rust: the tray, the capture hotkey, updates and the navigation rules. Release builds can only reach the first origin; localhost is for debug builds pointed at a dev server.",
   "windows": ["main"],
-  "permissions": []
+  "remote": { "urls": ["https://axiis-lovat.vercel.app/*", "http://localhost:*/*"] },
+  "permissions": ["allow-set-badge"]
 }

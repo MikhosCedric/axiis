@@ -21,6 +21,9 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
       <QuickActionsProvider today={today} areas={areas}>
       <div
         id="app-shell"
+        // The desktop shell reads these two numbers for the taskbar badge; nothing else uses them.
+        data-inbox={badges.inbox}
+        data-overdue={badges.overdue}
         style={{ "--rail-w": min ? "64px" : "216px" } as React.CSSProperties}
         className="min-h-dvh rail:grid rail:grid-cols-[var(--rail-w,216px)_minmax(0,1fr)] motion-safe:rail:transition-[grid-template-columns] motion-safe:rail:duration-200"
       >
