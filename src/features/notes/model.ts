@@ -49,6 +49,8 @@ export type NotesActions = {
   search: (query: string) => Promise<SearchRow[]>;
   link: (fromId: string, toId: string) => Promise<ActionResult>;
   unlink: (linkId: string) => Promise<ActionResult>;
+  /** Brings deleted notes back. The list offers it right after a delete. */
+  restore?: (ids: string[]) => Promise<ActionResult>;
 };
 
 export const UNTITLED = "Untitled note";

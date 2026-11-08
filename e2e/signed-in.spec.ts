@@ -333,6 +333,39 @@ signedIn.describe("signed in", () => {
     expect(body.items.map((i: { title: string }) => i.title)).toContain("Packing for Lisbon");
   });
 
+  signedIn("a deleted note can be undone from the list, and Back returns to where the note was opened", async ({ page }) => {
+    await page.goto("/notes?q=zzz-none");
+    await hydrated(page);
+    await page.getByRole("button", { name: "New note" }).click();
+    await expect(page).toHaveURL(/\/notes\/[0-9a-f-]{36}$/);
+    await hydrated(page);
+    const noteUrl = page.url();
+    await page.getByRole("link", { name: "Back" }).click();
+    await expect(page).toHaveURL(/\/notes\?q=zzz-none$/);
+
+    await page.goto(noteUrl);
+    await hydrated(page);
+    await page.getByRole("button", { name: "Delete this note" }).click();
+    await page.getByRole("group", { name: "Delete this note?" }).getByRole("button", { name: "Yes" }).click();
+    await expect(page).toHaveURL(/\/notes\?deleted=/);
+    await expect(page.getByRole("status").filter({ hasText: "Note deleted." })).toBeVisible();
+    await page.getByRole("button", { name: "Undo" }).click();
+    await expect(page.getByRole("status").filter({ hasText: "Note is back." })).toBeVisible();
+  });
+
+  signedIn("a task's details link an existing note and unlink it again", async ({ page }) => {
+    await page.goto("/day/2099-05-20?item=e2e00000-0000-4000-8000-000000000007");
+    await hydrated(page);
+    const details = page.getByRole("complementary", { name: "Details" });
+    await details.getByRole("button", { name: "Link an existing note or task" }).click();
+    await details.getByRole("combobox", { name: "Find a task or note to link" }).fill("Garden");
+    await details.getByRole("option", { name: /Garden through the winter/ }).click();
+    await expect(details.getByRole("link", { name: "Garden through the winter" })).toBeVisible();
+
+    await details.getByRole("button", { name: "Unlink Garden through the winter" }).click();
+    await expect(details.getByRole("link", { name: "Garden through the winter" })).toHaveCount(0);
+  });
+
   signedIn("signing out returns to sign in and ends the session", async ({ page }) => {
     await page.goto("/today");
     await hydrated(page);

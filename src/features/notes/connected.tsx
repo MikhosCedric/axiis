@@ -14,7 +14,7 @@ function rowMeta(row: { type: ConnectedRow["type"]; done: boolean; backlink?: bo
 }
 
 /** Search-as-you-type list of items to link. Arrow keys move, Enter links, Escape closes. */
-function LinkPicker({
+export function LinkPicker({
   excludeIds,
   search,
   onPick,

@@ -23,6 +23,8 @@ export function NotesList({
   create,
   basePath = "/notes",
   filter = NO_FILTER,
+  deleted,
+  restore,
 }: {
   rows: NoteRow[];
   query: string;
@@ -30,6 +32,9 @@ export function NotesList({
   basePath?: string;
   /** What the page narrowed its rows to; the rows passed in are already narrowed. */
   filter?: ViewFilter;
+  /** The note just deleted from its own page, which can still be brought back from here. */
+  deleted?: string;
+  restore?: NotesActions["restore"];
 }) {
   const router = useRouter();
   const quick = useQuick();
@@ -38,6 +43,7 @@ export function NotesList({
   const [draft, setDraft] = useState(query);
   const [error, setError] = useState<string | null>(null);
   const [creating, startCreate] = useTransition();
+  const [brought, setBrought] = useState(false);
   const [filtering, startFilter] = useTransition();
   // Only a draft that differs from the address filters, so a mount (twice, under Strict Mode) never navigates.
   useEffect(() => {
@@ -48,6 +54,18 @@ export function NotesList({
     }, FILTER_DELAY_MS);
     return () => clearTimeout(timer);
   }, [draft, query, pathname, router, keep]);
+
+  function undoDelete() {
+    if (!deleted || !restore) return;
+    setError(null);
+    startCreate(async () => {
+      const result = await reach(restore([deleted]));
+      if (result.ok) {
+        setBrought(true);
+        router.replace(keep(pathname), { scroll: false });
+      } else setError(result.error);
+    });
+  }
 
   function newNote() {
     setError(null);
@@ -96,7 +114,23 @@ export function NotesList({
         </div>
       </form>
       <p role="status" className="mt-1.5 min-h-5 text-[13px] text-ink-2">
-        {error ?? (creating ? "Making a note" : filtering ? "Searching" : "")}
+        {error ??
+          (deleted && restore && !brought ? (
+            <>
+              Note deleted.{" "}
+              <button type="button" onClick={undoDelete} className="rounded font-medium text-ink underline decoration-accent underline-offset-3">
+                Undo
+              </button>
+            </>
+          ) : brought ? (
+            "Note is back."
+          ) : creating ? (
+            "Making a note"
+          ) : filtering ? (
+            "Searching"
+          ) : (
+            ""
+          ))}
       </p>
 
       {rows.length === 0 ? (

@@ -11,11 +11,13 @@ import { getNotesRepo } from "@/lib/notes";
 export const metadata: Metadata = { title: "Notes" };
 
 export default async function NotesPage({ searchParams }: PageProps<"/notes">) {
-  const query = parseQuery((await searchParams).q);
+  const params = await searchParams;
+  const query = parseQuery(params.q);
+  const deleted = typeof params.deleted === "string" && /^[0-9a-f-]{36}$/i.test(params.deleted) ? params.deleted : undefined;
   const [notes, items, timeZone] = await Promise.all([getNotesRepo(), getItemsRepo(), requestTimeZone()]);
   const [rows, filter] = await Promise.all([
     getClock().then((clock) => listNoteRows(notes, items, query, new Date(), timeZone, clock)),
     getFilter(searchParams, false),
   ]);
-  return <NotesList rows={filterRows(rows, filter)} filter={filter} query={query ?? ""} create={notesActions.create} />;
+  return <NotesList rows={filterRows(rows, filter)} filter={filter} query={query ?? ""} create={notesActions.create} deleted={deleted} restore={notesActions.restore} />;
 }

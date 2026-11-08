@@ -1,4 +1,4 @@
-import { createLinkedNoteAction } from "@/features/notes/actions";
+import { createLinkedNoteAction, linkItemsAction, searchItemsAction, unlinkItemsAction } from "@/features/notes/actions";
 import { linkedNotes } from "@/features/notes/commands";
 import { getClock, getNow, getTimeZone } from "@/features/day/server";
 import { setDoneAction } from "@/features/today/actions";
@@ -47,6 +47,9 @@ const actions: DetailActions = {
   addTag: addTagAction,
   removeTag: removeTagAction,
   newLinkedNote: createLinkedNoteAction,
+  linkNote: linkItemsAction,
+  unlinkNote: unlinkItemsAction,
+  searchNotes: searchItemsAction,
 };
 
 /** Renders the selected item, or one occurrence of a repeating item, or nothing when nothing is selected. */

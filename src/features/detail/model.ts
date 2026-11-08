@@ -8,7 +8,7 @@ import { describeRule, presetOf, type RepeatChoice, type RepeatPreset } from "./
 import type { ActionResult } from "@/features/today/commands";
 import { formatDayHeading, formatDayIn } from "@/features/today/format";
 import { formatClock, parseClock, type Clock } from "@/lib/clock";
-import type { Created } from "@/features/notes/model";
+import type { Created, SearchRow } from "@/features/notes/model";
 import type { PlanFor } from "@/features/inbox/model";
 import { DEFAULT_MINUTES } from "@/features/score/drop";
 import { DAY_MINUTES } from "@/features/score/layout";
@@ -161,6 +161,10 @@ export type DetailActions = {
   removeTag: (id: string, name: string) => Promise<ActionResult>;
   /** Makes a note linked to the item and answers with its id, so the sheet can open it. */
   newLinkedNote: (itemId: string) => Promise<Created>;
+  /** Links the item to another note or task, takes a link away, and finds what to link. Optional: a harness may have no notes. */
+  linkNote?: (itemId: string, otherId: string) => Promise<ActionResult>;
+  unlinkNote?: (linkId: string) => Promise<ActionResult>;
+  searchNotes?: (query: string) => Promise<SearchRow[]>;
 };
 
 /**
