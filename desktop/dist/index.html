@@ -16,8 +16,10 @@
   <body>
     <main>
       <h1>Axiis can&rsquo;t connect</h1>
-      <p>Check your internet connection. Your items are safe on the server and will be here when you are back online.</p>
-      <a href="https://axiis-lovat.vercel.app/today">Try again</a>
+      <p>Check your internet connection. Your items are safe on the server and will be here when you are back online. Anything you captured while offline is kept on this device and is sent once Axiis opens with a connection.</p>
+      <a id="retry" href="https://axiis-lovat.vercel.app/today">Try again</a>
+      <p id="status" role="status" style="margin-top:1rem;font-size:.9rem"></p>
     </main>
+    <script src="offline.js"></script>
   </body>
 </html>
