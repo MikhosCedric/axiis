@@ -398,7 +398,7 @@ export function DetailSheet({
               Manage areas
             </Link>
           </dd>
-          {actions.addArea && <NewArea add={actions.addArea} />}
+          {actions.addArea && <NewArea add={actions.addArea} onOpen={() => setOpened({ id: item.id, rows: [...(opened.id === item.id ? opened.rows : []), "area"] })} />}
             </>
           )}
 
