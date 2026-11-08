@@ -197,6 +197,8 @@ export function fakeRepo(items: Item[] = [], areas: Area[] = []) {
       ) {
         throw new Error('duplicate key value violates unique constraint "items_series_original"');
       }
+      const again = input.id ? items.find((i) => i.id === input.id) : undefined;
+      if (again) return again;
       const item = makeItem({ ...input, schedule: input.schedule ?? { kind: "unscheduled" } } as Partial<Item>);
       items.push(item);
       return item;

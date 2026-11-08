@@ -155,6 +155,7 @@ export function areaFromRow(raw: unknown): Area {
 
 export function newItemToInsert(input: NewItem) {
   return {
+    ...(input.id !== undefined && { id: input.id }),
     type: input.type,
     title: input.title,
     body: input.body ?? null,

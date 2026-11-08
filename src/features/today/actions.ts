@@ -3,13 +3,14 @@
 import { refresh } from "next/cache";
 import { getNow, getTimeZone } from "@/features/day/server";
 import { getItemsRepo } from "@/lib/items";
-import { captureTask, setDone, type ActionResult, type CaptureResult } from "./commands";
+import { captureTask, queuedId, setDone, typedAt, type ActionResult, type CaptureResult, type QueuedEntry } from "./commands";
 
 // The repo is bound to the signed-in user's session and RLS scopes every
 // write, so a direct POST without a session cannot touch anyone's rows.
 
-export async function captureAction(title: string): Promise<CaptureResult> {
-  const result = await captureTask(await getItemsRepo(), title, getNow(), await getTimeZone());
+export async function captureAction(title: string, entry?: QueuedEntry): Promise<CaptureResult> {
+  const now = getNow();
+  const result = await captureTask(await getItemsRepo(), title, typedAt(entry, now), await getTimeZone(), null, queuedId(entry));
   if (result.ok) refresh();
   return result;
 }

@@ -17,6 +17,21 @@ export const getDeletionPort = cache(async (): Promise<DeletionPort> => {
 });
 
 /**
+ * Server only. Who the offline outbox on this device belongs to: the user's id, or null when it cannot be
+ * read (the outbox is then off, never shared). The e2e fake account has a fixed owner.
+ */
+export const getOutboxOwner = cache(async (): Promise<string | null> => {
+  try {
+    if (await getFakeAccount()) return "fake-account";
+    const { data } = await (await createClient()).auth.getClaims();
+    const sub = data?.claims?.sub;
+    return typeof sub === "string" ? sub : null;
+  } catch {
+    return null;
+  }
+});
+
+/**
  * Server only. When the signed-in user asked for deletion, or null. A failed read is null, so a page
  * still renders when the request cannot be read (before migration 0010, or a passing outage).
  */
