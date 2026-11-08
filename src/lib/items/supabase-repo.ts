@@ -280,6 +280,12 @@ export class SupabaseItemsRepo implements ItemsRepo {
 
   async create(input: NewItem): Promise<Item> {
     const result = await this.db.from("items").insert(newItemToInsert(input)).select(ITEM_COLUMNS).single();
+    if (input.id && result.error?.code === UNIQUE_VIOLATION) {
+      // A resend of a create the server already stored: answer with that item. Row Level Security hides other
+      // users' rows, so an id that is not this user's is still an error.
+      const existing = await this.get(input.id);
+      if (existing) return existing;
+    }
     return unwrap("create", result, itemFromRow);
   }
 

@@ -12,7 +12,7 @@ A local `ItemsRepo` adapter cannot make server-rendered pages work offline: the 
 
 Offline arrives in three stages. Each ships on its own and none changes the source of truth.
 
-1. **Offline capture (Phase 2a).** The capture field keeps working with no network. A capture that cannot reach the server is written to a per-device outbox (IndexedDB, in the page) and shown as "Saved on this device, will send when you are back online". When the connection returns, the outbox is sent through the same capture Server Action, oldest first, and removed only after the server answers. A small offline page replaces the browser error when the app cannot load. No reads are served offline.
+1. **Offline capture (Phase 2a).** The capture field keeps working with no network. A capture that cannot reach the server is written to a per-device outbox (the page's localStorage, keyed by user id: the entries are short text, at most 200) and shown as "Saved on this device, will send when you are back online". When the connection returns, the outbox is sent through the same capture Server Action, oldest first, and removed only after the server answers. In the desktop app, a small local page replaces the browser error when the app cannot load (a later step of 2a). No reads are served offline.
 2. **Read cache (Phase 2b).** The pages visited lately (Today, Inbox, Week) are readable offline from a cache with a visible "Offline, showing saved data" state. Writes other than capture are refused with a clear message. Decide after 2a has been used.
 3. **Local-first (Phase 2c).** A `LocalItemsRepo` (SQLite through Tauri, IndexedDB on the web), an outbox for every write, pull by `updated_at` cursor, soft-delete tombstones, last write wins per field with the losing note body kept as a version. This needs the client-rendered UI and is a separate ADR when 2b has been lived with.
 
@@ -20,7 +20,7 @@ Offline arrives in three stages. Each ships on its own and none changes the sour
 
 - **Idempotent.** Each queued capture carries a client-made id (uuid). The server stores an item with that id once; a resend of an id it already holds returns the existing item. A flaky connection can never create duplicates.
 - **Server decides.** The capture text is parsed on the server when it is sent, with the time zone and the clock of the moment it was typed (sent with the entry), so "tomorrow" means the day the user meant.
-- **Per user.** The outbox is keyed by user id and cleared on sign-out; a different account on the same device never sends it.
+- **Per user.** The outbox is keyed by user id; a different account on the same device never sees or sends it. It stays for its owner after a sign-out and is sent when they are back.
 - **Bounded.** At most 200 entries and the existing title limit; a full outbox refuses the capture with a message rather than dropping the oldest.
 - **Failure is visible.** An entry the server rejects (title too long, item cap reached) stays listed with the reason and can be edited or discarded.
 - **No new trust.** RLS stays the real boundary. The outbox holds only text the user typed; no tokens.

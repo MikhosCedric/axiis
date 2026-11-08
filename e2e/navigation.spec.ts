@@ -229,3 +229,22 @@ signedIn.describe("managing from the details", () => {
     await expect(page.getByText("Nothing deleted lately.")).toBeVisible();
   });
 });
+
+signedIn.describe("capturing with no connection", () => {
+  signedIn("a capture typed offline is kept on the device and sent once, when the connection returns", async ({ page }) => {
+    await open(page, "/inbox");
+    const field = page.getByLabel("Capture anything");
+    await page.context().setOffline(true);
+    await field.fill("Call the vet from the train");
+    await field.press("Enter");
+    await expect(page.getByRole("status").filter({ hasText: "Saved on this device. It will be sent when you are back online." })).toBeVisible();
+    const waiting = page.getByRole("region", { name: "Captures waiting" });
+    await expect(waiting).toContainText("1 capture is saved on this device");
+    await expect(title(page, "Call the vet from the train")).toHaveCount(0);
+
+    await page.context().setOffline(false);
+    await page.evaluate(() => window.dispatchEvent(new Event("online")));
+    await expect(waiting).toBeHidden();
+    await expect(title(page, "Call the vet from the train")).toHaveCount(1);
+  });
+});
