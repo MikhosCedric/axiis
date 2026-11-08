@@ -393,6 +393,9 @@ export function DetailSheet({
               ))}
             </select>
             <AreaMark color={view.areas.find((a) => a.id === areaId)?.color ?? null} />
+            <Link href="/settings#areas" className="rounded-md px-1.5 py-1 text-[13px] text-ink-3 hover:bg-hover active:bg-press hover:text-ink">
+              Manage areas
+            </Link>
           </dd>
             </>
           )}

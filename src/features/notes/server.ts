@@ -1,3 +1,4 @@
+import { restoreItemsAction } from "@/features/actions/actions";
 import { cookies } from "next/headers";
 import { TZ_COOKIE } from "@/components/shell/cookies";
 import { resolveTimeZone } from "@/lib/dates";
@@ -20,6 +21,7 @@ export const notesActions: NotesActions = {
   search: searchItemsAction,
   link: linkItemsAction,
   unlink: unlinkItemsAction,
+  restore: restoreItemsAction,
 };
 
 export async function requestTimeZone(): Promise<string> {

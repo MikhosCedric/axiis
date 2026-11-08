@@ -91,7 +91,8 @@ export function NoteEditor({ view, actions, basePath = "/notes" }: { view: NoteV
     setStatus(null);
     startTransition(async () => {
       const result = await reach(actions.remove(note.id));
-      if (result.ok) router.push(basePath);
+      // Replaces the note's own page, so Back does not return to something that is gone; the list offers Undo.
+      if (result.ok) router.replace(`${basePath}?deleted=${note.id}`);
       else {
         deleted.current = false;
         setStatus(result.error);
@@ -109,17 +110,20 @@ export function NoteEditor({ view, actions, basePath = "/notes" }: { view: NoteV
           <Link
             href={basePath}
             onClick={(e) => {
-              if (!hasUnsaved(autosave.state()) || e.metaKey || e.ctrlKey || e.shiftKey) return;
-              // The list is rendered from saved notes, so the last words go out before it loads.
+              if (e.metaKey || e.ctrlKey || e.shiftKey) return;
+              // Back to wherever the note was opened from (a search, a filtered list, a day), else the list. The
+              // page is rendered from saved notes, so the last words go out before it loads.
               e.preventDefault();
+              const leave = () => (window.history.length > 1 ? router.back() : router.push(basePath));
+              if (!hasUnsaved(autosave.state())) return leave();
               void autosave.flush().then(() => {
-                if (autosave.state().kind !== "failed") router.push(basePath);
+                if (autosave.state().kind !== "failed") leave();
               });
             }}
             className="-ml-1.5 inline-flex items-center gap-1 rounded-md py-1 pr-2 pl-1 text-[13px] text-ink-2 hover:bg-hover active:bg-press hover:text-ink"
           >
             <BackIcon />
-            Notes
+            Back
           </Link>
           <SaveStatus state={saveState} onRetry={() => void autosave.retry()} />
         </div>
