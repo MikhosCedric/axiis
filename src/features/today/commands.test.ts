@@ -162,6 +162,75 @@ describe("captureTask", () => {
   });
 });
 
+describe("captureTask with a repeat", () => {
+  it("makes a weekly series in one step from the owner's line, on the next Tuesday", async () => {
+    const { repo, calls, items } = fakeRepo();
+    expect(await captureTask(repo, "every tuesday at 7:30am to 9am gym", NOW, LONDON)).toEqual({
+      ok: true,
+      id: items[0].id,
+      type: "task",
+      title: "gym",
+      landed: { on: "2026-10-13", day: "Tuesday 13 October", time: { start: 450, end: 540 }, repeats: "every Tuesday" },
+      tags: [],
+      missed: [],
+    });
+    expect(calls.create).toEqual([
+      {
+        type: "task",
+        title: "gym",
+        schedule: { kind: "timed", start: new Date("2026-10-13T06:30:00Z"), end: new Date("2026-10-13T08:00:00Z") },
+        recurrence: { kind: "series", rule: { freq: "weekly", interval: 1, byDay: [], end: { kind: "never" } } },
+      },
+    ]);
+    expect(items[0].recurrence).toEqual({ kind: "series", rule: { freq: "weekly", interval: 1, byDay: [], end: { kind: "never" } } });
+  });
+
+  it("starts today when today is one of its days, and keeps several weekdays", async () => {
+    const { repo, calls } = fakeRepo();
+    // NOW is 21:00 on a Wednesday in London: 08:00 has passed, and the series still starts today.
+    const result = await captureTask(repo, "swim mon/wed/fri 8:00", NOW, LONDON);
+    expect(result).toMatchObject({ landed: { on: "2026-10-07", day: "today", repeats: "every Monday, Wednesday and Friday" } });
+    expect(calls.create[0].recurrence).toEqual({ kind: "series", rule: { freq: "weekly", interval: 1, byDay: ["MO", "WE", "FR"], end: { kind: "never" } } });
+  });
+
+  it("builds the first start from the local clock on the day the clocks change", async () => {
+    const { repo, calls } = fakeRepo();
+    // London leaves summer time early on Sunday 25 October 2026.
+    await captureTask(repo, "run every sunday 9:00 for 1h", new Date("2026-10-20T12:00:00Z"), LONDON);
+    expect(calls.create[0].schedule).toEqual({ kind: "timed", start: new Date("2026-10-25T09:00:00Z"), end: new Date("2026-10-25T10:00:00Z") });
+  });
+
+  it("plans a repeat with no time on its first day, from a named day or the default day", async () => {
+    const { repo, calls } = fakeRepo();
+    expect(await captureTask(repo, "pills every day starting tomorrow", NOW, LONDON)).toMatchObject({
+      landed: { on: "2026-10-08", day: "tomorrow", time: null, repeats: "every day" },
+    });
+    await captureTask(repo, "rent monthly", NOW, LONDON, "2026-11-01" as LocalDate);
+    expect(calls.create.map((c) => [c.schedule, c.recurrence])).toEqual([
+      [{ kind: "day", on: "2026-10-08" }, { kind: "series", rule: { freq: "daily", interval: 1, end: { kind: "never" } } }],
+      [{ kind: "day", on: "2026-11-01" }, { kind: "series", rule: { freq: "monthly", interval: 1, end: { kind: "never" } } }],
+    ]);
+  });
+
+  it("pins the end to a date or a count, and says it", async () => {
+    const { repo, calls } = fakeRepo();
+    expect(await captureTask(repo, "class every tuesday 19:00 for 6 weeks", NOW, LONDON)).toMatchObject({
+      landed: { on: "2026-10-13", repeats: "every Tuesday, until Monday 23 November" },
+    });
+    await captureTask(repo, "class every tuesday x10", NOW, LONDON);
+    expect(calls.create.map((c) => c.recurrence)).toEqual([
+      { kind: "series", rule: { freq: "weekly", interval: 1, byDay: [], end: { kind: "until", on: "2026-11-23" } } },
+      { kind: "series", rule: { freq: "weekly", interval: 1, byDay: [], end: { kind: "count", count: 10 } } },
+    ]);
+  });
+
+  it("refuses a repeat that would end before it starts, without touching the repo", async () => {
+    const { repo, calls } = fakeRepo();
+    expect(await captureTask(repo, "class every friday until tomorrow", NOW, LONDON)).toEqual({ ok: false, error: expect.stringMatching(/end before it starts/) });
+    expect(calls.create).toEqual([]);
+  });
+});
+
 describe("setDone", () => {
   it("marks an item done and open again", async () => {
     const item = makeItem();
