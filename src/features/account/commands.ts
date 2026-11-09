@@ -93,6 +93,23 @@ export async function removeArea(repo: AreasRepo, rawId: unknown): Promise<Actio
   return attempt(() => repo.softDelete(id));
 }
 
+/**
+ * Puts back an area removed by mistake, the Undo after Remove. Its items never lost their area, so they are in it
+ * again at once. Refused when a live area has taken its name or the areas are full.
+ */
+export async function restoreArea(repo: AreasRepo, rawId: unknown): Promise<ActionResult> {
+  const id = parseAreaId(rawId);
+  if (!id) return { ok: false, error: MISSING };
+  return attempt(async () => {
+    const [name, areas] = await Promise.all([repo.removedName(id), repo.list()]);
+    if (name === null) return areas.some((a) => a.id === id) ? undefined : { ok: false, error: MISSING };
+    const clash = areas.find((a) => sameName(a.name, name));
+    if (clash) return { ok: false, error: `${name} cannot come back while another area is called ${clash.name}.` };
+    if (areas.length >= AREA_LIMIT) return { ok: false, error: `Axiis keeps up to ${AREA_LIMIT} areas. Remove one to bring ${name} back.` };
+    if (!(await repo.restore(id))) return { ok: false, error: MISSING };
+  });
+}
+
 /** The ids with `id` swapped one place up or down, or `null` when it is missing or already at that end. */
 export function moved(ids: AreaId[], id: AreaId, direction: MoveDirection): AreaId[] | null {
   const from = ids.indexOf(id);

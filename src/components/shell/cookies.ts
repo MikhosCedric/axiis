@@ -10,6 +10,15 @@ export const FOCUS_COOKIE = "focus";
 export const TOUR_COOKIE = "tour";
 /** "off" once the suggestion to colour areas is dismissed. */
 export const COLOR_HINT_COOKIE = "colour-hint";
+/** "off" once desktop reminders are turned off in Settings. Only the desktop app reads reminders at all. */
+export const REMINDERS_COOKIE = "reminders";
+/** The cookie the desktop shell sets on its pages. */
+export const DESKTOP_COOKIE = "axiis_desktop";
+
+/** Desktop reminders are on unless turned off. */
+export function readReminders(value: string | undefined): boolean {
+  return value !== "off";
+}
 
 /**
  * Whether Today shows the tour: on a new account until it is finished or skipped ("done"), and on any

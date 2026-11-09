@@ -67,6 +67,21 @@ export class SupabaseAreasRepo implements AreasRepo {
     unwrap("softDelete", result, () => undefined);
   }
 
+  async restore(id: AreaId): Promise<Area | null> {
+    const result = await this.db
+      .from("areas")
+      .update({ deleted_at: null })
+      .eq("id", id)
+      .not("deleted_at", "is", null)
+      .select(AREA_COLUMNS);
+    return unwrap("restore", result, (raw) => areaList(raw)[0] ?? null);
+  }
+
+  async removedName(id: AreaId): Promise<string | null> {
+    const result = await this.db.from("areas").select("name").eq("id", id).not("deleted_at", "is", null).limit(1);
+    return unwrap("removedName", result, (raw) => z.array(z.object({ name: z.string() })).parse(raw)[0]?.name ?? null);
+  }
+
   async reorder(ids: AreaId[]): Promise<void> {
     const results = await Promise.all(
       ids.map((id, index) => this.db.from("areas").update({ position: index + 1 }).eq("id", id).is("deleted_at", null)),

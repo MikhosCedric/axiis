@@ -46,6 +46,15 @@ export function fakeAreasRepo(seed: SeedArea[] = []) {
       const row = rows.find((r) => r.id === id && r.deletedAt === null);
       if (row) row.deletedAt = new Date();
     },
+    async restore(id) {
+      const row = rows.find((r) => r.id === id && r.deletedAt !== null);
+      if (!row) return null;
+      row.deletedAt = null;
+      return view(row);
+    },
+    async removedName(id) {
+      return rows.find((r) => r.id === id && r.deletedAt !== null)?.name ?? null;
+    },
     async reorder(ids) {
       ids.forEach((id, index) => {
         find(id).position = index + 1;

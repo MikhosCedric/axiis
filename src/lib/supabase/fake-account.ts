@@ -107,9 +107,9 @@ function busyFixtures(areas: Area[], now: Date): Item[] {
 /**
  * Which in-memory account a request uses: the fixtures, one that has never stored an item, one whose items sit
  * in areas, the same again with a tag for the filter tests, a busy week, a second busy week for the navigation tests
- * to change, or a copy of the fixtures for the account deletion tests.
+ * to change, a copy of the fixtures for the account deletion tests, or another for the settings tests.
  */
-export type FakeAccountKind = "fixtures" | "empty" | "areas" | "filters" | "busy" | "navigation" | "gestures" | "polish" | "actions" | "deletion";
+export type FakeAccountKind = "fixtures" | "empty" | "areas" | "filters" | "busy" | "navigation" | "gestures" | "polish" | "actions" | "deletion" | "settings";
 
 function createAccount(kind: FakeAccountKind) {
   const busy = kind === "busy" || kind === "navigation" || kind === "gestures" || kind === "polish" || kind === "actions";
@@ -122,7 +122,7 @@ function createAccount(kind: FakeAccountKind) {
         ])
       : fakeAreasRepo(["Work", "Home", "Health"]);
   const items =
-    kind === "fixtures" || kind === "deletion"
+    kind === "fixtures" || kind === "deletion" || kind === "settings"
       ? fixtures()
       : kind === "areas" || kind === "filters"
         ? areaFixtures(areas.rows)
@@ -131,7 +131,7 @@ function createAccount(kind: FakeAccountKind) {
           : [];
   const fake = fakeRepo(items);
   fake.repo.listAreas = () => areas.repo.list();
-  if (kind === "fixtures") fake.tag(id(1), "errands");
+  if (kind === "fixtures" || kind === "settings") fake.tag(id(1), "errands");
   // One tag across two areas, for the tag colour and tag filter tests.
   if (kind === "filters") for (const each of [id(22), id(23)]) fake.tag(each, "errands");
   const notesStore: NotesStore = { items, bodyText: new Map(), links: [] };

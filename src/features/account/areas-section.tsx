@@ -16,6 +16,8 @@ export type AreaActions = {
   add(name: string): Promise<ActionResult>;
   rename(id: string, name: string): Promise<ActionResult>;
   remove(id: string): Promise<ActionResult>;
+  /** Undo for a removal: areas are soft-deleted, so one can come back with its items. */
+  restore(id: string): Promise<ActionResult>;
   move(id: string, direction: MoveDirection): Promise<ActionResult>;
   color(id: string, color: AreaColor | null): Promise<ActionResult>;
 };
@@ -52,6 +54,8 @@ export function AreasSection({ areas, actions, colorHint = false }: { areas: Are
   const [shown, change] = useOptimistic(areas, apply);
   const [hint, setHint] = useState(colorHint);
   const [error, setError] = useState<string | null>(null);
+  // The area just removed, offered back until the next change here.
+  const [removed, setRemoved] = useState<{ id: AreaId; name: string } | null>(null);
   const prefix = useId();
   const refocus = useRef<{ id: AreaId; direction: MoveDirection } | null>(null);
   const [picking, setPicking] = useState<AreaId | null>(null);
@@ -67,13 +71,19 @@ export function AreasSection({ areas, actions, colorHint = false }: { areas: Are
     }
   });
 
-  function run(optimistic: Change | null, work: () => Promise<ActionResult>) {
+  function run(optimistic: Change | null, work: () => Promise<ActionResult>, done?: () => void) {
     setError(null);
+    setRemoved(null);
     startTransition(async () => {
       if (optimistic) change(optimistic);
       const result = await reach(work());
       if (!result.ok) setError(result.error);
+      else done?.();
     });
+  }
+
+  function undoRemove(area: { id: AreaId; name: string }) {
+    run(null, () => actions.restore(area.id));
   }
 
   function move(id: AreaId, direction: MoveDirection, index: number) {
@@ -148,8 +158,10 @@ export function AreasSection({ areas, actions, colorHint = false }: { areas: Are
                 <ConfirmDelete
                   compact
                   label={`Remove ${area.name}`}
-                  prompt={`Remove ${area.name}?`}
-                  onConfirm={() => run({ kind: "remove", id: area.id }, () => actions.remove(area.id))}
+                  prompt={`Remove ${area.name}? Its items stay, under No area.`}
+                  onConfirm={() =>
+                    run({ kind: "remove", id: area.id }, () => actions.remove(area.id), () => setRemoved({ id: area.id, name: area.name }))
+                  }
                 />
               </span>
               {picking === area.id && (
@@ -167,8 +179,20 @@ export function AreasSection({ areas, actions, colorHint = false }: { areas: Are
         <p className="mt-4 border-y border-rule py-3 text-ink-2">No areas yet. Everything sits under No area until you add one.</p>
       )}
 
-      <p role="status" className="mt-1.5 min-h-5 text-[13px] text-ink-2">
-        {error}
+      <p role="status" className="mt-1.5 flex min-h-5 flex-wrap items-center gap-x-2 text-[13px] text-ink-2">
+        {error ??
+          (removed && (
+            <>
+              <span>Removed {removed.name}. Its items show under No area.</span>
+              <button
+                type="button"
+                onClick={() => undoRemove(removed)}
+                className="-my-1 rounded-md px-2 py-1 font-medium text-ink underline decoration-rule underline-offset-3 hover:bg-hover active:bg-press pointer-coarse:min-h-11"
+              >
+                Undo
+              </button>
+            </>
+          ))}
       </p>
 
       {shown.length < AREA_LIMIT ? (

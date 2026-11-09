@@ -22,7 +22,9 @@ describe("PLACES", () => {
       expect(p.here(p.href, today), p.label).toBe(true);
     }
     expect(PLACES.find((p) => p.id === "today")!.here(`/day/${today}`, today)).toBe(true);
+    expect(PLACES.find((p) => p.id === "today")!.here("/day/2026-10-09", today)).toBe(true);
     expect(PLACES.find((p) => p.id === "month")!.here("/month/2026-11", today)).toBe(true);
+    expect(PLACES.find((p) => p.id === "settings")!.here("/trash", today)).toBe(true);
   });
 
   it("keeps Search and Settings off the rail's lists but reachable by G and a key", () => {
@@ -35,6 +37,7 @@ describe("PLACES", () => {
       ["i", "/inbox"],
       ["l", "/lists"],
       ["n", "/notes"],
+      ["#", "/tags"],
       ["s", "/search"],
       [",", "/settings"],
     ]);

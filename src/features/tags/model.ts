@@ -94,6 +94,13 @@ export function tagFromSegment(segment: string): string {
   }
 }
 
+/** The question before a tag is deleted, saying what it comes off when that is known. Deleting cannot be undone, so it is plain about it. */
+export function deletePrompt(tag: { name: string; open?: number }): string {
+  const n = tag.open;
+  const off = n === undefined || n === 0 ? "" : ` It comes off ${n} open ${n === 1 ? "item" : "items"}.`;
+  return `Delete #${tag.name}?${off} The items stay.`;
+}
+
 /** Says how many open items carry a tag. */
 export function openCount(n: number): string {
   return n === 0 ? "None open" : `${n} open`;

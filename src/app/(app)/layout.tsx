@@ -1,6 +1,6 @@
 import { cookies } from "next/headers";
 import type { ReactNode } from "react";
-import { RAIL_COOKIE, readRailMin } from "@/components/shell/cookies";
+import { DESKTOP_COOKIE, RAIL_COOKIE, readRailMin, readReminders, REMINDERS_COOKIE } from "@/components/shell/cookies";
 import { NavRail } from "@/components/shell/nav-rail";
 import { DesktopRefresh } from "@/components/shell/desktop-refresh";
 import { OfflineNotice, ServiceWorkerRegistration } from "@/components/shell/offline";
@@ -20,7 +20,9 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
   const jar = await cookies();
   const min = readRailMin(jar.get(RAIL_COOKIE)?.value);
   // The desktop shell marks its pages with this cookie; only it shows a tray list, so the web pays nothing for one.
-  const desktop = jar.get("axiis_desktop")?.value === "1";
+  const desktop = jar.get(DESKTOP_COOKIE)?.value === "1";
+  // Settings can turn reminders off; the shell then simply finds none to speak.
+  const remind = desktop && readReminders(jar.get(REMINDERS_COOKIE)?.value);
   const [today, areas, deletesOn, badges, owner, tray, reminders] = await Promise.all([
     getTodayDate(),
     getRailAreas(),
@@ -28,7 +30,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
     getRailBadges(),
     getOutboxOwner(),
     desktop ? getTrayRows() : Promise.resolve([]),
-    desktop ? getReminders() : Promise.resolve([]),
+    remind ? getReminders() : Promise.resolve([]),
   ]);
 
   return (

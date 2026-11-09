@@ -9,6 +9,7 @@ import {
   moved,
   removeArea,
   renameArea,
+  restoreArea,
   setAreaColor,
   type AccountPort,
 } from "./commands";
@@ -159,6 +160,38 @@ describe("removeArea", () => {
     const { repo } = fakeAreasRepo(["Work"]);
     for (const id of BAD_IDS) expect(await removeArea(repo, id)).toEqual({ ok: false, error: "That area is not here any more." });
     expect(await names(repo)).toEqual(["Work"]);
+  });
+});
+
+describe("restoreArea", () => {
+  it("puts a removed area back where it stood, as Undo does", async () => {
+    const { repo } = fakeAreasRepo(["Work", "Home", "Health"]);
+    const home = (await repo.list())[1];
+    await removeArea(repo, home.id);
+    expect(await restoreArea(repo, home.id)).toEqual({ ok: true });
+    expect(await names(repo)).toEqual(["Work", "Home", "Health"]);
+  });
+
+  it("counts an area that is already back as done, and an unknown one as missing", async () => {
+    const { repo } = fakeAreasRepo(["Work"]);
+    const work = (await repo.list())[0];
+    expect(await restoreArea(repo, work.id)).toEqual({ ok: true });
+    expect(await restoreArea(repo, "00000000-0000-4000-a000-000000000099")).toEqual({ ok: false, error: "That area is not here any more." });
+    for (const id of BAD_IDS) expect(await restoreArea(repo, id)).toEqual({ ok: false, error: "That area is not here any more." });
+  });
+
+  it("refuses while another area has taken its name, or the areas are full", async () => {
+    const { repo } = fakeAreasRepo(["Work"]);
+    const work = (await repo.list())[0];
+    await removeArea(repo, work.id);
+    await addArea(repo, "work");
+    expect(await restoreArea(repo, work.id)).toEqual({ ok: false, error: "Work cannot come back while another area is called work." });
+
+    const full = fakeAreasRepo(Array.from({ length: AREA_LIMIT }, (_, i) => `Area ${i}`));
+    const first = (await full.repo.list())[0];
+    await removeArea(full.repo, first.id);
+    await addArea(full.repo, "Newcomer");
+    expect(await restoreArea(full.repo, first.id)).toEqual({ ok: false, error: `Axiis keeps up to ${AREA_LIMIT} areas. Remove one to bring Area 0 back.` });
   });
 });
 

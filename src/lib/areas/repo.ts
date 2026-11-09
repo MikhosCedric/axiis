@@ -15,6 +15,10 @@ export interface AreasRepo {
   setColor(id: AreaId, color: AreaColor | null): Promise<Area>;
   /** Sets `deleted_at`. Items keep their `area_id` and show under "No area". */
   softDelete(id: AreaId): Promise<void>;
+  /** Clears `deleted_at` on a removed area, keeping its position, so an Undo puts it back where it stood. Null when there is no removed area with that id. */
+  restore(id: AreaId): Promise<Area | null>;
+  /** A removed area's name, for checking a restore against the live names. Null when there is no removed area with that id. */
+  removedName(id: AreaId): Promise<string | null>;
   /** Gives each listed area the position of its index. Safe to run again after a partial failure. */
   reorder(ids: AreaId[]): Promise<void>;
 }

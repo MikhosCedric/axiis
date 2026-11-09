@@ -1,12 +1,24 @@
 import type { Metadata } from "next";
 import { cookies } from "next/headers";
-import { CLOCK_COOKIE, COLOR_HINT_COOKIE, DENSITY_COOKIE, readClock, readDensity, readTheme, THEME_COOKIE } from "@/components/shell/cookies";
+import {
+  CLOCK_COOKIE,
+  COLOR_HINT_COOKIE,
+  DENSITY_COOKIE,
+  DESKTOP_COOKIE,
+  readClock,
+  readDensity,
+  readReminders,
+  readTheme,
+  REMINDERS_COOKIE,
+  THEME_COOKIE,
+} from "@/components/shell/cookies";
 import {
   addAreaAction,
   deleteAccountAction,
   moveAreaAction,
   removeAreaAction,
   renameAreaAction,
+  restoreAreaAction,
   scheduleDeletionAction,
   setAreaColorAction,
   undoDeletionAction,
@@ -32,18 +44,25 @@ async function signedInEmail(): Promise<string | null> {
 
 export default async function SettingsPage() {
   const saved = await cookies();
-  const [email, areas, tags, deletesOn] = await Promise.all([
+  const items = await getItemsRepo();
+  const [email, areas, tags, deletesOn, deleted] = await Promise.all([
     signedInEmail(),
     getAreasRepo().then((repo) => repo.list()),
-    getItemsRepo().then(loadTagIndex),
+    loadTagIndex(items),
     getDeletionDay(),
+    // Only a count for the Recently deleted line; a failed read leaves the line without it.
+    items.listDeleted().then(
+      (rows) => rows.length,
+      () => null,
+    ),
   ]);
+  const desktop = saved.get(DESKTOP_COOKIE)?.value === "1" ? { reminders: readReminders(saved.get(REMINDERS_COOKIE)?.value) } : null;
 
   return (
     <SettingsView
       email={email}
       areas={areas}
-      areaActions={{ add: addAreaAction, rename: renameAreaAction, remove: removeAreaAction, move: moveAreaAction, color: setAreaColorAction }}
+      areaActions={{ add: addAreaAction, rename: renameAreaAction, remove: removeAreaAction, restore: restoreAreaAction, move: moveAreaAction, color: setAreaColorAction }}
       tags={tags}
       tagActions={{ rename: renameTagAction, remove: deleteTagAction, color: setTagColorAction }}
       deletion={{ schedule: scheduleDeletionAction, undo: undoDeletionAction, deleteNow: deleteAccountAction }}
@@ -52,6 +71,8 @@ export default async function SettingsPage() {
       density={readDensity(saved.get(DENSITY_COOKIE)?.value)}
       clock={readClock(saved.get(CLOCK_COOKIE)?.value)}
       colorHint={saved.get(COLOR_HINT_COOKIE)?.value !== "off"}
+      deletedCount={deleted}
+      desktop={desktop}
     />
   );
 }

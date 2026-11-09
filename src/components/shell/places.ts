@@ -43,7 +43,8 @@ export const PLACES: readonly Place[] = [
     tab: true,
     go: "t",
     also: ["score", "day"],
-    here: (p, today) => p === "/today" || p === `/day/${today}`,
+    // Any single day is the day view Today opens, so the rail keeps it marked while you step through days.
+    here: (p) => p === "/today" || p.startsWith("/day/"),
   },
   { id: "week", label: "Week", href: "/week", hint: "Seven days at a glance", group: "Plan", tab: true, go: "w", also: ["planner"], here: under("/week") },
   {
@@ -81,7 +82,7 @@ export const PLACES: readonly Place[] = [
   },
   { id: "lists", label: "Lists", href: LISTS_PATH, hint: "Checklists and how far along each is", group: "Library", tab: false, go: "l", also: ["checklists"], here: at(LISTS_PATH) },
   { id: "notes", label: "Notes", href: "/notes", hint: "Writing", group: "Library", tab: false, go: "n", also: [], here: under("/notes") },
-  { id: "tags", label: "Tags", href: TAGS_PATH, hint: "Everything by tag", group: "Library", tab: false, go: null, also: ["labels"], here: under(TAGS_PATH) },
+  { id: "tags", label: "Tags", href: TAGS_PATH, hint: "Everything by tag", group: "Library", tab: false, go: "#", also: ["labels"], here: under(TAGS_PATH) },
   { id: "search", label: "Search", href: "/search", hint: "Find any task or note", group: null, tab: false, go: "s", also: ["find"], here: at("/search") },
   {
     id: "settings",
@@ -91,8 +92,9 @@ export const PLACES: readonly Place[] = [
     group: null,
     tab: false,
     go: ",",
-    also: ["account", "areas", "export"],
-    here: under("/settings"),
+    also: ["account", "areas", "export", "trash", "restore"],
+    // Recently deleted is reached from Settings and leads back there, so it counts as part of it.
+    here: (p) => under("/settings")(p) || p === "/trash",
   },
 ];
 
