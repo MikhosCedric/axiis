@@ -2,10 +2,11 @@
 
 import { lazy, Suspense, useSyncExternalStore, type ComponentProps, type KeyboardEvent, type MouseEvent } from "react";
 import type { QuickItem } from "./model";
+import { loadWhenReachable } from "@/lib/reach";
 import { rowEntries, type Quick, type RowHooks } from "./context";
 
-const Cluster = lazy(() => import("./cluster").then((m) => ({ default: m.Cluster })));
-const TitleField = lazy(() => import("./cluster").then((m) => ({ default: m.TitleField })));
+const Cluster = lazy(() => loadWhenReachable(() => import("./cluster")).then((m) => ({ default: m.Cluster })));
+const TitleField = lazy(() => loadWhenReachable(() => import("./cluster")).then((m) => ({ default: m.TitleField })));
 
 const noSubscribe = () => () => {};
 const inBrowser = () => true;
