@@ -277,3 +277,24 @@ signedIn.describe("reading with no connection", () => {
     await expect.poll(() => page.evaluate(() => caches.has("axiis-pages-v1"))).toBe(false);
   });
 });
+
+signedIn.describe("an item on its own page", () => {
+  signedIn("the panel links to it, and it opens with no way to close or open again", async ({ page }) => {
+    await open(page, "/inbox");
+    await page.getByRole("button", { name: "Read the lease", exact: true }).click();
+    const link = details(page).getByRole("link", { name: "Open in a new window" });
+    await expect(link).toHaveAttribute("target", "_blank");
+    const href = await link.getAttribute("href");
+    expect(href).toMatch(/^\/item\/[0-9a-f-]{36}$/);
+
+    await open(page, href!);
+    await expect(page.getByRole("textbox", { name: "Title" })).toHaveValue("Read the lease");
+    await expect(page.getByRole("link", { name: "Close details" })).toHaveCount(0);
+    await expect(page.getByRole("link", { name: "Open in a new window" })).toHaveCount(0);
+  });
+
+  signedIn("an address that is not an item key is not found", async ({ page }) => {
+    const response = await page.goto("/item/not-a-key");
+    expect(response?.status()).toBe(404);
+  });
+});

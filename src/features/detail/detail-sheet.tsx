@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { startTransition, useEffect, useId, useOptimistic, useRef, useState } from "react";
 import { AreaMark } from "@/components/area-mark";
 import type { AreaId, ItemType } from "@/domain/item";
@@ -61,12 +62,24 @@ function CloseDetails() {
   );
 }
 
+/** The item on its own page, which a link with target="_blank" opens in a new tab, and the desktop app in a second window. */
+function OpenInWindow({ id }: { id: string }) {
+  return (
+    <a href={`/item/${id}`} target="_blank" rel="noopener" aria-label="Open in a new window" title="Open in a new window" className={iconButton}>
+      <svg viewBox="0 0 16 16" width={14} height={14} fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <path d="M9 2.5h4.5V7M13.5 2.5 7.5 8.5M12 9.5v3a1 1 0 0 1-1 1h-7a1 1 0 0 1-1-1v-7a1 1 0 0 1 1-1h3" />
+      </svg>
+    </a>
+  );
+}
+
 /** Shown when the URL names an item that was deleted or never existed. */
 export function MissingItem() {
+  const alone = usePathname().startsWith("/item/");
   return (
     <div className="flex items-center gap-3 text-ink-2">
       <p>That item is not here any more.</p>
-      <CloseDetails />
+      {!alone && <CloseDetails />}
     </div>
   );
 }
@@ -85,7 +98,9 @@ export function DetailSheet({
   const clock = useClock();
   const { item, nesting, repeat } = view;
   const itemHref = useItemHref();
-  const { select } = useItemSelection();
+  const { select, selectedParam } = useItemSelection();
+  // On its own page there is nothing to close and nowhere else to open it.
+  const alone = usePathname().startsWith("/item/");
   const [done, setDone] = useOptimistic(item.done);
   const [areaId, setAreaId] = useOptimistic(item.areaId);
   const [type, setType] = useOptimistic(item.type);
@@ -200,7 +215,12 @@ export function DetailSheet({
           ) : (
             <span className="text-[13px] text-ink-3">Part of an item that is gone</span>
           ))}
-        <CloseDetails />
+        {!alone && (
+          <div className="ml-auto flex items-center">
+            {selectedParam && <OpenInWindow id={selectedParam} />}
+            <CloseDetails />
+          </div>
+        )}
       </div>
 
       <div className={`flex items-start gap-1.5 ${nesting.kind === "is-subtask" ? "" : "pr-9"}`}>

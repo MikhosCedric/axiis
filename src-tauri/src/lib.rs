@@ -53,6 +53,54 @@ fn allowed(url: &Url) -> bool {
     }
 }
 
+/// A window may go to our own pages; a link out of the app goes to the system browser, never into a window.
+fn route_navigation(app: &AppHandle, url: &Url) -> bool {
+    if allowed(url) {
+        return true;
+    }
+    if matches!(url.scheme(), "http" | "https") {
+        let _ = app.opener().open_url(url.as_str(), None::<&str>);
+    }
+    false
+}
+
+/// A page on our origin that shows one item by itself (`/item/<id>`), which is what "Open in a new window" links to.
+fn is_item_page(url: &Url) -> bool {
+    matches!(url.scheme(), "http" | "https")
+        && allowed(url)
+        && url.path().strip_prefix("/item/").is_some_and(|id| !id.is_empty() && !id.contains('/'))
+}
+
+static ITEM_WINDOWS: AtomicU64 = AtomicU64::new(0);
+
+/// What a link that asks for a new window gets: an item page opens as its own window, a smaller one with no
+/// native access; any other address goes to the system browser. A window is never opened onto another site.
+fn open_new_window(
+    app: &AppHandle,
+    url: Url,
+    features: tauri::webview::NewWindowFeatures,
+) -> tauri::webview::NewWindowResponse<tauri::Wry> {
+    use tauri::webview::NewWindowResponse;
+    if !is_item_page(&url) {
+        route_navigation(app, &url);
+        return NewWindowResponse::Deny;
+    }
+    let label = format!("item-{}", ITEM_WINDOWS.fetch_add(1, Ordering::Relaxed));
+    let nav_handle = app.clone();
+    let built = WebviewWindowBuilder::new(app, label, WebviewUrl::External("about:blank".parse().expect("a valid URL")))
+        .window_features(features)
+        .title("Axiis")
+        .inner_size(520.0, 760.0)
+        .min_inner_size(360.0, 480.0)
+        .initialization_script(DESKTOP_COOKIE_SCRIPT)
+        .on_navigation(move |url| route_navigation(&nav_handle, url))
+        .build();
+    match built {
+        Ok(window) => NewWindowResponse::Create { window },
+        Err(_) => NewWindowResponse::Deny,
+    }
+}
+
 /// The address of the site this build shows: ours, or in a debug build the dev server named by `AXIIS_URL`.
 fn site_origin() -> Url {
     let start = if cfg!(debug_assertions) {
@@ -255,6 +303,7 @@ pub fn run() {
             };
 
             let nav_handle = handle.clone();
+            let window_handle = handle.clone();
             WebviewWindowBuilder::new(app, "main", target)
                 .title("Axiis")
                 .inner_size(1280.0, 840.0)
@@ -262,16 +311,8 @@ pub fn run() {
                 // Tells the sign-in page this is the app, so it returns to the app by deep link instead of a web page.
                 .initialization_script(DESKTOP_COOKIE_SCRIPT)
                 .initialization_script(BADGE_SCRIPT)
-                .on_navigation(move |url| {
-                    if allowed(url) {
-                        return true;
-                    }
-                    // A link out of the app goes to the system browser, never into this window.
-                    if matches!(url.scheme(), "http" | "https") {
-                        let _ = nav_handle.opener().open_url(url.as_str(), None::<&str>);
-                    }
-                    false
-                })
+                .on_navigation(move |url| route_navigation(&nav_handle, url))
+                .on_new_window(move |url, features| open_new_window(&window_handle, url, features))
                 .build()?;
 
             // Closing the window keeps Axiis running in the tray, so the hotkey still works.
@@ -400,6 +441,17 @@ mod tests {
             assert!(rgba.chunks(4).any(|p| p == [255, 255, 255, 255]), "the digits are drawn");
         }
         assert_eq!(badge_pixels(3, true)[(16 * 32 + 4) * 4..][..3], [0xd9, 0x2d, 0x20]);
+    }
+
+    #[test]
+    fn only_an_item_page_on_our_origin_opens_a_window() {
+        let item = |u: &str| is_item_page(&u.parse().unwrap());
+        assert!(item("https://axiis-lovat.vercel.app/item/0b7c1d2e-1111-4222-8333-444455556666"));
+        assert!(item("https://axiis-lovat.vercel.app/item/0b7c1d2e-1111-4222-8333-444455556666~2026-11-09"));
+        assert!(!item("https://axiis-lovat.vercel.app/item/"));
+        assert!(!item("https://axiis-lovat.vercel.app/item/a/b"));
+        assert!(!item("https://axiis-lovat.vercel.app/today"));
+        assert!(!item("https://evil.example/item/0b7c1d2e-1111-4222-8333-444455556666"));
     }
 
     #[test]
