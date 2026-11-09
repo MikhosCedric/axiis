@@ -1,7 +1,9 @@
 "use client";
 
 import { useActionState, useState } from "react";
+import { ActionBeam, primaryAction } from "@/components/public/site-chrome";
 import { signInWithEmail, type EmailSignInState } from "./actions";
+import styles from "./login.module.css";
 import { TurnstileWidget } from "./turnstile-widget";
 
 const initialState: EmailSignInState = { status: "idle" };
@@ -19,7 +21,11 @@ function EmailFormAttempt({ next, captcha, onRestart }: { next: string; captcha:
 
   if (state.status === "sent") {
     return (
-      <div role="status" className="space-y-3">
+      <div role="status" className={styles.sent}>
+        <svg className={styles.letter} viewBox="0 0 64 44" width="64" height="44" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" strokeLinecap="round" aria-hidden="true">
+          <rect x="2" y="4" width="60" height="36" rx="4" pathLength="1" />
+          <path d="M4 9l28 21L60 9" pathLength="1" />
+        </svg>
         <h2 className="font-display text-xl text-ink">Check your email</h2>
         <p className="text-ink-2">
           We sent a sign-in link to <span className="text-ink">{state.email}</span>. Open it in this browser. It works
@@ -40,29 +46,28 @@ function EmailFormAttempt({ next, captcha, onRestart }: { next: string; captcha:
       <label htmlFor="email" className="block text-sm text-ink-2">
         Email address
       </label>
-      <input
-        id="email"
-        name="email"
-        type="email"
-        autoComplete="email"
-        required
-        defaultValue={email}
-        aria-invalid={error ? true : undefined}
-        aria-describedby={error ? "email-error" : undefined}
-        className="w-full rounded-xl border border-rule bg-sheet px-3.5 py-2.5 text-ink"
-      />
+      <span className={styles.field}>
+        <input
+          id="email"
+          name="email"
+          type="email"
+          autoComplete="email"
+          required
+          defaultValue={email}
+          aria-invalid={error ? true : undefined}
+          aria-describedby={error ? "email-error" : undefined}
+          className="w-full rounded-xl border border-rule bg-sheet px-3.5 py-2.5 text-ink"
+        />
+      </span>
       {captcha && <TurnstileWidget siteKey={captcha.siteKey} nonce={captcha.nonce} attempt={state} />}
       {error && (
         <p id="email-error" role="alert" className="text-sm text-ink">
           {error}
         </p>
       )}
-      <button
-        type="submit"
-        disabled={pending}
-        className="w-full rounded-xl bg-accent px-4 py-2.5 text-on-accent disabled:opacity-60"
-      >
+      <button type="submit" disabled={pending} className={`${primaryAction} w-full disabled:opacity-60`}>
         {pending ? "Sending link" : "Email me a sign-in link"}
+        <ActionBeam />
       </button>
     </form>
   );

@@ -1,11 +1,13 @@
 import type { Metadata } from "next";
 import { headers } from "next/headers";
-import { BrandHome, PageTurn } from "@/components/public/site-chrome";
+import { BrandHome, PageTurn, quietAction } from "@/components/public/site-chrome";
 import { safeNextPath } from "@/lib/auth/next-path";
 import { turnstileSiteKey } from "@/lib/turnstile";
 import { signInWithGoogle } from "./actions";
 import { EmailForm } from "./email-form";
 import { loginError } from "./errors";
+import styles from "./login.module.css";
+import { SignInStage, SignInStrip } from "./stage";
 
 export const metadata: Metadata = { title: "Sign in" };
 
@@ -23,14 +25,20 @@ export default async function LoginPage({ searchParams }: PageProps<"/login">) {
 
   return (
     <PageTurn>
-    <main id="main" className="flex min-h-full flex-1 items-center justify-center bg-paper px-6 py-16 font-sans">
-      <div className="surface w-full max-w-[26rem] space-y-7 px-8 py-9">
-        <header className="space-y-2">
+    <main id="main" className={styles.page}>
+      <SignInStage />
+      <div className={styles.column}>
+      <div className={styles.strip}>
+        <SignInStrip />
+      </div>
+      <div className={`surface ${styles.sheet}`}>
+        <header className={`${styles.header} ${styles.rise}`} style={{ "--i": 0 } as React.CSSProperties}>
           <BrandHome className="mb-8" />
           <h1 className="font-display text-3xl text-ink">Sign in to Axiis</h1>
           <p className="text-ink-2">Use your email or your Google account. There is no password to remember.</p>
           <p className="text-ink-2">New here? The same link makes your account.</p>
         </header>
+        <span className={styles.barline} aria-hidden="true" />
 
         {deleted && (
           <p role="status" className="rounded-md border border-rule bg-paper-2 px-3 py-2 text-sm text-ink">
@@ -44,20 +52,23 @@ export default async function LoginPage({ searchParams }: PageProps<"/login">) {
           </p>
         )}
 
-        <EmailForm next={next} captcha={captcha} />
+        <div className={styles.rise} style={{ "--i": 2 } as React.CSSProperties}>
+          <EmailForm next={next} captcha={captcha} />
+        </div>
 
-        <div className="flex items-center gap-3 text-sm text-ink-3" aria-hidden="true">
+        <div className={`flex items-center gap-3 text-sm text-ink-3 ${styles.rise}`} style={{ "--i": 3 } as React.CSSProperties} aria-hidden="true">
           <span className="h-px flex-1 bg-rule" />
           or
           <span className="h-px flex-1 bg-rule" />
         </div>
 
-        <form action={signInWithGoogle}>
+        <form action={signInWithGoogle} className={styles.rise} style={{ "--i": 4 } as React.CSSProperties}>
           <input type="hidden" name="next" value={next} />
-          <button type="submit" className="w-full rounded-xl border border-rule bg-sheet px-4 py-2.5 text-ink">
+          <button type="submit" className={`${quietAction} w-full`}>
             Continue with Google
           </button>
         </form>
+      </div>
       </div>
     </main>
     </PageTurn>

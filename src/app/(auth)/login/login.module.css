@@ -1,0 +1,136 @@
+/*
+ * The sign-in page: on a wide window the stage on the left and the sheet on the right, in one column below 960px
+ * with a strip of staff above the sheet. The sheet's parts arrive one after another; with reduced motion they are
+ * simply there. Text moves (transform, blur) and is never faded, so nothing is read half-transparent.
+ */
+.page {
+  display: grid;
+  flex: 1;
+  min-height: 100dvh;
+  background: var(--paper);
+  font-family: var(--font-hanken), system-ui, sans-serif;
+}
+
+@media (min-width: 960px) {
+  .page {
+    grid-template-columns: minmax(0, 1.18fr) minmax(27rem, 0.82fr);
+  }
+}
+
+.column {
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  padding: 4rem 1.5rem;
+}
+
+@media (min-width: 960px) {
+  .column {
+    padding: 4rem clamp(2rem, 4vw, 4.5rem);
+  }
+}
+
+.sheet {
+  width: min(100%, 26rem);
+  display: grid;
+  gap: 1.75rem;
+  padding: 2.25rem 2rem;
+}
+
+.strip {
+  width: min(100%, 26rem);
+}
+
+.header {
+  display: grid;
+  gap: 0.5rem;
+}
+
+/* A double barline, the way the score closes, ruled in under the header. */
+.barline {
+  display: block;
+  height: 3px;
+  border-top: 1px solid var(--rule);
+  border-bottom: 1px solid var(--rule);
+  transform-origin: left;
+}
+
+/* The email field: a verdigris line is drawn along its foot while it has focus, since focus is what verdigris marks. */
+.field {
+  position: relative;
+  display: block;
+}
+
+.field::after {
+  content: "";
+  position: absolute;
+  inset: auto 16px 8px;
+  height: 1.5px;
+  border-radius: 2px;
+  background: var(--accent);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 380ms var(--ease-axiis);
+  pointer-events: none;
+}
+
+.field:focus-within::after {
+  transform: scaleX(1);
+}
+
+/* The sent state: a letter drawn in line by line. */
+.letter {
+  display: block;
+  color: var(--ink);
+}
+
+.letter * {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 0;
+}
+
+.sent {
+  display: grid;
+  gap: 0.75rem;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .rise {
+    animation: rise 760ms var(--ease-axiis) calc(180ms + var(--i, 0) * 80ms) both;
+  }
+
+  .barline {
+    animation: rule 900ms var(--ease-axiis) 520ms both;
+  }
+
+  .letter rect {
+    animation: ink 700ms var(--ease-axiis) both;
+  }
+
+  .letter path {
+    animation: ink 600ms var(--ease-axiis) 420ms both;
+  }
+
+  .sent > :not(.letter) {
+    animation: rise 640ms var(--ease-axiis) calc(300ms + var(--i, 0) * 80ms) both;
+  }
+}
+
+@keyframes rise {
+  from {
+    translate: 0 18px;
+    filter: blur(6px);
+  }
+}
+
+@keyframes rule {
+  from {
+    transform: scaleX(0);
+  }
+}
+
+@keyframes ink {
+  from {
+    stroke-dashoffset: 1;
+  }
+}
