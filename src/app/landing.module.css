@@ -124,6 +124,20 @@
   pointer-events: none;
 }
 
+.bubble {
+  position: absolute;
+  left: var(--x);
+  bottom: -80px;
+  width: var(--s);
+  aspect-ratio: 1;
+  border: 1px solid var(--rule);
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 30% 28%, light-dark(rgb(255 255 255 / 0.7), rgb(236 229 211 / 0.12)) 0 14%, transparent 15%),
+    light-dark(rgb(255 255 255 / 0.18), rgb(236 229 211 / 0.04));
+  opacity: 0.7;
+}
+
 .farStaff {
   position: absolute;
   inset-inline: 0;
@@ -951,6 +965,30 @@
     animation: arrive-lift 1100ms cubic-bezier(0.16, 1, 0.3, 1);
   }
 
+  /* Idle: the hero and the demo sheets never sit dead still. Each uses its own independent property
+     (translate, rotate), so none fights an arrival, a hover or the scroll drift. */
+  .bubble {
+    animation: rise-bubble var(--t) linear var(--d) infinite;
+  }
+
+  .stack {
+    animation: float-sheet 9s ease-in-out infinite alternate;
+  }
+
+  .under {
+    animation: sway-sheet 11s ease-in-out -4s infinite alternate;
+  }
+
+  .movementDemo {
+    animation: float-sheet 10s ease-in-out calc(var(--i, 0) * -3s) infinite alternate;
+  }
+
+  [data-offscreen] .bubble,
+  .stack[data-offscreen],
+  .movementDemo[data-offscreen] {
+    animation-play-state: paused;
+  }
+
   .chip > span {
     animation: bob-chip var(--bob, 7s) ease-in-out var(--lag, 0s) infinite alternate;
   }
@@ -1019,5 +1057,38 @@
   }
   to {
     transform: translateY(4px);
+  }
+}
+
+@keyframes rise-bubble {
+  from {
+    translate: 0 0;
+    scale: 0.8;
+  }
+  50% {
+    translate: var(--w) -55svh;
+    scale: 1;
+  }
+  to {
+    translate: calc(var(--w) * -1) -110svh;
+    scale: 1.08;
+  }
+}
+
+@keyframes float-sheet {
+  from {
+    translate: 0 -4px;
+  }
+  to {
+    translate: 0 5px;
+  }
+}
+
+@keyframes sway-sheet {
+  from {
+    rotate: -0.35deg;
+  }
+  to {
+    rotate: 0.45deg;
   }
 }

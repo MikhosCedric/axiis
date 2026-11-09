@@ -45,6 +45,17 @@ export const metadata: Metadata = {
 /** Said under every call to start, so nobody has to sign in to learn what signing in costs. */
 const TERMS = "Free. Email link or Google. No password.";
 
+/** Bubbles that drift up behind the hero: left, size, rise time, start offset, sway. */
+const BUBBLES: Record<string, string>[] = [
+  { "--x": "6%", "--s": "46px", "--t": "19s", "--d": "-3s", "--w": "14px" },
+  { "--x": "17%", "--s": "18px", "--t": "14s", "--d": "-9s", "--w": "-10px" },
+  { "--x": "31%", "--s": "30px", "--t": "22s", "--d": "-14s", "--w": "12px" },
+  { "--x": "52%", "--s": "14px", "--t": "16s", "--d": "-6s", "--w": "-8px" },
+  { "--x": "66%", "--s": "58px", "--t": "26s", "--d": "-18s", "--w": "16px" },
+  { "--x": "79%", "--s": "22px", "--t": "15s", "--d": "-1s", "--w": "-12px" },
+  { "--x": "91%", "--s": "36px", "--t": "21s", "--d": "-11s", "--w": "10px" },
+];
+
 /** Everything here ships today, each in a few words. Nothing is promised that is not built. */
 const NOW = [
   "Capture in plain English",
@@ -113,9 +124,12 @@ export default async function Home() {
       <SiteHeader contents={SECTIONS} />
       <main id="main">
         <section className={styles.hero} aria-labelledby="hero-title">
-          <div className={styles.depth} aria-hidden="true">
+          <div className={styles.depth} data-loop="" aria-hidden="true">
             <span className={styles.farStaff} />
             <span className={styles.nearStaff} />
+            {BUBBLES.map((b, i) => (
+              <span key={i} className={styles.bubble} style={vars(b)} />
+            ))}
           </div>
           <div className={`${siteWrap} ${styles.heroText}`}>
             <HeroDrift />
@@ -152,7 +166,7 @@ export default async function Home() {
             </div>
           </div>
           <div className={siteWrap}>
-            <div className={styles.stack}>
+            <div className={styles.stack} data-loop="">
               <span className={styles.under} data-parallax="-14" aria-hidden="true" />
               <div className={styles.top} data-parallax="7">
                 <LiveScore />
@@ -359,7 +373,7 @@ function Movement({ section, title, demo, children }: { section: Section; title:
           ))}
         </dl>
       </div>
-      <div className={`${styles.movementDemo} ${styles.reveal}`} data-reveal="" data-glow="" style={vars({ "--i": 1 })}>
+      <div className={`${styles.movementDemo} ${styles.reveal}`} data-reveal="" data-glow="" data-loop="" style={vars({ "--i": 1 })}>
         <span className={styles.sheetShadow} data-glow-shadow="" aria-hidden="true" />
         <span className={styles.lamp} aria-hidden="true">
           <span data-glow-spot="" />
