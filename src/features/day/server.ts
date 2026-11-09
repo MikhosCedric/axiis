@@ -7,6 +7,7 @@ import { getItemsRepo } from "@/lib/items";
 import { resolveTimeZone, toLocalDate } from "@/lib/dates";
 import { loadDay } from "./load";
 import { loadRailCounts } from "./rail";
+import { reminderRows } from "./reminders";
 import { trayRows } from "./tray";
 
 export const getTimeZone = cache(async () => resolveTimeZone((await cookies()).get(TZ_COOKIE)?.value));
@@ -35,6 +36,9 @@ export const getTrayRows = cache(async () => {
   const [today, timeZone, clock] = await Promise.all([getTodayDate(), getTimeZone(), getClock()]);
   return trayRows((await getDay(today)).view, today, getNow(), timeZone, clock);
 });
+
+/** What the desktop shell may notify about today. Asked for only in the shell, and from the day the page loads anyway. */
+export const getReminders = cache(async () => reminderRows((await getDay(await getTodayDate())).view, getNow()));
 
 const DAY_MS = 86_400_000;
 

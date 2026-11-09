@@ -1,6 +1,6 @@
 # 0003. Phase 3: files and reminders
 
-Status: proposed, 2026-11-09. Needs the owner's decision on the two questions at the end. Builds on ADR-0001 and ADR-0002.
+Status: reminders accepted 2026-11-10 (the owner said to start on them, taking the defaults below: works while the app runs in the tray, 10 minute lead); files still proposed and waiting on question 2. Builds on ADR-0001 and ADR-0002.
 
 ## Context
 

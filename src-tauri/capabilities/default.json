@@ -1,8 +1,8 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
-  "description": "Our own pages may set the taskbar badge and nothing else. Everything else native is driven from Rust: the tray, the capture hotkey, updates and the navigation rules. Release builds can only reach the first origin; localhost is for debug builds pointed at a dev server.",
+  "description": "Our own pages may set the taskbar badge and report the items still to start, and nothing else. Everything else native is driven from Rust: the tray, the capture hotkey, updates and the navigation rules. Release builds can only reach the first origin; localhost is for debug builds pointed at a dev server.",
   "windows": ["main"],
   "remote": { "urls": ["https://axiis-lovat.vercel.app/*", "http://localhost:*/*"] },
-  "permissions": ["allow-set-badge"]
+  "permissions": ["allow-set-badge", "allow-set-reminders"]
 }

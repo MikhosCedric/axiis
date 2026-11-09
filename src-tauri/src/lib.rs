@@ -3,7 +3,9 @@
 //! The page is never given a native API (see `capabilities/default.json`). Everything native here, the tray,
 //! the capture hotkey and the navigation rules, is driven from Rust.
 
+use std::collections::HashSet;
 use std::net::{TcpStream, ToSocketAddrs};
+use std::sync::Mutex;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
@@ -13,6 +15,7 @@ use tauri::image::Image;
 use tauri::{AppHandle, Manager, Url, WebviewUrl, WebviewWindowBuilder, WindowEvent};
 use tauri_plugin_deep_link::DeepLinkExt;
 use tauri_plugin_global_shortcut::ShortcutState;
+use tauri_plugin_notification::NotificationExt;
 use tauri_plugin_opener::OpenerExt;
 use tauri_plugin_updater::UpdaterExt;
 
@@ -30,9 +33,9 @@ const FOCUS_CAPTURE: &str = "(() => { const f = document.getElementById('capture
 /// where a sign-in link returns to.
 const DESKTOP_COOKIE_SCRIPT: &str = "(() => { const https = location.protocol === 'https:'; if (https || location.hostname === 'localhost') document.cookie = 'axiis_desktop=1; path=/; max-age=31536000; SameSite=Lax' + (https ? '; Secure' : ''); })();";
 
-/// Reads what the app shell carries (`data-inbox`, `data-overdue`, and `data-tray`, the lines for today's list) and tells
-/// Rust, which draws the taskbar badge and the tray menu. Our pages can call this one command and nothing else (see `capabilities/default.json`).
-const BADGE_SCRIPT: &str = "(() => { if (!window.__TAURI_INTERNALS__) return; let last = ''; let queued = false; const send = () => { queued = false; if (document.readyState === 'loading') return; const shell = document.getElementById('app-shell'); const inbox = shell ? Number(shell.dataset.inbox) || 0 : 0; const overdue = shell ? Number(shell.dataset.overdue) || 0 : 0; const raw = shell ? shell.dataset.tray || '' : ''; let rows = []; try { const v = JSON.parse(raw || '[]'); if (Array.isArray(v)) rows = v.filter((r) => typeof r === 'string'); } catch (e) {} const key = inbox + ',' + overdue + ',' + raw; if (key === last) return; last = key; window.__TAURI_INTERNALS__.invoke('set_badge', { inbox, overdue, rows }).catch(() => {}); }; const queue = () => { if (!queued) { queued = true; requestAnimationFrame(send); } }; new MutationObserver(queue).observe(document, { subtree: true, childList: true, attributes: true, attributeFilter: ['data-inbox', 'data-overdue', 'data-tray'] }); document.addEventListener('DOMContentLoaded', queue); queue(); })();";
+/// Reads what the app shell carries (`data-inbox`, `data-overdue`, `data-tray` for today's list, `data-reminders` for the
+/// items still to start) and tells Rust, which draws the taskbar badge and the tray menu and speaks the reminders. Our pages can call this one command and nothing else (see `capabilities/default.json`).
+const BADGE_SCRIPT: &str = "(() => { if (!window.__TAURI_INTERNALS__) return; let last = ''; let lastR = ''; let queued = false; const send = () => { queued = false; if (document.readyState === 'loading') return; const shell = document.getElementById('app-shell'); const inbox = shell ? Number(shell.dataset.inbox) || 0 : 0; const overdue = shell ? Number(shell.dataset.overdue) || 0 : 0; const raw = shell ? shell.dataset.tray || '' : ''; let rows = []; try { const v = JSON.parse(raw || '[]'); if (Array.isArray(v)) rows = v.filter((r) => typeof r === 'string'); } catch (e) {} const rraw = shell ? shell.dataset.reminders || '' : ''; if (rraw !== lastR) { lastR = rraw; let items = []; try { const v = JSON.parse(rraw || '[]'); if (Array.isArray(v)) items = v.filter((r) => r && typeof r.id === 'string' && typeof r.title === 'string' && Number.isFinite(r.at)); } catch (e) {} window.__TAURI_INTERNALS__.invoke('set_reminders', { items }).catch(() => {}); } const key = inbox + ',' + overdue + ',' + raw; if (key === last) return; last = key; window.__TAURI_INTERNALS__.invoke('set_badge', { inbox, overdue, rows }).catch(() => {}); }; const queue = () => { if (!queued) { queued = true; requestAnimationFrame(send); } }; new MutationObserver(queue).observe(document, { subtree: true, childList: true, attributes: true, attributeFilter: ['data-inbox', 'data-overdue', 'data-tray', 'data-reminders'] }); document.addEventListener('DOMContentLoaded', queue); queue(); })();";
 
 /// How often a shell left running in the tray looks for a new version.
 const UPDATE_EVERY_SECS: u64 = 6 * 60 * 60;
@@ -293,6 +296,111 @@ fn set_badge(app: AppHandle, inbox: u32, overdue: u32, rows: Vec<String>) {
     }
 }
 
+/// How long before an item starts the shell speaks, and how often it looks. A reminder is spoken once per item and start.
+const REMINDER_LEAD_MS: u64 = 10 * 60 * 1000;
+const REMINDER_LOOK_SECS: u64 = 20;
+const REMINDER_MAX: usize = 50;
+const REMINDER_TITLE_CHARS: usize = 80;
+const REMINDER_ID_CHARS: usize = 64;
+/// More than this many spoken keys and the memory is cleared, so a shell left running for weeks stays small.
+const SPOKEN_MAX: usize = 500;
+
+/// What a page may report for one item: who it is, when it starts (milliseconds since 1970), and what to call it.
+#[derive(serde::Deserialize)]
+struct ReminderIn {
+    id: String,
+    at: u64,
+    title: String,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+struct Reminder {
+    id: String,
+    at: u64,
+    title: String,
+}
+
+impl Reminder {
+    fn key(&self) -> String {
+        format!("{}@{}", self.id, self.at)
+    }
+}
+
+/// The reminders the page last reported, and the ones already spoken. Kept here, not in the page, so a page that
+/// reloads does not make the shell speak twice, and a hidden window that cannot refresh still reminds from what it knew.
+#[derive(Default)]
+struct Reminders {
+    list: Vec<Reminder>,
+    spoken: HashSet<String>,
+}
+
+fn plain(text: &str, max: usize) -> String {
+    text.chars().filter(|c| !c.is_control()).take(max).collect::<String>().trim().to_string()
+}
+
+/// The page's reports made safe: plain short text, a real time, few of them. Nothing the page says is run.
+fn clean_reminders(items: Vec<ReminderIn>) -> Vec<Reminder> {
+    items
+        .into_iter()
+        .filter(|r| r.at > 0)
+        .map(|r| Reminder { id: plain(&r.id, REMINDER_ID_CHARS), at: r.at, title: plain(&r.title, REMINDER_TITLE_CHARS) })
+        .filter(|r| !r.id.is_empty() && !r.title.is_empty())
+        .take(REMINDER_MAX)
+        .collect()
+}
+
+/// The reminders to speak at `now`: starting within the lead time and not yet started, and not spoken before.
+fn due(list: &[Reminder], spoken: &HashSet<String>, now: u64) -> Vec<Reminder> {
+    list.iter()
+        .filter(|r| r.at > now && r.at - now <= REMINDER_LEAD_MS && !spoken.contains(&r.key()))
+        .cloned()
+        .collect()
+}
+
+fn minutes_words(ms: u64) -> String {
+    let minutes = ms.div_ceil(60_000).max(1);
+    if minutes == 1 {
+        "Starts in 1 minute".to_string()
+    } else {
+        format!("Starts in {minutes} minutes")
+    }
+}
+
+fn now_ms() -> u64 {
+    SystemTime::now().duration_since(UNIX_EPOCH).map(|d| d.as_millis() as u64).unwrap_or(0)
+}
+
+/// The second thing our pages may ask of the shell: here are the items still to start today. The shell, not the page,
+/// decides when to notify (`speak_reminders`).
+#[tauri::command]
+fn set_reminders(app: AppHandle, items: Vec<ReminderIn>) {
+    let state = app.state::<Mutex<Reminders>>();
+    if let Ok(mut reminders) = state.lock() {
+        reminders.list = clean_reminders(items);
+    };
+}
+
+/// Looks every few seconds and speaks what has come due. Runs for as long as the shell does, window or no window.
+fn speak_reminders(app: AppHandle) {
+    std::thread::spawn(move || loop {
+        std::thread::sleep(Duration::from_secs(REMINDER_LOOK_SECS));
+        let now = now_ms();
+        let state = app.state::<Mutex<Reminders>>();
+        let Ok(mut reminders) = state.lock() else { continue };
+        let ready = due(&reminders.list, &reminders.spoken, now);
+        if reminders.spoken.len() > SPOKEN_MAX {
+            reminders.spoken.clear();
+        }
+        for r in &ready {
+            reminders.spoken.insert(r.key());
+        }
+        drop(reminders);
+        for r in ready {
+            let _ = app.notification().builder().title(&r.title).body(minutes_words(r.at - now)).show();
+        }
+    });
+}
+
 fn capture(app: &AppHandle) {
     show_main(app);
     if let Some(window) = app.get_webview_window("main") {
@@ -303,11 +411,12 @@ fn capture(app: &AppHandle) {
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
-        .invoke_handler(tauri::generate_handler![set_badge])
+        .invoke_handler(tauri::generate_handler![set_badge, set_reminders])
         .plugin(tauri_plugin_updater::Builder::new().build())
         // A second launch brings the running app forward instead of opening another.
         .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| show_main(app)))
         .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_deep_link::init())
         .plugin(
             tauri_plugin_global_shortcut::Builder::new()
@@ -322,6 +431,8 @@ pub fn run() {
         )
         .setup(|app| {
             let handle = app.handle().clone();
+            app.manage(Mutex::new(Reminders::default()));
+            speak_reminders(handle.clone());
 
             // The address to open. A debug build may be pointed at a dev server; a release build never reads this.
             let start = if cfg!(debug_assertions) {
@@ -493,6 +604,41 @@ mod tests {
         assert_eq!(rows[1], "belling");
         assert_eq!(rows[2].chars().count(), TRAY_ROW_CHARS);
         assert!(rows.iter().all(|r| !r.chars().any(|c| c.is_control())));
+    }
+
+    fn rem(id: &str, at: u64) -> Reminder {
+        Reminder { id: id.into(), at, title: id.into() }
+    }
+
+    #[test]
+    fn a_reminder_is_spoken_inside_its_lead_time_once() {
+        let now = 1_000_000_000;
+        let list = vec![rem("soon", now + 5 * 60_000), rem("later", now + 30 * 60_000), rem("started", now - 1), rem("edge", now + REMINDER_LEAD_MS)];
+        let ready = due(&list, &HashSet::new(), now);
+        assert_eq!(ready.iter().map(|r| r.id.as_str()).collect::<Vec<_>>(), ["soon", "edge"]);
+
+        let spoken: HashSet<String> = ready.iter().map(Reminder::key).collect();
+        assert!(due(&list, &spoken, now).is_empty());
+        // The same item moved to another time is a new reminder.
+        assert_eq!(due(&[rem("soon", now + 6 * 60_000)], &spoken, now).len(), 1);
+    }
+
+    #[test]
+    fn what_the_page_reports_is_kept_plain_short_and_few() {
+        let item = |id: &str, at: u64, title: &str| ReminderIn { id: id.into(), at, title: title.into() };
+        let mut items = vec![item("a", 5, "  Call\x07 the vet\n "), item("", 5, "no id"), item("b", 0, "no time"), item("c", 5, "")];
+        items.extend((0..80).map(|i| item(&format!("n{i}"), 9, &"y".repeat(200))));
+        let kept = clean_reminders(items);
+        assert_eq!(kept.len(), REMINDER_MAX);
+        assert_eq!(kept[0], Reminder { id: "a".into(), at: 5, title: "Call the vet".into() });
+        assert!(kept.iter().all(|r| r.title.chars().count() <= REMINDER_TITLE_CHARS));
+    }
+
+    #[test]
+    fn the_wait_is_said_in_whole_minutes_rounded_up() {
+        assert_eq!(minutes_words(1), "Starts in 1 minute");
+        assert_eq!(minutes_words(60_001), "Starts in 2 minutes");
+        assert_eq!(minutes_words(REMINDER_LEAD_MS), "Starts in 10 minutes");
     }
 
     #[test]

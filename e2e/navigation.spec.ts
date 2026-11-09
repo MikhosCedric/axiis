@@ -313,3 +313,23 @@ signedIn.describe("the desktop tray list", () => {
     expect(rows[0]).toMatch(/^Today · \d+ of \d+ done$/);
   });
 });
+
+signedIn.describe("the desktop reminders", () => {
+  // Whether anything is still to start depends on the hour the test runs, so only what always holds is checked.
+  signedIn("only the desktop shell's pages carry the items still to start, and only future ones", async ({ page, baseURL }) => {
+    await open(page, "/today");
+    await expect(page.locator("#app-shell")).not.toHaveAttribute("data-reminders", /.*/);
+
+    await page.context().addCookies([{ name: "axiis_desktop", value: "1", url: baseURL! }]);
+    await open(page, "/today");
+    const raw = await page.locator("#app-shell").getAttribute("data-reminders");
+    const rows = JSON.parse(raw ?? "[]") as { id: string; at: number; title: string }[];
+    expect(rows.length).toBeLessThanOrEqual(20);
+    for (const row of rows) {
+      expect(typeof row.id).toBe("string");
+      expect(row.title.length).toBeGreaterThan(0);
+      expect(row.at).toBeGreaterThan(Date.now() - 60_000);
+    }
+    expect(rows.map((r) => r.at)).toEqual([...rows.map((r) => r.at)].sort((a, b) => a - b));
+  });
+});
