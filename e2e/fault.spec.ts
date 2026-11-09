@@ -91,3 +91,40 @@ signedIn("a done tick that cannot reach the server puts the item back and says s
   await expect(tick).not.toBeChecked();
   await context.setOffline(false);
 });
+
+signedIn("a part of the page that fails to load offline waits for the connection and does not replace the page", async ({ page, context }) => {
+  // The row actions load as a file of their own once the page has drawn. Hold that request, go offline, then fail it and
+  // any retry while offline, as a slow machine does when it loses the connection before the file arrives.
+  let release!: () => void;
+  const held = new Promise<void>((resolve) => (release = resolve));
+  let offline = false;
+  let refused = 0;
+  let first = true;
+  await page.route("**/_next/static/chunks/*.js", async (route) => {
+    const response = await route.fetch();
+    if (!(await response.text()).includes('"ACTION_KEY"')) return route.fulfill({ response });
+    if (first) {
+      first = false;
+      await held;
+    }
+    if (offline) {
+      refused += 1;
+      return route.abort("internetdisconnected");
+    }
+    return route.fulfill({ response });
+  });
+  await page.goto("/today");
+  await hydrated(page);
+
+  await context.setOffline(true);
+  offline = true;
+  release();
+  await expect.poll(() => refused).toBeGreaterThan(0);
+  await page.waitForTimeout(1000);
+  await expect(page.getByRole("heading", { level: 1, name: "This page did not load." })).toHaveCount(0);
+
+  offline = false;
+  await context.setOffline(false);
+  await page.waitForTimeout(500);
+  await expect(page.getByRole("heading", { level: 1, name: "This page did not load." })).toHaveCount(0);
+});

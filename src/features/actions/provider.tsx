@@ -22,7 +22,7 @@ import { UndoToast, type UndoNote } from "@/components/undo-toast";
 import { isTypingTarget } from "@/features/day/nav";
 import { sequencePending } from "@/features/palette/sequence";
 import type { ActionResult } from "@/features/today/commands";
-import { reach } from "@/lib/reach";
+import { loadWhenReachable, reach } from "@/lib/reach";
 import { canDo, deleteKind, rowKeyAction, type Box, type QuickAction, type QuickItem } from "./model";
 import { focusTarget, QuickContext, renameKey, type LayerKind, type RowEntry, type OpenLayer, type Patch, type Quick, type QuickActions, type QuickArea, type RowHooks } from "./context";
 
@@ -37,6 +37,7 @@ const serverActions = new Proxy({} as QuickActions, {
 });
 
 const loadLayer = () => import("./layer");
+const waitForLayer = () => loadWhenReachable(loadLayer);
 
 // One empty map for every render: a new one each time would change the context on every render, and a
 // change that reaches a part of the page still streaming in makes React draw it again beside the streamed copy.
@@ -45,8 +46,8 @@ const NO_PATCHES: ReadonlyMap<string, Patch> = new Map();
 const noSubscribe = () => () => {};
 const layerHost = () => document.getElementById("main") ?? document.body;
 const noHost = () => null;
-const Layer = lazy(loadLayer);
-const Bulk = lazy(() => import("./bulk"));
+const Layer = lazy(waitForLayer);
+const Bulk = lazy(() => loadWhenReachable(() => import("./bulk")));
 
 
 function rowOf(el: HTMLElement | null): HTMLElement | null {

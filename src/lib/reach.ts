@@ -13,3 +13,17 @@ export async function reach<T>(call: Promise<T>): Promise<T | { ok: false; error
     return { ok: false, error: UNREACHABLE };
   }
 }
+
+/**
+ * Loads a part of the page that is split into its own file. A failed load rejects, and a rejected lazy part replaces
+ * the whole page with the error page. Offline that is no fault: the part is waited for until the connection is back,
+ * then tried again. Online, a failure is real and still throws.
+ */
+export function loadWhenReachable<T>(load: () => Promise<T>): Promise<T> {
+  return load().catch((error: unknown) => {
+    if (navigator.onLine) throw error;
+    return new Promise<T>((resolve, reject) => {
+      window.addEventListener("online", () => loadWhenReachable(load).then(resolve, reject), { once: true });
+    });
+  });
+}
