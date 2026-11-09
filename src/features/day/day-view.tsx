@@ -264,7 +264,7 @@ export function DayView({
   const leftNode =
     isToday && leftover ? <LeftoverStrip data={leftover} onSelect={select} onStatus={(text, error) => setStatus({ text, error })} /> : null;
   const nextNode =
-    isToday && !firstDay ? (
+    isToday && !firstDay && (focus ? glance.focus : glance.next).length > 0 ? (
       <NextUp
         entries={focus ? glance.focus : glance.next}
         date={date}
