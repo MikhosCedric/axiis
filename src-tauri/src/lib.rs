@@ -7,7 +7,7 @@ use std::net::{TcpStream, ToSocketAddrs};
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
-use tauri::menu::{Menu, MenuItem};
+use tauri::menu::{Menu, MenuItem, PredefinedMenuItem};
 use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
 use tauri::image::Image;
 use tauri::{AppHandle, Manager, Url, WebviewUrl, WebviewWindowBuilder, WindowEvent};
@@ -30,9 +30,9 @@ const FOCUS_CAPTURE: &str = "(() => { const f = document.getElementById('capture
 /// where a sign-in link returns to.
 const DESKTOP_COOKIE_SCRIPT: &str = "(() => { const https = location.protocol === 'https:'; if (https || location.hostname === 'localhost') document.cookie = 'axiis_desktop=1; path=/; max-age=31536000; SameSite=Lax' + (https ? '; Secure' : ''); })();";
 
-/// Reads the two counts the app shell carries (`data-inbox`, `data-overdue`) and tells Rust, which draws the taskbar
-/// badge. Our pages can call this one command and nothing else (see `capabilities/default.json`).
-const BADGE_SCRIPT: &str = "(() => { if (!window.__TAURI_INTERNALS__) return; let last = ''; let queued = false; const send = () => { queued = false; if (document.readyState === 'loading') return; const shell = document.getElementById('app-shell'); const inbox = shell ? Number(shell.dataset.inbox) || 0 : 0; const overdue = shell ? Number(shell.dataset.overdue) || 0 : 0; const key = inbox + ',' + overdue; if (key === last) return; last = key; window.__TAURI_INTERNALS__.invoke('set_badge', { inbox, overdue }).catch(() => {}); }; const queue = () => { if (!queued) { queued = true; requestAnimationFrame(send); } }; new MutationObserver(queue).observe(document, { subtree: true, childList: true, attributes: true, attributeFilter: ['data-inbox', 'data-overdue'] }); document.addEventListener('DOMContentLoaded', queue); queue(); })();";
+/// Reads what the app shell carries (`data-inbox`, `data-overdue`, and `data-tray`, the lines for today's list) and tells
+/// Rust, which draws the taskbar badge and the tray menu. Our pages can call this one command and nothing else (see `capabilities/default.json`).
+const BADGE_SCRIPT: &str = "(() => { if (!window.__TAURI_INTERNALS__) return; let last = ''; let queued = false; const send = () => { queued = false; if (document.readyState === 'loading') return; const shell = document.getElementById('app-shell'); const inbox = shell ? Number(shell.dataset.inbox) || 0 : 0; const overdue = shell ? Number(shell.dataset.overdue) || 0 : 0; const raw = shell ? shell.dataset.tray || '' : ''; let rows = []; try { const v = JSON.parse(raw || '[]'); if (Array.isArray(v)) rows = v.filter((r) => typeof r === 'string'); } catch (e) {} const key = inbox + ',' + overdue + ',' + raw; if (key === last) return; last = key; window.__TAURI_INTERNALS__.invoke('set_badge', { inbox, overdue, rows }).catch(() => {}); }; const queue = () => { if (!queued) { queued = true; requestAnimationFrame(send); } }; new MutationObserver(queue).observe(document, { subtree: true, childList: true, attributes: true, attributeFilter: ['data-inbox', 'data-overdue', 'data-tray'] }); document.addEventListener('DOMContentLoaded', queue); queue(); })();";
 
 /// How often a shell left running in the tray looks for a new version.
 const UPDATE_EVERY_SECS: u64 = 6 * 60 * 60;
@@ -236,9 +236,39 @@ fn badge_pixels(count: u32, hot: bool) -> Vec<u8> {
     rgba
 }
 
-/// The one thing our pages may ask of the shell: show these two counts on the taskbar button and in the tray tooltip.
+/// Most lines of today's list the tray menu shows, and the longest one. The page already keeps to this; the shell does
+/// not take its word for it.
+const TRAY_ROWS: usize = 4;
+const TRAY_ROW_CHARS: usize = 80;
+
+/// The lines the page sent, made safe for a menu: no control characters, trimmed, cut short, none empty, few.
+fn clean_rows(rows: Vec<String>) -> Vec<String> {
+    rows.into_iter()
+        .map(|r| r.chars().filter(|c| !c.is_control()).take(TRAY_ROW_CHARS).collect::<String>().trim().to_string())
+        .filter(|r| !r.is_empty())
+        .take(TRAY_ROWS)
+        .collect()
+}
+
+/// The tray menu: today's lines when there are any, then the three fixed entries.
+fn tray_menu(app: &AppHandle, rows: &[String]) -> tauri::Result<Menu<tauri::Wry>> {
+    let menu = Menu::new(app)?;
+    for row in rows {
+        menu.append(&MenuItem::with_id(app, "today", row, true, None::<&str>)?)?;
+    }
+    if !rows.is_empty() {
+        menu.append(&PredefinedMenuItem::separator(app)?)?;
+    }
+    menu.append(&MenuItem::with_id(app, "open", "Open Axiis", true, None::<&str>)?)?;
+    menu.append(&MenuItem::with_id(app, "capture", "Capture (Ctrl+Alt+A)", true, None::<&str>)?)?;
+    menu.append(&MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?)?;
+    Ok(menu)
+}
+
+/// The one thing our pages may ask of the shell: show these counts on the taskbar button and in the tray tooltip, and
+/// today's lines in the tray menu.
 #[tauri::command]
-fn set_badge(app: AppHandle, inbox: u32, overdue: u32) {
+fn set_badge(app: AppHandle, inbox: u32, overdue: u32, rows: Vec<String>) {
     let (inbox, overdue) = (inbox.min(9999), overdue.min(9999));
     if let Some(window) = app.get_webview_window("main") {
         let icon = match (overdue, inbox) {
@@ -257,6 +287,9 @@ fn set_badge(app: AppHandle, inbox: u32, overdue: u32) {
             tip.push_str(&format!(" · {inbox} in Inbox"));
         }
         let _ = tray.set_tooltip(Some(tip));
+        if let Ok(menu) = tray_menu(&app, &clean_rows(rows)) {
+            let _ = tray.set_menu(Some(menu));
+        }
     }
 }
 
@@ -344,17 +377,14 @@ pub fn run() {
                 }
             });
 
-            let open = MenuItem::with_id(app, "open", "Open Axiis", true, None::<&str>)?;
-            let quick = MenuItem::with_id(app, "capture", "Capture (Ctrl+Alt+A)", true, None::<&str>)?;
-            let quit = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
-            let menu = Menu::with_items(app, &[&open, &quick, &quit])?;
+            let menu = tray_menu(&handle, &[])?;
 
             let mut tray = TrayIconBuilder::with_id("main")
                 .tooltip("Axiis")
                 .menu(&menu)
                 .show_menu_on_left_click(false)
                 .on_menu_event(|app, event| match event.id.as_ref() {
-                    "open" => show_main(app),
+                    "open" | "today" => show_main(app),
                     "capture" => capture(app),
                     "quit" => app.exit(0),
                     _ => {}
@@ -452,6 +482,17 @@ mod tests {
         assert!(!item("https://axiis-lovat.vercel.app/item/a/b"));
         assert!(!item("https://axiis-lovat.vercel.app/today"));
         assert!(!item("https://evil.example/item/0b7c1d2e-1111-4222-8333-444455556666"));
+    }
+
+    #[test]
+    fn the_tray_list_is_kept_short_and_plain() {
+        let long = "x".repeat(200);
+        let rows = clean_rows(vec!["  Today · 1 of 2 done ".into(), "".into(), "bell\x07ing\n".into(), long, "d".into(), "e".into(), "f".into()]);
+        assert_eq!(rows.len(), TRAY_ROWS);
+        assert_eq!(rows[0], "Today · 1 of 2 done");
+        assert_eq!(rows[1], "belling");
+        assert_eq!(rows[2].chars().count(), TRAY_ROW_CHARS);
+        assert!(rows.iter().all(|r| !r.chars().any(|c| c.is_control())));
     }
 
     #[test]

@@ -298,3 +298,18 @@ signedIn.describe("an item on its own page", () => {
     expect(response?.status()).toBe(404);
   });
 });
+
+signedIn.describe("the desktop tray list", () => {
+  signedIn("only the desktop shell's pages carry today's lines", async ({ page, baseURL }) => {
+    await open(page, "/today");
+    await expect(page.locator("#app-shell")).not.toHaveAttribute("data-tray", /.*/);
+
+    await page.context().addCookies([{ name: "axiis_desktop", value: "1", url: baseURL! }]);
+    await open(page, "/today");
+    const raw = await page.locator("#app-shell").getAttribute("data-tray");
+    const rows = JSON.parse(raw ?? "[]") as string[];
+    expect(rows.length).toBeGreaterThan(1);
+    expect(rows.length).toBeLessThanOrEqual(4);
+    expect(rows[0]).toMatch(/^Today · \d+ of \d+ done$/);
+  });
+});

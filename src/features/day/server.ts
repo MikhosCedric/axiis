@@ -7,6 +7,7 @@ import { getItemsRepo } from "@/lib/items";
 import { resolveTimeZone, toLocalDate } from "@/lib/dates";
 import { loadDay } from "./load";
 import { loadRailCounts } from "./rail";
+import { trayRows } from "./tray";
 
 export const getTimeZone = cache(async () => resolveTimeZone((await cookies()).get(TZ_COOKIE)?.value));
 
@@ -27,6 +28,12 @@ export const getRailAreas = cache(async () => {
   const repo = await getItemsRepo();
   const [areas, open] = await Promise.all([getAreas(), loadRailCounts(repo, await getTodayDate(), await getTimeZone())]);
   return areas.map((a) => ({ id: a.id, name: a.name, color: a.color, open: open.get(a.id) ?? 0 }));
+});
+
+/** The lines the desktop tray shows for today. Only asked for in the desktop shell, and the page loads the same day, so it is one read. */
+export const getTrayRows = cache(async () => {
+  const [today, timeZone, clock] = await Promise.all([getTodayDate(), getTimeZone(), getClock()]);
+  return trayRows((await getDay(today)).view, today, getNow(), timeZone, clock);
 });
 
 const DAY_MS = 86_400_000;

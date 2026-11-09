@@ -9,20 +9,24 @@ import { TimeZoneSync } from "@/components/shell/time-zone-sync";
 import { undoDeletionAction } from "@/features/account/actions";
 import { DeletionBanner } from "@/features/account/deletion-banner";
 import { getDeletionDay } from "@/features/account/deletion-day";
-import { getRailAreas, getRailBadges, getTodayDate } from "@/features/day/server";
+import { getRailAreas, getRailBadges, getTodayDate, getTrayRows } from "@/features/day/server";
 import { QuickIconSprite } from "@/features/actions/icon-sprite";
 import { QuickActionsProvider } from "@/features/actions/provider";
 import { PaletteProvider } from "@/features/palette/palette";
 import { getOutboxOwner } from "@/lib/account";
 
 export default async function AppLayout({ children }: { children: ReactNode }) {
-  const min = readRailMin((await cookies()).get(RAIL_COOKIE)?.value);
-  const [today, areas, deletesOn, badges, owner] = await Promise.all([
+  const jar = await cookies();
+  const min = readRailMin(jar.get(RAIL_COOKIE)?.value);
+  // The desktop shell marks its pages with this cookie; only it shows a tray list, so the web pays nothing for one.
+  const desktop = jar.get("axiis_desktop")?.value === "1";
+  const [today, areas, deletesOn, badges, owner, tray] = await Promise.all([
     getTodayDate(),
     getRailAreas(),
     getDeletionDay(),
     getRailBadges(),
     getOutboxOwner(),
+    desktop ? getTrayRows() : Promise.resolve([]),
   ]);
 
   return (
@@ -31,9 +35,10 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
       <QuickActionsProvider today={today} areas={areas}>
       <div
         id="app-shell"
-        // The desktop shell reads these two numbers for the taskbar badge; nothing else uses them.
+        // The desktop shell reads these for the taskbar badge and the tray list; nothing else uses them.
         data-inbox={badges.inbox}
         data-overdue={badges.overdue}
+        data-tray={tray.length > 0 ? JSON.stringify(tray) : undefined}
         style={{ "--rail-w": min ? "64px" : "216px" } as React.CSSProperties}
         className="min-h-dvh rail:grid rail:grid-cols-[var(--rail-w,216px)_minmax(0,1fr)] motion-safe:rail:transition-[grid-template-columns] motion-safe:rail:duration-200"
       >
