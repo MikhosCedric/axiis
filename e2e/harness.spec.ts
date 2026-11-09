@@ -100,6 +100,9 @@ test.describe("score", () => {
   });
 
   test("dragging a repeating item from any time onto an area offers it too", async ({ page }) => {
+    // At 14:00 the drop crosses Work while it has two overlapping items, whose preview adds a row and pushes Home down.
+    await page.goto("/dev/score?at=14:00");
+    await page.evaluate(() => document.fonts.ready);
     const score = page.getByRole("region", { name: "Score" });
     const chip = page.getByRole("button", { name: "Take vitamins, any time, planned, repeats" });
     const home = await center(score.getByText("Home", { exact: true }));

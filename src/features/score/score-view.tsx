@@ -139,6 +139,13 @@ export function ScoreView({
     return layoutScore({ view, areas, date, timeZone, now: nowMinutes, pending, room });
   }, [view, areas, date, timeZone, nowMinutes, preview, landing, room]);
   const { axis, staves } = score;
+  // Where a drop lands is read from the staves as they are without the preview. The preview adds a row to a busy staff
+  // and pushes the ones below it down, so reading the drop from the preview's own layout would trap the pointer in the
+  // staff it just crossed.
+  const settled = useMemo(
+    () => layoutScore({ view, areas, date, timeZone, now: nowMinutes, pending: null, room }).staves,
+    [view, areas, date, timeZone, nowMinutes, room],
+  );
   const examples = useMemo(() => (firstDay ? exampleBeams(areas) : []), [firstDay, areas]);
   const empty = staves.every((s) => s.beams.length === 0);
   const ctx: BeamContext = { date, timeZone, axis, now: nowMinutes, today };
@@ -146,7 +153,7 @@ export function ScoreView({
     { scroller, layer, tray, anyTime: strip, fly },
     {
       ctx,
-      staves,
+      staves: settled,
       labelWidth: () => root.current?.querySelector<HTMLElement>("[data-staff-label]")?.offsetWidth ?? 0,
       onDrop: onPlace,
       onTap: (item) => onSelect(item.id),
