@@ -971,21 +971,18 @@
     animation: rise-bubble var(--t) linear var(--d) infinite;
   }
 
-  .stack {
-    animation: float-sheet 9s ease-in-out infinite alternate;
-  }
-
   .under {
     animation: sway-sheet 11s ease-in-out -4s infinite alternate;
   }
 
-  .movementDemo {
-    animation: float-sheet 10s ease-in-out calc(var(--i, 0) * -3s) infinite alternate;
+  /* Only the paper under a live demo moves; the demo itself holds still, so it can be aimed at. */
+  .movementDemo::after {
+    animation: sway-sheet 8s ease-in-out calc(var(--i, 0) * -3s) infinite alternate;
   }
 
   [data-offscreen] .bubble,
-  .stack[data-offscreen],
-  .movementDemo[data-offscreen] {
+  .movementDemo[data-offscreen]::after,
+  [data-offscreen] .under {
     animation-play-state: paused;
   }
 
