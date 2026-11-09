@@ -123,7 +123,7 @@ async function loop(base) {
     `[tail][head]blend=all_expr='A*(1-(N+0.5)/${X})+B*((N+0.5)/${X})'[x];` +
     `[x][mid]concat=n=2:v=1[o];[o]scale=1280:720:flags=lanczos,format=yuv420p[v]`;
   const out = path.join(OUT, "axiis-hero-loop.webm");
-  const common = ["-framerate", String(FPS), "-i", path.join(dir, "f_%05d.png"), "-filter_complex", fc, "-map", "[v]", "-c:v", "libvpx-vp9", "-b:v", "0", "-crf", process.env.VP9_CRF || "16", "-row-mt", "1", "-deadline", "good", "-cpu-used", "1", "-an"];
+  const common = ["-framerate", String(FPS), "-i", path.join(dir, "f_%05d.png"), "-filter_complex", fc, "-map", "[v]", "-c:v", "libvpx-vp9", "-b:v", "0", "-crf", process.env.VP9_CRF || "24", "-row-mt", "1", "-deadline", "good", "-cpu-used", "1", "-an"];
   const log = path.join(FRAMES, "vp9pass");
   ff([...common, "-pass", "1", "-passlogfile", log, "-f", "webm", process.platform === "win32" ? "NUL" : "/dev/null"]);
   ff([...common, "-pass", "2", "-passlogfile", log, out]);

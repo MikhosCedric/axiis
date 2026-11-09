@@ -69,6 +69,17 @@
   }
   /** 0 → 1 → 0 bump between a and b. */
   const bump = (t, a, b) => (t <= a || t >= b ? 0 : Math.sin(((t - a) / (b - a)) * Math.PI));
+  /** A pop at t0: scale 1, overshoots to about 1 + 0.56 a, settles back to 1. */
+  const pop = (t, t0, a = 0.1, f = 2.6) => {
+    const x = t - t0;
+    return x <= 0 ? 1 : 1 + a * Math.exp(-6 * x) * Math.sin(2 * Math.PI * f * x);
+  };
+  const wrap = (v, lo, hi) => {
+    const w = hi - lo;
+    return lo + ((((v - lo) % w) + w) % w);
+  };
+  /* A second seeded PRNG for the life layer, so the first one's sequence (typing, the month's items) is unchanged. */
+  const rnd2 = mulberry32(4242);
 
   function h(tag, cls, parent, text) {
     const e = document.createElement(tag);
@@ -180,6 +191,7 @@
       hdl: h("div", "hd hd-live", g),
       hdd: h("div", "hd hd-done", g),
     };
+    G.sh = h("div", "bm-sheen", G.live);
     return G;
   }
   const ST = { planned: { plan: 1 }, live: { live: 1 }, done: { done: 1 } };
@@ -191,7 +203,9 @@
     S(G.out, { opacity: done.toFixed(3) });
     S(G.hd, { opacity: (1 - done).toFixed(3) });
     S(G.hdl, { opacity: (live * (1 - sweep) * (1 - done)).toFixed(3) });
-    S(G.hdd, { opacity: done.toFixed(3), transform: `scale(${(0.55 + 0.45 * done).toFixed(3)})` });
+    S(G.hdd, { opacity: done.toFixed(3), transform: `scale(${(st.doneS ?? 0.55 + 0.45 * done).toFixed(3)})` });
+    const shn = st.sheen || 0;
+    S(G.sh, { opacity: shn > 0 && shn < 1 ? "1" : "0", transform: `translateX(${lerp(-110, 240, shn).toFixed(1)}%)` });
     if (G.type === "event") S(G.g, { color: done > 0.5 ? "var(--ink-3)" : live > 0.5 ? "var(--accent)" : "var(--ink)" });
   }
 
@@ -199,6 +213,7 @@
     if (!GRAIN) return;
     const g = h("div", "grain", parent);
     g.style.backgroundImage = `url(${GRAIN_URL})`;
+    return g;
   }
   let GRAIN_URL = "";
   function makeGrain() {
@@ -216,30 +231,156 @@
   }
 
   /** Loose fragments of the score floating behind a scene, at a few depths. */
-  function buildDrift(scene, spec) {
+  /*
+   * The life layer behind a scene, back to front: a faint hour grid, translucent paper bubbles rising at three
+   * depths (screen space, wrapped, so a pan never runs out of them), then the loose fragments of the score and a few
+   * product forms (glyphs, a chip, key caps) that drift and bob. All of it sits behind the world, so it never covers UI.
+   */
+  function buildDrift(scene, spec, life = {}) {
+    const back = h("div", "a", scene);
+    S(back, { inset: "0" });
+    const grid = h("div", "hgrid", back);
+    const bubbles = [];
+    const depths = life.bubbles ?? [
+      { f: 0.16, n: 10, r: [5, 13], op: 0.7, blur: 0.4, v: [9, 16] },
+      { f: 0.4, n: 8, r: [14, 28], op: 0.75, blur: 0, v: [16, 26] },
+      { f: 0.78, n: 4, r: [38, 66], op: 0.5, blur: 1.6, v: [26, 38] },
+    ];
+    depths.forEach((D) => {
+      for (let i = 0; i < D.n; i++) {
+        const rad = lerp(D.r[0], D.r[1], rnd2());
+        const e = h("div", "bub", back);
+        S(e, { width: px(rad * 2), height: px(rad * 2), opacity: String(D.op), filter: blurF(D.blur) });
+        bubbles.push({ e, f: D.f, rad, x0: rnd2() * 2220, y0: rnd2() * 1380, v: lerp(D.v[0], D.v[1], rnd2()), ph: rnd2() * 6.283, sw: 8 + rnd2() * 16 });
+      }
+    });
+    if (life.forms) {
+      const forms = ["gsolid", "gdash", "ghollow", "chip", "key", "gdash", "ghollow", "key"];
+      const [x0, x1, y0, y1] = life.forms.region;
+      const pieces = [];
+      for (let i = 0; i < life.forms.n; i++) {
+        const form = forms[i % forms.length];
+        pieces.push({ form, x: lerp(x0, x1, rnd2()), y: lerp(y0, y1, rnd2()), w: form.startsWith("g") ? 70 + rnd2() * 70 : form === "chip" ? 150 + rnd2() * 60 : null, txt: form === "key" ? ["C", "A", "Ctrl", "Enter"][i % 4] : null });
+      }
+      spec = spec.concat([{ f: life.forms.f ?? 0.5, op: life.forms.op ?? 0.3, pieces, life: true }]);
+    }
     const layers = spec.map((L) => {
       const el = h("div", "world", scene);
       const pieces = L.pieces.map((p) => {
         const e = h("div", "piece p-" + p.form, el);
         place(e, p.x, p.y, p.w);
+        if (p.txt) {
+          e.textContent = p.txt;
+          if (p.txt.length > 1) S(e, { width: px(14 + p.txt.length * 10) });
+        }
         S(e, { opacity: String(L.op) });
-        return { e, p, ph: rnd() * Math.PI * 2, sp: 0.5 + rnd() * 0.5 };
+        const R = L.life ? rnd2 : rnd;
+        return { e, p, ph: R() * Math.PI * 2, sp: 0.5 + R() * 0.5, rot: L.life ? (R() - 0.5) * 8 : 0 };
       });
       return { el, f: L.f, pieces };
     });
-    return {
+    const D = {
+      grain: null,
       update(t, cam) {
+        // the hour grid slides with a slow parallax of its own
+        S(grid, { backgroundPosition: `${(-cam.cx * 0.12 * cam.s - t * 5).toFixed(2)}px 0` });
+        for (const b of bubbles) {
+          const sf = 1 + (cam.s - 1) * b.f;
+          const sx = wrap(b.x0 - cam.cx * b.f * sf + Math.sin(t * 0.45 + b.ph) * b.sw, -150, 2070);
+          const sy = wrap(b.y0 - b.v * t - cam.cy * b.f * sf, -150, 1230);
+          const br = sf * (1 + 0.025 * Math.sin(t * 1.3 + b.ph));
+          S(b.e, { transform: `translate(${(sx - b.rad).toFixed(2)}px,${(sy - b.rad).toFixed(2)}px) scale(${br.toFixed(4)})` });
+        }
         for (const L of layers) {
           const s = 1 + (cam.s - 1) * L.f;
           S(L.el, { transform: `translate(960px,540px) scale(${s.toFixed(4)}) translate(${(-cam.cx * L.f).toFixed(2)}px,${(-cam.cy * L.f).toFixed(2)}px)` });
           for (const q of L.pieces) {
             const by = Math.sin(t * q.sp * 1.6 + q.ph) * 7;
             const bx = Math.cos(t * q.sp * 1.1 + q.ph) * 4;
-            S(q.e, { transform: `translate(${bx.toFixed(2)}px,${by.toFixed(2)}px)` });
+            const rr = q.rot ? q.rot + Math.sin(t * q.sp + q.ph) * 2.5 : 0;
+            S(q.e, { transform: `translate(${bx.toFixed(2)}px,${by.toFixed(2)}px)${rr ? ` rotate(${rr.toFixed(2)}deg)` : ""}` });
           }
+        }
+        // the paper's grain belongs to the paper: it travels with the camera, a little slower
+        if (D.grain) S(D.grain, { backgroundPosition: `${(-cam.cx * cam.s * 0.6).toFixed(1)}px ${(-cam.cy * cam.s * 0.6 - t * 3).toFixed(1)}px` });
+      },
+    };
+    return D;
+  }
+
+  /* ---- micro effects ---- */
+  /** A small burst: a hairline ring and n tiny circles (solid and hollow) radiating from a point, then fading. */
+  function makeBurst(parent, o = {}) {
+    const r = mulberry32(o.seed ?? 5);
+    const n = o.n ?? 8, R = o.R ?? 44, dur = o.dur ?? 0.8;
+    const g = h("div", "burst" + (o.accent ? " acc" : ""), parent);
+    const ring = h("div", "bring", g);
+    const rr = o.ring ?? R * 0.9;
+    S(ring, { width: px(rr * 2), height: px(rr * 2), marginLeft: px(-rr), marginTop: px(-rr) });
+    const dots = [];
+    for (let i = 0; i < n; i++) {
+      const sz = 3.5 + r() * 5;
+      const e = h("div", "bdot" + (i % 3 === 1 ? " hollow" : ""), g);
+      S(e, { width: px(sz), height: px(sz), marginLeft: px(-sz / 2), marginTop: px(-sz / 2) });
+      dots.push({ e, a: (i / n) * Math.PI * 2 + (r() - 0.5) * 0.7 + (o.rot ?? -0.4), d: R * (0.65 + r() * 0.6), lag: r() * 0.08 });
+    }
+    S(g, { visibility: "hidden" });
+    return {
+      el: g,
+      fire(t, t0, x, y, k = 1) {
+        const p = (t - t0) / dur;
+        if (p <= 0 || p >= 1) {
+          S(g, { visibility: "hidden" });
+          return;
+        }
+        S(g, { visibility: "visible", left: px(x), top: px(y), transform: `scale(${k})` });
+        const pr = E.expo(clamp(p * 1.15));
+        S(ring, { opacity: (0.8 * Math.pow(1 - p, 1.6)).toFixed(3), transform: `scale(${(0.25 + 0.85 * pr).toFixed(4)})` });
+        for (const d of dots) {
+          const q = clamp((p - d.lag) / (1 - d.lag));
+          const e = E.expo(q);
+          S(d.e, {
+            opacity: (q > 0 ? 0.85 * Math.pow(1 - q, 1.3) : 0).toFixed(3),
+            transform: `translate(${(Math.cos(d.a) * d.d * e).toFixed(2)}px,${(Math.sin(d.a) * d.d * e - q * 6).toFixed(2)}px) scale(${(1 - 0.6 * q).toFixed(3)})`,
+          });
         }
       },
     };
+  }
+
+  /* Motion blur for camera moves: a directional SVG Gaussian applied to the whole scene, sized by camera speed. */
+  const SVGNS = "http://www.w3.org/2000/svg";
+  const defs = document.createElementNS(SVGNS, "svg");
+  defs.setAttribute("width", "0");
+  defs.setAttribute("height", "0");
+  defs.style.position = "absolute";
+  stage.appendChild(defs);
+  function mblur(id) {
+    const f = document.createElementNS(SVGNS, "filter");
+    f.id = id;
+    f.setAttribute("x", "-2%"); f.setAttribute("y", "-2%"); f.setAttribute("width", "104%"); f.setAttribute("height", "104%");
+    f.setAttribute("color-interpolation-filters", "sRGB");
+    const fe = document.createElementNS(SVGNS, "feGaussianBlur");
+    fe.setAttribute("edgeMode", "duplicate");
+    f.appendChild(fe);
+    defs.appendChild(f);
+    let last = "";
+    return (el, bx, by) => {
+      bx = Math.min(4.5, bx); by = Math.min(2.5, by);
+      if (bx < 0.4 && by < 0.4) {
+        S(el, { filter: "none" });
+        return;
+      }
+      const v = `${bx.toFixed(1)} ${by.toFixed(1)}`;
+      if (v !== last) { fe.setAttribute("stdDeviation", v); last = v; }
+      S(el, { filter: `url(#${id})` });
+    };
+  }
+  /** Screen speed of a camera at t, in px per frame. */
+  function camSpeed(keys, t) {
+    const a = camAt(keys, t - 1 / 30), b = camAt(keys, t);
+    const zs = Math.abs(b.s - a.s) / b.s;
+    return [Math.abs(b.cx - a.cx) * b.s + zs * 60, Math.abs(b.cy - a.cy) * b.s + zs * 35];
   }
   /** Scatter pieces over a region, seeded. */
   function scatter(n, x0, x1, y0, y1) {
@@ -253,7 +394,16 @@
   }
 
   /* ---- camera ---- */
+  /** The keyed camera plus a slow breath (drift and a hint of zoom), so no shot is ever locked off. */
   function camAt(keys, t) {
+    const c = camKey(keys, t), k = 2 * Math.PI, L = MODE === "loop";
+    return {
+      cx: c.cx + 5 * Math.sin((k * t) / (L ? 9.6 : 7.4)),
+      cy: c.cy + 3.5 * Math.sin((k * t) / (L ? 4.8 : 9.2) + 1.3),
+      s: c.s * (1 + 0.0045 * Math.sin((k * t) / (L ? 9.6 : 11.5) + 0.6)),
+    };
+  }
+  function camKey(keys, t) {
     if (t <= keys[0].t) return keys[0];
     for (let i = 1; i < keys.length; i++) {
       const b = keys[i];
@@ -278,11 +428,12 @@
       '<svg viewBox="0 0 24 32" width="34" height="46"><path d="M2.2 2.2 L2.2 25.6 L8 20.2 L12.3 29.6 L16.6 27.7 L12.4 18.5 L20.2 18.5 Z" fill="#fcfcf9" stroke="#14151b" stroke-width="1.7" stroke-linejoin="round"/></svg>';
     return d;
   })();
-  const rippleEl = (() => {
+  const mkRipple = (w) => {
     const r = h("div", "a", stage);
-    S(r, { width: "60px", height: "60px", marginLeft: "-30px", marginTop: "-30px", borderRadius: "50%", border: "2px solid rgb(90 92 102 / 0.55)", zIndex: 49, opacity: 0 });
+    S(r, { width: "60px", height: "60px", marginLeft: "-30px", marginTop: "-30px", borderRadius: "50%", border: `${w}px solid rgb(90 92 102 / 0.55)`, boxSizing: "border-box", zIndex: 49, opacity: 0 });
     return r;
-  })();
+  };
+  const rippleEl = mkRipple(2), rippleEl2 = mkRipple(1.25);
   let cursorState = null;
   function cursor(x, y, op = 1, press = 0, ripple = null) {
     cursorState = { x, y, op, press, ripple };
@@ -292,12 +443,21 @@
     if (!c || c.op <= 0.001) {
       S(cursorEl, { opacity: 0, visibility: "hidden" });
       S(rippleEl, { opacity: 0 });
+      S(rippleEl2, { opacity: 0 });
       return;
     }
-    S(cursorEl, { opacity: c.op.toFixed(3), visibility: "visible", transform: `translate(${(c.x - 3).toFixed(2)}px,${(c.y - 3).toFixed(2)}px) scale(${(1 - 0.14 * c.press).toFixed(3)})` });
-    if (c.ripple != null && c.ripple > 0 && c.ripple < 1) {
-      S(rippleEl, { left: px(c.x), top: px(c.y), opacity: ((1 - c.ripple) * 0.9).toFixed(3), transform: `scale(${(0.2 + c.ripple * 0.9).toFixed(3)})` });
-    } else S(rippleEl, { opacity: 0 });
+    // a click squishes the arrow a little (wider, shorter), then it springs back
+    const sq = c.press;
+    S(cursorEl, { opacity: c.op.toFixed(3), visibility: "visible", transform: `translate(${(c.x - 3).toFixed(2)}px,${(c.y - 3).toFixed(2)}px) scale(${(1 - 0.06 * sq).toFixed(3)},${(1 - 0.17 * sq).toFixed(3)})` });
+    // two rings from the click point, the second a beat behind and wider
+    const ring = (el, p, s0, s1, a) => {
+      if (p != null && p > 0 && p < 1) {
+        const e = E.expo(p);
+        S(el, { left: px(c.x), top: px(c.y), opacity: (Math.pow(1 - p, 1.4) * a).toFixed(3), transform: `scale(${(s0 + e * s1).toFixed(3)})` });
+      } else S(el, { opacity: 0 });
+    };
+    ring(rippleEl, c.ripple, 0.2, 0.85, 0.9);
+    ring(rippleEl2, c.ripple != null ? (c.ripple - 0.14) / 0.86 : null, 0.3, 1.5, 0.55);
   }
   /** Press amount and ripple for a click at tc. */
   const click = (t, tc) => ({ press: bump(t, tc - 0.06, tc + 0.18), ripple: t > tc ? (t - tc) / 0.5 : null });
@@ -404,10 +564,17 @@
     const drift = buildDrift(scene, [
       { f: 0.35, op: 0.22, pieces: scatter(16, -500, 1500, -300, 900) },
       { f: 0.62, op: 0.32, pieces: scatter(14, -300, 2500, -250, 1050) },
-    ]);
+    ], { forms: { n: 9, region: [-200, 2600, -150, 1100], f: 0.5, op: 0.26 } });
     const world = h("div", "world", scene);
-    grain(scene);
-    const A = { scene, world, drift };
+    drift.grain = grain(scene);
+    const A = { scene, world, drift, mb: mblur("mbA") };
+    // a long, faint staff under the whole page that draws itself ahead of the pan into the day
+    A.guide = Array.from({ length: 5 }, (_, i) => {
+      const e = h("div", "a", world);
+      place(e, 1060, 1046 + i * 9, 2560, 1);
+      S(e, { background: "var(--rule-soft)", transformOrigin: "left" });
+      return e;
+    });
 
     // titles, printed on the page
     A.t1a = kline(world, [{ text: "Write it down now." }], 140, 368, 92);
@@ -496,6 +663,11 @@
     A.chipG = glyph(A.chip, "task", 16, 44);
     setG(A.chipG, ST.planned);
     A.chipTxt = h("span", null, A.chip, TYPED);
+    // bursts: the capture lands in the Inbox, the chip drops on the day, the item is done
+    A.bLand = makeBurst(world, { n: 7, R: 40, seed: 3 });
+    A.bDrop = makeBurst(world, { n: 9, R: 52, seed: 8, accent: true });
+    A.bDone = makeBurst(world, { n: 10, R: 56, seed: 12, dur: 0.9 });
+    S(A.count, { transformOrigin: "70% 50%" });
     return A;
   }
 
@@ -524,7 +696,8 @@
       { t: 6.75, cx: 2072, cy: 560, s: 0.92, e: E.cam },
       { t: 12.45, cx: 2085, cy: 575, s: 0.965, e: E.lin },
       { t: 14.1, cx: 2960, cy: 540, s: 1.28, e: E.cam },
-      { t: 18, cx: 2985, cy: 545, s: 1.33, e: E.lin },
+      { t: 17.2, cx: 2982, cy: 544, s: 1.325, e: E.lin },
+      // the dive: a whip back to the done vet item and into it; the next scene opens out of its head (keyed in assemble)
     ],
   };
   const TL = {
@@ -550,12 +723,16 @@
     const cam = camAt(T.cam, t);
     applyCam(A.world, cam);
     A.drift.update(t, cam);
+    const [vx, vy] = camSpeed(T.cam, t);
+    A.mb(A.scene, vx * 0.12, vy * 0.12);
 
     // ---- the C key and the field
     appear(A.key, t, T.keyC - 0.35, T.keyOut, { dy: 14, blur: 8, dur: 0.5 });
     appear(A.keyLbl, t, T.keyC - 0.25, T.keyOut, { dy: 10, blur: 6, dur: 0.5 });
     const kp = bump(t, T.keyC, T.keyC + 0.22);
-    S(A.key, { boxShadow: `0 ${(3 - 2.5 * kp).toFixed(2)}px 0 var(--rule), 0 8px 16px -8px rgb(14 12 10 / 0.3)`, translate: `0 ${(kp * 2.5).toFixed(2)}px` });
+    S(A.key, { boxShadow: `0 ${(3 - 2.5 * kp).toFixed(2)}px 0 var(--rule), 0 8px 16px -8px rgb(14 12 10 / 0.3)`, translate: `0 ${(kp * 2.5).toFixed(2)}px`, scale: (pop(t, T.keyC - 0.35, 0.12) * pop(t, T.keyC + 0.16, 0.1)).toFixed(4) });
+    // the faint staff under the page draws ahead of the pan
+    A.guide.forEach((e, i) => S(e, { transform: `scaleX(${P(t, T.sheetIn - 0.3 + i * 0.07, T.sheetIn + 1.3 + i * 0.07, E.wipe).toFixed(4)})` }));
     const foc = P(t, T.focus, T.focus + 0.35) * (1 - P(t, T.send + 0.1, T.send + 0.6));
     S(A.capRing, { opacity: foc.toFixed(3), transform: `scale(${(1.02 - 0.02 * foc).toFixed(4)})` });
     let n = 0;
@@ -568,7 +745,7 @@
     const caretOn = foc > 0.5 && (typing || Math.floor((t - T.focus) * 2) % 2 === 0);
     S(A.caret, { opacity: caretOn ? 1 : 0 });
     const ep = bump(t, T.enter, T.enter + 0.2);
-    S(A.enter, { translate: `0 ${(ep * 2.5).toFixed(2)}px`, boxShadow: `0 ${(3 - 2.5 * ep).toFixed(2)}px 0 var(--rule)` });
+    S(A.enter, { translate: `0 ${(ep * 2.5).toFixed(2)}px`, boxShadow: `0 ${(3 - 2.5 * ep).toFixed(2)}px 0 var(--rule)`, scale: pop(t, T.enter + 0.12, 0.12).toFixed(4) });
 
     // ---- the chip: from the field into the inbox, then dragged onto the day
     const rowX = INBOX.x + 28 - 18, rowY = INBOX.y + ROW0; // chip top-left when it sits as the inbox's first row
@@ -603,6 +780,8 @@
       A._tilt = Math.sin(dp * Math.PI) * -2.2 * (1 - P(t, T.drag1 - 0.15, T.drag1));
     }
     const tilt = drag ? A._tilt || 0 : 0;
+    if (!drag) cs *= pop(t, T.land - 0.04, 0.11);
+    A.bLand.fire(t, T.land - 0.02, rowX + 18 + 8, rowY + 27);
     S(A.chip, {
       transform: `translate(${cx.toFixed(2)}px,${cy.toFixed(2)}px) scale(${cs.toFixed(4)}) rotate(${tilt.toFixed(3)}deg)`,
       opacity: op.toFixed(3),
@@ -623,6 +802,7 @@
     });
     const cnt = t >= T.land && t < T.grab + 0.3 ? "4" : "3";
     if (A.count.textContent !== cnt) A.count.textContent = cnt;
+    S(A.count, { scale: (pop(t, T.land, 0.32, 2.2) * pop(t, T.grab + 0.3, 0.22, 2.2)).toFixed(4) });
 
     // ---- the sheet rules itself in
     const sh = A.sh;
@@ -666,8 +846,15 @@
     const sweep = P(t, T.click + 0.05, T.click + 0.5);
     const sweepOut = P(t, T.click + 0.45, T.click + 0.75);
     const done = P(t, T.click + 0.42, T.click + 0.8);
-    const vst = { plan: 1, live, sweep, sweepOut, done };
+    // a sheen runs along the beam once it is live; the done head springs in with a small overshoot
+    const sheen = P(t, tc + 0.4, tc + 1.15, E.io);
+    const doneS = t < T.click + 0.42 ? 0.55 : 0.55 + 0.45 * spring(t, T.click + 0.42, 2.4, 0.42);
+    const vst = { plan: 1, live, sweep, sweepOut, done, sheen, doneS };
     setG(vet.G, vst);
+    S(vet.G.g, { scale: (pop(t, T.click + 0.02, 0.08) * pop(t, tc, 0.06)).toFixed(4) });
+    const vhx = sh.x + sh.lx(VET.s) + 9, vhy = sh.y + sh.ly(1);
+    A.bDrop.fire(t, T.drop + 0.04, vhx, vhy);
+    A.bDone.fire(t, T.click + 0.4, vhx, vhy);
     S(vet.lbl, { fontWeight: String(Math.round(500 + 200 * live * (1 - done))), color: `color-mix(in oklab, var(--ink) ${(100 - done * 100).toFixed(1)}%, var(--ink-2))` });
 
     // ---- now
@@ -753,10 +940,10 @@
 
   function buildSceneB() {
     const scene = h("div", "scene", stage);
-    const drift = buildDrift(scene, [{ f: 0.4, op: 0.2, pieces: scatter(14, -200, 2100, -100, 1200) }]);
+    const drift = buildDrift(scene, [{ f: 0.4, op: 0.2, pieces: scatter(14, -200, 2100, -100, 1200) }], { forms: { n: 6, region: [-100, 2000, -50, 1150], f: 0.55, op: 0.24 } });
     const world = h("div", "world", scene);
-    grain(scene);
-    const B = { scene, world, drift };
+    drift.grain = grain(scene);
+    const B = { scene, world, drift, mb: mblur("mbB") };
     B.t4a = kline(world, [{ text: "Everything " }, { text: "connects.", cls: "ink3" }], 140, 92, 80);
     B.t4b = kline(world, [{ text: "One item. " }, { text: "Every view.", cls: "ink3" }], 140, 92, 80);
     B.panel = h("div", "panel", world);
@@ -852,6 +1039,7 @@
     S(B.dot, { width: "12px", height: "12px", marginLeft: "-6px", marginTop: "-6px", borderRadius: "50%", background: "var(--ink-2)" });
     B.focus = h("div", "a", B.panel);
     S(B.focus, { borderRadius: "9px", border: "2px solid var(--accent)", boxSizing: "border-box" });
+    B.bLink = makeBurst(world, { n: 7, R: 34, seed: 21 });
     return B;
   }
   function mkMv(parent, it) {
@@ -904,10 +1092,12 @@
   }
 
   const TB = {
-    t4: 18.12, t4out: 21.1, t4b: 21.55, t4bout: 25.35, focus: 18.7, note: 18.85, draw0: 19.35, draw1: 20.15, noteOut: 21.2,
+    t4: 18.4, t4out: 21.1, t4b: 21.55, t4bout: 25.35, focus: 18.7, note: 18.85, draw0: 19.35, draw1: 20.15, noteOut: 21.2,
     expand0: 21.25, expand1: 22.15, toWeek: 22.4, toMonth: 23.85, wipe: 25.7,
+    open0: 17.72, open1: 18.32, // the circle that opens out of the vet item's head
     cam: [
-      { t: 18, cx: 960, cy: 540, s: 1.035 },
+      // first key (17.72, on the vet item, close) is set in assemble
+      { t: 19.0, cx: 960, cy: 540, s: 1.03, e: bez(0.25, 0.6, 0.2, 1) },
       { t: 21.2, cx: 960, cy: 540, s: 1.0, e: E.lin },
       { t: 22.3, cx: 960, cy: 550, s: 0.985, e: E.cam },
       { t: 26.4, cx: 960, cy: 545, s: 1.02, e: E.lin },
@@ -919,6 +1109,8 @@
     const cam = camAt(T.cam, t);
     applyCam(B.world, cam);
     B.drift.update(t, cam);
+    const [vx, vy] = camSpeed(T.cam, t);
+    B.vel = [vx * 0.12, vy * 0.12];
     kin(B.t4a, t, T.t4, T.t4out, { part: 0 });
     kin(B.t4a, t, T.t4 + 0.2, T.t4out, { part: 1 });
     kin(B.t4b, t, T.t4b, T.t4bout, { part: 0 });
@@ -937,8 +1129,10 @@
     });
     S(B.sub, { left: "190px", top: "42px", opacity: wT.toFixed(3) });
     place(B.seg, L.w - 36 - 298, 26);
-    S(B.pill, { left: px(4 + 96 * (pW + pM)) });
-    B.tabs.forEach((s, i) => S(s, { color: Math.round(pW + pM) === i ? "var(--ink)" : "var(--ink-3)" }));
+    // the pill springs to the new tab (a few px past, then back); the chosen label pops
+    const pp = spring(t, T.toWeek - 0.02, 2.0, 0.55) + spring(t, T.toMonth - 0.02, 2.0, 0.55);
+    S(B.pill, { left: px(4 + 96 * pp), scale: (pop(t, T.toWeek, 0.08) * pop(t, T.toMonth, 0.08)).toFixed(4) });
+    B.tabs.forEach((s, i) => S(s, { color: Math.round(pW + pM) === i ? "var(--ink)" : "var(--ink-3)", scale: (i === 1 ? pop(t, T.toWeek + 0.02, 0.14) : i === 2 ? pop(t, T.toMonth + 0.02, 0.14) : 1).toFixed(4) }));
 
     // today backdrop
     const x0 = 36 + 150, tw = L.w - 72 - 150, pxh = tw / (H1 - H0), staffH = (L.h - 110 - 24) / 3;
@@ -967,7 +1161,7 @@
     B.mH.forEach((e, i) => place(e, 36, 146 + i * mch, L.w - 72));
     B.mNums.forEach((n) => place(n.e, 36 + n.c * mcw + 10, 146 + n.r * mch + 7));
     place(B.mMore, 36 + 1 * mcw + mcw - 64, 146 + 2 * mch + 9);
-    S(B.mMore, { opacity: P(t, T.toMonth + 0.5, T.toMonth + 1.0).toFixed(3) });
+    S(B.mMore, { opacity: P(t, T.toMonth + 0.5, T.toMonth + 0.8).toFixed(3), scale: pop(t, T.toMonth + 0.5, 0.25).toFixed(4) });
 
     // items (positions are panel-local; layouts use R at origin)
     const R0 = { x: 0, y: 0, w: L.w, h: L.h };
@@ -1008,7 +1202,7 @@
     const vL = layT(R0, vetM.it);
     const fo = P(t, T.focus, T.focus + 0.4) * (1 - P(t, T.noteOut - 0.2, T.noteOut + 0.2));
     place(B.focus, vL.x - 10, vL.y - 8, 330, vL.fs * 1.2 + 8 + vL.gh + 18);
-    S(B.focus, { opacity: fo.toFixed(3) });
+    S(B.focus, { opacity: fo.toFixed(3), transform: `scale(${(lerp(1.06, 1, spring(t, T.focus, 2.2, 0.5)) ).toFixed(4)})` });
     const nIn = P(t, T.note, T.note + 0.9, E.ax);
     const nOut = P(t, T.noteOut, T.noteOut + 0.5, E.exit);
     S(B.note, {
@@ -1031,7 +1225,8 @@
     place(B.dot, ax0, ay0);
     S(B.dot, { opacity: (P(t, T.draw0 - 0.1, T.draw0 + 0.1) * (1 - nOut)).toFixed(3) });
     const pulse = bump(t, T.draw1 - 0.05, T.draw1 + 0.45);
-    S(B.link, { background: `color-mix(in oklab, var(--hover), var(--accent-wash) ${(pulse * 100).toFixed(1)}%)` });
+    S(B.link, { background: `color-mix(in oklab, var(--hover), var(--accent-wash) ${(pulse * 100).toFixed(1)}%)`, scale: pop(t, T.draw1 - 0.02, 0.07).toFixed(4) });
+    B.bLink.fire(t, T.draw1 - 0.04, bx + 6, by);
 
     // ---- the hand switches views
     const tabPt = (i) => toScreen(cam, R.x + L.w - 36 - 298 + 4 + 96 * i + 48, R.y + 26 + 24);
@@ -1067,12 +1262,16 @@
     // a wallpaper: the night paper with one large faint staff running through it
     const wall = h("div", "a", scene);
     S(wall, { inset: "0", background: "radial-gradient(80% 70% at 30% 10%, rgb(71 211 184 / 0.05), transparent 60%), var(--paper-2)" });
-    const drift = buildDrift(scene, [{ f: 0.3, op: 0.16, pieces: scatter(16, -200, 2100, -100, 1100) }]);
+    const drift = buildDrift(scene, [{ f: 0.3, op: 0.16, pieces: scatter(16, -200, 2100, -100, 1100) }], { forms: { n: 5, region: [1300, 2000, -50, 1000], f: 0.45, op: 0.2 } });
     const big = h("div", "a", scene);
     S(big, { left: "-100px", right: "-100px", top: "640px", height: "180px", background: "repeating-linear-gradient(to bottom, rgb(236 235 230 / 0.05) 0 2px, transparent 2px 44px)" });
     const world = h("div", "world", scene);
-    grain(scene);
-    const C = { scene, world, drift };
+    drift.grain = grain(scene);
+    const C = { scene, world, drift, mb: mblur("mbC") };
+    // a hairline under the captions that rules itself in with each new line
+    C.capRule = h("div", "a", world);
+    place(C.capRule, 1432, 432, 380, 1);
+    S(C.capRule, { background: "var(--rule)" });
     C.t5 = kline(world, [{ text: "On the desktop, " }], 1430, 110, 64);
     C.t5b = kline(world, [{ text: "too.", cls: "ink3" }], 1430, 110 + 66, 64);
     C.subs = [
@@ -1195,6 +1394,10 @@
     const fg = glyph(C.fly, "task", 14, 38);
     setG(fg, ST.planned);
     h("span", null, C.fly, "Pick up the prescription");
+    C.bEnter = makeBurst(world, { n: 8, R: 44, seed: 31 });
+    C.bInbox = makeBurst(world, { n: 7, R: 36, seed: 32 });
+    C.bWifi = makeBurst(scene, { n: 0, ring: 22, seed: 33, dur: 0.9 });
+    C.bOnline = makeBurst(scene, { n: 0, ring: 22, seed: 34, dur: 0.9, accent: true });
     return C;
   }
   const QTEXT = "Pick up the prescription";
@@ -1204,8 +1407,9 @@
     toast: 29.2, toastOut: 30.45, offline: 30.45, keys: 30.85, qc: 31.05, qType: 31.25, qEnter: 32.15, outbox: 32.3,
     online: 32.85, flyIn: 33.0, wipe2: 33.55, end: 34.25,
     cam: [
-      { t: 25.7, cx: 960, cy: 540, s: 1.04 },
-      { t: 27.2, cx: 960, cy: 540, s: 1.0, e: E.cam },
+      // the desktop slides in behind the passing now line, in the same direction, and settles
+      { t: 25.7, cx: 1150, cy: 540, s: 1.05 },
+      { t: 27.2, cx: 960, cy: 540, s: 1.0, e: bez(0.2, 0.7, 0.25, 1) },
       { t: 34.3, cx: 975, cy: 548, s: 1.03, e: E.lin },
     ],
   };
@@ -1216,6 +1420,8 @@
     const cam = camAt(T.cam, t);
     applyCam(C.world, cam);
     C.drift.update(t, cam);
+    const [vx, vy] = camSpeed(T.cam, t);
+    C.mb(C.scene, vx * 0.12, vy * 0.12);
     kin(C.t5, t, T.t5, null);
     kin(C.t5b, t, T.t5 + 0.25, null);
     C.subs.forEach(([a, b], i) => {
@@ -1225,30 +1431,61 @@
     });
     appear(C.win, t, T.wipe0 - 0.2, null, { dy: 30, blur: 0, dur: 1.2, s0: 0.97 });
 
-    // tray menu
-    const mo = spring(t, T.trayClick + 0.02, 2.6, 0.7);
-    const mc = P(t, T.menuClose, T.menuClose + 0.18, E.exit);
-    const mop = clamp(P(t, T.trayClick, T.trayClick + 0.12, E.lin) * (1 - mc));
-    S(C.menu, { opacity: mop.toFixed(3), visibility: mop > 0.001 ? "visible" : "hidden", transform: `translateY(${((1 - mo) * 14).toFixed(2)}px) scale(${(0.97 + 0.03 * mo).toFixed(4)})` });
-    const hv = t < 28.2 ? 1 : t < 28.6 ? 2 : 3;
-    const hy = 6 + [0, 0, 38, 76, 114][hv];
-    S(C.hov, { top: px(hy), opacity: P(t, 27.95, 28.05, E.lin).toFixed(3) });
-    S(C.trayIcon, { background: mop > 0.01 ? `rgb(236 235 230 / ${(0.1 * mop).toFixed(3)})` : "transparent" });
+    // the caption rule: draws in from the left with each line, leaves to the right
+    let rl = 0, rr = 1;
+    T.sub.forEach(([ti, to], i) => {
+      if (t >= ti - 0.05 && (i === 3 || t < to + 0.3)) {
+        rr = 1 - P(t, ti - 0.05, ti + 0.55, E.wipe);
+        rl = i === 3 ? 0 : P(t, to - 0.05, to + 0.3, E.exit);
+      }
+    });
+    S(C.capRule, { clipPath: `inset(0 ${(rr * 100).toFixed(2)}% 0 ${(rl * 100).toFixed(2)}%)` });
 
-    // reminder
-    const ti = P(t, T.toast, T.toast + 0.7, E.ax), to = P(t, T.toastOut, T.toastOut + 0.4, E.exit);
-    S(C.toast, { transform: `translateX(${((1 - ti) * 440 + to * 440).toFixed(2)}px)`, opacity: (ti * (1 - to)).toFixed(3), visibility: ti * (1 - to) > 0.001 ? "visible" : "hidden" });
+    // tray menu: springs up out of the tray, and folds back into it when it closes
+    const mo = spring(t, T.trayClick + 0.02, 2.6, 0.62);
+    const mc = P(t, T.menuClose, T.menuClose + 0.26, E.exit);
+    const mop = clamp(P(t, T.trayClick, T.trayClick + 0.12, E.lin) * (1 - mc));
+    S(C.menu, { opacity: mop.toFixed(3), visibility: mop > 0.001 ? "visible" : "hidden", transform: `translateY(${((1 - mo) * 14 + mc * 16).toFixed(2)}px) scale(${((0.97 + 0.03 * mo) * (1 - 0.08 * mc)).toFixed(4)})` });
+    // the hover follows the hand down the timed items (the hand stays at the right end of the rows, clear of the text)
+    const hv = t < 28.55 ? 2 : 3;
+    const hy = 6 + [0, 0, 38, 76, 114][hv];
+    S(C.hov, { top: px(hy), opacity: (P(t, 28.08, 28.18, E.lin) * (1 - mc)).toFixed(3) });
+    S(C.trayIcon, { background: mop > 0.01 ? `rgb(236 235 230 / ${(0.1 * mop).toFixed(3)})` : "transparent", scale: (pop(t, T.trayClick, 0.18) * pop(t, T.menuClose + 0.18, 0.14)).toFixed(4) });
+
+    // reminder: slides out of the tray corner on a spring
+    const tsp = spring(t, T.toast, 1.7, 0.6), tiO = P(t, T.toast, T.toast + 0.2, E.lin), to = P(t, T.toastOut, T.toastOut + 0.4, E.exit);
+    S(C.toast, { transform: `translateX(${((1 - tsp) * 440 + to * 440).toFixed(2)}px)`, opacity: (tiO * (1 - to)).toFixed(3), visibility: tiO * (1 - to) > 0.001 ? "visible" : "hidden" });
 
     // offline, capture, back online
     const off = t >= T.offline && t < T.online;
     if (off !== C.offWifi) { C.wifi.innerHTML = ICON.wifi(off); C.offWifi = off; }
+    const sr0 = stage.getBoundingClientRect(), wr = C.wifi.getBoundingClientRect();
+    const wcx = wr.left - sr0.left + wr.width / 2, wcy = wr.top - sr0.top + wr.height / 2;
+    C.bWifi.fire(t, T.offline, wcx, wcy);
+    C.bOnline.fire(t, T.online, wcx, wcy);
+    S(C.wifi, { scale: (pop(t, T.offline, 0.3) * pop(t, T.online, 0.3)).toFixed(4) });
     appear(C.badge, t, T.offline, T.online, { dy: 6, blur: 4, dur: 0.4, outDur: 0.3 });
+    S(C.badge, { scale: pop(t, T.offline + 0.05, 0.2).toFixed(4) });
     C.keys.forEach((k, i) => {
       appear(k, t, T.keys + i * 0.06, T.qEnter - 0.2, { dy: 16, blur: 8, dur: 0.45 });
       const kp = bump(t, T.keys + 0.2 + i * 0.05, T.keys + 0.45 + i * 0.05);
-      S(k, { translate: `0 ${(kp * 3).toFixed(2)}px` });
+      S(k, { translate: `0 ${(kp * 3).toFixed(2)}px`, scale: pop(t, T.keys + 0.3 + i * 0.05, 0.12).toFixed(4) });
     });
-    appear(C.qc, t, T.qc, T.qEnter + 0.05, { dy: 20, blur: 10, dur: 0.5, s0: 0.97, outDur: 0.25, sOut: 0.98 });
+    // the quick capture window springs open; on Enter it drops into the window as the outbox line
+    const qIn = P(t, T.qc, T.qc + 0.5, E.ax), qs = spring(t, T.qc, 2.2, 0.55);
+    const qm = P(t, T.qEnter + 0.02, T.qEnter + 0.42, E.drag);
+    const ob = { x: WIN.x + 252, y: WIN.y + 742, w: 966, h: 58 };
+    const qk = lerp(1, ob.h / 84, qm);
+    const qdx = lerp(0, ob.x - 420, qm), qdy = lerp(0, ob.y + ob.h / 2 - (392 + 42), qm);
+    const qop = qIn * (1 - P(t, T.qEnter + 0.3, T.qEnter + 0.44, E.lin));
+    S(C.qc, {
+      opacity: qop.toFixed(3),
+      visibility: qop > 0.001 ? "visible" : "hidden",
+      transformOrigin: "0 50%",
+      transform: `translate(${qdx.toFixed(2)}px,${(qdy + (1 - qIn) * 20).toFixed(2)}px) scale(${(qk * lerp(0.94, 1, qs)).toFixed(4)})`,
+      filter: blurF((1 - qIn) * 10 + bump(qm, 0, 1) * 1.5),
+    });
+    C.bEnter.fire(t, T.qEnter, 420 + 22 + 8, 392 + 42);
     let n = 0;
     for (const ts of qTimes) if (t >= ts) n++;
     const qtxt = QTEXT.slice(0, n);
@@ -1256,7 +1493,9 @@
     S(C.qPh, { opacity: n ? 0 : 1 });
     S(C.qCaret, { opacity: n < QTEXT.length || Math.floor(t * 2) % 2 === 0 ? 1 : 0 });
     // the outbox line: saved here, then sent
-    appear(C.outbox, t, T.outbox, T.online + 0.25, { dy: 18, blur: 8, dur: 0.6, outDur: 0.35 });
+    appear(C.outbox, t, T.outbox + 0.05, T.online + 0.25, { dy: 0, blur: 6, dur: 0.35, outDur: 0.35 });
+    S(C.outbox, { scale: pop(t, T.outbox + 0.1, 0.05).toFixed(4) });
+    S(C.obG.g, { scale: pop(t, T.online - 0.05, 0.3).toFixed(4) });
     // after it is sent: the capture flies to the Inbox
     const fp = P(t, T.flyIn, T.flyIn + 0.6, bez(0.4, 0, 0.2, 1));
     const fx = lerp(WIN.x + 280, WIN.x + 40, fp), fy = lerp(WIN.y + 748, WIN.y + 44 + 22 + 30 + 4 * 39 + 40, fp) - Math.sin(fp * Math.PI) * 60;
@@ -1266,6 +1505,8 @@
     if (C.inboxN.textContent !== ib) C.inboxN.textContent = ib;
     const ip = bump(t, T.flyIn + 0.5, T.flyIn + 1.0);
     S(C.inboxRow, { background: `rgb(236 235 230 / ${(0.09 * ip).toFixed(3)})` });
+    S(C.inboxN, { display: "inline-block", scale: pop(t, T.flyIn + 0.55, 0.4, 2.2).toFixed(4) });
+    C.bInbox.fire(t, T.flyIn + 0.5, WIN.x + 40 + 22, WIN.y + 44 + 22 + 30 + 4 * 39 + 40 + 18);
 
     // the hand opens the tray
     const [ix, iy] = [1920 - 18 - 0, 0];
@@ -1276,10 +1517,12 @@
     if (t >= T.cursorIn && t < T.menuClose + 0.9) {
       const a = P(t, T.cursorIn, T.trayClick - 0.05, E.ax);
       let x = lerp(tx - 360, tx, a), y = lerp(ty - 380, ty, a);
-      const m1 = P(t, 27.9, 28.25, E.ax), m2 = P(t, 28.3, 28.6, E.ax);
-      const rowX = tx - 210;
-      x = lerp(x, rowX, m1); y = lerp(y, ty - 52 - 8 * 38 + 38 * 1 + 6, m1);
-      y = lerp(y, ty - 52 - 8 * 38 + 38 * 2 + 6, m2);
+      // up the right-hand end of the rows, where the menu has no text, so the hand never covers a line
+      const mr = C.menu.getBoundingClientRect();
+      const rowX = mr.right - sr.left - 50, rowY = (k) => mr.top - sr.top + 6 + 38 * k + 19;
+      const m1 = P(t, 27.85, 28.2, E.ax), m2 = P(t, 28.35, 28.6, E.ax);
+      x = lerp(x, rowX, m1); y = lerp(y, rowY(1), m1);
+      y = lerp(y, rowY(2), m2);
       const away = P(t, T.menuClose - 0.1, T.menuClose + 0.6);
       x -= away * 200; y -= away * 120;
       const c = click(t, T.trayClick);
@@ -1290,9 +1533,15 @@
   /* ================= scene D: the close ================= */
   function buildSceneD() {
     const scene = h("div", "scene", stage);
-    const drift = buildDrift(scene, [{ f: 0.4, op: 0.18, pieces: scatter(12, -200, 2100, -100, 1200).filter((p) => p.y < 200 || p.y > 900) }]);
+    const drift = buildDrift(scene, [{ f: 0.4, op: 0.18, pieces: scatter(12, -200, 2100, -100, 1200).filter((p) => p.y < 200 || p.y > 900) }], {
+      bubbles: [
+        { f: 0.16, n: 9, r: [5, 12], op: 0.6, blur: 0.4, v: [8, 14] },
+        { f: 0.4, n: 6, r: [14, 26], op: 0.6, blur: 0, v: [14, 22] },
+        { f: 0.78, n: 3, r: [40, 64], op: 0.4, blur: 1.6, v: [22, 32] },
+      ],
+    });
     const world = h("div", "world", scene);
-    grain(scene);
+    drift.grain = grain(scene);
     const D = { scene, world, drift };
     // the staff and its final double barline
     D.lines = Array.from({ length: 5 }, (_, i) => {
@@ -1326,10 +1575,13 @@
     S(D.cta, { left: "960px", top: "728px", transformOrigin: "center" });
     D.cap = h("div", "a", world, "Free for now. On the web and on Windows. Export or delete your data anytime.");
     S(D.cap, { left: "960px", top: "846px", fontSize: "21px", color: "var(--ink-3)", whiteSpace: "nowrap" });
+    S(D.cta, { overflow: "hidden" });
+    D.ctaSheen = h("div", "cta-sheen", D.cta);
+    D.bHead = makeBurst(world, { n: 9, R: 70, seed: 41, dur: 0.95 });
     return D;
   }
   const TD = {
-    lines: 34.25, bars: 34.75, mark: 34.75, head: 35.35, word: 35.15, tag: 35.95, cta: 36.45, cap: 36.95,
+    lines: 34.35, bars: 34.75, mark: 34.75, head: 35.35, word: 35.15, tag: 35.95, cta: 36.45, cap: 36.95, sheen: 37.25,
     cam: [
       { t: 33.6, cx: 960, cy: 560, s: 1.1 },
       { t: 37.2, cx: 960, cy: 545, s: 1.0, e: E.ax },
@@ -1342,7 +1594,8 @@
     applyCam(D.world, cam);
     D.drift.update(t, cam);
     D.lines.forEach((e, i) => S(e, { transform: `scaleX(${P(t, T.lines + i * 0.06, T.lines + 1.1 + i * 0.06).toFixed(4)})` }));
-    S(D.bar0, { transform: `scaleY(${P(t, T.lines, T.lines + 0.4).toFixed(4)})` });
+    // the opening barline is the returning now line itself, landed (see render); it hands over as the line settles
+    S(D.bar0, { opacity: P(t, MORPH.t0 + 0.28, MORPH.t1, E.lin).toFixed(3) });
     S(D.thin, { transform: `scaleY(${P(t, T.bars + 0.35, T.bars + 0.75).toFixed(4)})` });
     S(D.thick, { transform: `scaleY(${P(t, T.bars + 0.45, T.bars + 0.85).toFixed(4)})` });
     D.mParts.forEach((p, i) => {
@@ -1353,6 +1606,8 @@
     });
     const hs = spring(t, T.head, 2.4, 0.42);
     D.mHead.setAttribute("transform", `translate(12 20.5) scale(${Math.max(0, hs).toFixed(4)}) translate(-12 -20.5)`);
+    D.bHead.fire(t, T.head + 0.04, parseFloat(D.mark.style.left) + (12 / 32) * 180, 276 + (20.5 / 32) * 180);
+    S(D.ctaSheen, { opacity: t > T.sheen && t < T.sheen + 0.9 ? "1" : "0", transform: `translateX(${lerp(-120, 420, P(t, T.sheen, T.sheen + 0.9, E.io)).toFixed(1)}%) skewX(-18deg)` });
     D.word.words.forEach((w, i) => {
       const a = T.word + i * 0.05;
       const p = P(t, a, a + 0.9, E.ax);
@@ -1366,8 +1621,18 @@
   }
 
   /* ================= wipes: now passes, and the day turns ================= */
+  const wipeWash = h("div", "a", stage);
+  S(wipeWash, { top: "0", height: "1080px", width: "240px", zIndex: 39, opacity: 0 });
   const wipeLine = h("div", "a", stage);
-  S(wipeLine, { top: "0", bottom: "0", width: "4px", marginLeft: "-2px", background: "#47d3b8", zIndex: 40, boxShadow: "6px 0 24px rgb(0 0 0 / 0.25)" });
+  S(wipeLine, { top: "0", height: "1080px", width: "4px", marginLeft: "-2px", background: "#47d3b8", zIndex: 40, boxShadow: "6px 0 24px rgb(0 0 0 / 0.25)" });
+  // the now line carries its flag across the turn to night: the desktop's clock reads 12:50
+  const wipeFlag = h("div", "a tab", wipeLine, "12:50");
+  S(wipeFlag, { left: "50%", top: "56px", transform: "translateX(-50%)", borderRadius: "6px", background: "#47d3b8", color: "#0b1f1b", padding: "7px 10px", fontSize: "18px", fontWeight: 650, lineHeight: "1", whiteSpace: "nowrap" });
+  // a hairline that rides the edge of the circle that opens Connect
+  const openRing = h("div", "a", stage);
+  S(openRing, { borderRadius: "50%", border: "1.5px solid rgb(20 21 27 / 0.3)", boxSizing: "border-box", zIndex: 38, visibility: "hidden" });
+  /* The returning line lands as the close's opening barline: it stops on the staff and shrinks to it. */
+  const MORPH = { t0: 34.12, t1: 34.55 };
 
   /* ================= assemble ================= */
   makeGrain();
@@ -1375,6 +1640,16 @@
   const B = MODE === "film" ? buildSceneB() : null;
   const C = MODE === "film" ? buildSceneC() : null;
   const D = MODE === "film" ? buildSceneD() : null;
+  // the match cut into Connect: A dives into the done vet item; B opens out of the same item, as close, and pulls back
+  const AV = [A.sh.x + A.sh.lx(VET.s) + 9, A.sh.y + A.sh.ly(1)];
+  TF.cam.push({ t: 17.98, cx: AV[0] + 40, cy: AV[1], s: 2.05, e: bez(0.62, 0, 0.3, 1) });
+  let BV = null;
+  if (B) {
+    const R0 = { x: 0, y: 0, w: 1130, h: 770 };
+    const vl = layT(R0, B.items.find((m) => m.it.id === "vet").it);
+    BV = [140 + vl.x + vl.gh / 2, 236 + vl.y + vl.fs * 1.2 + 8 + vl.gh / 2];
+    TB.cam.unshift({ t: TB.open0, cx: BV[0] + 40, cy: BV[1], s: 2.05 }, { t: 18.02, cx: BV[0] + 40, cy: BV[1], s: 2.03, e: E.lin });
+  }
   // centre the close's wordmark once the fonts have laid it out
   function centreClose() {
     if (!D) return;
@@ -1394,28 +1669,74 @@
       flushCursor();
       return;
     }
-    // which scenes are on screen
-    const onA = t < 18, onB = t >= 18 && t < TC.wipe1, onC = t >= TC.wipe0 && t < TC.end, onD = t >= TC.wipe2;
+    // which scenes are on screen (they overlap through each transition)
+    const cEnd = MORPH.t0 + 0.02;
+    const onA = t < TB.open1, onB = t >= TB.open0 && t < TC.wipe1, onC = t >= TC.wipe0 && t < cEnd, onD = t >= TC.wipe2;
     vis(A.scene, onA); vis(B.scene, onB); vis(C.scene, onC); vis(D.scene, onD);
     if (onA) updateA(A, TF, t, true);
     if (onB) updateB(B, t);
     if (onC) updateC(C, t);
     if (onD) updateD(D, t);
-    if (onA || onB) {} // cursor set by the scene in front
-    // the night arrives behind a passing now line (left to right) and leaves the same way back
-    let wx = null;
+
+    // A to B: Connect opens in a circle out of the done item's head, and a hairline rides its edge
+    if (onB && t < TB.open1) {
+      const [ox, oy] = toScreen(camAt(TB.cam, t), BV[0], BV[1]);
+      const p = P(t, TB.open0, TB.open1, bez(0.6, 0, 0.22, 1));
+      const r = lerp(10, 2300, p);
+      S(B.scene, { clipPath: `circle(${r.toFixed(1)}px at ${ox.toFixed(1)}px ${oy.toFixed(1)}px)`, zIndex: 2 });
+      S(openRing, { visibility: "visible", left: px(ox - r), top: px(oy - r), width: px(2 * r), height: px(2 * r), opacity: (Math.pow(1 - p, 1.5) * 0.9).toFixed(3) });
+    } else {
+      if (onB) S(B.scene, { clipPath: "none", zIndex: 1 });
+      S(openRing, { visibility: "hidden" });
+    }
+
+    // B to C: the night arrives behind a passing now line (left to right); Connect is pushed along ahead of it
+    let wx = null, dir = 1, morph = 0;
     if (t >= TC.wipe0 && t < TC.wipe1) {
-      wx = lerp(-10, 1930, P(t, TC.wipe0, TC.wipe1, E.wipe));
+      const q = P(t, TC.wipe0, TC.wipe1, E.wipe), q0 = P(t - 1 / 30, TC.wipe0, TC.wipe1, E.wipe);
+      wx = lerp(-10, 1930, q);
       S(C.scene, { clipPath: `inset(0 ${(1920 - wx).toFixed(2)}px 0 0)`, zIndex: 2 });
-    } else if (onC) S(C.scene, { clipPath: "none", zIndex: 1 });
-    if (t >= TC.wipe2 && t < TC.end) {
-      wx = lerp(1930, -10, P(t, TC.wipe2, TC.end, E.wipe));
-      S(D.scene, { clipPath: `inset(0 0 0 ${wx.toFixed(2)}px)`, zIndex: 3 });
-    } else if (onD) S(D.scene, { clipPath: "none", zIndex: 3 });
-    if (wx != null) S(wipeLine, { opacity: 1, left: px(wx) });
-    else S(wipeLine, { opacity: 0 });
-    // the scene underneath a wipe does not draw a hand
-    if (t >= TC.wipe0 && t < TC.wipe1 && cursorState && cursorState.op > 0) {}
+      S(B.scene, { transform: `translateX(${(q * 170).toFixed(2)}px)` });
+      B.mb(B.scene, B.vel[0] + (q - q0) * 170 * 0.15, B.vel[1]);
+    } else {
+      if (onC) S(C.scene, { clipPath: "none", zIndex: 1 });
+      if (onB) {
+        S(B.scene, { transform: "none" });
+        B.mb(B.scene, B.vel[0], B.vel[1]);
+      }
+    }
+    // C to D: the line sweeps back (right to left) while the night folds in from both sides onto the staff's start
+    if (t >= TC.wipe2 && t < MORPH.t1) {
+      dir = -1;
+      const camD = camAt(TD.cam, t);
+      const [bx, btop] = toScreen(camD, 301, 520);
+      const [, bbot] = toScreen(camD, 301, 581.5);
+      wx = lerp(1930, bx, P(t, TC.wipe2, MORPH.t0, E.wipe));
+      const a = lerp(-2, bx, P(t, TC.wipe2 + 0.25, MORPH.t0, E.io));
+      if (onC) S(C.scene, { clipPath: `inset(0 ${Math.max(0, 1920 - wx).toFixed(2)}px 0 ${a.toFixed(2)}px)`, zIndex: 3 });
+      S(D.scene, { clipPath: "none", zIndex: 2 });
+      morph = P(t, MORPH.t0 - 0.06, MORPH.t1, E.ax);
+      const top = lerp(0, btop, morph), hh = lerp(1080, bbot - btop, morph);
+      S(wipeLine, {
+        top: px(top), height: px(hh), width: px(lerp(4, 2 * camD.s, morph)), marginLeft: px(-lerp(2, camD.s, morph)),
+        background: `color-mix(in oklab, #47d3b8 ${((1 - morph) * 100).toFixed(1)}%, rgb(20 21 27 / 0.3))`,
+        boxShadow: `${(-6 * (1 - morph)).toFixed(1)}px 0 24px rgb(0 0 0 / ${(0.22 * (1 - morph)).toFixed(3)})`,
+      });
+    } else if (onD) S(D.scene, { clipPath: "none", zIndex: 2 });
+    if (dir === 1) S(wipeLine, { top: "0px", height: "1080px", width: "4px", marginLeft: "-2px", background: "#47d3b8", boxShadow: "6px 0 24px rgb(0 0 0 / 0.25)" });
+    if (wx != null) {
+      S(wipeLine, { opacity: (1 - P(t, MORPH.t1 - 0.1, MORPH.t1, E.lin)).toFixed(3), left: px(wx), visibility: "visible" });
+      S(wipeFlag, { opacity: dir === 1 ? "1" : "0" });
+      // a soft wash trails the line on the side it has already crossed
+      S(wipeWash, {
+        opacity: (1 - morph).toFixed(3),
+        left: px(dir === 1 ? wx - 240 : wx),
+        background: dir === 1 ? "linear-gradient(to left, rgb(71 211 184 / 0.13), transparent)" : "linear-gradient(to right, rgb(6 106 91 / 0.08), transparent)",
+      });
+    } else {
+      S(wipeLine, { opacity: 0, visibility: "hidden" });
+      S(wipeWash, { opacity: 0 });
+    }
     flushCursor();
   }
 

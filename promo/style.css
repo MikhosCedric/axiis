@@ -178,6 +178,168 @@ body {
   background: repeating-linear-gradient(to bottom, currentColor 0 2px, transparent 2px 8px);
 }
 
+/* ---- the life layer: hour grid, paper bubbles, product forms ---- */
+.hgrid {
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(to right, var(--rule-soft) 0 1px, transparent 1px 160px);
+  opacity: 0.55;
+  mask-image: linear-gradient(to bottom, transparent, #000 22%, #000 78%, transparent);
+}
+.bub {
+  position: absolute;
+  left: 0;
+  top: 0;
+  box-sizing: border-box;
+  border-radius: 50%;
+  border: 1px solid var(--rule-soft);
+  background: rgb(from var(--sheet) r g b / 0.42);
+  box-shadow: 0 3px 6px -3px light-dark(rgb(28 27 34 / 0.12), rgb(0 0 0 / 0.4));
+}
+.bub::after {
+  content: "";
+  position: absolute;
+  left: 20%;
+  top: 14%;
+  width: 34%;
+  height: 22%;
+  border-radius: 50%;
+  background: light-dark(rgb(255 255 255 / 0.85), rgb(236 235 230 / 0.07));
+  transform: rotate(-32deg);
+}
+.p-gsolid,
+.p-gdash,
+.p-ghollow {
+  height: 14px;
+}
+.p-gsolid::before,
+.p-gdash::before,
+.p-ghollow::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  box-sizing: border-box;
+  background: currentColor;
+}
+.p-gsolid::after,
+.p-gdash::after,
+.p-ghollow::after {
+  content: "";
+  position: absolute;
+  left: 7px;
+  right: 0;
+  top: 3.5px;
+  height: 7px;
+  box-sizing: border-box;
+  border-radius: 2px;
+  background: currentColor;
+}
+.p-gdash::after {
+  top: 5px;
+  height: 4px;
+  border-radius: 0;
+  background: repeating-linear-gradient(to right, currentColor 0 8px, transparent 8px 13px);
+}
+.p-ghollow::before {
+  background: transparent;
+  border: 1.5px solid currentColor;
+}
+.p-ghollow::after {
+  left: 14px;
+  background: transparent;
+  border: 1.5px solid currentColor;
+}
+.p-chip {
+  height: 34px;
+  box-sizing: border-box;
+  border-radius: 8px;
+  border: 1px solid currentColor;
+  background: rgb(from var(--sheet) r g b / 0.6);
+}
+.p-chip::before {
+  content: "";
+  position: absolute;
+  left: 12px;
+  top: 11px;
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: currentColor;
+}
+.p-chip::after {
+  content: "";
+  position: absolute;
+  left: 34px;
+  right: 22px;
+  top: 14px;
+  height: 5px;
+  border-radius: 3px;
+  background: currentColor;
+  opacity: 0.6;
+}
+.p-key {
+  width: 34px;
+  height: 34px;
+  box-sizing: border-box;
+  display: grid;
+  place-items: center;
+  border-radius: 7px;
+  border: 1px solid currentColor;
+  background: rgb(from var(--sheet) r g b / 0.6);
+  box-shadow: 0 2px 0 currentColor;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+/* ---- micro effects ---- */
+.burst {
+  position: absolute;
+  width: 0;
+  height: 0;
+  z-index: 5;
+  pointer-events: none;
+}
+.burst .bring {
+  position: absolute;
+  box-sizing: border-box;
+  border-radius: 50%;
+  border: 1.5px solid var(--ink-3);
+}
+.burst.acc .bring {
+  border-color: var(--accent);
+}
+.burst .bdot {
+  position: absolute;
+  border-radius: 50%;
+  background: var(--ink-3);
+  box-sizing: border-box;
+}
+.burst .bdot.hollow {
+  background: transparent;
+  border: 1.5px solid var(--ink-3);
+}
+.bm-sheen {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 45%;
+  background: linear-gradient(100deg, transparent, rgb(255 255 255 / 0.55) 50%, transparent);
+}
+.cta-sheen {
+  position: absolute;
+  top: -10px;
+  bottom: -10px;
+  left: 0;
+  width: 26%;
+  background: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.28) 50%, transparent);
+  pointer-events: none;
+}
+
 /* ---- glyph: a head and a beam ---- */
 .g {
   position: absolute;
@@ -211,6 +373,7 @@ body {
   background: var(--accent);
   transform-origin: left;
   transform: scaleX(0);
+  overflow: hidden;
 }
 .g .bm-sweep {
   background: var(--ink);
