@@ -248,6 +248,8 @@ signedIn.describe("no axe violations on the polished surfaces", () => {
         await page.emulateMedia({ colorScheme, reducedMotion: "reduce" });
         await page.goto(path);
         await hydrated(page);
+        // The page streams in under a loading boundary; axe reads it once its heading has arrived.
+        await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
         expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
       });
     }
