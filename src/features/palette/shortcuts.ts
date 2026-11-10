@@ -43,6 +43,8 @@ export const AREA_KEYS_MAX = 9;
 
 /** Where G followed by a key goes. */
 export const GO_PLACES = PLACES.flatMap((p) => (p.go ? [{ key: p.go, label: p.label, href: p.href }] : []));
+/** Second keys after G, kept for habit; never drawn in a legend. */
+export const GO_ALIASES = PLACES.flatMap((p) => (p.goAlias ? [{ key: p.goAlias, href: p.href }] : []));
 
 const k = (key: string, extra: Omit<Chord, "key"> = {}): Chord => ({ key, ...extra });
 
@@ -180,7 +182,7 @@ export function goShortcut(waiting: boolean, e: KeyPress): GoStep {
   if (e.isComposing || e.defaultPrevented || e.altKey || e.ctrlKey || e.metaKey || e.typing) return null;
   const key = e.key.toLowerCase();
   if (!waiting) return key === GO_KEY ? "wait" : null;
-  const place = GO_PLACES.find((p) => p.key === key);
+  const place = GO_PLACES.find((p) => p.key === key) ?? GO_ALIASES.find((p) => p.key === e.key);
   return place ? { href: place.href } : null;
 }
 

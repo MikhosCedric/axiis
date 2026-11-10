@@ -34,6 +34,16 @@ signedIn.describe("signed in", () => {
     await page.keyboard.press("g");
     await page.keyboard.press("l");
     await expect(page).toHaveURL("/lists");
+    // Tags is a letter, H, so it works on keyboards where # needs AltGr; # still goes there where it is a plain key.
+    await page.keyboard.press("g");
+    await page.keyboard.press("h");
+    await expect(page).toHaveURL("/tags");
+    await page.keyboard.press("g");
+    await page.keyboard.press("l");
+    await expect(page).toHaveURL("/lists");
+    await page.keyboard.press("g");
+    await page.keyboard.press("#");
+    await expect(page).toHaveURL("/tags");
     await page.keyboard.press("g");
     await page.keyboard.press("s");
     await expect(page).toHaveURL("/search");

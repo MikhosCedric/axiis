@@ -39,7 +39,7 @@ signedIn.describe("settings", () => {
     const tags = page.getByRole("region", { name: "Tags" });
     await tags.getByRole("button", { name: "Delete #errands" }).click();
     await tags.getByRole("group", { name: "Delete #errands? It comes off 1 open item. The items stay." }).getByRole("button", { name: "Yes" }).click();
-    await expect(tags.getByText("No tags yet.")).toBeVisible();
+    await expect(tags.getByRole("textbox", { name: "Rename #errands" })).toHaveCount(0);
     await expect.poll(() => recent(page)).not.toContain("/tags/errands");
 
     // Back to the Inbox the way people go back: the item is there, the tag is not.
@@ -104,6 +104,79 @@ signedIn.describe("settings", () => {
     await page.getByRole("group", { name: "Reminders" }).getByRole("button", { name: "Off" }).click();
     await expect(page.getByText("Reminders are off.")).toBeVisible();
     expect((await context.cookies()).find((c) => c.name === "reminders")?.value).toBe("off");
+    // The refresh after the choice streams the title back in; axe reads the page once it is there.
+    await expect(page).toHaveTitle(/Settings/);
     expect(await axe(page)).toEqual([]);
+  });
+
+  signedIn("merging a tag says what changes, moves its items, and a page filtered by it says it is gone", async ({ page }) => {
+    await page.goto("/tags/errands");
+    await hydrated(page);
+    await expect.poll(() => recent(page)).toContain("/tags/errands");
+    await page.goto("/settings");
+    await hydrated(page);
+    const tags = page.getByRole("region", { name: "Tags" });
+    await tags.getByRole("button", { name: "Merge #errands into another tag" }).click();
+    const panel = tags.getByRole("group", { name: "Merge #errands" });
+    await expect(panel.getByRole("combobox", { name: "Merge #errands into" })).toHaveValue(/.+/);
+    await panel.getByRole("button", { name: "Continue" }).click();
+    await expect(panel).toContainText("One item wears #errands, including any in Recently deleted. It will wear #travel instead.");
+    await expect(panel).toContainText("This cannot be undone.");
+    // Focus waits on the way out, so a stray Enter keeps both.
+    await expect(panel.getByRole("button", { name: "Keep both" })).toBeFocused();
+    expect(await axe(page)).toEqual([]);
+    await panel.getByRole("button", { name: "Merge into #travel" }).click();
+    await expect(tags.getByRole("textbox", { name: "Rename #errands" })).toHaveCount(0);
+    await expect(tags.getByRole("link", { name: "2 open with #travel" })).toBeVisible();
+    await expect.poll(() => recent(page)).toContain("/tags/travel");
+    expect(await recent(page)).not.toContain("/tags/errands");
+
+    await page.goto("/inbox");
+    await expect(page.getByRole("main").getByText("#travel").first()).toBeVisible();
+    await expect(page.getByRole("main").getByText("#errands")).toHaveCount(0);
+
+    for (const path of ["/inbox", "/today", "/week"]) {
+      await page.goto(`${path}?tag=errands`);
+      const gone = page.locator("[data-tag-gone]");
+      await expect(gone, path).toContainText("There is no tag #errands any more");
+      await gone.getByRole("link", { name: "Show everything" }).click();
+      await expect(page).toHaveURL(new RegExp(`${path}$`));
+    }
+  });
+
+  signedIn("the week can start on Sunday and Axiis can open on another page", async ({ page, context, baseURL }) => {
+    await page.goto("/settings");
+    await hydrated(page);
+    await page.getByRole("group", { name: "Week starts on" }).getByRole("button", { name: "Sunday" }).click();
+    await expect(page.getByText("First day of the week saved on this device.")).toBeVisible();
+    expect((await context.cookies()).find((c) => c.name === "week-start")?.value).toBe("sunday");
+    await page.getByRole("combobox", { name: "Start page" }).selectOption("inbox");
+    await expect(page.getByText("Start page saved on this device.")).toBeVisible();
+
+    await page.goto("/week/2026-10-07");
+    const headings = page.getByRole("main").getByRole("heading", { level: 1 });
+    await expect(headings).toContainText("4 to 10 October");
+    await page.goto("/month/2026-10");
+    await expect(page.getByRole("columnheader").first()).toHaveAccessibleName(/Sunday/);
+
+    await page.goto("/");
+    await expect(page).toHaveURL(/\/inbox$/);
+    await context.addCookies([{ name: "week-start", value: "monday", url: baseURL }]);
+    await page.goto("/week/2026-10-07");
+    await expect(headings).toContainText("5 to 11 October");
+  });
+
+  signedIn("the Keyboard section is left out on a touch screen", async ({ browser, baseURL }) => {
+    const touch = await browser.newContext({ hasTouch: true, isMobile: true, viewport: { width: 375, height: 812 } });
+    await touch.addCookies([
+      { name: SESSION_COOKIE, value: sessionSecret(), url: baseURL },
+      { name: "axiis-e2e-account", value: "settings", url: baseURL },
+    ]);
+    const phone = await touch.newPage();
+    await phone.goto("/settings");
+    await expect(phone.getByRole("heading", { name: "Display" })).toBeVisible();
+    await expect(phone.getByRole("heading", { name: "Keyboard" })).toBeHidden();
+    await expect(phone.getByRole("navigation", { name: "Settings sections" }).getByRole("link", { name: "Keyboard" })).toBeHidden();
+    await touch.close();
   });
 });

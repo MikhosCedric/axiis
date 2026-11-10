@@ -152,4 +152,11 @@ export interface ItemsRepo {
   setTagColor(tagId: TagId, color: AreaColor | null): Promise<Tag>;
   /** Deletes the tag and takes it off every item. The items stay as they are. A tag already gone counts as deleted. */
   deleteTag(tagId: TagId): Promise<void>;
+  /** How many items wear the tag, in Recently deleted too: one count, never a list, so no cap applies. */
+  countTagged(tagId: TagId): Promise<number>;
+  /**
+   * Every item wearing `source` comes to wear `target`, and `source` is deleted, in one call
+   * (`merge_tags`, migration 0012), so no read cap can stop it short. Returns how many items changed.
+   */
+  mergeTags(source: TagId, target: TagId): Promise<number>;
 }

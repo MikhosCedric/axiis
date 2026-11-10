@@ -82,6 +82,18 @@ describe("monthGrid", () => {
     expect([february[0], february.at(-1)]).toEqual(["2027-02-01", "2027-03-07"]);
   });
 
+  it("starts on Sunday when the week does, still in whole weeks", () => {
+    const october = monthGrid(ym("2026-10"), 0);
+    expect([october[0], october.at(-1), october.length]).toEqual(["2026-09-27", "2026-10-31", 35]);
+    // 1 August 2026 is a Saturday: the last day of the first Sunday week.
+    const august = monthGrid(ym("2026-08"), 0);
+    expect([august[0], august.at(-1), august.length]).toEqual(["2026-07-26", "2026-09-05", 42]);
+    // 1 February 2026 is a Sunday and the month fits four weeks exactly; the grid still draws five.
+    const february = monthGrid(ym("2026-02"), 0);
+    expect([february[0], february.at(-1), february.length]).toEqual(["2026-02-01", "2026-03-07", 35]);
+    expect(monthGrid(ym("2027-01"), 0)[0]).toBe("2026-12-27");
+  });
+
   it("crosses a year", () => {
     const days = monthGrid(ym("2027-01"));
     expect(days[0]).toBe("2026-12-28");

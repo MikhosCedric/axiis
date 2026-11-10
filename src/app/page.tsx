@@ -15,7 +15,7 @@ import {
   quietAction,
   siteWrap,
 } from "@/components/public/site-chrome";
-import { CLOCK_COOKIE, readClock } from "@/components/shell/cookies";
+import { CLOCK_COOKIE, readClock, readStartPage, START_PAGE_COOKIE, startPath } from "@/components/shell/cookies";
 import { AREA_COLORS } from "@/domain/area-color";
 import { DELETION_GRACE_DAYS } from "@/features/account/commands";
 import { CaptureDemo } from "@/features/landing/capture-demo";
@@ -110,13 +110,16 @@ const KEYS: Record<Section["id"], readonly (readonly [keys: readonly string[], d
 const vars = (v: Record<string, number | string>) => v as CSSProperties;
 
 export default async function Home() {
-  if (await getFakeAccount()) redirect("/today");
+  // A signed-in visit, and the end of sign-in, which lands here, opens the start page chosen in Settings.
+  const saved = await cookies();
+  const start = startPath(readStartPage(saved.get(START_PAGE_COOKIE)?.value));
+  if (await getFakeAccount()) redirect(start);
   const supabase = await createClient();
   const { data } = await supabase.auth.getClaims();
-  if (data?.claims) redirect("/today");
+  if (data?.claims) redirect(start);
 
   const month = monthOf(toLocalDate(new Date(), "UTC"));
-  const { clock } = readClock((await cookies()).get(CLOCK_COOKIE)?.value);
+  const { clock } = readClock(saved.get(CLOCK_COOKIE)?.value);
   const [capture, drag, done, focus, wide] = SECTIONS;
 
   return (

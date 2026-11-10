@@ -6,6 +6,10 @@ import {
   DENSITY_COOKIE,
   DESKTOP_COOKIE,
   readClock,
+  readStartPage,
+  readWeekStart,
+  START_PAGE_COOKIE,
+  WEEK_START_COOKIE,
   readDensity,
   readReminders,
   readTheme,
@@ -25,7 +29,7 @@ import {
 } from "@/features/account/actions";
 import { getDeletionDay } from "@/features/account/deletion-day";
 import { SettingsView } from "@/features/account/settings-view";
-import { deleteTagAction, renameTagAction, setTagColorAction } from "@/features/tags/actions";
+import { deleteTagAction, mergeTagsAction, previewMergeAction, renameTagAction, setTagColorAction } from "@/features/tags/actions";
 import { loadTagIndex } from "@/features/tags/commands";
 import { getAreasRepo } from "@/lib/areas";
 import { getItemsRepo } from "@/lib/items";
@@ -64,12 +68,14 @@ export default async function SettingsPage() {
       areas={areas}
       areaActions={{ add: addAreaAction, rename: renameAreaAction, remove: removeAreaAction, restore: restoreAreaAction, move: moveAreaAction, color: setAreaColorAction }}
       tags={tags}
-      tagActions={{ rename: renameTagAction, remove: deleteTagAction, color: setTagColorAction }}
+      tagActions={{ rename: renameTagAction, remove: deleteTagAction, color: setTagColorAction, merging: { preview: previewMergeAction, merge: mergeTagsAction } }}
       deletion={{ schedule: scheduleDeletionAction, undo: undoDeletionAction, deleteNow: deleteAccountAction }}
       deletesOn={deletesOn}
       theme={readTheme(saved.get(THEME_COOKIE)?.value)}
       density={readDensity(saved.get(DENSITY_COOKIE)?.value)}
       clock={readClock(saved.get(CLOCK_COOKIE)?.value)}
+      weekStart={readWeekStart(saved.get(WEEK_START_COOKIE)?.value)}
+      startPage={readStartPage(saved.get(START_PAGE_COOKIE)?.value)}
       colorHint={saved.get(COLOR_HINT_COOKIE)?.value !== "off"}
       deletedCount={deleted}
       desktop={desktop}

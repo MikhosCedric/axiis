@@ -37,7 +37,7 @@ describe("PLACES", () => {
       ["i", "/inbox"],
       ["l", "/lists"],
       ["n", "/notes"],
-      ["#", "/tags"],
+      ["h", "/tags"],
       ["s", "/search"],
       [",", "/settings"],
     ]);

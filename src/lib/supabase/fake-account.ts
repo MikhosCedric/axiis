@@ -132,6 +132,8 @@ function createAccount(kind: FakeAccountKind) {
   const fake = fakeRepo(items);
   fake.repo.listAreas = () => areas.repo.list();
   if (kind === "fixtures" || kind === "settings") fake.tag(id(1), "errands");
+  // A second tag on the settings account, for the merge test.
+  if (kind === "settings") fake.tag(id(2), "travel");
   // One tag across two areas, for the tag colour and tag filter tests.
   if (kind === "filters") for (const each of [id(22), id(23)]) fake.tag(each, "errands");
   const notesStore: NotesStore = { items, bodyText: new Map(), links: [] };

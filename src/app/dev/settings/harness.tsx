@@ -6,7 +6,7 @@ import type { TagSummary } from "@/domain/tag";
 import type { AreaActions } from "@/features/account/areas-section";
 import { addArea, deleteAccount, moveArea, removeArea, renameArea, restoreArea, setAreaColor } from "@/features/account/commands";
 import { SettingsView } from "@/features/account/settings-view";
-import { deleteTag, loadTagIndex, renameTag, setTagColor } from "@/features/tags/commands";
+import { deleteTag, loadTagIndex, mergeTags, previewMerge, renameTag, setTagColor } from "@/features/tags/commands";
 import type { TagActions } from "@/features/tags/tags-section";
 import type { ActionResult } from "@/features/today/commands";
 import { fakeAreasRepo } from "@/lib/areas/fake";
@@ -58,7 +58,12 @@ export function SettingsHarness() {
     };
   }
 
-  const tagActions: TagActions = { rename: fakeTag(renameTag), remove: fakeTag(deleteTag), color: fakeTag(setTagColor) };
+  const tagActions: TagActions = {
+    rename: fakeTag(renameTag),
+    remove: fakeTag(deleteTag),
+    color: fakeTag(setTagColor),
+    merging: { preview: async (source, target) => previewMerge(tagStore.repo, source, target), merge: fakeTag(mergeTags) },
+  };
 
   async function fakeDelete(phrase: string): Promise<ActionResult> {
     await pause();

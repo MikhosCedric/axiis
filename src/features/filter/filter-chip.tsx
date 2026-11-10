@@ -53,6 +53,19 @@ export function FilterChips({ filter, className = "" }: { filter: ViewFilter; cl
   const withoutTag = useWithout("tag");
   const tagColor = useTagColor();
   if (!filter.area && !filter.tag) return null;
+  if (filter.tag && filter.tagGone) {
+    return (
+      <div data-filter data-tag-gone className={`max-w-[60ch] text-[14px] text-ink-2 ${className}`}>
+        <p>
+          There is no tag <span className="font-medium text-ink">#{filter.tag}</span> any more, so nothing here can carry it. It
+          may have been deleted, renamed or merged.
+        </p>
+        <Link href={withoutTag} scroll={false} className="mt-1 inline-flex items-center font-medium text-ink underline underline-offset-2 pointer-coarse:min-h-11">
+          {filter.area ? `Show everything in ${filter.area.name}` : "Show everything"}
+        </Link>
+      </div>
+    );
+  }
   return (
     <p role="group" aria-label="Filter" data-filter className={`flex flex-wrap items-center gap-2 text-[13px] text-ink-2 ${className}`}>
       <span>Showing only</span>

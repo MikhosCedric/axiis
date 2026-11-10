@@ -9,7 +9,8 @@ import { parseTagName, TAG_NAME_MAX, type TagId, type TagName, type TagSummary }
 import { ConfirmDelete } from "@/features/detail/confirm-delete";
 import type { ActionResult } from "@/features/today/commands";
 import { deletePrompt, openCount, TAGS_PATH, tagHref } from "./model";
-import { tagDeleted, tagRenamed } from "./tag-pages";
+import { tagDeleted, tagMerged, tagRenamed } from "./tag-pages";
+import { MergeIcon, MergePanel, type MergeActions } from "./tag-merge";
 import { latestSave } from "@/lib/latest-save";
 import { reach } from "@/lib/reach";
 
@@ -17,6 +18,8 @@ export type TagActions = {
   rename(id: string, name: string): Promise<ActionResult>;
   remove(id: string): Promise<ActionResult>;
   color(id: string, color: AreaColor | null): Promise<ActionResult>;
+  /** Merge one tag into another; offered only where given. */
+  merging?: MergeActions;
 };
 
 type Change =
@@ -52,6 +55,8 @@ export function TagsSection({
   const [error, setError] = useState<string | null>(null);
   const prefix = useId();
   const [picking, setPicking] = useState<TagId | null>(null);
+  const [merging, setMerging] = useState<TagId | null>(null);
+  const canMerge = actions.merging !== undefined && shown.length > 1;
   // Arrow keys through the palette choose a colour per press; only the last of a run needs to reach the server.
   const saveColor = useMemo(() => latestSave((id: string, color: AreaColor | null) => actions.color(id, color)), [actions]);
 
@@ -73,7 +78,7 @@ export function TagsSection({
             Tags
           </h2>
           <p className="mt-1.5 max-w-[60ch] text-ink-2">
-            Renaming a tag renames it on every item. A colour shows as a dot beside the tag wherever it appears. Deleting one takes it off its items and keeps the items.
+            Renaming a tag renames it on every item. A colour shows as a dot beside the tag wherever it appears. Merging one into another moves its items onto the other. Deleting one takes it off its items and keeps the items.
           </p>
         </>
       )}
@@ -83,7 +88,7 @@ export function TagsSection({
           {shown.map((tag) => (
             <li
               key={tag.id}
-              className="grid grid-cols-[minmax(0,1fr)_auto_auto_auto] items-center gap-x-1 border-b border-rule-soft py-1"
+              className={`grid ${canMerge ? "grid-cols-[minmax(0,1fr)_auto_auto_auto_auto]" : "grid-cols-[minmax(0,1fr)_auto_auto_auto]"} items-center gap-x-1 border-b border-rule-soft py-1`}
             >
               <TagName
                 tag={tag}
@@ -104,12 +109,39 @@ export function TagsSection({
                 {openCount(tag.open)}
                 <span className="sr-only"> with #{tag.name}</span>
               </Link>
+              {canMerge && (
+                <button
+                  type="button"
+                  aria-label={`Merge #${tag.name} into another tag`}
+                  title={`Merge #${tag.name} into another tag`}
+                  aria-expanded={merging === tag.id}
+                  aria-controls={merging === tag.id ? `${prefix}-merge-${tag.id}` : undefined}
+                  onClick={() => setMerging((open) => (open === tag.id ? null : tag.id))}
+                  className="grid size-8 place-items-center rounded-md text-ink-3 hover:bg-hover hover:text-ink active:bg-press aria-expanded:bg-press aria-expanded:text-ink pointer-coarse:size-11"
+                >
+                  <MergeIcon />
+                </button>
+              )}
               <ConfirmDelete
                 compact
                 label={`Delete #${tag.name}`}
                 prompt={deletePrompt(tag)}
                 onConfirm={() => run({ kind: "remove", id: tag.id }, () => actions.remove(tag.id), () => tagDeleted(tag.name))}
               />
+              {merging === tag.id && actions.merging && (
+                <MergePanel
+                  id={`${prefix}-merge-${tag.id}`}
+                  tag={tag}
+                  others={shown.filter((t) => t.id !== tag.id)}
+                  actions={actions.merging}
+                  onClose={() => setMerging(null)}
+                  onMerged={(target) => {
+                    setMerging(null);
+                    // The merge's refresh has already brought the list without this tag and the target's new count.
+                    tagMerged(tag.name, target.name);
+                  }}
+                />
+              )}
               {picking === tag.id && (
                 <ColorPicker
                   id={`${prefix}-colors-${tag.id}`}

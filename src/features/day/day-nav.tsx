@@ -6,6 +6,7 @@ import { useEffect, useRef, useState, type ChangeEvent, type KeyboardEvent as Re
 import type { LocalDate } from "@/domain/item";
 import { formatDayHeading } from "@/features/today/format";
 import { keepSpans, spanHrefs } from "@/features/week/span";
+import { useWeekStart } from "@/components/shell/week-start-context";
 import { useKeepFilter } from "@/features/filter/keep-filter";
 import { SpanSwitch } from "@/features/week/span-switch";
 import { FIRST_DATE, LAST_DATE, parseLocalDate } from "@/lib/dates";
@@ -25,6 +26,7 @@ function Chevron({ back }: { back?: boolean }) {
 
 export function DayNav({ date, today, mode }: { date: LocalDate; today: LocalDate; mode: DayViewMode }) {
   const router = useRouter();
+  const startsOn = useWeekStart();
   const keep = useKeepFilter();
   const previous = navTarget("previous", date, today);
   const next = navTarget("next", date, today);
@@ -53,7 +55,7 @@ export function DayNav({ date, today, mode }: { date: LocalDate; today: LocalDat
 
   return (
     <nav aria-label="Day" className="flex flex-wrap items-center gap-2">
-      <SpanSwitch current="day" hrefs={keepSpans(spanHrefs(date, today, mode), keep)} />
+      <SpanSwitch current="day" hrefs={keepSpans(spanHrefs(date, today, mode, startsOn), keep)} />
       {/* One pair, so Previous and Next never wrap apart. */}
       <span className="inline-flex flex-none">
         <Link href={keep(dayHref(previous, today, mode))} className={`${step} rounded-r-none`} aria-keyshortcuts="[" title="Previous day ( [ )">

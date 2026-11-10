@@ -4,7 +4,7 @@ import { refresh } from "next/cache";
 import { getTimeZone } from "@/features/day/server";
 import type { ActionResult } from "@/features/today/commands";
 import { getItemsRepo } from "@/lib/items";
-import { addTag, deleteTag, removeTag, renameTag, setTagColor } from "./commands";
+import { addTag, deleteTag, mergeTags, previewMerge, removeTag, renameTag, setTagColor, type MergePreview } from "./commands";
 
 // The repo is bound to the signed-in user's session and RLS scopes every
 // write. Names and ids arrive untyped and are parsed by the commands.
@@ -28,6 +28,14 @@ export async function renameTagAction(tagId: string, name: string): Promise<Acti
 
 export async function setTagColorAction(tagId: string, color: string | null): Promise<ActionResult> {
   return refreshed(await setTagColor(await getItemsRepo(), tagId, color));
+}
+
+export async function previewMergeAction(sourceId: string, targetId: string): Promise<MergePreview> {
+  return previewMerge(await getItemsRepo(), sourceId, targetId);
+}
+
+export async function mergeTagsAction(sourceId: string, targetId: string): Promise<ActionResult> {
+  return refreshed(await mergeTags(await getItemsRepo(), sourceId, targetId));
 }
 
 export async function deleteTagAction(tagId: string): Promise<ActionResult> {

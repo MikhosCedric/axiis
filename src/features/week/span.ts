@@ -2,7 +2,7 @@ import type { LocalDate } from "@/domain/item";
 import { dayHref } from "@/features/day/nav";
 import type { DayViewMode } from "@/features/day/types";
 import { monthHref, monthOf } from "@/features/month/model";
-import { weekHref } from "./model";
+import { WEEK_STARTS_ON, weekHref, type WeekStart } from "./model";
 
 export type Span = "day" | "week" | "month";
 
@@ -11,8 +11,13 @@ export type Span = "day" | "week" | "month";
  * the day itself (today when the week or month holds it), the week holding it
  * and the month holding it. The day keeps its Score or List.
  */
-export function spanHrefs(anchor: LocalDate, today: LocalDate, mode: DayViewMode = "score"): Record<Span, string> {
-  return { day: dayHref(anchor, today, mode), week: weekHref(anchor, today), month: monthHref(monthOf(anchor), today) };
+export function spanHrefs(
+  anchor: LocalDate,
+  today: LocalDate,
+  mode: DayViewMode = "score",
+  startsOn: WeekStart = WEEK_STARTS_ON,
+): Record<Span, string> {
+  return { day: dayHref(anchor, today, mode), week: weekHref(anchor, today, startsOn), month: monthHref(monthOf(anchor), today) };
 }
 
 /** The same three links passed through `keep`, which carries the address's area or tag filter onto each. */

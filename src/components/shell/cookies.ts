@@ -1,3 +1,4 @@
+import type { WeekStart } from "@/features/week/week-of";
 import type { Clock } from "@/lib/clock";
 
 export const THEME_COOKIE = "theme";
@@ -66,6 +67,33 @@ export type ClockSetting = (typeof CLOCK_SETTINGS)[number];
 export function readClock(value: string | undefined): { setting: ClockSetting; clock: Clock } {
   if (value === "12" || value === "24") return { setting: value, clock: value };
   return { setting: "auto", clock: value === "auto-12" ? "12" : "24" };
+}
+
+/** The day a week begins on, as `Date#getUTCDay` numbers it: 1 is Monday, 0 is Sunday. */
+export const WEEK_START_COOKIE = "week-start";
+export const WEEK_STARTS = ["monday", "sunday"] as const;
+export type WeekStartSetting = (typeof WEEK_STARTS)[number];
+
+/** The saved first day of the week, or Monday, as Axiis has always drawn it, for a missing or unknown value. */
+export function readWeekStart(value: string | undefined): WeekStart {
+  return value === "sunday" ? 0 : 1;
+}
+
+export const weekStartSetting = (start: WeekStart): WeekStartSetting => (start === 0 ? "sunday" : "monday");
+
+/** The page the app opens on at its root and after sign-in. */
+export const START_PAGE_COOKIE = "start-page";
+export const START_PAGES = ["today", "week", "month", "inbox", "due"] as const;
+export type StartPage = (typeof START_PAGES)[number];
+
+/** The saved start page, or Today for a missing or unknown value. */
+export function readStartPage(value: string | undefined): StartPage {
+  return (START_PAGES as readonly string[]).includes(value ?? "") ? (value as StartPage) : "today";
+}
+
+/** The path a start page opens. Only these fixed paths, never one read from the cookie, so it cannot lead off the app. */
+export function startPath(page: StartPage): string {
+  return `/${page}`;
 }
 
 /** The cookie's value for a setting, with the browser's own clock standing in for Auto. */

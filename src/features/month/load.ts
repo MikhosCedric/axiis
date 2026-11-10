@@ -4,6 +4,7 @@ import { toLocalDate } from "@/lib/dates";
 import { loadOccurrences } from "@/lib/items/occurrences";
 import { RANGE_LIMIT, type ItemsRepo } from "@/lib/items/repo";
 import { keeps, NO_FILTER, scopeWords, type ViewFilter } from "@/features/filter/model";
+import { WEEK_STARTS_ON, type WeekStart } from "@/features/week/week-of";
 import { buildMonth, monthGrid, monthRange, monthSummary, type MonthCell, type YearMonth } from "./model";
 
 /** Everything the month screen draws, worked out on the server. Each day carries at most `MARKS_PER_DAY` marks. */
@@ -27,8 +28,9 @@ export async function loadMonth(
   timeZone: string,
   clock: Clock,
   filter: ViewFilter = NO_FILTER,
+  startsOn: WeekStart = WEEK_STARTS_ON,
 ): Promise<MonthData> {
-  const days = monthGrid(month);
+  const days = monthGrid(month, startsOn);
   const span = monthRange(days, timeZone);
   const [areas, stored, { occurrences }, due] = await Promise.all([
     repo.listAreas(),

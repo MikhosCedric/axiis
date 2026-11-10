@@ -12,7 +12,7 @@ import { loadWeek } from "@/features/week/load";
 import { filterDay, filterInbox, filterRows, filterWeek } from "./apply";
 import { areaSection } from "@/features/palette/model";
 import { areaHref, filterable, withFilter } from "./href";
-import { filterWords, keeps, NO_FILTER, readFilter, scopePrefix, scopeWords, type ViewFilter } from "./model";
+import { checkTag, filterWords, keeps, NO_FILTER, readFilter, scopePrefix, scopeWords, type ViewFilter } from "./model";
 
 const work = { ...area("Work"), color: "slate" as const };
 const home = area("Home");
@@ -35,6 +35,16 @@ describe("readFilter", () => {
     expect(readFilter({ tag: "   " }, [], { tags: true }).tag).toBeNull();
     expect(readFilter({ tag: "x".repeat(40) }, [], { tags: true }).tag).toBeNull();
     expect(readFilter({ tag: "errands" }, [], { tags: false }).tag).toBeNull();
+  });
+});
+
+describe("checkTag", () => {
+  it("marks a tag filter whose tag is gone, in any case, and leaves every other filter as it was", () => {
+    const known = [{ name: "Errands" }];
+    const errands: ViewFilter = { area: work, tag: "errands" as TagName };
+    expect(checkTag(errands, known)).toBe(errands);
+    expect(checkTag({ area: null, tag: "gone" as TagName }, known)).toEqual({ area: null, tag: "gone", tagGone: true });
+    expect(checkTag({ area: work, tag: null }, [])).toEqual({ area: work, tag: null });
   });
 });
 
