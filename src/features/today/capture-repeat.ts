@@ -60,7 +60,7 @@ const weekly = (interval: number, days: readonly number[]): Cadence => ({
   byDay: sortWeekdays(days.map(ruleDay)),
 });
 
-/** Single words that say how often. Read only at a line's end, as one that opens a line is a name: "weekly review". */
+/** Single words that say how often, at either end of a line: "walk daily", "monthly rent". Quotes keep "weekly review" a name. */
 const ADVERBS = new Map<string, [Freq, number]>([
   ["daily", ["daily", 1]],
   ["nightly", ["daily", 1]],
@@ -109,7 +109,8 @@ function everyHit(rest: string): Cadence | null {
  * A phrase that says a line repeats: "every day", "weekdays", "every other
  * tuesday", "mon/wed/fri", "tuesdays", "every 3 months", "weekly on monday".
  * One weekday alone ("tuesday") is a day, not a repeat; two or more, or a
- * plural, can only mean a repeat. `adverb` marks a lone "daily" or "weekly".
+ * plural, can only mean a repeat. `adverb` marks a lone "daily" or "weekly",
+ * which could also have opened a name, so the preview says how to keep one.
  */
 export function cadenceHit(p: string): (Cadence & { adverb: boolean }) | null {
   const single = /^([a-z]+)(?: on (.+))?$/.exec(p);

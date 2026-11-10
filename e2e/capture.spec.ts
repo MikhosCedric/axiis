@@ -176,6 +176,20 @@ test.describe("palette actions", () => {
     await expect(page.getByRole("dialog").getByRole("status")).toHaveText("Captured “dentist”. Planned for tomorrow, 09:00.");
   });
 
+  test("Enter on an item's exact name opens that item instead of capturing a copy", async ({ page }) => {
+    await page.goto("/dev/palette");
+    const box = await openPalette(page);
+    // Enter at once, before the search has answered: it waits for it rather than saving a second one.
+    await box.fill("plan the lisbon trip");
+    await box.press("Enter");
+    const dialog = page.getByRole("dialog");
+    await expect(dialog.getByRole("status")).toHaveText("“Plan the Lisbon trip” is already here, so Enter opens it. Choose Capture to add another.");
+    await expect(page.getByRole("option").first()).toHaveAccessibleName("Plan the Lisbon trip, Task");
+    await expect(page.getByRole("option", { name: "Capture “plan the lisbon trip” as a new task" })).toBeVisible();
+    await box.press("Enter");
+    await expect(page.getByRole("option")).toHaveText(["Open", "Mark done", "Plan for today", "Plan for tomorrow", "Add a tag"]);
+  });
+
   test("the actions list has no serious axe violations", async ({ page }) => {
     await page.goto("/dev/palette");
     const box = await openPalette(page);

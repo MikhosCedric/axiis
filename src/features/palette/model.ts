@@ -10,7 +10,7 @@ import { formatDayIn } from "@/features/today/format";
 import { formatMonthHeading, monthHref } from "@/features/month/model";
 import { completeDatePhrase, parseDatePhrase, parseMonthPhrase } from "./date-phrase";
 import { AREA_PARAM, areaHref } from "@/features/filter/href";
-import { matchTier, rank } from "./rank";
+import { fold, matchTier, rank } from "./rank";
 import type { Visit } from "./recent";
 
 /** An item the palette can act on: a search result, or the item the screen has selected (already open, so no link). */
@@ -109,30 +109,48 @@ export function paletteSections(
         ? [{ kind: "date", id: `month-${month}`, label: `Go to ${formatMonthHeading(month)}`, href: monthHref(month, today) }]
         : [];
 
+  const q = findQuery(text);
+  const rows = find.status === "done" && find.query === q ? find.rows.slice(0, FIND_MAX) : [];
+  // An item already named exactly what was typed comes first, so a bare Enter opens it rather than making a second one.
+  const same = rows.filter((r) => sameTitle(r.title, text));
+  const found: Command[] = [...same, ...rows.filter((r) => !same.includes(r))].map((r) => ({
+    kind: "open",
+    id: `open-${r.id}`,
+    label: r.title,
+    detail: r.snippet,
+    target: { key: r.id, title: r.title, type: r.type, done: r.done, href: r.href },
+  }));
+
   const read = parseCapture(text);
   const understood = previewWords(read, clock);
-  const label = understood ? `Capture “${read.title}” as a task: ${understood}` : `Capture “${text}” as a task`;
+  const what = same.length ? "as a new task" : "as a task";
+  const label = read.untitled
+    ? `Capture “${text}” ${what}. ${understood}`
+    : understood
+      ? `Capture “${read.title}” ${what}: ${understood}`
+      : `Capture “${text}” ${what}`;
   const capture: Command[] = exact || month || tag ? [] : [{ kind: "capture", id: "capture", label, title: text }];
 
-  const q = findQuery(text);
-  const found: Command[] =
-    find.status === "done" && find.query === q
-      ? find.rows.slice(0, FIND_MAX).map((r) => ({
-          kind: "open",
-          id: `open-${r.id}`,
-          label: r.title,
-          detail: r.snippet,
-          target: { key: r.id, title: r.title, type: r.type, done: r.done, href: r.href },
-        }))
-      : [];
-
+  const findSection: Section = { id: "find", label: "Find", commands: found };
   const sections: Section[] = [
+    ...(same.length ? [findSection] : []),
     { id: "go", label: "Go to", commands: go },
     { id: "dates", label: "Dates", commands: dates },
     { id: "capture", label: "Capture", commands: capture },
-    { id: "find", label: "Find", commands: found },
+    ...(same.length ? [] : [findSection]),
   ];
   return sections.filter((s) => s.commands.length > 0);
+}
+
+/** True when an item's title is what was typed, ignoring case, spaces and closing punctuation: "Dentist" for "dentist". */
+export function sameTitle(title: string, typed: string): boolean {
+  const plain = (s: string) => fold(s).replace(/[.!?,;:]+$/, "");
+  return plain(title) !== "" && plain(title) === plain(typed);
+}
+
+/** True when the sections lead with an item named exactly what was typed. */
+export function leadsWithMatch(sections: readonly Section[]): boolean {
+  return sections[0]?.id === "find";
 }
 
 /**

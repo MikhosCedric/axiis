@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 import { cache } from "react";
-import { CLOCK_COOKIE, readClock, readWeekStart, TZ_COOKIE, WEEK_START_COOKIE } from "@/components/shell/cookies";
+import { readWeekStart, TZ_COOKIE, WEEK_START_COOKIE } from "@/components/shell/cookies";
+import { getRequestClock } from "@/components/shell/request-clock";
 import type { LocalDate } from "@/domain/item";
 import { getAreas } from "@/features/filter/server";
 import { getItemsRepo } from "@/lib/items";
@@ -13,7 +14,7 @@ import { trayRows } from "./tray";
 export const getTimeZone = cache(async () => resolveTimeZone((await cookies()).get(TZ_COOKIE)?.value));
 
 /** The clock times are written in, as the root layout read it for the browser. */
-export const getClock = cache(async () => readClock((await cookies()).get(CLOCK_COOKIE)?.value).clock);
+export const getClock = cache(async () => (await getRequestClock()).clock);
 
 /** The first day of the week, as Settings chose it for this device, the way the root layout read it for the browser. */
 export const getWeekStart = cache(async () => readWeekStart((await cookies()).get(WEEK_START_COOKIE)?.value));

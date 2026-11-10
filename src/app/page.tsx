@@ -15,7 +15,8 @@ import {
   quietAction,
   siteWrap,
 } from "@/components/public/site-chrome";
-import { CLOCK_COOKIE, readClock, readStartPage, START_PAGE_COOKIE, startPath } from "@/components/shell/cookies";
+import { readStartPage, START_PAGE_COOKIE, startPath } from "@/components/shell/cookies";
+import { getRequestClock } from "@/components/shell/request-clock";
 import { AREA_COLORS } from "@/domain/area-color";
 import { DELETION_GRACE_DAYS } from "@/features/account/commands";
 import { CaptureDemo } from "@/features/landing/capture-demo";
@@ -120,7 +121,7 @@ export default async function Home() {
   if (data?.claims) redirect(start);
 
   const month = monthOf(toLocalDate(new Date(), "UTC"));
-  const { clock } = readClock(saved.get(CLOCK_COOKIE)?.value);
+  const { clock } = await getRequestClock();
   const [capture, drag, done, focus, wide] = SECTIONS;
 
   return (
