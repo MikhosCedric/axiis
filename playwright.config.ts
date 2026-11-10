@@ -5,7 +5,8 @@ import { defineConfig, devices } from "@playwright/test";
 // so they inherit it through the environment and send the same cookie the server expects.
 process.env.E2E_FAKE_SESSION_SECRET ||= randomBytes(32).toString("hex");
 
-const PORT = 3600;
+// E2E_PORT lets two checkouts (worktrees) run the browser tests at once without fighting over the port.
+const PORT = Number(process.env.E2E_PORT) || 3600;
 const baseURL = `http://localhost:${PORT}`;
 // No bundled browsers are downloaded: CI uses the runner's Google Chrome, and Windows can use Edge.
 const channel = process.env.E2E_CHANNEL === "msedge" ? "msedge" : "chrome";

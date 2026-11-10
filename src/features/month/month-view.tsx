@@ -132,6 +132,12 @@ export function MonthView({
   /** Whether the day under a press was already the chosen one, read before the press focuses it. */
   const pressedChosen = useRef(false);
 
+  // The grid sits under the Month's loading boundary, which React hydrates after the layout that sets
+  // <html data-hydrated>. Until then a key pressed on a day can be dropped, so browser tests wait for this mark.
+  useEffect(() => {
+    if (grid.current) grid.current.dataset.hydrated = "";
+  }, []);
+
   useEffect(() => {
     // Focusing the cell makes it the chosen day through its own focus handler.
     const arrived = takeArrival(days);

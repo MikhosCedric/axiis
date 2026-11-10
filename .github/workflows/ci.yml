@@ -37,9 +37,16 @@ jobs:
       # with the session switched on at runtime must still sign nobody in (docs/e2e-session.md).
       - run: npm run check:no-fake-session -- --skip-build
 
-  e2e:
-    needs: check
+  # The browser tests in four shards, side by side and alongside `check` (they need nothing it makes), so a PR
+  # waits about five minutes instead of fifteen. Each shard builds its own .next-e2e: the build is under half a
+  # minute, less than uploading and fetching it would cost. Shard jobs are named "e2e 1/4" and so on.
+  e2e-shard:
+    name: e2e ${{ matrix.shard }}/4
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
@@ -47,11 +54,12 @@ jobs:
           node-version: 24
           cache: npm
       # Tests run in the runner's installed Google Chrome, so Playwright's own browsers are not needed.
-      - run: npm ci
+      # The audit runs in `check`; skipping it here saves its network round trip in every shard.
+      - run: npm ci --no-audit --no-fund
         env:
           PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: "1"
-      # Builds the browser-test production bundle (AXIIS_E2E_BUILD=1, into .next-e2e) and tests it under next start.
-      - run: npm run e2e
+      # Builds the browser-test production bundle (AXIIS_E2E_BUILD=1, into .next-e2e) and tests this shard under next start.
+      - run: npx playwright test --shard=${{ matrix.shard }}/4
         env:
           CI: "true"
       # The check job's marker search finds every marker in this build, so it would catch the fake session leaking.
@@ -59,8 +67,18 @@ jobs:
       - if: failure()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: playwright-report
+          name: playwright-report-${{ matrix.shard }}
           path: |
             playwright-report/
             test-results/
           retention-days: 14
+
+  # One check named `e2e` that passes only when every shard passed, so anything waiting on that name still works.
+  e2e:
+    needs: e2e-shard
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-latest
+    steps:
+      - run: test "$RESULT" = success
+        env:
+          RESULT: ${{ needs.e2e-shard.result }}

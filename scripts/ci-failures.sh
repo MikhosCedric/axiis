@@ -13,13 +13,21 @@ fi
 gh run view "$rid" --json status,conclusion,headSha,jobs \
   -q '"run '"$rid"' · \(.headSha[0:7]) · \(.status) \(.conclusion)", (.jobs[] | "  \(.name): \(.conclusion // .status)")'
 
-jid="$(gh run view "$rid" --json jobs -q '.jobs[] | select(.name=="e2e" and .conclusion=="failure") | .databaseId')"
-[ -n "$jid" ] || exit 0
+# The browser tests run in shards ("e2e 1/4" ...); the job named plain "e2e" only gathers them and holds no tests.
+# Older runs had one "e2e" job with every test, so any failed job whose name starts with "e2e" is read.
+jids="$(gh run view "$rid" --json jobs -q '.jobs[] | select((.name | startswith("e2e")) and .conclusion=="failure") | "\(.databaseId)\t\(.name)"')"
+[ -n "$jids" ] || exit 0
 
-gh api --allow-escape-sequences "repos/{owner}/{repo}/actions/jobs/$jid/logs" 2>/dev/null |
-  sed 's/\x1b\[[0-9;]*m//g; s/^[0-9T:.Z-]* //' |
-  awk '
-    /^ +[0-9]+\) \[/ { print ""; print $0; keep = 9; next }
-    keep > 0 && /(Error:|Expected|Received|Locator|Timeout|at \/home)/ { print "   " $0; keep-- }
-    /^ +[0-9]+ (failed|flaky|passed)/ { print $0 }
-  '
+while IFS=$'\t' read -r jid name; do
+  out="$(gh api --allow-escape-sequences "repos/{owner}/{repo}/actions/jobs/$jid/logs" 2>/dev/null |
+    sed 's/\x1b\[[0-9;]*m//g; s/^[0-9T:.Z-]* //' |
+    awk '
+      /^ +[0-9]+\) \[/ { print ""; print $0; keep = 9; next }
+      keep > 0 && /(Error:|Expected|Received|Locator|Timeout|at \/home)/ { print "   " $0; keep-- }
+      /^ +[0-9]+ (failed|flaky|passed)/ { print $0 }
+    ')"
+  [ -n "$out" ] || continue
+  echo
+  echo "== $name"
+  echo "$out"
+done <<< "$jids"
