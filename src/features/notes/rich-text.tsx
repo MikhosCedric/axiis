@@ -190,7 +190,9 @@ export function RichText({
         return false;
       },
     },
-    onUpdate: ({ editor: e }) => onChange(e.getJSON()),
+    // A server action argument must be plain data. tiptap 3.33's getJSON() hands back attrs that are not (they went over
+    // the wire as the "$T" placeholder), so the document is copied through JSON before it leaves the editor.
+    onUpdate: ({ editor: e }) => onChange(JSON.parse(JSON.stringify(e.getJSON()))),
     onBlur: () => onBlur(),
   });
   const marks = useMarks(editor);
