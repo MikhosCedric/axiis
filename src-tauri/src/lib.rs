@@ -56,10 +56,15 @@ static LAST_UPDATE_CHECK: AtomicU64 = AtomicU64::new(0);
 fn allowed(url: &Url) -> bool {
     match url.scheme() {
         "tauri" | "about" => true,
-        "http" | "https" => {
+        // Our own site only over https: a plain http address to it is never followed, so a hostile network
+        // cannot sit in the gap before the redirect to https.
+        "https" => {
+            let host = url.host_str();
+            host == Some("tauri.localhost") || host == Some(HOST)
+        }
+        "http" => {
             let host = url.host_str();
             host == Some("tauri.localhost")
-                || host == Some(HOST)
                 // A debug build can point at a local dev server; a release build never can.
                 || (cfg!(debug_assertions) && host == Some("localhost"))
         }
@@ -821,5 +826,14 @@ mod tests {
         assert!(allowed(&"http://tauri.localhost/index.html".parse().unwrap()));
         assert!(!allowed(&"https://evil.example/".parse().unwrap()));
         assert!(!allowed(&"axiis://auth/callback".parse().unwrap()));
+    }
+
+    #[test]
+    fn our_site_is_only_followed_over_https() {
+        assert!(!allowed(&"http://axiis-lovat.vercel.app/today".parse().unwrap()));
+        assert!(!allowed(&"http://axiis-lovat.vercel.app:80/".parse().unwrap()));
+        assert!(allowed(&"https://axiis-lovat.vercel.app/today".parse().unwrap()));
+        // Not a look-alike host either.
+        assert!(!allowed(&"https://axiis-lovat.vercel.app.evil.example/".parse().unwrap()));
     }
 }
