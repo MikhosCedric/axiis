@@ -141,6 +141,14 @@ test("the web manifest names the app and starts on today", async ({ request }) =
   expect(manifest.icons.length).toBeGreaterThan(0);
 });
 
+test("the landing's film loads for a visitor who is signed out", async ({ request }) => {
+  // The sign-in check once sent the video to /login, so the loop never played.
+  for (const path of ["/film/axiis-loop.webm", "/film/axiis-poster.jpg"]) {
+    const response = await request.get(path, { maxRedirects: 0 });
+    expect(response.status(), path).toBe(200);
+  }
+});
+
 test("pages carry the security headers", async ({ request }) => {
   const response = await request.get("/login");
   expect(response.status()).toBe(200);
