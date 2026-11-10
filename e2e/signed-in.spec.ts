@@ -363,6 +363,39 @@ signedIn.describe("signed in", () => {
     await expect(page.getByRole("status").filter({ hasText: "Note is back." })).toBeVisible();
   });
 
+  signedIn("numbered lists, checklists and links in a note survive a reload", async ({ page }) => {
+    await page.goto("/notes?q=zzz-none");
+    await hydrated(page);
+    await page.getByRole("button", { name: "New note" }).click();
+    await expect(page).toHaveURL(/\/notes\/[0-9a-f-]{36}$/);
+    await hydrated(page);
+    const noteUrl = page.url();
+    const editor = page.locator('[contenteditable="true"]');
+    const saved = page.getByRole("status").filter({ hasText: "Saved" });
+
+    await editor.click();
+    await page.getByRole("button", { name: "Numbered list" }).click();
+    await page.keyboard.type("first step");
+    await page.keyboard.press("Enter");
+    await page.keyboard.type("second step");
+    await page.keyboard.press("Enter");
+    await page.keyboard.press("Enter");
+    await page.getByRole("button", { name: "Checklist" }).click();
+    await page.keyboard.type("buy milk");
+    await page.keyboard.press("Enter");
+    await page.keyboard.press("Enter");
+    await page.keyboard.type("see https://example.com/page now");
+    await expect(page.getByText("That did not save. Try again.")).toHaveCount(0);
+    await expect(saved).toBeVisible();
+
+    await page.goto(noteUrl);
+    await hydrated(page);
+    const again = page.locator('[contenteditable="true"]');
+    await expect(again.locator("ol li")).toHaveText(["first step", "second step"]);
+    await expect(again.locator("ul[data-type='taskList'] li")).toHaveText([/buy milk$/]);
+    await expect(again.locator('a[href="https://example.com/page"]')).toBeVisible();
+  });
+
   signedIn("a task's details link an existing note and unlink it again", async ({ page }) => {
     await page.goto("/day/2099-05-20?item=e2e00000-0000-4000-8000-000000000007");
     await hydrated(page);

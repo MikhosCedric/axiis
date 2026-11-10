@@ -43,6 +43,19 @@ describe("bodyText", () => {
 });
 
 describe("parseBody", () => {
+  it("keeps a numbered list's start and a link's href, as tiptap writes them", () => {
+    const body = doc(
+      { type: "orderedList", attrs: { start: 3, type: null }, content: [{ type: "listItem", content: [para(text("c"))] }] },
+      para(text("site", [{ type: "link", attrs: { href: "https://example.com/", target: null, rel: "noopener", class: null } }])),
+    );
+    const parsed = parseBody(JSON.parse(JSON.stringify(body)));
+    expect(parsed.ok).toBe(true);
+    if (parsed.ok) {
+      expect(parsed.doc.content?.[0].attrs).toEqual({ start: 3, type: null });
+      expect(parsed.doc.content?.[1].content?.[0].marks).toEqual([{ type: "link", attrs: { href: "https://example.com/" } }]);
+    }
+  });
+
   it("keeps a checklist, with each box's state, and reads its lines as text", () => {
     const list = {
       type: "taskList",
