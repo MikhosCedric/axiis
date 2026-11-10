@@ -77,6 +77,13 @@ test("every demo works from the keyboard", async ({ page }) => {
   await expect(line).toHaveAccessibleDescription("Reads Friday, 14:00 to 14:30, #home");
   await page.keyboard.press("Enter");
   await expect(page.getByRole("status").filter({ hasText: "“call Sam” lands Friday at 14:00." })).toBeVisible();
+  // A repeat lands on its days, and the sample week marks Tuesday.
+  await page.keyboard.press("ControlOrMeta+A");
+  await page.keyboard.type("every tuesday 7:30 to 9 gym");
+  await expect(line).toHaveAccessibleDescription("Reads Every Tuesday, 07:30 to 09:00");
+  await page.keyboard.press("Enter");
+  await expect(page.getByRole("status").filter({ hasText: "“gym” repeats every Tuesday at 07:30." })).toBeVisible();
+  await expect(page.getByText("Tuesdays", { exact: true })).toBeVisible();
   await page.keyboard.press("ControlOrMeta+A");
   await page.keyboard.type("buy milk");
   await expect(line).toHaveAccessibleDescription("No day or time: it waits in the Inbox.");

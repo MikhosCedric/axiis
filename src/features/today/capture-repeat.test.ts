@@ -3,7 +3,7 @@ import type { LocalDate } from "@/domain/item";
 import type { Weekday } from "@/domain/recurrence";
 import type { TagName } from "@/domain/tag";
 import { cadenceWords, weekdayList } from "./capture-repeat";
-import { parseCapture, previewWords, seriesFor, seriesWords, type CaptureText, type DayWord, type RepeatEnd, type RepeatWords } from "./capture-syntax";
+import { momentAt, parseCapture, passesToday, previewWords, seriesFor, seriesWords, type CaptureText, type Moment, type DayWord, type RepeatEnd, type RepeatWords } from "./capture-syntax";
 
 const d = (s: string) => s as LocalDate;
 const never: RepeatEnd = { kind: "never" };
@@ -209,6 +209,19 @@ describe("seriesFor", () => {
     expect(seriesFor(monthly(3), today, today)).toEqual({ first: "2026-11-10", rule: { freq: "monthly", interval: 3, end: never } });
   });
 
+  it("passes over today when asked, to the next day the repeat falls on", () => {
+    expect(seriesFor(weekly(["TU"]), today, today, true)?.first).toBe("2026-11-17");
+    expect(seriesFor(weekly(["TU", "TH"]), today, today, true)?.first).toBe("2026-11-12");
+    expect(seriesFor(weekly(), today, today, true)?.first).toBe("2026-11-17");
+    expect(seriesFor(weekly(["TU"], 2), today, today, true)?.first).toBe("2026-11-17");
+    expect(seriesFor(daily(), today, today, true)?.first).toBe("2026-11-11");
+    expect(seriesFor(monthly(), today, today, true)?.first).toBe("2026-12-10");
+    expect(seriesFor(yearly(), today, today, true)?.first).toBe("2027-11-10");
+    // Only today is passed over; a later first day stays.
+    expect(seriesFor(weekly(["FR"]), today, today, true)?.first).toBe("2026-11-13");
+    expect(seriesFor(daily(), d("2026-11-12"), today, true)?.first).toBe("2026-11-12");
+  });
+
   it("pins each kind of end to a date or a count", () => {
     const end = (e: RepeatEnd) => seriesFor(weekly(["TU"], 1, e), today, today)?.rule.end;
     expect(end({ kind: "count", count: 10 })).toEqual({ kind: "count", count: 10 });
@@ -269,10 +282,65 @@ describe("how a repeat is said", () => {
     expect(seriesWords({ freq: "monthly", interval: 1, end: { kind: "count", count: 1 } }, today, today)).toBe("every month, once");
   });
 
+  it.each<[string, string]>([
+    // Readings a person could take another way are said out plainly, so they can be fixed before Enter.
+    ["clean every 2nd tuesday", "Every other Tuesday"],
+    ["clean every second tuesday", "Every other Tuesday"],
+    ["clean every 3rd tuesday", "Every 3 weeks on Tuesday"],
+    ["review biweekly", "Every other week"],
+    ["review fortnightly", "Every other week"],
+    ["water plants every 2nd day", "Every other day"],
+  ])("says the plain reading of %j: %j", (text, words) => {
+    expect(previewWords(parseCapture(text), "24")).toBe(words);
+  });
+
+  it("leaves a weekday of the month in the title, as no rule holds it", () => {
+    for (const text of ["every 2nd tuesday of the month rent", "rent every first tuesday of the month", "rent last tuesday of the month"]) {
+      expect(parseCapture(text).repeat).toBeUndefined();
+    }
+  });
+
   it("names a weekly cadence's weekday only when it is known", () => {
     expect(cadenceWords({ freq: "weekly", interval: 2, byDay: [] }, null)).toBe("every other week");
     expect(cadenceWords({ freq: "weekly", interval: 2, byDay: [] }, "WE")).toBe("every other Wednesday");
     expect(cadenceWords({ freq: "weekly", interval: 4, byDay: [] }, "WE")).toBe("every 4 weeks on Wednesday");
     expect(cadenceWords({ freq: "daily", interval: 5, byDay: [] }, null)).toBe("every 5 days");
+  });
+});
+
+describe("a repeat whose time today has passed", () => {
+  const NEW_YORK = "America/New_York";
+  // Tuesday 10 November 2026, 20:00 in New York (EST, UTC-5), and 07:00 that morning.
+  const evening = momentAt(new Date("2026-11-11T01:00:00Z"), NEW_YORK);
+  const morning = momentAt(new Date("2026-11-10T12:00:00Z"), NEW_YORK);
+
+  it("reads the moment on the wall clock of its own day, the days the clocks change included", () => {
+    // Sunday 8 March 2026, 07:00 EDT: the clocks went forward at 02:00, so 06:30 has come and 07:30 has not.
+    const spring = momentAt(new Date("2026-03-08T11:00:00Z"), NEW_YORK);
+    expect(spring.today).toBe("2026-03-08");
+    expect([spring.begun(6 * 60 + 30), spring.begun(7 * 60 + 30)]).toEqual([true, false]);
+    // Sunday 1 November 2026, 08:15 EST: the clocks went back at 02:00, so 08:30 is still ahead.
+    const autumn = momentAt(new Date("2026-11-01T13:15:00Z"), NEW_YORK);
+    expect([autumn.begun(8 * 60), autumn.begun(8 * 60 + 30)]).toEqual([true, false]);
+  });
+
+  it("passes over today only with a time that has come, and never when today was typed", () => {
+    expect(passesToday(parseCapture("gym every tuesday 7:30 to 9"), evening)).toBe(true);
+    expect(passesToday(parseCapture("gym every tuesday 7:30 to 9"), morning)).toBe(false);
+    expect(passesToday(parseCapture("gym every tuesday"), evening)).toBe(false);
+    expect(passesToday(parseCapture("pills every day starting today 7:00"), evening)).toBe(false);
+    expect(passesToday(parseCapture("gym tomorrow 7:30"), evening)).toBe(false);
+  });
+
+  it("previews the later first day, and today's while the time is ahead", () => {
+    const say = (text: string, moment: Moment) => previewWords(parseCapture(text), "24", moment);
+    expect(say("gym every tuesday 7:30 to 9", evening)).toBe("Every Tuesday starting Tuesday 17 November, 07:30 to 09:00");
+    expect(say("gym every tuesday 7:30 to 9", morning)).toBe("Every Tuesday, 07:30 to 09:00");
+    expect(say("pills every day 8am", evening)).toBe("Every day starting tomorrow, 08:00");
+    expect(say("pills every day starting today 8am", evening)).toBe("Every day starting today, 08:00");
+    // A first day that is not today is kept.
+    expect(say("swim every friday 7:00", evening)).toBe("Every Friday, 07:00");
+    // Given the moment, a weekly repeat with no weekday names the one it falls on.
+    expect(say("review weekly", morning)).toBe("Every Tuesday");
   });
 });

@@ -29,6 +29,7 @@ describe("placeCapture", () => {
       start: 9 * 60,
       end: 9 * 60 + 30,
       tags: ["health"],
+      repeats: null,
     });
     expect(placeCapture(CAPTURE_EXAMPLES[1])).toEqual({
       kind: "timed",
@@ -37,6 +38,7 @@ describe("placeCapture", () => {
       start: 14 * 60,
       end: 14 * 60 + 30,
       tags: [],
+      repeats: null,
     });
   });
 
@@ -45,9 +47,34 @@ describe("placeCapture", () => {
   });
 
   it("puts a day with no time in Any time, and a bare line in the Inbox", () => {
-    expect(placeCapture("call Sam next friday")).toEqual({ kind: "anytime", title: "call Sam", day: "next Friday", tags: [] });
+    expect(placeCapture("call Sam next friday")).toEqual({ kind: "anytime", title: "call Sam", day: "next Friday", tags: [], repeats: null });
     expect(placeCapture(CAPTURE_EXAMPLES[2])).toEqual({ kind: "inbox", title: "buy milk", tags: [] });
     expect(placeCapture("Groceries for Sunday")).toEqual({ kind: "inbox", title: "Groceries for Sunday", tags: [] });
+  });
+
+  it("plans a repeat on the days it falls on, in the parser's words, with the sample week it marks", () => {
+    expect(placeCapture(CAPTURE_EXAMPLES[3])).toEqual({
+      kind: "timed",
+      title: "gym",
+      day: "Tuesdays",
+      start: 7 * 60 + 30,
+      end: 9 * 60,
+      tags: [],
+      repeats: { words: "every Tuesday", week: [1] },
+    });
+    expect(placeCapture("standup weekdays 9:00")).toMatchObject({ day: "Weekdays", repeats: { words: "every weekday", week: [0, 1, 2, 3, 4] } });
+    expect(placeCapture("swim mon/wed/fri 7am")).toMatchObject({ day: "Mon, Wed, Fri", repeats: { week: [0, 2, 4] } });
+    expect(placeCapture("pills every day")).toEqual({
+      kind: "anytime",
+      title: "pills",
+      day: "Every day",
+      tags: [],
+      repeats: { words: "every day", week: [0, 1, 2, 3, 4, 5, 6] },
+    });
+    // A repeat that skips weeks is named whole, and marks no single week.
+    expect(placeCapture("clean every 2nd tuesday")).toMatchObject({ kind: "anytime", day: "Every other Tuesday", repeats: { words: "every other Tuesday", week: [] } });
+    expect(placeCapture("haircut every 3 months")).toMatchObject({ day: "Every 3 months", repeats: { week: [] } });
+    expect(placeCapture("pills every day starting tomorrow 8am")).toMatchObject({ kind: "timed", day: "tomorrow", repeats: { words: "every day" } });
   });
 
   it("lands nothing for an empty line", () => {
