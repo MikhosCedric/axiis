@@ -1,0 +1,163 @@
+/*
+ * The hero's floating chips. They sit over the corners of the Score sheet and are drawn at rest first; motion is
+ * added under `prefers-reduced-motion: no-preference`: they arrive on a spring, then bob, and one types a capture.
+ * Text only ever moves (transform), it is never faded.
+ */
+.field {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  display: none;
+  pointer-events: none;
+}
+
+@media (min-width: 1100px) {
+  .field {
+    display: block;
+  }
+}
+
+.floater {
+  position: absolute;
+  transition: translate 900ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.arrive,
+.bob {
+  display: block;
+}
+
+.chip {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid var(--rule-soft);
+  border-radius: 8px;
+  background: var(--sheet);
+  padding: 9px 13px;
+  font-size: var(--fs-caption);
+  font-weight: 500;
+  line-height: 1.2;
+  white-space: nowrap;
+  color: var(--ink);
+  box-shadow:
+    0 1px 1px light-dark(rgb(28 27 34 / 0.08), rgb(0 0 0 / 0.4)),
+    0 16px 30px -12px light-dark(rgb(28 27 34 / 0.32), rgb(0 0 0 / 0.65));
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.glyph {
+  width: 34px;
+}
+
+.capture {
+  left: -1.5%;
+  bottom: -1.6rem;
+}
+
+.capture .chip {
+  width: 17.5rem;
+  justify-content: space-between;
+  border-color: var(--rule);
+  padding: 11px 12px 11px 14px;
+}
+
+.typed {
+  display: block;
+  overflow: hidden;
+  width: 12.9em;
+  white-space: nowrap;
+}
+
+.key {
+  flex: none;
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  padding: 3px 6px;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1;
+  color: var(--ink-3);
+}
+
+.next {
+  right: -1%;
+  top: -2.6rem;
+}
+
+.next .chip {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 9px;
+  padding: 12px 16px 13px 14px;
+}
+
+.nextTitle {
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.done {
+  right: 9%;
+  bottom: -2rem;
+}
+
+.done .chip {
+  color: var(--ink-3);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .arrive {
+    animation: arrive 900ms var(--ease-spring) calc(1100ms + var(--n) * 170ms) both;
+  }
+
+  .bob {
+    animation: bob var(--bob) ease-in-out calc(var(--n) * -1.7s) infinite alternate;
+  }
+
+  /* The capture chip types a line, holds it, and clears for the next, in steps like keys. */
+  .typed {
+    border-right: 1.5px solid var(--accent);
+    animation: type 9s steps(27, end) 2.2s infinite;
+  }
+
+  [data-offscreen] .bob,
+  [data-offscreen] .typed {
+    animation-play-state: paused;
+  }
+}
+
+@keyframes arrive {
+  from {
+    transform: translateY(26px) scale(0.92);
+  }
+}
+
+@keyframes bob {
+  from {
+    transform: translateY(-5px);
+  }
+  to {
+    transform: translateY(6px);
+  }
+}
+
+@keyframes type {
+  0% {
+    width: 0;
+  }
+  42%,
+  86% {
+    width: 12.9em;
+  }
+  100% {
+    width: 0;
+  }
+}

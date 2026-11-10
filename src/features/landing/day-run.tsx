@@ -41,8 +41,8 @@ export function DayRun({ clock, titleClassName }: { clock: Clock; titleClassName
           </h3>
           <p className={styles.lead}>
             Scroll, and a sample day runs from {formatMinutes(RUN_AXIS.from * 60, clock)} to{" "}
-            {formatMinutes(RUN_AXIS.to * 60, clock)}. A line is dashed until its time comes, solid while it is on, and
-            hollow once it is over.
+            {formatMinutes(RUN_AXIS.to * 60, clock)}. Dashed until its time comes, solid while it is on, hollow once it
+            is over.
           </p>
           <p className={styles.phases} aria-hidden="true">
             {PHASES.map((p, i) => (

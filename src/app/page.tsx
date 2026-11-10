@@ -24,6 +24,7 @@ import { DoneDemo } from "@/features/landing/done-demo";
 import { DragDemo } from "@/features/landing/drag-demo";
 import { HeroDrift, Seam } from "@/features/landing/drift";
 import { FocusDemo } from "@/features/landing/focus-demo";
+import { HeroFloaters } from "@/features/landing/floaters";
 import { LiveScore } from "@/features/landing/live-score";
 import { MonthDemo } from "@/features/landing/month-demo";
 import { SECTIONS, type Section } from "@/features/landing/sections";
@@ -44,28 +45,39 @@ export const metadata: Metadata = {
 /** Said under every call to start, so nobody has to sign in to learn what signing in costs. */
 const TERMS = "Free. Email link or Google. No password.";
 
-/** Everything here ships today. Nothing is promised that is not built. */
+/** Bubbles that drift up behind the hero: left, size, rise time, start offset, sway. */
+const BUBBLES: Record<string, string>[] = [
+  { "--x": "6%", "--s": "46px", "--t": "19s", "--d": "-3s", "--w": "14px" },
+  { "--x": "17%", "--s": "18px", "--t": "14s", "--d": "-9s", "--w": "-10px" },
+  { "--x": "31%", "--s": "30px", "--t": "22s", "--d": "-14s", "--w": "12px" },
+  { "--x": "52%", "--s": "14px", "--t": "16s", "--d": "-6s", "--w": "-8px" },
+  { "--x": "66%", "--s": "58px", "--t": "26s", "--d": "-18s", "--w": "16px" },
+  { "--x": "79%", "--s": "22px", "--t": "15s", "--d": "-1s", "--w": "-12px" },
+  { "--x": "91%", "--s": "36px", "--t": "21s", "--d": "-11s", "--w": "10px" },
+];
+
+/** Everything here ships today, each in a few words. Nothing is promised that is not built. */
 const NOW = [
-  "Capture that reads a day, a time, a length and tags typed in plain English, as in “dentist tomorrow 9am #health”",
-  "The Score: each part of your life a line, one hour axis across them all, and a line for now",
-  "Drag a task onto a line to give it a time, or pull its end to change how long; the same moves from the keyboard",
-  "A list view of the same day",
-  "A week view, with items dragged from one day to another",
-  "A month view, with marks dragged from one day to another",
-  "An inbox of everything captured and not yet planned",
-  "Due dates, kept apart from the day you plan to do the thing, listed soonest first",
-  "Anything still open from an earlier day, named on Today with a way to bring it over",
-  "Focus and Next up: the day folded to what is happening and what comes next",
-  "Subtasks, counted on the beam they belong to",
-  "Tasks that repeat daily, on weekdays, weekly, monthly or yearly",
-  "Lists: checklists gathered in one place, each with how many lines are done",
-  "Notes that link to tasks, and search across both",
-  "Tags on any item, with a page for each tag",
-  "Twelve muted colours for areas and tags, and a filter that shows only one",
-  "A command palette on Ctrl or Cmd K, and G then a letter to jump to a page",
-  "A 12-hour or 24-hour clock, light and dark, and a compact density for long lists",
-  "Installs from the browser as an app, on a phone or a computer",
-  "Export all your data, or delete your account with 14 days to change your mind",
+  "Capture in plain English",
+  "The Score and its line for now",
+  "Drag to plan, or use the keys",
+  "List, Week and Month views",
+  "An Inbox for what is unplanned",
+  "Due dates, kept apart",
+  "Open items from earlier days",
+  "Focus and Next up",
+  "Subtasks",
+  "Repeating tasks",
+  "Checklists in Lists",
+  "Notes linked to tasks, and search",
+  "Tags with a page each",
+  "Twelve muted colours for areas and tags",
+  "A command palette on Ctrl or Cmd K",
+  "G then a letter to jump",
+  "12-hour or 24-hour clock",
+  "Light and dark, compact density",
+  "Installs from the browser as an app",
+  "Export it all, or delete with 14 days to change your mind",
 ];
 
 /**
@@ -73,7 +85,7 @@ const NOW = [
  * what it counts where it can (the colours themselves, a ruler of the days).
  */
 const TALLIES = [
-  { value: NOW.length, words: "things it does today, each one listed here", draw: "tally" },
+  { value: NOW.length, words: "things it does today, each one named here", draw: "tally" },
   { value: AREA_COLORS.length, words: "muted colours for areas and tags", draw: "colours" },
   { value: DELETION_GRACE_DAYS, words: "days to change your mind after deleting", draw: "days" },
   { value: 0, words: "ads, analytics or trackers", draw: "none" },
@@ -112,9 +124,12 @@ export default async function Home() {
       <SiteHeader contents={SECTIONS} />
       <main id="main">
         <section className={styles.hero} aria-labelledby="hero-title">
-          <div className={styles.depth} aria-hidden="true">
+          <div className={styles.depth} data-loop="" aria-hidden="true">
             <span className={styles.farStaff} />
             <span className={styles.nearStaff} />
+            {BUBBLES.map((b, i) => (
+              <span key={i} className={styles.bubble} style={vars(b)} />
+            ))}
           </div>
           <div className={`${siteWrap} ${styles.heroText}`}>
             <HeroDrift />
@@ -133,8 +148,7 @@ export default async function Home() {
             </h1>
             <div className={styles.heroFoot}>
               <p className={styles.lead}>
-                One place for the things you have to do and the hours you have to do them in. Each part of your life
-                gets a line, one hour axis runs across them all, and the whole day reads at a glance.
+                Every part of your life on one hour axis. The whole day, at a glance.
               </p>
               <div>
                 <div className="flex flex-wrap items-center gap-3">
@@ -152,11 +166,12 @@ export default async function Home() {
             </div>
           </div>
           <div className={siteWrap}>
-            <div className={styles.stack}>
+            <div className={styles.stack} data-loop="">
               <span className={styles.under} data-parallax="-14" aria-hidden="true" />
               <div className={styles.top} data-parallax="7">
                 <LiveScore />
               </div>
+              <HeroFloaters />
             </div>
           </div>
         </section>
@@ -166,8 +181,7 @@ export default async function Home() {
             <div className={styles.storyHead}>
               <Rise as="h2" id="how-title" className={styles.heading} text="How it works" />
               <p className={`${styles.storyLead} ${styles.reveal}`} data-reveal="">
-                Five things it does, each one working here, lettered A to E as a score marks its passages. Nothing you
-                do on this page is saved.
+                Five moves, each working on this page. Nothing here is saved.
               </p>
             </div>
             <DayRun clock={clock} titleClassName={styles.runTitle} />
@@ -190,25 +204,20 @@ export default async function Home() {
               </div>
               <div className={`${siteWrap} ${styles.movements}`}>
                 <Movement section={capture} title="Write it the way you would say it." demo={<CaptureDemo />}>
-                  Type a line and press Enter. A day, a time, a length and{" "}
-                  <span className="font-medium text-ink">#tags</span> are read from the words you use, and the rest is
-                  the title. Leave the day out and it waits in the Inbox until you decide. This field runs the same
-                  reader the app does.
+                  A day, a time, a length and <span className="font-medium text-ink">#tags</span> are read from your
+                  words. Leave the day out and it waits in the Inbox.
                 </Movement>
 
                 <Movement section={drag} title="Drag it onto a line." demo={<DragDemo />}>
-                  Where you let go is when it starts. Pull its right end to say how long it takes. Every move on the
-                  Score works from the keyboard too.
+                  Where you let go is when it starts. Pull the right end for how long.
                 </Movement>
 
                 <Movement section={done} title="Done is a hollow line." demo={<DoneDemo />}>
-                  Dashed is planned, solid is happening now, hollow is done. A tick turns the beam over, and nothing
-                  turns red when a day runs late.
+                  Dashed is planned, solid is now, hollow is done. Nothing turns red when a day runs late.
                 </Movement>
 
                 <Movement section={focus} title="Fold the day to what is next." demo={<FocusDemo />}>
-                  When a day is full, Focus keeps what is happening and the next three in view, and folds the rest
-                  behind one line that counts it. Next up sits at the top of Today either way.
+                  Focus keeps what is happening and the next three, and folds the rest behind one line.
                 </Movement>
 
                 <Movement
@@ -216,8 +225,7 @@ export default async function Home() {
                   title="Step back to the month."
                   demo={<MonthDemo days={monthGrid(month)} month={month} title={formatMonthHeading(month)} />}
                 >
-                  The Week and the Month show the same items further out. Rest on a day, or walk the grid with the
-                  arrow keys, and its items are listed beside it.
+                  The Week and the Month show the same items further out.
                 </Movement>
               </div>
             </div>
@@ -230,7 +238,7 @@ export default async function Home() {
               <div className={styles.stateHead}>
                 <Rise as="h2" id="state-title" className={styles.heading} text="What it does today" />
                 <p className={`${styles.storyLead} ${styles.reveal}`} data-reveal="">
-                  Only what ships. Each number is read from the code that makes it true.
+                  Only what ships, in a few words each.
                 </p>
               </div>
               <dl className={styles.tallies}>
@@ -263,10 +271,15 @@ export default async function Home() {
                 ))}
               </dl>
             </div>
-            <ul className={styles.ledger}>
+            <ul className={styles.cloud}>
               {NOW.map((line, i) => (
-                <li key={line} className={styles.reveal} data-reveal="" style={vars({ "--i": i % 4 })}>
-                  {line}
+                <li
+                  key={line}
+                  className={`${styles.chip} ${styles.reveal}`}
+                  data-reveal=""
+                  style={vars({ "--i": i % 5, "--bob": `${6 + (i % 4)}s`, "--lag": `${-1.3 * i}s` })}
+                >
+                  <span>{line}</span>
                 </li>
               ))}
             </ul>
@@ -281,12 +294,11 @@ export default async function Home() {
             <div className="max-w-[36rem]">
               <Rise as="h2" id="data-title" className={styles.heading} text="Yours, and only yours" />
               <p className={`${styles.closeBody} ${styles.reveal}`} data-reveal="">
-                Your email and the items you make are stored with Supabase, where each row can be read only by your
-                account. No ads, no analytics, no trackers. The{" "}
+                Stored with Supabase, readable only by your account. No ads, no analytics, no trackers. The{" "}
                 <Link href="/privacy" className={`text-ink underline decoration-(--rule) underline-offset-4 ${drawnLink}`}>
                   privacy page
                 </Link>{" "}
-                says the rest in plain words.
+                says the rest.
               </p>
             </div>
             <div className={`flex flex-col items-start gap-3 ${styles.reveal}`} data-reveal="" style={vars({ "--i": 1 })}>
@@ -349,7 +361,7 @@ function Movement({ section, title, demo, children }: { section: Section; title:
         <Rise as="h3" id={headId} className={styles.movementTitle} text={title} />
         <p className={styles.movementBody}>{children}</p>
         <dl className={styles.keys}>
-          {KEYS[section.id].map(([keys, does]) => (
+          {KEYS[section.id].slice(0, 1).map(([keys, does]) => (
             <div key={does}>
               <dt>
                 {keys.map((k) => (
@@ -361,7 +373,7 @@ function Movement({ section, title, demo, children }: { section: Section; title:
           ))}
         </dl>
       </div>
-      <div className={`${styles.movementDemo} ${styles.reveal}`} data-reveal="" data-glow="" style={vars({ "--i": 1 })}>
+      <div className={`${styles.movementDemo} ${styles.reveal}`} data-reveal="" data-glow="" data-loop="" style={vars({ "--i": 1 })}>
         <span className={styles.sheetShadow} data-glow-shadow="" aria-hidden="true" />
         <span className={styles.lamp} aria-hidden="true">
           <span data-glow-spot="" />

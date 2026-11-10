@@ -225,3 +225,15 @@ describe("firstCapturedLine", () => {
     });
   });
 });
+
+describe("a captured repeat", () => {
+  const gym = { ...base, title: "gym", landed: { ...landed("today", "07:30", "09:00"), repeats: "every Tuesday" } };
+
+  it("says where it starts and that it repeats, in the field, the palette and the first capture", () => {
+    expect(capturedLine(gym, "field", "24")).toBe("Starts today, 07:30 to 09:00. Repeats every Tuesday.");
+    expect(capturedLine({ ...gym, tags: tags("health") }, "palette", "24")).toBe(
+      "Captured “gym”. Starts today, 07:30 to 09:00, with #health. Repeats every Tuesday.",
+    );
+    expect(firstCapturedLine(gym, "24").text).toBe("Gym is today from 07:30 to 09:00, and repeats every Tuesday.");
+  });
+});

@@ -29,6 +29,14 @@ test.describe("capture field", () => {
     await expect(page.locator("[data-captured]")).toContainText("stretch");
   });
 
+  test("Today: a repeating plan is previewed and saved as a series in one step", async ({ page }) => {
+    await page.goto("/dev/score");
+    await field(page).fill("every tuesday at 7:30am to 9am gym");
+    await expect(page.locator("#capture-preview")).toHaveText("Understood: Every Tuesday, 07:30 to 09:00");
+    await field(page).press("Enter");
+    await expect(status(page)).toHaveText(/^Starts (today|tomorrow|Tuesday \d+ \w+), 07:30 to 09:00\. Repeats every Tuesday\.$/);
+  });
+
   test("Today: a plan for tomorrow leaves today's screen and says where it went", async ({ page }) => {
     await page.goto("/dev/score");
     await capture(page, "dentist tomorrow 9:00");
