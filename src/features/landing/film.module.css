@@ -24,7 +24,7 @@
 .toggle {
   position: absolute;
   right: clamp(16px, 2vw, 26px);
-  bottom: clamp(16px, 2vw, 26px);
+  bottom: calc(clamp(8px, 1.2vw, 14px) + clamp(52px, 5vw, 64px) + 8px);
   min-height: 44px;
   border: 1px solid var(--rule);
   border-radius: 999px;
@@ -44,4 +44,11 @@
 .toggle:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
+}
+
+.caption {
+  padding: var(--sp-2) 4px 2px;
+  font-size: var(--fs-caption);
+  line-height: 1.5;
+  color: var(--ink-3);
 }

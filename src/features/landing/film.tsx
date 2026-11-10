@@ -54,11 +54,14 @@ export function Film() {
         loop
         playsInline
         preload="none"
-        aria-label="A short loop of Axiis: a line typed into capture, dragged onto the day, the line for now reaching it, and the item finished."
+        aria-describedby="film-caption"
       />
       <button type="button" className={styles.toggle} onClick={toggle} aria-pressed={playing}>
         {playing ? "Pause the loop" : "Play the loop"}
       </button>
+      <figcaption id="film-caption" className={styles.caption}>
+        Nine seconds, no sound: a line is typed, dropped on the day, reached by the line for now, and finished.
+      </figcaption>
     </figure>
   );
 }
