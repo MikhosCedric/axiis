@@ -101,6 +101,15 @@ export function deletePrompt(tag: { name: string; open?: number }): string {
   return `Delete #${tag.name}?${off} The items stay.`;
 }
 
+/** The merge's confirm: how many items change, what they come to wear, and that it is for good. */
+export function mergePrompt(source: string, target: string, count: number): string {
+  const items =
+    count === 0
+      ? `No item wears #${source}, so only the tag goes.`
+      : `${count === 1 ? "One item wears" : `${count} items wear`} #${source}, including any in Recently deleted. ${count === 1 ? "It" : "Each"} will wear #${target} instead.`;
+  return `${items} #${source} is then gone. This cannot be undone.`;
+}
+
 /** Says how many open items carry a tag. */
 export function openCount(n: number): string {
   return n === 0 ? "None open" : `${n} open`;

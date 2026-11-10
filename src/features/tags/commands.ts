@@ -165,6 +165,39 @@ export async function deleteTag(repo: ItemsRepo, rawId: unknown): Promise<Action
   return attempt(() => repo.deleteTag(id));
 }
 
+export type MergePreview = { ok: true; count: number } | { ok: false; error: string };
+
+async function mergePair(repo: ItemsRepo, rawSource: unknown, rawTarget: unknown): Promise<{ source: Tag; target: Tag } | string> {
+  const sourceId = parseTagId(rawSource);
+  const targetId = parseTagId(rawTarget);
+  if (!sourceId || !targetId) return MISSING_TAG;
+  if (sourceId === targetId) return "Choose another tag to merge into.";
+  const tags = await repo.listTagNames();
+  const source = tags.find((t) => t.id === sourceId);
+  const target = tags.find((t) => t.id === targetId);
+  return source && target ? { source, target } : MISSING_TAG;
+}
+
+/** How many items a merge of `source` into `target` would change, for the confirm. Counts items in Recently deleted too. */
+export async function previewMerge(repo: ItemsRepo, rawSource: unknown, rawTarget: unknown): Promise<MergePreview> {
+  try {
+    const pair = await mergePair(repo, rawSource, rawTarget);
+    if (typeof pair === "string") return { ok: false, error: pair };
+    return { ok: true, count: await repo.countTagged(pair.source.id) };
+  } catch (error) {
+    return { ok: false, error: saveFailure(error, "Axiis could not count that tag's items. Try again.") };
+  }
+}
+
+/** Merges `source` into `target`: every item wearing `source` wears `target` instead, and `source` is deleted. */
+export async function mergeTags(repo: ItemsRepo, rawSource: unknown, rawTarget: unknown): Promise<ActionResult> {
+  return attempt(async () => {
+    const pair = await mergePair(repo, rawSource, rawTarget);
+    if (typeof pair === "string") return { ok: false, error: pair };
+    await repo.mergeTags(pair.source.id, pair.target.id);
+  });
+}
+
 /**
  * The tag names each shown item wears, keyed by the id it is shown with, and the
  * colour of each coloured one, read in one request however many items there are.

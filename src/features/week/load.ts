@@ -4,7 +4,7 @@ import { tagsOfShown } from "@/features/tags/commands";
 import { dayRangeFor, toLocalDate } from "@/lib/dates";
 import { loadOccurrences } from "@/lib/items/occurrences";
 import { RANGE_LIMIT, WAITING_LIMIT, type ItemsRepo } from "@/lib/items/repo";
-import { weekOf, weekRange } from "./model";
+import { WEEK_STARTS_ON, weekOf, weekRange, type WeekStart } from "./model";
 
 /** Everything the week screen needs, loaded on the server and serializable to the client. */
 export type WeekData = {
@@ -28,8 +28,14 @@ export type WeekData = {
   tagColors: TagColors;
 };
 
-export async function loadWeek(repo: ItemsRepo, date: LocalDate, now: Date, timeZone: string): Promise<WeekData> {
-  const days = weekOf(date);
+export async function loadWeek(
+  repo: ItemsRepo,
+  date: LocalDate,
+  now: Date,
+  timeZone: string,
+  startsOn: WeekStart = WEEK_STARTS_ON,
+): Promise<WeekData> {
+  const days = weekOf(date, startsOn);
   const span = weekRange(days, timeZone);
   const today = toLocalDate(now, timeZone);
   // The tray keeps what was ticked done today, as the day screen's does, so the read is today's.

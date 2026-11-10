@@ -7,7 +7,12 @@ import { AREA_PARAM, TAG_PARAM } from "./href";
  * address on the server and checked there, so an area that is not the user's, or
  * a tag name that cannot be one, is simply not a filter.
  */
-export type ViewFilter = { area: Area | null; tag: TagName | null };
+export type ViewFilter = {
+  area: Area | null;
+  tag: TagName | null;
+  /** The tag in the address is no tag of the user's any more: it was deleted, renamed or merged away. */
+  tagGone?: true;
+};
 
 export const NO_FILTER: ViewFilter = { area: null, tag: null };
 
@@ -20,7 +25,13 @@ export function readFilter(query: Query, areas: readonly Area[], { tags }: { tag
   return { area: areas.find((a) => a.id === areaId) ?? null, tag };
 }
 
-export const isFiltered = (f: ViewFilter) => f.area !== null || f.tag !== null;
+/** Marks a tag filter whose tag the user no longer has, so the page can say so instead of showing an empty view. */
+export function checkTag(f: ViewFilter, known: readonly { name: string }[]): ViewFilter {
+  if (!f.tag || known.some((t) => sameTag(t.name, f.tag!))) return f;
+  return { ...f, tagGone: true };
+}
+
+export const isFiltered =(f: ViewFilter) => f.area !== null || f.tag !== null;
 
 /** Whether an item belongs in the filtered view. `tags` are the names it wears. */
 export function keeps(f: ViewFilter, item: { areaId: string | null }, tags: readonly string[] | undefined): boolean {

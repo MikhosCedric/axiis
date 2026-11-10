@@ -25,6 +25,8 @@ export type Place = {
   tab: boolean;
   /** The key after G that goes here. */
   go: string | null;
+  /** A second key after G that also goes here, not shown in the legends. */
+  goAlias?: string;
   /** Other words the palette matches it by. */
   also: readonly string[];
   here: (path: string, today: LocalDate) => boolean;
@@ -82,7 +84,19 @@ export const PLACES: readonly Place[] = [
   },
   { id: "lists", label: "Lists", href: LISTS_PATH, hint: "Checklists and how far along each is", group: "Library", tab: false, go: "l", also: ["checklists"], here: at(LISTS_PATH) },
   { id: "notes", label: "Notes", href: "/notes", hint: "Writing", group: "Library", tab: false, go: "n", also: [], here: under("/notes") },
-  { id: "tags", label: "Tags", href: TAGS_PATH, hint: "Everything by tag", group: "Library", tab: false, go: "#", also: ["labels"], here: under(TAGS_PATH) },
+  {
+    id: "tags",
+    label: "Tags",
+    href: TAGS_PATH,
+    hint: "Everything by tag",
+    group: "Library",
+    tab: false,
+    // H for hash. # still works where it is a plain key; on layouts that need AltGr for it, it never could.
+    go: "h",
+    goAlias: "#",
+    also: ["labels"],
+    here: under(TAGS_PATH),
+  },
   { id: "search", label: "Search", href: "/search", hint: "Find any task or note", group: null, tab: false, go: "s", also: ["find"], here: at("/search") },
   {
     id: "settings",

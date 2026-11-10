@@ -86,6 +86,59 @@ describe("weekRange", () => {
   });
 });
 
+describe("a week that starts on Sunday", () => {
+  const SUNDAY = 0 as const;
+
+  it("runs Sunday to Saturday from any day inside it, and Monday is the default", () => {
+    const week = ["2026-10-04", "2026-10-05", "2026-10-06", "2026-10-07", "2026-10-08", "2026-10-09", "2026-10-10"];
+    for (const day of week) expect(weekOf(d(day), SUNDAY)).toEqual(week);
+    expect(weekOf(d("2026-10-11"), SUNDAY)[0]).toBe("2026-10-11");
+    expect(weekOf(d("2026-10-11"))[0]).toBe("2026-10-05");
+    expect(weekOf(d("2026-10-11"), 1)).toEqual(weekOf(d("2026-10-11")));
+  });
+
+  it("crosses a year and a leap day by calendar date", () => {
+    expect(weekOf(d("2026-01-01"), SUNDAY)[0]).toBe("2025-12-28");
+    expect(weekOf(d("2026-01-01"), SUNDAY)[6]).toBe("2026-01-03");
+    expect(weekOf(d("2028-02-29"), SUNDAY)).toEqual([
+      "2028-02-27",
+      "2028-02-28",
+      "2028-02-29",
+      "2028-03-01",
+      "2028-03-02",
+      "2028-03-03",
+      "2028-03-04",
+    ]);
+  });
+
+  it("starts on the day clocks go forward or back, and the range is an hour short or long", () => {
+    // New York springs forward on Sunday 8 March 2026: the first day of a Sunday week, the last of a Monday week.
+    const spring = weekRange(weekOf(d("2026-03-10"), SUNDAY), "America/New_York");
+    expect([spring.fromDate, spring.toDate]).toEqual(["2026-03-08", "2026-03-15"]);
+    expect(spring.from).toEqual(at("2026-03-08T05:00:00Z"));
+    expect(spring.to).toEqual(at("2026-03-15T04:00:00Z"));
+    expect(spring.to.getTime() - spring.from.getTime()).toBe(167 * HOUR);
+    expect(weekOf(d("2026-03-08"))[6]).toBe("2026-03-08");
+
+    // London falls back on Sunday 25 October 2026.
+    const autumn = weekRange(weekOf(d("2026-10-25"), SUNDAY), "Europe/London");
+    expect(autumn.from).toEqual(at("2026-10-24T23:00:00Z"));
+    expect(autumn.to).toEqual(at("2026-11-01T00:00:00Z"));
+    expect(autumn.to.getTime() - autumn.from.getTime()).toBe(169 * HOUR);
+  });
+
+  it("steps and links by Sunday weeks", () => {
+    const today = d("2026-10-06");
+    expect(weekHref(d("2026-10-04"), today, SUNDAY)).toBe("/week");
+    expect(weekHref(d("2026-10-11"), today, SUNDAY)).toBe("/week/2026-10-11");
+    // A Sunday belongs to the week before under Monday weeks, to its own under Sunday weeks.
+    expect(weekHref(d("2026-10-04"), today)).toBe("/week/2026-09-28");
+    expect(weekNavTarget("next", d("2026-10-10"), today, SUNDAY)).toBe("2026-10-11");
+    expect(weekNavTarget("previous", d("2026-10-04"), today, SUNDAY)).toBe("2026-09-27");
+    expect(weekNavTarget("next", d("2025-12-31"), today, SUNDAY)).toBe("2026-01-04");
+  });
+});
+
 describe("dayOf", () => {
   it("reads a timed item's local start date, a day-only item's date, and nothing for waiting items", () => {
     expect(dayOf(timed("2026-10-07T20:00:00Z", "2026-10-07T21:00:00Z"), "Asia/Kolkata")).toBe("2026-10-08");

@@ -5,7 +5,8 @@ import { occurrenceKey } from "@/domain/item-key";
 import { TAGS_PER_ITEM, TAGS_PER_USER } from "@/domain/tag";
 import { setDone } from "@/features/today/commands";
 import { area, fakeRepo, makeItem } from "@/features/today/test-support";
-import { addTag, deleteTag, loadTagged, loadTagIndex, removeTag, renameTag, setTagColor, tagsOfShown } from "./commands";
+import { addTag, deleteTag, loadTagged, loadTagIndex, mergeTags, previewMerge, removeTag, renameTag, setTagColor, tagsOfShown } from "./commands";
+import { mergePrompt } from "./model";
 
 const TZ = "UTC";
 const d = (s: string) => s as LocalDate;
@@ -120,6 +121,42 @@ describe("removeTag", () => {
     w.tag(w.series.id, "focus");
     expect(await removeTag(w.repo, w.key("2026-10-09"), "focus", TZ)).toEqual({ ok: true });
     expect(w.namesOn(w.series)).toEqual([]);
+  });
+});
+
+describe("previewMerge and mergeTags", () => {
+  function merging() {
+    const w = world();
+    w.tag(w.task.id, "errand");
+    w.tag(w.note.id, "errand", "errands");
+    w.tag(w.series.id, "errands");
+    const id = (name: string) => w.tags.find((t) => t.name === name)!.id;
+    return { ...w, id };
+  }
+
+  it("counts every item wearing the source, then moves them all onto the target and deletes the source", async () => {
+    const w = merging();
+    expect(await previewMerge(w.repo, w.id("errand"), w.id("errands"))).toEqual({ ok: true, count: 2 });
+    expect(await mergeTags(w.repo, w.id("errand"), w.id("errands"))).toEqual({ ok: true });
+    expect(w.tags.map((t) => t.name)).toEqual(["errands"]);
+    expect([w.namesOn(w.task), w.namesOn(w.note), w.namesOn(w.series)]).toEqual([["errands"], ["errands"], ["errands"]]);
+  });
+
+  it("refuses a merge into itself, a missing tag and a bad id, changing nothing", async () => {
+    const w = merging();
+    const before = w.itemTags.length;
+    expect(await mergeTags(w.repo, w.id("errand"), w.id("errand"))).toEqual({ ok: false, error: "Choose another tag to merge into." });
+    expect(await mergeTags(w.repo, w.id("errand"), "00000000-0000-4000-b000-999999999999")).toEqual({ ok: false, error: "That tag is not here any more." });
+    expect(await previewMerge(w.repo, "nope", w.id("errands"))).toEqual({ ok: false, error: "That tag is not here any more." });
+    expect(w.itemTags.length).toBe(before);
+  });
+
+  it("says in the confirm how many items change and that it cannot be undone", () => {
+    expect(mergePrompt("errand", "errands", 2)).toBe(
+      "2 items wear #errand, including any in Recently deleted. Each will wear #errands instead. #errand is then gone. This cannot be undone.",
+    );
+    expect(mergePrompt("a", "b", 1)).toContain("One item wears #a");
+    expect(mergePrompt("a", "b", 0)).toBe("No item wears #a, so only the tag goes. #a is then gone. This cannot be undone.");
   });
 });
 

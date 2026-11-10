@@ -1,5 +1,39 @@
 import { describe, expect, it } from "vitest";
-import { CLOCK_SETTINGS, clockCookieValue, readClock, readDensity, readFocus, readReminders, readTheme, readTour } from "./cookies";
+import {
+  CLOCK_SETTINGS,
+  clockCookieValue,
+  readClock,
+  readDensity,
+  readFocus,
+  readReminders,
+  readStartPage,
+  readTheme,
+  readTour,
+  readWeekStart,
+  START_PAGES,
+  startPath,
+  weekStartSetting,
+} from "./cookies";
+
+describe("readWeekStart", () => {
+  it("is Monday unless Sunday was chosen, and writes back the word it read", () => {
+    expect(readWeekStart(undefined)).toBe(1);
+    expect(readWeekStart("monday")).toBe(1);
+    expect(readWeekStart("0")).toBe(1);
+    expect(readWeekStart("sunday")).toBe(0);
+    expect(weekStartSetting(readWeekStart("sunday"))).toBe("sunday");
+    expect(weekStartSetting(readWeekStart(undefined))).toBe("monday");
+  });
+});
+
+describe("readStartPage", () => {
+  it("opens one of a fixed set of pages, Today for anything else, so a cookie can never lead off the app", () => {
+    expect(readStartPage(undefined)).toBe("today");
+    expect(readStartPage("inbox")).toBe("inbox");
+    for (const odd of ["", "//evil.example", "/week", "settings", "https://x.test"]) expect(readStartPage(odd)).toBe("today");
+    expect(START_PAGES.map(startPath)).toEqual(["/today", "/week", "/month", "/inbox", "/due"]);
+  });
+});
 
 describe("readReminders", () => {
   it("keeps desktop reminders on unless they were turned off", () => {

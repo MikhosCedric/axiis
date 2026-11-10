@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { BackLink } from "@/components/back-link";
 import type { Area } from "@/domain/item";
-import type { ClockSetting, Density, Theme } from "@/components/shell/cookies";
+import type { ClockSetting, Density, StartPage, Theme } from "@/components/shell/cookies";
+import type { WeekStart } from "@/features/week/week-of";
 import type { Clock } from "@/lib/clock";
 import type { TagSummary } from "@/domain/tag";
 import { TagsSection, type TagActions } from "@/features/tags/tags-section";
@@ -20,7 +21,7 @@ function partsOf(desktop: boolean): SettingsPart[] {
     { id: "areas", name: "Areas" },
     { id: "tags", name: "Tags" },
     { id: "display", name: "Display" },
-    { id: "keyboard", name: "Keyboard" },
+    { id: "keyboard", name: "Keyboard", touchHidden: true },
     ...(desktop ? [{ id: "desktop", name: "Desktop app" }] : []),
     { id: "your-data", name: "Your data" },
   ];
@@ -48,6 +49,8 @@ export function SettingsView({
   density = "spacious",
   clock = { setting: "auto", clock: "24" },
   colorHint = true,
+  weekStart = 1,
+  startPage = "today",
   deletedCount = null,
   desktop = null,
 }: {
@@ -65,6 +68,9 @@ export function SettingsView({
   density?: Density;
   /** The time format chosen on this device, and the clock it comes to. */
   clock?: { setting: ClockSetting; clock: Clock };
+  /** The first day of the week and the start page chosen on this device. */
+  weekStart?: WeekStart;
+  startPage?: StartPage;
   /** The suggestion to colour areas has not been dismissed on this device. */
   colorHint?: boolean;
   /** How many items are in Recently deleted, or null when not counted. */
@@ -103,10 +109,10 @@ export function SettingsView({
         </div>
 
         <div id="display">
-          <DisplaySection theme={theme} density={density} clock={clock} />
+          <DisplaySection theme={theme} density={density} clock={clock} weekStart={weekStart} startPage={startPage} />
         </div>
 
-        <div id="keyboard">
+        <div id="keyboard" className="pointer-coarse:hidden">
           <KeyboardSection />
         </div>
 

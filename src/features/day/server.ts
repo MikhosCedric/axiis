@@ -1,6 +1,6 @@
 import { cookies } from "next/headers";
 import { cache } from "react";
-import { CLOCK_COOKIE, readClock, TZ_COOKIE } from "@/components/shell/cookies";
+import { CLOCK_COOKIE, readClock, readWeekStart, TZ_COOKIE, WEEK_START_COOKIE } from "@/components/shell/cookies";
 import type { LocalDate } from "@/domain/item";
 import { getAreas } from "@/features/filter/server";
 import { getItemsRepo } from "@/lib/items";
@@ -14,6 +14,9 @@ export const getTimeZone = cache(async () => resolveTimeZone((await cookies()).g
 
 /** The clock times are written in, as the root layout read it for the browser. */
 export const getClock = cache(async () => readClock((await cookies()).get(CLOCK_COOKIE)?.value).clock);
+
+/** The first day of the week, as Settings chose it for this device, the way the root layout read it for the browser. */
+export const getWeekStart = cache(async () => readWeekStart((await cookies()).get(WEEK_START_COOKIE)?.value));
 
 // One instant per request, so the shell and the page agree on which day is today.
 export const getNow = cache(() => new Date());

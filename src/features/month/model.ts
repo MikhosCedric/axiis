@@ -3,7 +3,7 @@ import { repeats, type Area, type ItemType, type LocalDate, type ShownItem, type
 import { occurrenceKey } from "@/domain/item-key";
 import { stateOf, type BeamState } from "@/features/today/model";
 import { formatClock, formatMinutes, type Clock } from "@/lib/clock";
-import { WEEK_LENGTH, weekOf } from "@/features/week/model";
+import { WEEK_LENGTH, WEEK_STARTS_ON, weekOf, type WeekStart } from "@/features/week/model";
 import { addDays, dayRangeFor, FIRST_DATE, LAST_DATE, localMinutes, toLocalDate } from "@/lib/dates";
 import { RANGE_LIMIT } from "@/lib/items/repo";
 import { spanLine } from "@/features/day/glance";
@@ -46,10 +46,10 @@ export const MIN_WEEKS = 5;
  * The days the grid draws: whole weeks from the week start on or before the
  * 1st through the week holding the last day, five or six of them.
  */
-export function monthGrid(month: YearMonth): LocalDate[] {
-  const start = weekOf(firstOf(month))[0];
+export function monthGrid(month: YearMonth, startsOn: WeekStart = WEEK_STARTS_ON): LocalDate[] {
+  const start = weekOf(firstOf(month), startsOn)[0];
   const last = addDays(firstOf(addMonths(month, 1)), -1);
-  const end = weekOf(last)[WEEK_LENGTH - 1];
+  const end = weekOf(last, startsOn)[WEEK_LENGTH - 1];
   const days: LocalDate[] = [];
   for (let d = start; d <= end || days.length < MIN_WEEKS * WEEK_LENGTH; d = addDays(d, 1)) days.push(d);
   return days;

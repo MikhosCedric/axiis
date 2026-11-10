@@ -10,6 +10,7 @@ import { anchorDay, formatWeekHeading, weekHref, weekNavTarget, weekOf } from ".
 import { keepSpans, spanHrefs } from "./span";
 import { useKeepFilter } from "@/features/filter/keep-filter";
 import { SpanSwitch } from "./span-switch";
+import { useWeekStart } from "@/components/shell/week-start-context";
 
 const step =
   "inline-flex h-9 min-w-11 pointer-coarse:h-11 flex-none items-center justify-center gap-1.5 rounded-md border border-rule bg-sheet px-3 font-medium text-ink shadow-raise hover:bg-paper-2 active:translate-y-px active:bg-press";
@@ -25,9 +26,10 @@ function Chevron({ back }: { back?: boolean }) {
 export function WeekNav({ days, today }: { days: LocalDate[]; today: LocalDate }) {
   const router = useRouter();
   const keep = useKeepFilter();
+  const startsOn = useWeekStart();
   const start = days[0];
-  const previous = weekNavTarget("previous", start, today);
-  const next = weekNavTarget("next", start, today);
+  const previous = weekNavTarget("previous", start, today, startsOn);
+  const next = weekNavTarget("next", start, today, startsOn);
   const isThisWeek = days.includes(today);
 
   // A layout effect, so the listener for this week is swapped in the commit that draws it (see month-nav.tsx).
@@ -44,32 +46,32 @@ export function WeekNav({ days, today }: { days: LocalDate[]; today: LocalDate }
         typing: target !== null && isTypingTarget(target),
       });
       if (!action) return;
-      const to = weekNavTarget(action, start, today);
-      if (weekOf(to)[0] === start) return;
+      const to = weekNavTarget(action, start, today, startsOn);
+      if (weekOf(to, startsOn)[0] === start) return;
       e.preventDefault();
       router.push(keep(weekHref(to, today)));
     }
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
-  }, [router, start, today, keep]);
+  }, [router, start, today, keep, startsOn]);
 
   return (
     <nav aria-label="Week" className="flex flex-wrap items-center gap-2">
-      <SpanSwitch current="week" hrefs={keepSpans(spanHrefs(anchorDay(days, today), today), keep)} />
+      <SpanSwitch current="week" hrefs={keepSpans(spanHrefs(anchorDay(days, today), today, undefined, startsOn), keep)} />
       {/* One pair, so Previous and Next never wrap apart. */}
       <span className="inline-flex flex-none">
-        <Link href={keep(weekHref(previous, today))} className={`${step} rounded-r-none`} aria-keyshortcuts="[" title="Previous week ( [ )">
+        <Link href={keep(weekHref(previous, today, startsOn))} className={`${step} rounded-r-none`} aria-keyshortcuts="[" title="Previous week ( [ )">
           <Chevron back />
           <span aria-hidden="true" className="@max-[40rem]/page:hidden">Previous</span>
-          <span className="sr-only">Previous week, {formatWeekHeading(weekOf(previous))}</span>
+          <span className="sr-only">Previous week, {formatWeekHeading(weekOf(previous, startsOn))}</span>
         </Link>
-        <Link href={keep(weekHref(next, today))} className={`${step} -ml-px rounded-l-none`} aria-keyshortcuts="]" title="Next week ( ] )">
+        <Link href={keep(weekHref(next, today, startsOn))} className={`${step} -ml-px rounded-l-none`} aria-keyshortcuts="]" title="Next week ( ] )">
           <span aria-hidden="true" className="@max-[40rem]/page:hidden">Next</span>
           <Chevron />
-          <span className="sr-only">Next week, {formatWeekHeading(weekOf(next))}</span>
+          <span className="sr-only">Next week, {formatWeekHeading(weekOf(next, startsOn))}</span>
         </Link>
       </span>
-      <WeekPicker start={start} onPick={(picked) => router.push(keep(weekHref(picked, today)))} />
+      <WeekPicker start={start} onPick={(picked) => router.push(keep(weekHref(picked, today, startsOn)))} />
       {!isThisWeek && (
         <Link href={keep("/week")} aria-keyshortcuts="t" title="Back to this week ( T )" className={step}>
           This week
@@ -84,6 +86,7 @@ export function WeekNav({ days, today }: { days: LocalDate[]; today: LocalDate }
  * because every keystroke that completes a date fires `change`.
  */
 function WeekPicker({ start, onPick }: { start: LocalDate; onPick: (date: LocalDate) => void }) {
+  const startsOn = useWeekStart();
   const [value, setValue] = useState<string>(start);
   const [shown, setShown] = useState(start);
   const typed = useRef(false);
@@ -94,7 +97,7 @@ function WeekPicker({ start, onPick }: { start: LocalDate; onPick: (date: LocalD
 
   function commit(raw: string, input: HTMLInputElement) {
     const picked = parseLocalDate(raw);
-    if (picked && weekOf(picked)[0] !== start && input.validity.valid) onPick(picked);
+    if (picked && weekOf(picked, startsOn)[0] !== start && input.validity.valid) onPick(picked);
   }
 
   return (

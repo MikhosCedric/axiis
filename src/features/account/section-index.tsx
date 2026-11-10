@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 
-export type SettingsPart = { id: string; name: string };
+/** `touchHidden` leaves the part out on a touch screen, where its section is hidden too. */
+export type SettingsPart = { id: string; name: string; touchHidden?: boolean };
 
 /**
  * The page's sections as links. On a phone and a tablet a quiet row under the heading; from 1180px a list that
@@ -43,7 +44,7 @@ export function SectionIndex({ parts }: { parts: readonly SettingsPart[] }) {
         {parts.map((part) => {
           const here = current === part.id;
           return (
-            <li key={part.id} className="min-[1180px]:border-b min-[1180px]:border-rule-soft">
+            <li key={part.id} className={`min-[1180px]:border-b min-[1180px]:border-rule-soft ${part.touchHidden ? "pointer-coarse:hidden" : ""}`}>
               <a
                 href={`#${part.id}`}
                 aria-current={here ? "true" : undefined}

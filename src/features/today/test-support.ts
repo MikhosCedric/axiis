@@ -280,6 +280,17 @@ export function fakeRepo(items: Item[] = [], areas: Area[] = []) {
       drop(tags, (t) => t.id === id);
       drop(itemTags, (l) => l.tagId === id);
     },
+    async countTagged(id) {
+      return itemTags.filter((l) => l.tagId === id).length;
+    },
+    async mergeTags(source, target) {
+      if (source === target || !tags.some((t) => t.id === source) || !tags.some((t) => t.id === target)) throw new Error("tag not found");
+      const moved = itemTags.filter((l) => l.tagId === source);
+      for (const l of moved) if (!itemTags.some((m) => m.itemId === l.itemId && m.tagId === target)) itemTags.push({ itemId: l.itemId, tagId: target });
+      drop(tags, (t) => t.id === source);
+      drop(itemTags, (l) => l.tagId === source);
+      return moved.length;
+    },
   };
   const single = () => items.filter((i) => i.recurrence.kind !== "series");
   // Soft-deleted rows leave `items`, but the database keeps them.

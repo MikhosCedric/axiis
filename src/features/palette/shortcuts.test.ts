@@ -9,7 +9,7 @@ import { rowKey } from "@/features/inbox/model";
 import { menuStep, rowKeyAction } from "@/features/actions/model";
 import { keyDestination, weekOf } from "@/features/week/model";
 import { instantAt } from "@/lib/dates";
-import { areaShortcut, CAPTURE_KEY, chordCaps, chordSpoken, globalShortcut, goShortcut, GO_PLACES, SHORTCUTS, type Chord, type Handler } from "./shortcuts";
+import { areaShortcut, CAPTURE_KEY, chordCaps, chordSpoken, globalShortcut, goShortcut, GO_ALIASES, GO_PLACES, SHORTCUTS, type Chord, type Handler } from "./shortcuts";
 
 const source = (path: string) => readFileSync(new URL(`../${path}`, import.meta.url), "utf8");
 
@@ -172,7 +172,15 @@ describe("goShortcut", () => {
     expect(go(false, "g", { defaultPrevented: true })).toBeNull();
   });
 
-  it("gives every place a distinct key", () => {
+  it("gives every place a distinct key, every one a plain letter or comma", () => {
     expect(new Set(GO_PLACES.map((p) => p.key)).size).toBe(GO_PLACES.length);
+    for (const p of GO_PLACES) expect(p.key, p.label).toMatch(/^[a-z,]$/);
+  });
+
+  it("goes to Tags with H, and still with #, which no letter can clash with", () => {
+    expect(go(true, "h")).toEqual({ href: "/tags" });
+    expect(go(true, "H")).toEqual({ href: "/tags" });
+    expect(go(true, "#")).toEqual({ href: "/tags" });
+    expect(GO_ALIASES.every((a) => !GO_PLACES.some((p) => p.key === a.key))).toBe(true);
   });
 });

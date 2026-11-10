@@ -3,9 +3,9 @@ import { buildToday, type TodayEntry } from "@/features/today/model";
 import { addDays, dayRangeFor, instantAt, localMinutes, toLocalDate } from "@/lib/dates";
 import { RANGE_LIMIT } from "@/lib/items/repo";
 import { spanLine } from "@/features/day/glance";
-import { WEEK_LENGTH, weekOf } from "./week-of";
+import { WEEK_LENGTH, WEEK_STARTS_ON, weekOf, type WeekStart } from "./week-of";
 
-export { WEEK_LENGTH, WEEK_STARTS_ON, weekOf } from "./week-of";
+export { WEEK_LENGTH, WEEK_STARTS_ON, weekOf, type WeekStart } from "./week-of";
 
 
 /** Under a week whose read hit `RANGE_LIMIT`, so later planned items are not drawn. */
@@ -148,15 +148,15 @@ export function weekdayName(date: LocalDate, form: "short" | "long"): string {
 }
 
 /** `/week` for the week holding today, `/week/<first day>` for any other. Any selection is dropped. */
-export function weekHref(date: LocalDate, today: LocalDate): string {
-  const start = weekOf(date)[0];
-  return start === weekOf(today)[0] ? "/week" : `/week/${start}`;
+export function weekHref(date: LocalDate, today: LocalDate, startsOn: WeekStart = WEEK_STARTS_ON): string {
+  const start = weekOf(date, startsOn)[0];
+  return start === weekOf(today, startsOn)[0] ? "/week" : `/week/${start}`;
 }
 
 export type WeekNavAction = "previous" | "next" | "today";
 
 /** A date in the week the action leads to. */
-export function weekNavTarget(action: WeekNavAction, date: LocalDate, today: LocalDate): LocalDate {
+export function weekNavTarget(action: WeekNavAction, date: LocalDate, today: LocalDate, startsOn: WeekStart = WEEK_STARTS_ON): LocalDate {
   if (action === "today") return today;
-  return addDays(weekOf(date)[0], action === "next" ? WEEK_LENGTH : -WEEK_LENGTH);
+  return addDays(weekOf(date, startsOn)[0], action === "next" ? WEEK_LENGTH : -WEEK_LENGTH);
 }

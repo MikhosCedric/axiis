@@ -434,4 +434,14 @@ export class SupabaseItemsRepo implements ItemsRepo {
   async deleteTag(tagId: TagId): Promise<void> {
     unwrap("deleteTag", await this.db.from("tags").delete().eq("id", tagId), () => undefined);
   }
+
+  async countTagged(tagId: TagId): Promise<number> {
+    const result = await this.db.from("item_tags").select("item_id", { count: "exact", head: true }).eq("tag_id", tagId);
+    if (result.error) throw new ItemsRepoError(`items.countTagged failed: ${result.error.message}`, { cause: result.error });
+    return result.count ?? 0;
+  }
+
+  async mergeTags(source: TagId, target: TagId): Promise<number> {
+    return unwrap("mergeTags", await this.db.rpc("merge_tags", { source, target }), (raw) => z.number().int().parse(raw));
+  }
 }

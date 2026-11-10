@@ -28,6 +28,13 @@ export function tagDeleted(name: string): void {
   forgetSavedPage(tagHref(name));
 }
 
+/** After `from` is merged into `to`: a visit to `from`'s page leads to `to`'s, and both saved copies are stale. */
+export function tagMerged(from: string, to: string): void {
+  changeVisits((list) => visitsAfterRename(list, from, to));
+  forgetSavedPage(tagHref(from));
+  forgetSavedPage(tagHref(to));
+}
+
 export function tagRenamed(from: string, to: string): void {
   changeVisits((list) => visitsAfterRename(list, from, to));
   forgetSavedPage(tagHref(from));
