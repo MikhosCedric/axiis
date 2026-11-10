@@ -36,6 +36,19 @@ export function ServiceWorkerRegistration() {
   return null;
 }
 
+/**
+ * Mounted on the sign-in page: whoever sees it is signed out, so the worker drops every saved page. The worker
+ * also does this on a navigation to /login; this covers a page the worker did not see load.
+ */
+export function ForgetSavedPages() {
+  useEffect(() => {
+    try {
+      navigator.serviceWorker?.controller?.postMessage({ type: "forget-all" });
+    } catch {}
+  }, []);
+  return null;
+}
+
 function subscribe(onChange: () => void): () => void {
   window.addEventListener("online", onChange);
   window.addEventListener("offline", onChange);

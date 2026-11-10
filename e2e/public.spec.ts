@@ -149,6 +149,14 @@ test("the landing's film loads for a visitor who is signed out", async ({ reques
   }
 });
 
+test("a dynamic route whose path ends like a file still carries the CSP", async ({ request }) => {
+  // The proxy once skipped any path ending in .png or .txt, so such a route got no nonce policy.
+  for (const path of ["/tags/x.png", "/nope.txt", "/nope.mp4"]) {
+    const response = await request.get(path, { maxRedirects: 0 });
+    expect(response.headers()["content-security-policy"], path).toMatch(/script-src 'self' 'nonce-[A-Za-z0-9+/=]+'/);
+  }
+});
+
 test("pages carry the security headers", async ({ request }) => {
   const response = await request.get("/login");
   expect(response.status()).toBe(200);
