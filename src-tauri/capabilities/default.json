@@ -1,8 +1,8 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
-  "description": "Our own pages may set the taskbar badge, report the items still to start, and hand Settings' export to the shell to save through the system Save dialog, and nothing else. Everything else native is driven from Rust: the tray, the capture hotkey, updates and the navigation rules. Release builds can only reach the first origin; localhost is for debug builds pointed at a dev server.",
+  "description": "Our own pages may set the taskbar badge, report the items still to start, and hand Settings' export to the shell to save through the system Save dialog, and nothing else. Everything else native is driven from Rust: the tray, the capture hotkey, updates and the navigation rules. Only our own https origin may call them. A debug build pointed at a local dev server adds the `dev` capability (see dev.json) when it is built.",
   "windows": ["main"],
-  "remote": { "urls": ["https://axiis-lovat.vercel.app/*", "http://localhost:*/*"] },
+  "remote": { "urls": ["https://axiis-lovat.vercel.app/*"] },
   "permissions": ["allow-set-badge", "allow-set-reminders", "allow-save-export"]
 }

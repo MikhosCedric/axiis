@@ -105,6 +105,9 @@ Pages are server-rendered and writes are Server Actions, so the app needs a serv
 npm install
 cd src-tauri && cargo build            # debug build
 AXIIS_URL=http://localhost:3000/login ./target/debug/axiis-desktop.exe   # against a local dev server
+# A debug build pointed at localhost can call the badge, reminder and save commands only if it was built with the
+# `dev` capability (capabilities/dev.json; tauri.conf.json enables only `default`, so a release build cannot):
+TAURI_CONFIG='{"app":{"security":{"capabilities":["default","dev"]}}}' cargo build
 npx tauri build --config '{"bundle":{"createUpdaterArtifacts":false}}'   # unsigned NSIS installer in src-tauri/target/release/bundle/nsis/
 ```
 

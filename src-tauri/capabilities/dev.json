@@ -1,0 +1,8 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "dev",
+  "description": "The same commands as `default`, for a debug build pointed at a local dev server. Not part of the app: tauri.conf.json lists only `default`, so a release build cannot call anything from localhost. Build with TAURI_CONFIG='{\"app\":{\"security\":{\"capabilities\":[\"default\",\"dev\"]}}}' to include it.",
+  "windows": ["main"],
+  "remote": { "urls": ["http://localhost:*/*"] },
+  "permissions": ["allow-set-badge", "allow-set-reminders", "allow-save-export"]
+}
