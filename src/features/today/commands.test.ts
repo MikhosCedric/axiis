@@ -185,12 +185,21 @@ describe("captureTask with a repeat", () => {
     expect(items[0].recurrence).toEqual({ kind: "series", rule: { freq: "weekly", interval: 1, byDay: [], end: { kind: "never" } } });
   });
 
-  it("starts today when today is one of its days, and keeps several weekdays", async () => {
+  it("starts today when today is one of its days and its time is ahead, and keeps several weekdays", async () => {
     const { repo, calls } = fakeRepo();
-    // NOW is 21:00 on a Wednesday in London: 08:00 has passed, and the series still starts today.
-    const result = await captureTask(repo, "swim mon/wed/fri 8:00", NOW, LONDON);
+    // NOW is 21:00 on a Wednesday in London: 22:00 is still ahead, so the series starts today.
+    const result = await captureTask(repo, "swim mon/wed/fri 22:00", NOW, LONDON);
     expect(result).toMatchObject({ landed: { on: "2026-10-07", day: "today", repeats: "every Monday, Wednesday and Friday" } });
     expect(calls.create[0].recurrence).toEqual({ kind: "series", rule: { freq: "weekly", interval: 1, byDay: ["MO", "WE", "FR"], end: { kind: "never" } } });
+  });
+
+  it("starts on the next of its days when its time today has passed, unless today was typed or no time was", async () => {
+    const { repo } = fakeRepo();
+    // 08:00 has passed at 21:00 on Wednesday, so the first swim is Friday's.
+    expect(await captureTask(repo, "swim mon/wed/fri 8:00", NOW, LONDON)).toMatchObject({ landed: { on: "2026-10-09", day: "Friday 9 October" } });
+    expect(await captureTask(repo, "pills every day 8:00", NOW, LONDON)).toMatchObject({ landed: { on: "2026-10-08", day: "tomorrow" } });
+    expect(await captureTask(repo, "pills every day starting today 8:00", NOW, LONDON)).toMatchObject({ landed: { on: "2026-10-07", day: "today" } });
+    expect(await captureTask(repo, "swim mon/wed/fri", NOW, LONDON)).toMatchObject({ landed: { on: "2026-10-07", day: "today" } });
   });
 
   it("builds the first start from the local clock on the day the clocks change", async () => {

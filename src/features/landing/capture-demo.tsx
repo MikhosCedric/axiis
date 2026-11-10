@@ -4,6 +4,7 @@ import { startTransition, useId, useState, ViewTransition, type CSSProperties } 
 import { useClock } from "@/components/shell/clock-context";
 import { CAPTURE_EXAMPLES, parseCapture, previewWords } from "@/features/today/capture-syntax";
 import { Glyph } from "@/features/today/glyph";
+import { RepeatMark } from "@/features/today/repeat-mark";
 import { formatHour, formatMinutes } from "@/lib/clock";
 import { placeCapture, type Placement } from "./demo-model";
 import styles from "./demos.module.css";
@@ -91,11 +92,39 @@ function describe(place: Placement, clock: "12" | "24"): string {
     case "inbox":
       return `“${place.title}” goes to the Inbox.`;
     case "anytime":
-      return `“${place.title}” lands ${place.day}, any time.`;
+      return place.repeats ? `“${place.title}” repeats ${place.repeats.words}, any time.` : `“${place.title}” lands ${place.day}, any time.`;
     case "timed":
-      return `“${place.title}” lands ${place.day} at ${formatMinutes(place.start, clock)}.`;
+      return place.repeats
+        ? `“${place.title}” repeats ${place.repeats.words} at ${formatMinutes(place.start, clock)}.`
+        : `“${place.title}” lands ${place.day} at ${formatMinutes(place.start, clock)}.`;
   }
 }
+
+const WEEK_LETTERS = ["M", "T", "W", "T", "F", "S", "S"];
+
+/** A sample week under the day: the days a repeat falls on carry a planned (dashed) mark, the others a quiet tick. */
+function RepeatRow({ place }: { place: Placement }) {
+  const repeats = place.kind === "timed" || place.kind === "anytime" ? place.repeats : null;
+  return (
+    <div className={styles.landRow}>
+      <span className={`${styles.landName} ${styles.landSmall}`}>Repeats</span>
+      <div className={styles.landChips}>
+        <span className={styles.weekStrip}>
+          {WEEK_LETTERS.map((letter, i) => (
+            <span key={i} className={styles.weekDay} data-on={repeats?.week.includes(i) ? "" : undefined}>
+              {letter}
+            </span>
+          ))}
+        </span>
+        <span className={`${styles.weekWords} ${repeats ? "text-ink-2" : "text-ink-3"}`}>
+          {repeats ? capitalise(repeats.words) : "Once"}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+const capitalise = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
 function Landing({ place, clock }: { place: Placement; clock: "12" | "24" }) {
   const timed = place.kind === "timed" ? place : null;
@@ -131,6 +160,7 @@ function Landing({ place, clock }: { place: Placement; clock: "12" | "24" }) {
           )}
         </div>
       </div>
+      <RepeatRow place={place} />
       <div className={styles.landRow}>
         <span className={`${styles.landName} ${styles.landSmall}`}>Any time</span>
         <div className={styles.landChips}>{place.kind === "anytime" && item}</div>
@@ -145,12 +175,14 @@ function Landing({ place, clock }: { place: Placement; clock: "12" | "24" }) {
 
 function Item({ place, clock }: { place: Exclude<Placement, { kind: "nothing" }>; clock: "12" | "24" }) {
   const tags = place.tags.map((t) => `#${t}`).join(" ");
+  const loop = place.kind !== "inbox" && place.repeats ? <RepeatMark className={styles.landRepeat} /> : null;
   return (
     <ViewTransition name="capture-item" share="capture-move" default="none">
       {place.kind === "timed" ? (
         <span className={styles.landBeam}>
           <span className={styles.landLabel}>
             {place.title}
+            {loop}
             <span className={styles.landClock}>{formatMinutes(place.start, clock)}</span>
             {tags && <span className={styles.landTags}>{tags}</span>}
           </span>
@@ -160,6 +192,7 @@ function Item({ place, clock }: { place: Exclude<Placement, { kind: "nothing" }>
         <span className={styles.chip}>
           <Glyph type="task" state="planned" className={styles.chipGlyph} />
           <span className="truncate">{place.title}</span>
+          {loop}
           {tags && <span className={styles.landTags}>{tags}</span>}
         </span>
       )}
