@@ -1,3 +1,4 @@
+import { ThemeScript } from "@/components/shell/theme-script";
 import type { Metadata, Viewport } from "next";
 import { cookies, headers } from "next/headers";
 import { Bricolage_Grotesque, Hanken_Grotesk } from "next/font/google";
@@ -60,7 +61,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
       suppressHydrationWarning
     >
       <head>
-        <script nonce={nonce} suppressHydrationWarning dangerouslySetInnerHTML={{ __html: themeScript }} />
+        <ThemeScript nonce={nonce} code={themeScript} />
       </head>
       <body className="min-h-dvh">
         <a
