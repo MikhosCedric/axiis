@@ -34,6 +34,7 @@ import { keyPlacement, type DropContext, type Placement } from "./drop";
 import {
   axisWidth,
   beamTop,
+  hiddenByNow,
   hourTicks,
   HOUR_PX,
   labelWidth,
@@ -148,6 +149,7 @@ export function ScoreView({
   );
   const examples = useMemo(() => (firstDay ? exampleBeams(areas) : []), [firstDay, areas]);
   const empty = staves.every((s) => s.beams.length === 0);
+  const nowX = nowMinutes !== null && nowMinutes >= axis.start && nowMinutes <= axis.end ? xAt(axis, nowMinutes) : null;
   const ctx: BeamContext = { date, timeZone, axis, now: nowMinutes, today };
   const start = useScoreDrag(
     { scroller, layer, tray, anyTime: strip, fly },
@@ -303,7 +305,7 @@ export function ScoreView({
                 key={m}
                 data-hour={m / 60}
                 className="absolute inset-y-0 border-l border-rule pt-[9px] pl-1.5 text-xs leading-none font-medium text-ink-3 tabular"
-                style={{ left: xAt(axis, m) }}
+                style={{ left: xAt(axis, m), visibility: hiddenByNow(xAt(axis, m), nowX) ? "hidden" : undefined }}
               >
                 {formatHour(Math.floor(m / 60), clock)}
               </span>

@@ -242,10 +242,16 @@ signedIn.describe("capturing with no connection", () => {
     await expect(waiting).toContainText("1 capture is saved on this device");
     await expect(title(page, "Call the vet from the train")).toHaveCount(0);
 
+    // The browser's own online event and a second one arrive together; the capture must still be posted once.
+    let posts = 0;
+    page.on("request", (r) => {
+      if (r.method() === "POST" && (r.postData() ?? "").includes("Call the vet from the train")) posts += 1;
+    });
     await page.context().setOffline(false);
     await page.evaluate(() => window.dispatchEvent(new Event("online")));
     await expect(waiting).toBeHidden();
     await expect(title(page, "Call the vet from the train")).toHaveCount(1);
+    expect(posts).toBe(1);
   });
 });
 
@@ -293,9 +299,16 @@ signedIn.describe("an item on its own page", () => {
     await expect(page.getByRole("link", { name: "Open in a new window" })).toHaveCount(0);
   });
 
-  signedIn("an address that is not an item key is not found", async ({ page }) => {
+  signedIn("an address that is not an item key is not found, with a clean console", async ({ page }) => {
+    const errors: string[] = [];
+    page.on("console", (m) => {
+      if (m.type() === "error" && !/status of 404/.test(m.text())) errors.push(m.text());
+    });
+    page.on("pageerror", (e) => errors.push(e.message));
     const response = await page.goto("/item/not-a-key");
     expect(response?.status()).toBe(404);
+    await page.waitForLoadState("networkidle");
+    expect(errors).toEqual([]);
   });
 });
 

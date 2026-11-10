@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { createContext, useCallback, useContext, useEffect, useMemo, useSyncExternalStore, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useSyncExternalStore, type ReactNode } from "react";
 import { captureAction } from "@/features/today/actions";
 import { enqueue, flush, readOutbox, remove, retitle, type Queued, type QueuedCapture } from "@/lib/outbox";
 import { reach, UNREACHABLE } from "@/lib/reach";
@@ -61,15 +61,23 @@ export function PendingCaptures() {
   );
   const entries = useMemo<QueuedCapture[]>(() => (owner ? readOutbox(fromText(stored), owner) : []), [owner, stored]);
 
+  // One run at a time: the open and online events can both fire for a single reconnect, and a second run would post the same entry again.
+  const running = useRef(false);
+
   const send = useCallback(async () => {
-    if (!owner || !navigator.onLine) return;
-    const { sent } = await flush(storage(), owner, async (title, entry) => {
-      const answer = await reach(captureAction(title, entry));
-      if (answer.ok) return { ok: true };
-      return { ok: false, error: answer.error, unreachable: answer.error === UNREACHABLE };
-    });
-    window.dispatchEvent(new Event(CHANGED));
-    if (sent > 0) router.refresh();
+    if (!owner || !navigator.onLine || running.current) return;
+    running.current = true;
+    try {
+      const { sent } = await flush(storage(), owner, async (title, entry) => {
+        const answer = await reach(captureAction(title, entry));
+        if (answer.ok) return { ok: true };
+        return { ok: false, error: answer.error, unreachable: answer.error === UNREACHABLE };
+      });
+      window.dispatchEvent(new Event(CHANGED));
+      if (sent > 0) router.refresh();
+    } finally {
+      running.current = false;
+    }
   }, [owner, router]);
 
   useEffect(() => {

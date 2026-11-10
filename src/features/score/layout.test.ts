@@ -5,6 +5,7 @@ import { area, makeItem } from "@/features/today/test-support";
 import { dayRangeFor, instantAt } from "@/lib/dates";
 import {
   axisFor,
+  hiddenByNow,
   beamTop,
   DEFAULT_AXIS,
   hourTicks,
@@ -277,5 +278,16 @@ describe("layoutScore", () => {
   it("sits each sub-row's beam at the bottom of its row", () => {
     expect(beamTop(0)).toBe(39);
     expect(beamTop(1)).toBe(39 + 64);
+  });
+});
+
+describe("hiddenByNow", () => {
+  it("hides an hour label the now-marker would cover, and only that one", () => {
+    // 14:30 sits half an hour (38px) after the 14 tick and before the 15 tick: only 14 is covered.
+    expect(hiddenByNow(1000, 1038)).toBe(true);
+    expect(hiddenByNow(1076, 1038)).toBe(false);
+    expect(hiddenByNow(1000, 1000)).toBe(true);
+    expect(hiddenByNow(924, 1038)).toBe(false);
+    expect(hiddenByNow(1000, null)).toBe(false);
   });
 });

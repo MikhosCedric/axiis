@@ -34,6 +34,14 @@ export function spanOf(item: ShownItem, date: LocalDate, timeZone: string): Span
   return { start, end: Math.max(end, start) };
 }
 
+/** The now-marker is centred on now and about this wide either side; an hour label that starts inside it would show through. */
+const NOW_MARKER_HALF = 30;
+const HOUR_LABEL_WIDTH = 28;
+/** True when the hour label at `tickX` would sit under the now-marker at `nowX` (null when there is no marker). */
+export function hiddenByNow(tickX: number, nowX: number | null): boolean {
+  return nowX !== null && tickX + HOUR_LABEL_WIDTH > nowX - NOW_MARKER_HALF && tickX < nowX + NOW_MARKER_HALF;
+}
+
 /**
  * 07:00 to 20:00, widened to whole hours that hold every span and, on today, now.
  * Given `room`, the pixels the axis has on screen, it then gains as many more
