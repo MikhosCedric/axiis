@@ -1,26 +1,47 @@
 import type { LocalDate } from "@/domain/item";
+import { MAX_COUNT, type Rule, type RuleEnd } from "@/domain/recurrence";
 import { parseTagName, tagKey, type TagName } from "@/domain/tag";
 import { WEEK_LENGTH, weekOf } from "@/features/week/week-of";
 import { addDays, parseLocalDate } from "@/lib/dates";
 import type { CaptureResult, Landed } from "./commands";
 import { formatMinutes, type Clock } from "@/lib/clock";
-import { formatDayHeading } from "./format";
+import { cadenceHit, cadenceWords, dateWords, monthName, monthWord, ruleDay, type Cadence } from "./capture-repeat";
+import { formatDayHeading, formatDayIn } from "./format";
 
 /** A day as typed, before it is pinned to a date: that needs today, which only the server knows for sure. */
 export type DayWord =
   | { kind: "in"; days: number }
   | { kind: "weekday"; weekday: number; next: boolean }
-  | { kind: "on"; date: LocalDate };
+  | { kind: "on"; date: LocalDate }
+  /** A day and month with no year ("20 dec"): the next one from the day it is counted from. Read only after "until" or "starting". */
+  | { kind: "date"; month: number; day: number };
 
 /** A start in minutes past local midnight, and the length only when one was typed. */
 export type CaptureTime = { start: number; length: number | null };
 
-/** What capture understood in a line of text. Anything not understood stays in the title. */
+/** When a typed repeat stops, before it is pinned to dates: "10 times", "for 6 weeks", "until 20 dec", "until the end of june". */
+export type RepeatEnd =
+  | { kind: "never" }
+  | { kind: "count"; count: number }
+  | { kind: "for"; n: number; unit: "day" | "week" | "month" | "year" }
+  | { kind: "until"; day: DayWord }
+  /** The last day of a month: `month` 1 to 12, or null for the first day's own month. */
+  | { kind: "monthEnd"; month: number | null };
+
+/** How a line repeats, as typed. */
+export type RepeatWords = Cadence & { end: RepeatEnd };
+
+/**
+ * What capture understood in a line of text. Anything not understood stays in
+ * the title. `repeat` is there only when the line repeats; its `day`, if any,
+ * is the first day it counts from ("starting tomorrow").
+ */
 export type CaptureText = {
   title: string;
   day: DayWord | null;
   time: CaptureTime | null;
   tags: TagName[];
+  repeat?: RepeatWords;
 };
 
 const WEEKDAYS = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
@@ -29,7 +50,8 @@ const CONNECTORS = new Set(["on", "next", "in", "at", "for", "by"]);
  * Words that tie what follows them into the title. A phrase is never read
  * right after one, so "Groceries for Sunday" keeps its Sunday. Phrases that
  * start with one of them ("on friday", "by tomorrow", "at 9", "in 3 days",
- * "next friday", "for 45m") are read whole, preposition included.
+ * "next friday", "for 45m", "until 20 dec") are read whole, preposition included.
+ * "every" and "each" are here too, so "Groceries for every tuesday" keeps its Tuesday.
  */
 const PREPOSITIONS = new Set([
   ...CONNECTORS,
@@ -43,16 +65,20 @@ const PREPOSITIONS = new Set([
   "since",
   "of",
   "with",
+  "every",
+  "each",
 ]);
 const DAY_MINUTES = 24 * 60;
-/** The most words one phrase spans: "in 3 days", "at 9 pm", "for 1h 30m". */
-const MAX_WORDS = 3;
+/** The most words one phrase spans: "every 2 weeks on mon, wed and fri", "until the end of june". */
+const MAX_WORDS = 8;
 
 type Hit =
-  | { slot: "day"; day: DayWord }
-  | { slot: "time"; start: number; bare: boolean }
+  | { slot: "day"; day: DayWord; starting: boolean }
+  | { slot: "time"; start: number; length: number | null; bare: boolean }
   | { slot: "length"; minutes: number }
-  | { slot: "tag"; name: TagName };
+  | { slot: "tag"; name: TagName }
+  | { slot: "repeat"; cadence: Cadence; adverb: boolean }
+  | { slot: "end"; end: RepeatEnd };
 
 type Token = { text: string; low: string; from: number; to: number };
 
@@ -74,29 +100,78 @@ function dayHit(p: string): DayWord | null {
   return null;
 }
 
+/** A day word, or a date by day and month ("20 dec", "december 20th 2027"), as "until" and "starting" take them. */
+function dateHit(p: string): DayWord | null {
+  const word = dayHit(p);
+  if (word) return word;
+  const date = dateWords(p.replace(/^on /, ""));
+  if (!date) return null;
+  if (date.year === null) return { kind: "date", month: date.month, day: date.day };
+  const on = parseLocalDate(`${date.year}-${pad(date.month)}-${pad(date.day)}`);
+  return on ? { kind: "on", date: on } : null;
+}
+
+const pad = (n: number) => String(n).padStart(2, "0");
 const clock = (h: number, m: number) => (h < 24 && m < 60 ? h * 60 + m : null);
 
-/** A clock time. `bare` is a plain hour or four digits, which mean a time only right after a day. */
-function timeHit(p: string): { start: number; bare: boolean } | null {
-  const at = p.startsWith("at ");
-  const t = at ? p.slice(3) : p;
+/** One clock time. `meridiem` is set when AM or PM was said (or noon, midnight); `bare` is a plain hour or four digits. */
+type Clocked = { minutes: number; meridiem: boolean; bare: boolean };
+
+function clockWord(t: string): Clocked | null {
+  if (t === "noon" || t === "midday") return { minutes: 720, meridiem: true, bare: false };
+  if (t === "midnight") return { minutes: 0, meridiem: true, bare: false };
   let m = /^(\d{1,2}):(\d{2})$/.exec(t);
   if (m) {
-    const start = clock(Number(m[1]), Number(m[2]));
-    return start === null ? null : { start, bare: false };
+    const minutes = clock(Number(m[1]), Number(m[2]));
+    return minutes === null ? null : { minutes, meridiem: false, bare: false };
   }
   m = /^(\d{1,2})(?::(\d{2}))? ?(am|pm)$/.exec(t);
   if (m) {
     const h = Number(m[1]);
-    const start = h >= 1 && h <= 12 ? clock((h % 12) + (m[3] === "pm" ? 12 : 0), Number(m[2] ?? 0)) : null;
-    return start === null ? null : { start, bare: false };
+    const minutes = h >= 1 && h <= 12 ? clock((h % 12) + (m[3] === "pm" ? 12 : 0), Number(m[2] ?? 0)) : null;
+    return minutes === null ? null : { minutes, meridiem: true, bare: false };
   }
   m = /^(\d{1,2})$/.exec(t) ?? /^(\d{2})(\d{2})$/.exec(t);
   if (m) {
-    const start = clock(Number(m[1]), Number(m[2] ?? 0));
-    return start === null ? null : { start, bare: !at };
+    const minutes = clock(Number(m[1]), Number(m[2] ?? 0));
+    return minutes === null ? null : { minutes, meridiem: false, bare: true };
   }
   return null;
+}
+
+/**
+ * A start and end, reading AM and PM the least surprising way: "7-9pm" is
+ * 19:00 to 21:00, "11am to 1" ends at 13:00, "9-5" ends at 17:00, and an end
+ * at or before the start ("22:00 to 1:00", "10pm to midnight") runs past midnight.
+ */
+function span(a: Clocked, b: Clocked): { start: number; length: number } | null {
+  let start = a.minutes;
+  let end = b.minutes;
+  if (!a.meridiem && b.meridiem && start < 720 && start + 720 < end) start += 720;
+  if (!b.meridiem && end <= start && end < 720 && end + 720 > start) end += 720;
+  if (end <= start) end += DAY_MINUTES;
+  const length = end - start;
+  return length < DAY_MINUTES ? { start, length } : null;
+}
+
+const CLOCK = String.raw`(\d{1,2}(?::\d{2})?(?: ?[ap]m)?|noon|midday|midnight)`;
+const RANGE = new RegExp(String.raw`^(?:(at|from|between) )?${CLOCK} ?(-|–|to|until|till|and) ?${CLOCK}$`);
+
+/**
+ * A clock time, or a start and end ("7:30-9am", "from 7:30 to 9", "between 6
+ * and 7pm"). `bare` is a plain hour or four digits, which mean a time only
+ * right after a day or a repeat; "at" makes any of them a time.
+ */
+function timeHit(p: string): { start: number; length: number | null; bare: boolean } | null {
+  const range = RANGE.exec(p);
+  if (range && (range[3] === "and") === (range[1] === "between")) {
+    const [a, b] = [clockWord(range[2]), clockWord(range[4])];
+    const both = a && b && span(a, b);
+    return both ? { ...both, bare: range[1] !== "at" && a.bare && b.bare } : null;
+  }
+  const at = p.startsWith("at ");
+  const one = clockWord(at ? p.slice(3) : p);
+  return one && { start: one.minutes, length: null, bare: one.bare && !at };
 }
 
 function lengthHit(p: string): number | null {
@@ -104,6 +179,40 @@ function lengthHit(p: string): number | null {
   if (!m || (m[1] === undefined && m[2] === undefined)) return null;
   const minutes = Number(m[1] ?? 0) * 60 + Number(m[2] ?? 0);
   return minutes > 0 && minutes <= DAY_MINUTES ? minutes : null;
+}
+
+const NUMBER_WORDS = ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten", "eleven", "twelve"];
+const numberWord = (w: string) => (/^\d+$/.test(w) ? Number(w) : w === "a" || w === "an" ? 1 : NUMBER_WORDS.indexOf(w));
+
+/** When a repeat stops: "10 times", "x10", "for 6 weeks", "until 20 dec", "until friday", "until the end of june". */
+function endHit(p: string): RepeatEnd | null {
+  let m = /^(?:for )?(\d{1,4}) (?:times?|occurrences?|sessions?)$/.exec(p) ?? /^x ?(\d{1,4})$/.exec(p) ?? /^(\d{1,4}) ?x$/.exec(p);
+  if (m) {
+    const count = Number(m[1]);
+    return count >= 1 && count <= MAX_COUNT ? { kind: "count", count } : null;
+  }
+  m = /^for (\d{1,3}|an?|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve) (day|week|month|year)s?$/.exec(p);
+  if (m) {
+    const n = numberWord(m[1]);
+    return n >= 1 ? { kind: "for", n, unit: m[2] as "day" | "week" | "month" | "year" } : null;
+  }
+  m = /^(?:until|till|til|through|thru|ending|ends|up to) (.+)$/.exec(p);
+  if (!m) return null;
+  const end = /^(?:the )?end of (?:the )?([a-z]+)$/.exec(m[1]);
+  if (end) {
+    if (end[1] === "month") return { kind: "monthEnd", month: null };
+    if (end[1] === "year") return { kind: "monthEnd", month: 12 };
+    const month = monthWord(end[1]);
+    return month === null ? null : { kind: "monthEnd", month };
+  }
+  const day = dateHit(m[1]);
+  return day && { kind: "until", day };
+}
+
+/** The first day a repeat counts from: "starting tomorrow", "from next monday", "starting 1 dec". */
+function startingHit(p: string): DayWord | null {
+  const m = /^(?:starting|from|beginning|begins|starts) (?:on |from )?(.+)$/.exec(p);
+  return m ? dateHit(m[1]) : null;
 }
 
 function hitAt(tokens: readonly Token[], from: number, to: number): Hit | null {
@@ -114,51 +223,76 @@ function hitAt(tokens: readonly Token[], from: number, to: number): Hit | null {
   }
   const p = words.map((w) => w.low).join(" ");
   const day = dayHit(p);
-  if (day) return { slot: "day", day };
+  if (day) return { slot: "day", day, starting: false };
   const time = timeHit(p);
   if (time) return { slot: "time", ...time };
   const length = lengthHit(p);
-  return length === null ? null : { slot: "length", minutes: length };
+  if (length !== null) return { slot: "length", minutes: length };
+  const repeat = cadenceHit(p);
+  if (repeat) {
+    const { adverb, ...cadence } = repeat;
+    return { slot: "repeat", cadence, adverb };
+  }
+  const end = endHit(p);
+  if (end) return { slot: "end", end };
+  const starting = startingHit(p);
+  return starting && { slot: "day", day: starting, starting: true };
 }
 
 /** True when the word before `at` is a preposition, so a phrase starting at `at` belongs to the title. */
 const dangles = (tokens: readonly Token[], at: number) => at > 0 && PREPOSITIONS.has(tokens[at - 1].low);
 
-/** True when a day phrase that would be read ends just before `end`, so a bare hour after it reads as a time. */
+/** A day or a repeat: a bare hour right after one reads as a time. */
+const opensTime = (hit: Hit | null) => hit?.slot === "day" || hit?.slot === "repeat";
+
+/** True when a day or repeat phrase that would be read ends just before `end`, so a bare hour after it reads as a time. */
 function dayEndsAt(tokens: readonly Token[], lo: number, end: number): boolean {
   for (let n = 1; n <= MAX_WORDS && end - n >= lo; n++) {
-    if (hitAt(tokens, end - n, end)?.slot === "day" && !dangles(tokens, end - n)) return true;
+    if (opensTime(hitAt(tokens, end - n, end)) && !dangles(tokens, end - n)) return true;
   }
   return false;
 }
 
 type Scan = { lo: number; hi: number; found: { hit: Hit; at: number }[] };
+/** `length`: a length may be read. `repeatOnly`: an end or a "starting" day, which mean something only beside a repeat. */
+type Allow = { length: boolean; repeatOnly: boolean };
 
 /**
  * Peels recognised phrases off the end of the line, then off its start, and
- * stops at the first word on each side that is not one. Each of day, time and
- * length is taken once; a length only when `withLength`.
+ * stops at the first word on each side that is not one. Each of day, time,
+ * length, repeat and end is taken once.
  */
-function scan(tokens: readonly Token[], withLength: boolean): Scan {
+function scan(tokens: readonly Token[], allow: Allow): Scan {
   let lo = 0;
   let hi = tokens.length;
   const found: Scan["found"] = [];
   const taken = new Set<string>();
-  const fits = (hit: Hit, afterDay: boolean) => {
+  const fits = (hit: Hit, afterDay: boolean, atStart: boolean) => {
     if (hit.slot === "tag") return true;
     if (taken.has(hit.slot)) return false;
-    if (hit.slot === "length") return withLength;
-    return hit.slot !== "time" || !hit.bare || afterDay;
+    switch (hit.slot) {
+      case "length":
+        return allow.length;
+      case "end":
+        return allow.repeatOnly;
+      case "day":
+        return allow.repeatOnly || !hit.starting;
+      case "repeat":
+        return !(hit.adverb && atStart);
+      case "time":
+        return (hit.length === null || (allow.length && !taken.has("length"))) && (!hit.bare || afterDay);
+    }
   };
   const take = (hit: Hit, at: number) => {
     found.push({ hit, at });
     taken.add(hit.slot);
+    if (hit.slot === "time" && hit.length !== null) taken.add("length");
   };
 
   fromEnd: while (hi > lo) {
     for (let n = Math.min(MAX_WORDS, hi - lo); n >= 1; n--) {
       const hit = hitAt(tokens, hi - n, hi);
-      if (hit && !dangles(tokens, hi - n) && fits(hit, dayEndsAt(tokens, lo, hi - n))) {
+      if (hit && !dangles(tokens, hi - n) && fits(hit, dayEndsAt(tokens, lo, hi - n), false)) {
         take(hit, hi - n);
         hi -= n;
         continue fromEnd;
@@ -171,9 +305,9 @@ function scan(tokens: readonly Token[], withLength: boolean): Scan {
   fromStart: while (lo < hi) {
     for (let n = Math.min(MAX_WORDS, hi - lo); n >= 1; n--) {
       const hit = hitAt(tokens, lo, lo + n);
-      if (hit && fits(hit, afterDay)) {
+      if (hit && fits(hit, afterDay, true)) {
         take(hit, lo);
-        afterDay = hit.slot === "day";
+        afterDay = opensTime(hit);
         lo += n;
         continue fromStart;
       }
@@ -183,7 +317,7 @@ function scan(tokens: readonly Token[], withLength: boolean): Scan {
   return { lo, hi, found };
 }
 
-/** Drops the backslash from a word that would otherwise be read as a day, time, length or tag. */
+/** Drops the backslash from a word that would otherwise be read as a day, time, length, repeat or tag. */
 function unescape(title: string): string {
   return title.replace(/(^|\s)\\([^\s\\]\S*)/g, (whole, space: string, word: string) => {
     const token = { text: word, low: word.toLowerCase(), from: 0, to: word.length };
@@ -192,11 +326,16 @@ function unescape(title: string): string {
 }
 
 /**
- * Reads a captured line: a day, a start time, a length and tags at its start
- * or end, as in "dentist tomorrow 9:00 #health". Only whole words are read,
- * and only from the edges inward, so a word that is not part of a phrase keeps
- * everything behind it in the title. A line in quotes, or a word after a
- * backslash, stays as typed. A line that would leave no title is all title.
+ * Reads a captured line: a day, a start time or a start and end, a length,
+ * a repeat and how it ends, and tags at its start or end, as in "dentist
+ * tomorrow 9:00 #health" or "every tuesday at 7:30am to 9am gym". Only whole
+ * words are read, and only from the edges inward, so a word that is not part
+ * of a phrase keeps everything behind it in the title. A length needs a time,
+ * and an end ("for 6 weeks") or a first day ("starting monday") needs a
+ * repeat; without one they stay in the title. A lone "daily" or "weekly"
+ * opening the line is a name ("weekly review"); at the end it repeats. A line
+ * in quotes, or a word after a backslash, stays as typed. A line that would
+ * leave no title is all title.
  */
 export function parseCapture(text: string): CaptureText {
   const line = text.trim();
@@ -210,20 +349,29 @@ export function parseCapture(text: string): CaptureText {
     from: m.index,
     to: m.index + m[0].length,
   }));
-  let read = scan(tokens, true);
-  const has = (slot: Hit["slot"]) => read.found.some((f) => f.hit.slot === slot);
-  if (has("length") && !has("time")) read = scan(tokens, false);
+  const allow: Allow = { length: true, repeatOnly: true };
+  let read = scan(tokens, allow);
+  for (;;) {
+    const has = (slot: Hit["slot"]) => read.found.some((f) => f.hit.slot === slot);
+    const lengthAlone = allow.length && has("length") && !has("time");
+    const repeatOnlyAlone =
+      allow.repeatOnly && !has("repeat") && read.found.some((f) => f.hit.slot === "end" || (f.hit.slot === "day" && f.hit.starting));
+    if (!lengthAlone && !repeatOnlyAlone) break;
+    if (lengthAlone) allow.length = false;
+    if (repeatOnlyAlone) allow.repeatOnly = false;
+    read = scan(tokens, allow);
+  }
   if (read.lo >= read.hi) return { ...literal, title: unescape(line) };
 
   const hits = [...read.found].sort((a, b) => a.at - b.at).map((f) => f.hit);
-  const day = hits.find((h) => h.slot === "day");
-  const time = hits.find((h) => h.slot === "time");
-  const length = hits.find((h) => h.slot === "length");
+  const pick = <S extends Hit["slot"]>(slot: S) => hits.find((h): h is Extract<Hit, { slot: S }> => h.slot === slot);
+  const [day, time, length, repeat, end] = [pick("day"), pick("time"), pick("length"), pick("repeat"), pick("end")];
   return {
     title: unescape(line.slice(tokens[read.lo].from, tokens[read.hi - 1].to)),
     day: day?.day ?? null,
-    time: time ? { start: time.start, length: length?.minutes ?? null } : null,
+    time: time ? { start: time.start, length: time.length ?? length?.minutes ?? null } : null,
     tags: firstSpellings(hits.flatMap((h) => (h.slot === "tag" ? [h.name] : []))),
+    ...(repeat && { repeat: { ...repeat.cadence, end: end?.end ?? { kind: "never" } } }),
   };
 }
 
@@ -236,7 +384,21 @@ function firstSpellings(names: readonly TagName[]): TagName[] {
 
 const weekdayOf = (date: LocalDate) => new Date(`${date}T00:00:00Z`).getUTCDay();
 
-/** The date a typed day names, counted from `today`. A weekday is the next one, today included; "next" is that day in next week. */
+/** The first date on or after `from` that is this day of this month; 29 February waits for a leap year. */
+function nextDate(month: number, day: number, from: LocalDate): LocalDate {
+  const year = Number(from.slice(0, 4));
+  for (let y = year; y < year + 8; y++) {
+    const on = parseLocalDate(`${y}-${pad(month)}-${pad(day)}`);
+    if (on && on >= from) return on;
+  }
+  return from;
+}
+
+/**
+ * The date a typed day names, counted from `today`. A weekday is the next one,
+ * today included; "next" is that day in next week. A day and month with no
+ * year is the next one, today included.
+ */
 export function dayOf(word: DayWord, today: LocalDate): LocalDate {
   switch (word.kind) {
     case "in":
@@ -247,6 +409,8 @@ export function dayOf(word: DayWord, today: LocalDate): LocalDate {
       const from = word.next ? addDays(weekOf(today)[0], WEEK_LENGTH) : today;
       return addDays(from, (word.weekday - weekdayOf(from) + WEEK_LENGTH) % WEEK_LENGTH);
     }
+    case "date":
+      return nextDate(word.month, word.day, today);
   }
 }
 
@@ -260,18 +424,113 @@ export function dayWordText(word: DayWord): string {
       const name = WEEKDAYS[word.weekday];
       return `${word.next ? "next " : ""}${name[0].toUpperCase()}${name.slice(1)}`;
     }
+    case "date":
+      return `${word.day} ${monthName(word.month)}`;
+  }
+}
+
+/** The date `months` later, its day kept or pulled back to the month's last: 31 January plus one month is 28 or 29 February. */
+function addMonths(date: LocalDate, months: number): LocalDate {
+  const [y, m, d] = date.split("-").map(Number);
+  const first = new Date(0);
+  first.setUTCFullYear(y, m - 1 + months, 1);
+  const last = new Date(0);
+  last.setUTCFullYear(first.getUTCFullYear(), first.getUTCMonth() + 1, 0);
+  first.setUTCDate(Math.min(d, last.getUTCDate()));
+  return first.toISOString().slice(0, 10) as LocalDate;
+}
+
+function monthEnd(month: number, from: LocalDate): LocalDate {
+  const year = Number(from.slice(0, 4));
+  const end = (y: number) => addDays(addMonths(`${y}-${pad(month)}-01` as LocalDate, 1), -1);
+  return end(year) >= from ? end(year) : end(year + 1);
+}
+
+/** A typed end as a rule's end, counted from the first day; null when it is not a date Axiis plans on. */
+function ruleEnd(end: RepeatEnd, first: LocalDate, today: LocalDate): RuleEnd | null {
+  const until = (on: LocalDate | null): RuleEnd | null => (on && parseLocalDate(on) ? { kind: "until", on } : null);
+  switch (end.kind) {
+    case "never":
+    case "count":
+      return end;
+    case "for": {
+      const after = end.unit === "day" ? addDays(first, end.n) : end.unit === "week" ? addDays(first, end.n * WEEK_LENGTH) : addMonths(first, end.unit === "month" ? end.n : end.n * 12);
+      return until(addDays(after, -1));
+    }
+    case "until":
+      return until(end.day.kind === "date" ? nextDate(end.day.month, end.day.day, first) : dayOf(end.day, today));
+    case "monthEnd":
+      return until(monthEnd(end.month ?? Number(first.slice(5, 7)), first));
+  }
+}
+
+/** A series a capture makes: its first date and its rule. */
+export type CaptureSeries = { first: LocalDate; rule: Rule };
+
+/**
+ * Pins a typed repeat to dates. The first day is the first one on or after
+ * `from` that the repeat falls on: today when today is one of its days, even
+ * if the time has passed, so "every tuesday 7:00" typed on a Tuesday evening
+ * starts today, as the detail panel's repeat does. A weekly repeat on one
+ * weekday is stored as a plain weekly rule on that day, the form the panel's
+ * menu names. Null when it would end before it starts or past the dates
+ * Axiis plans on.
+ */
+export function seriesFor(repeat: RepeatWords, from: LocalDate, today: LocalDate): CaptureSeries | null {
+  const byDay = repeat.freq === "weekly" ? repeat.byDay : [];
+  let first = from;
+  while (byDay.length > 0 && !byDay.includes(ruleDay(weekdayOf(first)))) first = addDays(first, 1);
+  const end = ruleEnd(repeat.end, first, today);
+  if (!end || (end.kind === "until" && end.on < first)) return null;
+  const { interval } = repeat;
+  const rule: Rule =
+    repeat.freq === "weekly"
+      ? { freq: "weekly", interval, byDay: byDay.length === 1 ? [] : [...byDay], end }
+      : { freq: repeat.freq, interval, end };
+  return { first, rule };
+}
+
+const capitalise = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+const timesWords = (count: number) => (count === 1 ? "once" : `${count} times`);
+
+/** How a series repeats, mid-sentence: "every Tuesday", "every weekday, 10 times", "every day, until Sunday 20 December". */
+export function seriesWords(rule: Rule, first: LocalDate, today: LocalDate): string {
+  const cadence = cadenceWords({ freq: rule.freq, interval: rule.interval, byDay: rule.freq === "weekly" ? rule.byDay : [] }, ruleDay(weekdayOf(first)));
+  const end = rule.end.kind === "count" ? timesWords(rule.end.count) : rule.end.kind === "until" ? `until ${formatDayIn(rule.end.on, today)}` : null;
+  return end ? `${cadence}, ${end}` : cadence;
+}
+
+function endWords(end: RepeatEnd): string | null {
+  switch (end.kind) {
+    case "never":
+      return null;
+    case "count":
+      return timesWords(end.count);
+    case "for":
+      return `for ${end.n} ${end.unit}${end.n === 1 ? "" : "s"}`;
+    case "until":
+      return `until ${dayWordText(end.day)}`;
+    case "monthEnd":
+      return `until the end of ${end.month === null ? "the month" : monthName(end.month)}`;
   }
 }
 
 /** What a line will do, for a preview under the field before it is sent, or null when it is all title. */
 export function previewWords(c: CaptureText, clock: Clock): string | null {
-  const day = c.day ? dayWordText(c.day) : c.time ? "today" : null;
+  const day = c.repeat
+    ? `${capitalise(cadenceWords(c.repeat, c.day?.kind === "weekday" ? ruleDay(c.day.weekday) : null))}${c.day ? ` starting ${dayWordText(c.day)}` : ""}`
+    : c.day
+      ? dayWordText(c.day)
+      : c.time
+        ? "today"
+        : null;
   const time = c.time
     ? c.time.length === null
       ? formatMinutes(c.time.start, clock)
       : `${formatMinutes(c.time.start, clock)} to ${formatMinutes(c.time.start + c.time.length, clock)}`
     : null;
-  const parts = [day, time, ...c.tags.map((t) => `#${t}`)].filter((p) => p !== null);
+  const end = c.repeat ? endWords(c.repeat.end) : null;
+  const parts = [day, time, end, ...c.tags.map((t) => `#${t}`)].filter((p) => p !== null);
   return parts.length ? parts.join(", ") : null;
 }
 
@@ -301,9 +560,10 @@ export function capturedLine(result: Captured, where: "field" | "palette", clock
   const time = landed?.time && landedTime(landed.time, clock);
   const plan = landed && (time ? `${landed.day}, ${time.start}${time.end ? ` to ${time.end}` : ""}` : landed.day);
   const line = plan
-    ? `${where === "palette" ? `${what}. ` : ""}Planned for ${plan}${tags ? `,${tags}` : ""}.`
+    ? `${where === "palette" ? `${what}. ` : ""}${landed.repeats ? "Starts" : "Planned for"} ${plan}${tags ? `,${tags}` : ""}.`
     : `${what}${tags}. It is in the Inbox${where === "palette" ? "" : ", below"}.`;
-  return line + missedLine(result);
+  const repeats = landed?.repeats ? ` Repeats ${landed.repeats}.` : "";
+  return line + repeats + missedLine(result);
 }
 
 function landedTime(time: NonNullable<Landed["time"]>, clock: Clock): { start: string; end: string | null } {
@@ -321,14 +581,15 @@ function missedLine({ missed }: Captured): string {
  */
 export function firstCapturedLine(result: Captured, clock: Clock): { text: string; link: { href: string; label: string } } {
   const { landed } = result;
-  const title = result.title.charAt(0).toUpperCase() + result.title.slice(1);
+  const title = capitalise(result.title);
   const tags = result.tags.length ? `, tagged ${tagList(result.tags)}` : "";
   if (!landed) return { text: `${title} is in the Inbox, with no day yet${tags}.${missedLine(result)}`, link: { href: "/inbox", label: "See the Inbox" } };
   const day = landed.day === "today" || landed.day === "tomorrow" ? landed.day : `on ${landed.day}`;
   const at = landed.time && landedTime(landed.time, clock);
   const time = !at ? ", at any time" : at.end ? ` from ${at.start} to ${at.end}` : ` at ${at.start}`;
+  const repeats = landed.repeats ? `, and repeats ${landed.repeats}` : "";
   return {
-    text: `${title} is ${day}${time}${tags}.${missedLine(result)}`,
+    text: `${title} is ${day}${time}${repeats}${tags}.${missedLine(result)}`,
     link: { href: landed.day === "today" ? "/today" : `/day/${landed.on}`, label: `See ${landed.day}` },
   };
 }

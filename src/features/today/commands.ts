@@ -9,7 +9,7 @@ import { instantAt, toLocalDate, wallMinutes } from "@/lib/dates";
 import { materialize } from "@/lib/items/occurrences";
 import type { ItemsRepo } from "@/lib/items/repo";
 import { saveFailure } from "@/lib/quota";
-import { dayOf, parseCapture } from "./capture-syntax";
+import { dayOf, parseCapture, seriesFor, seriesWords } from "./capture-syntax";
 import { TITLE_MAX } from "./model";
 
 export type ActionResult = { ok: true } | { ok: false; error: string };
@@ -33,8 +33,15 @@ export type CaptureResult =
  * the wall-clock minutes past midnight its start and end show, or null. `end`
  * is set only when a length was typed. The screen writes them on its clock.
  */
-export type Landed = { on: LocalDate; day: string; time: { start: number; end: number | null } | null };
+export type Landed = {
+  on: LocalDate;
+  day: string;
+  time: { start: number; end: number | null } | null;
+  /** How it repeats, mid-sentence ("every Tuesday, 10 times"), when the capture made a series; `on` is its first day. */
+  repeats?: string;
+};
 
+const ENDS_BEFORE = "That repeat would end before it starts, or past 2200. Change its end and try again.";
 const TOO_LONG = `Titles can be up to ${TITLE_MAX} characters. Put the rest in a note later.`;
 
 /**
@@ -58,7 +65,8 @@ export async function captureChecklist(repo: ItemsRepo, raw: unknown): Promise<C
  * the line's start or end are read here, on the server, against its own clock
  * and the user's time zone; the client sends only the words. A line that
  * names no day lands on `defaultOn` when one is given (the Month's focused
- * day), else on today when it names a time, else nowhere.
+ * day), else on today when it names a time, else nowhere. A line that repeats
+ * ("every tuesday 7:30") is created as a series, on its first matching day.
  */
 /** A capture queued on the device: its own id, and the moment it was typed (ms since the epoch). */
 export type QueuedEntry = { id: string; at: number };
@@ -90,7 +98,13 @@ export async function captureTask(
   if (!text.success) return { ok: false, error: TOO_LONG };
   const said = parseCapture(text.data);
   const today = toLocalDate(now, timeZone);
-  const on = said.day ? dayOf(said.day, today) : (defaultOn ?? (said.time ? today : null));
+  const named = said.day ? dayOf(said.day, today) : null;
+  let on = named ?? defaultOn ?? (said.time ? today : null);
+
+  // A repeat is always planned: from the day it names, else the default day, else today.
+  const series = said.repeat ? seriesFor(said.repeat, on ?? today, today) : null;
+  if (said.repeat && !series) return { ok: false, error: ENDS_BEFORE };
+  if (series) on = series.first;
 
   let schedule: Schedule = { kind: "unscheduled" };
   let landed: Landed | null = null;
@@ -104,10 +118,12 @@ export async function captureTask(
     schedule = { kind: "day", on };
     landed = { on, day: dayWords(on, today), time: null };
   }
+  if (landed && series) landed.repeats = seriesWords(series.rule, series.first, today);
 
   let id: ItemId;
   try {
-    id = (await repo.create({ ...(clientId && { id: clientId }), type: "task", title: said.title, schedule })).id;
+    const recurrence = series ? { recurrence: { kind: "series" as const, rule: series.rule } } : {};
+    id = (await repo.create({ ...(clientId && { id: clientId }), type: "task", title: said.title, schedule, ...recurrence })).id;
   } catch (error) {
     return { ok: false, error: saveFailure(error, NOT_SAVED) };
   }
