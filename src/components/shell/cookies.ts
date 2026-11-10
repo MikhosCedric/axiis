@@ -62,11 +62,12 @@ export type ClockSetting = (typeof CLOCK_SETTINGS)[number];
 /**
  * The clock cookie holds the choice, "12" or "24", or under Auto the clock the
  * browser last reported, "auto-12" or "auto-24". With no cookie yet the server
- * writes 24-hour times until the browser has said which it uses.
+ * writes `guess`, the clock the request's language uses (see `headerClock`),
+ * until the browser has said which it uses.
  */
-export function readClock(value: string | undefined): { setting: ClockSetting; clock: Clock } {
+export function readClock(value: string | undefined, guess: Clock = "24"): { setting: ClockSetting; clock: Clock } {
   if (value === "12" || value === "24") return { setting: value, clock: value };
-  return { setting: "auto", clock: value === "auto-12" ? "12" : "24" };
+  return { setting: "auto", clock: value === "auto-12" ? "12" : value === "auto-24" ? "24" : guess };
 }
 
 /** The day a week begins on, as `Date#getUTCDay` numbers it: 1 is Monday, 0 is Sunday. */

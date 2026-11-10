@@ -32,7 +32,9 @@ import {
   areaSection,
   findQuery,
   findStatus,
+  leadsWithMatch,
   paletteSections,
+  sameTitle,
   type Act,
   type Command,
   type Find,
@@ -297,9 +299,10 @@ function Modal({
   );
 }
 
-/** The area choices go straight after the pages, before dates, capture and search. */
+/** The area choices go straight after the pages (and an item named exactly what was typed), before dates, capture and search. */
 function withAreas(sections: Section[], areas: Section[]): Section[] {
-  const at = sections.findIndex((s) => s.id === "go") + 1;
+  const go = sections.findIndex((s) => s.id === "go");
+  const at = go >= 0 ? go + 1 : leadsWithMatch(sections) ? 1 : 0;
   return [...sections.slice(0, at), ...areas, ...sections.slice(at)];
 }
 
@@ -337,6 +340,8 @@ function PaletteBody({
   // Read once as the palette opens; the page it is opened on is not offered back.
   const [recent] = useState(() => readVisits().filter((v) => v.href !== window.location.pathname));
   const searched = useRef("");
+  // Words whose capture waits on the search still out for them; see `settle`.
+  const held = useRef<string | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   useEffect(() => () => clearTimeout(timer.current), []);
@@ -368,23 +373,51 @@ function PaletteBody({
   }, [activeId]);
 
   function type(value: string) {
+    held.current = null;
     setInput(value);
     setActive(0);
     setNote(null);
     if (!target) search(value);
   }
 
-  function search(value: string) {
+  function search(value: string, now = false) {
     clearTimeout(timer.current);
     const q = findQuery(value);
     if (!q) return;
     setFind((f) => (f.status === "done" && f.query === q ? f : { status: "searching", query: q }));
-    timer.current = setTimeout(() => {
-      actions.search(q).then(
-        (rows) => setFind((f) => (f.status === "searching" && f.query === q ? { status: "done", query: q, rows } : f)),
-        () => setFind((f) => (f.status === "searching" && f.query === q ? { status: "failed", query: q } : f)),
-      );
-    }, SEARCH_DELAY_MS);
+    timer.current = setTimeout(
+      () => {
+        actions.search(q).then(
+          (rows) => {
+            setFind((f) => (f.status === "searching" && f.query === q ? { status: "done", query: q, rows } : f));
+            settle(q, rows);
+          },
+          () => {
+            setFind((f) => (f.status === "searching" && f.query === q ? { status: "failed", query: q } : f));
+            settle(q, []);
+          },
+        );
+      },
+      now ? 0 : SEARCH_DELAY_MS,
+    );
+  }
+
+  /**
+   * Enter on Capture while search is still out for those words waits for it.
+   * When an item is already named what was typed, it is offered first instead
+   * of saving a copy; otherwise the words are captured as asked.
+   */
+  function settle(q: string, rows: readonly SearchRow[]) {
+    const words = held.current;
+    if (words === null || findQuery(words) !== q) return;
+    held.current = null;
+    const same = rows.find((r) => sameTitle(r.title, words));
+    if (!same) {
+      capture(words);
+      return;
+    }
+    setActive(0);
+    setNote(`“${same.title}” is already here, so Enter opens it. Choose Capture to add another.`);
   }
 
   function run(command: Command) {
@@ -497,7 +530,15 @@ function PaletteBody({
       setActive(moves[e.key]);
     } else if (e.key === "Enter" && current >= 0) {
       e.preventDefault();
-      run(commands[current]);
+      const command = commands[current];
+      if (command.kind === "capture" && find.status === "searching" && find.query === findQuery(input)) {
+        if (held.current !== null) return;
+        held.current = input;
+        setNote("Checking for one already here");
+        search(input, true);
+        return;
+      }
+      run(command);
     }
   }
 

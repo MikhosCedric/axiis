@@ -54,6 +54,25 @@ export function parseClock(text: string): number | null {
  * operating system's region instead, which an emulated locale does not change.
  */
 export function deviceClock(): Clock {
-  const cycle = new Intl.DateTimeFormat(navigator.languages?.[0] ?? navigator.language, { hour: "numeric" }).resolvedOptions().hourCycle;
-  return cycle === "h11" || cycle === "h12" ? "12" : "24";
+  return languageClock(navigator.languages?.[0] ?? navigator.language);
+}
+
+/** The clock a language and region use ("en-US" 12, "en-GB" 24), or 24 for one Intl does not know. */
+export function languageClock(language: string): Clock {
+  try {
+    const cycle = new Intl.DateTimeFormat(language, { hour: "numeric" }).resolvedOptions().hourCycle;
+    return cycle === "h11" || cycle === "h12" ? "12" : "24";
+  } catch {
+    return "24";
+  }
+}
+
+/**
+ * The clock the first language of an Accept-Language header uses, which is
+ * the browser's first language, so the server's first page under Auto writes
+ * the times the browser will report. 24 with no header.
+ */
+export function headerClock(acceptLanguage: string | null | undefined): Clock {
+  const first = acceptLanguage?.split(",")[0]?.split(";")[0]?.trim();
+  return first && first !== "*" ? languageClock(first) : "24";
 }

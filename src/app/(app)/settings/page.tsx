@@ -1,11 +1,9 @@
 import type { Metadata } from "next";
 import { cookies } from "next/headers";
 import {
-  CLOCK_COOKIE,
   COLOR_HINT_COOKIE,
   DENSITY_COOKIE,
   DESKTOP_COOKIE,
-  readClock,
   readStartPage,
   readWeekStart,
   START_PAGE_COOKIE,
@@ -16,6 +14,7 @@ import {
   REMINDERS_COOKIE,
   THEME_COOKIE,
 } from "@/components/shell/cookies";
+import { getRequestClock } from "@/components/shell/request-clock";
 import {
   addAreaAction,
   deleteAccountAction,
@@ -73,7 +72,7 @@ export default async function SettingsPage() {
       deletesOn={deletesOn}
       theme={readTheme(saved.get(THEME_COOKIE)?.value)}
       density={readDensity(saved.get(DENSITY_COOKIE)?.value)}
-      clock={readClock(saved.get(CLOCK_COOKIE)?.value)}
+      clock={await getRequestClock()}
       weekStart={readWeekStart(saved.get(WEEK_START_COOKIE)?.value)}
       startPage={readStartPage(saved.get(START_PAGE_COOKIE)?.value)}
       colorHint={saved.get(COLOR_HINT_COOKIE)?.value !== "off"}

@@ -3,7 +3,7 @@ import type { ItemId, LocalDate } from "@/domain/item";
 import type { TagName } from "@/domain/tag";
 import type { SearchRow } from "@/features/notes/model";
 import { quickNote } from "@/features/actions/quick-item";
-import { actedLine, actSections, FIND_MAX, findQuery, findStatus, paletteSections, type Find, type Target } from "./model";
+import { actedLine, actSections, FIND_MAX, findQuery, findStatus, leadsWithMatch, paletteSections, sameTitle, type Find, type Target } from "./model";
 
 const today = "2026-10-06" as LocalDate;
 const idle: Find = { status: "idle" };
@@ -142,6 +142,31 @@ describe("paletteSections", () => {
   it("puts pages, dates, capture and results in that order", () => {
     const sections = paletteSections("notes", today, "24", { status: "done", query: "notes", rows: [row(1)] });
     expect(sections.map((s) => s.id)).toEqual(["go", "capture", "find"]);
+  });
+
+  it("puts an item named exactly what was typed first, with Capture after it as a new task", () => {
+    const dentist = row(1, { type: "event", title: "Dentist", href: "/today?item=1" });
+    for (const typed of ["dentist", " Dentist ", "DENTIST."]) {
+      const sections = paletteSections(typed, today, "24", { status: "done", query: typed.trim(), rows: [row(2, { title: "Dentist notes" }), dentist] });
+      expect(sections.map((s) => s.id)).toEqual(["find", "capture"]);
+      expect(sections[0].commands.map((c) => c.label)).toEqual(["Dentist", "Dentist notes"]);
+      expect(sections[1].commands[0].label).toBe(`Capture “${typed.trim()}” as a new task`);
+      expect(leadsWithMatch(sections)).toBe(true);
+    }
+  });
+
+  it("keeps Capture first when no item is named exactly what was typed, or the line plans a day", () => {
+    const dentist = row(1, { type: "event", title: "Dentist" });
+    expect(paletteSections("dent", today, "24", { status: "done", query: "dent", rows: [dentist] }).map((s) => s.id)).toEqual(["capture", "find"]);
+    const planned = paletteSections("dentist tomorrow", today, "24", { status: "done", query: "dentist tomorrow", rows: [dentist] });
+    expect(planned.map((s) => s.id)).toEqual(["capture", "find"]);
+    expect(sameTitle("Dentist", "dentist")).toBe(true);
+    expect(sameTitle("Dentist", "dentist visit")).toBe(false);
+    expect(sameTitle("", " ")).toBe(false);
+  });
+
+  it("says why a repeat with no title will be captured as typed", () => {
+    expect(labels("every sunday").capture).toEqual(["Capture “every sunday” as a task. Add what to do: “every sunday” alone has no title"]);
   });
 
   it("gives every command a distinct id", () => {

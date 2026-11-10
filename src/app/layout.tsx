@@ -3,7 +3,8 @@ import { cookies, headers } from "next/headers";
 import { Bricolage_Grotesque, Hanken_Grotesk } from "next/font/google";
 import { ClockProvider } from "@/components/shell/clock-context";
 import { HydratedMark } from "@/components/shell/hydrated-mark";
-import { CLOCK_COOKIE, DENSITY_COOKIE, readClock, readDensity, readWeekStart, THEME_COOKIE, WEEK_START_COOKIE } from "@/components/shell/cookies";
+import { DENSITY_COOKIE, readDensity, readWeekStart, THEME_COOKIE, WEEK_START_COOKIE } from "@/components/shell/cookies";
+import { getRequestClock } from "@/components/shell/request-clock";
 import { WeekStartProvider } from "@/components/shell/week-start-context";
 import { SITE_DESCRIPTION, SITE_NAME, siteUrl } from "@/lib/site";
 import { PAPER_DARK, PAPER_LIGHT } from "@/lib/theme-colors";
@@ -49,7 +50,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
   const nonce = (await headers()).get("x-nonce") ?? undefined;
   const saved = await cookies();
   const density = readDensity(saved.get(DENSITY_COOKIE)?.value);
-  const { clock } = readClock(saved.get(CLOCK_COOKIE)?.value);
+  const { clock } = await getRequestClock();
   const weekStart = readWeekStart(saved.get(WEEK_START_COOKIE)?.value);
   return (
     <html

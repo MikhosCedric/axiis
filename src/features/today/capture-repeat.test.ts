@@ -132,6 +132,36 @@ describe("parseCapture reads a repeat", () => {
     expect(parseCapture(text)).toEqual(expected);
   });
 
+  it.each<[string, CaptureText]>([
+    // How often, opening the line: a repeat, as it is at the end.
+    ["daily 7am walk", reads("walk", daily(), at("7:00"))],
+    ["walk daily 7am", reads("walk", daily(), at("7:00"))],
+    ["daily walk 7am", reads("walk", daily(), at("7:00"))],
+    ["daily 7 walk", reads("walk", daily(), at("7:00"))],
+    ["monthly rent", { ...reads("rent", monthly()), quoteToKeep: "monthly rent" }],
+    ["rent monthly", reads("rent", monthly())],
+    ["weekly review", { ...reads("review", weekly()), quoteToKeep: "weekly review" }],
+    ["daily standup 9am", reads("standup", daily(), at("9:00"))],
+    ["weekly review friday 4pm", reads("review", weekly(["FR"]), at("16:00"))],
+    ["review weekly friday 4pm", reads("review", weekly(["FR"]), at("16:00"))],
+    ["weekly review next friday", reads("review", weekly(), null, { kind: "weekday", weekday: 5, next: true })],
+    ["fortnightly sync friday", reads("sync", weekly(["FR"], 2))],
+    ["monthly rent until december", reads("rent", monthly(1, { kind: "monthEnd", month: 12 }))],
+    ["rent monthly until december", reads("rent", monthly(1, { kind: "monthEnd", month: 12 }))],
+    ["gym every tuesday until december", reads("gym", weekly(["TU"], 1, { kind: "monthEnd", month: 12 }))],
+    ["gym every tuesday until 31 december", reads("gym", weekly(["TU"], 1, { kind: "until", day: { kind: "date", month: 12, day: 31 } }))],
+    ["gym every tuesday till sept", reads("gym", weekly(["TU"], 1, { kind: "monthEnd", month: 9 }))],
+  ])("reads %j", (text, expected) => {
+    expect(parseCapture(text)).toEqual(expected);
+  });
+
+  it("runs until a month to that month's last day, the next one on or after the first day", () => {
+    const today = d("2026-11-10");
+    expect(seriesFor(monthly(1, { kind: "monthEnd", month: 12 }), today, today)?.rule.end).toEqual({ kind: "until", on: "2026-12-31" });
+    expect(seriesFor(monthly(1, { kind: "monthEnd", month: 11 }), today, today)?.rule.end).toEqual({ kind: "until", on: "2026-11-30" });
+    expect(seriesFor(monthly(1, { kind: "monthEnd", month: 2 }), today, today)?.rule.end).toEqual({ kind: "until", on: "2027-02-28" });
+  });
+
   it("keeps tags beside a repeat", () => {
     expect(parseCapture("#health gym every tuesday 7:30 #gym")).toEqual({ ...reads("gym", weekly(["TU"]), at("7:30")), tags: ["health", "gym"] as TagName[] });
   });
@@ -139,11 +169,10 @@ describe("parseCapture reads a repeat", () => {
 
 describe("parseCapture keeps what only looks like a repeat in the title", () => {
   it.each([
-    // A name that opens with how often, and a repeat with nothing else to name it.
-    "daily standup",
-    "weekly review",
-    "monthly report",
+    // A repeat with nothing else to name it.
     "every tuesday",
+    "every other friday",
+    "daily",
     // A phrase after a preposition, or after "every" itself.
     "Groceries for every tuesday",
     "Notes from monday",
@@ -164,16 +193,19 @@ describe("parseCapture keeps what only looks like a repeat in the title", () => 
     "every 100 days",
     // Quotes and backslashes keep everything.
     '"gym every tuesday 7:30"',
+    '"weekly review"',
+    '"daily standup"',
   ])("keeps %j as typed", (text) => {
     const read = parseCapture(text);
     expect(read.repeat).toBeUndefined();
     expect(read.title).toBe(text.replace(/^"|"$/g, ""));
   });
 
-  it("reads a lone daily or weekly at the end, and a day after a quoted or escaped repeat word", () => {
-    expect(parseCapture("standup daily").repeat).toEqual(daily());
-    expect(parseCapture("daily standup 9am")).toEqual({ title: "daily standup", day: null, time: at("9:00"), tags: [] });
+  it("keeps an escaped repeat word, and marks a repeat with no title", () => {
     expect(parseCapture("standup \\daily")).toEqual({ title: "standup daily", day: null, time: null, tags: [] });
+    expect(parseCapture("\\daily standup")).toEqual({ title: "daily standup", day: null, time: null, tags: [] });
+    expect(parseCapture("every sunday")).toEqual({ title: "every sunday", day: null, time: null, tags: [], untitled: true });
+    expect(parseCapture("buy milk").untitled).toBeUndefined();
   });
 
   it("still reads a plain day, and a length after a time", () => {
@@ -263,10 +295,31 @@ describe("how a repeat is said", () => {
     ["class every tuesday x10", "Every Tuesday, 10 times"],
     ["class every tuesday for 6 weeks", "Every Tuesday, for 6 weeks"],
     ["class every tuesday until 20 dec", "Every Tuesday, until 20 December"],
-    ["class every tuesday until the end of june", "Every Tuesday, until the end of June"],
+    ["class every tuesday until the end of june", "Every Tuesday, until 30 June"],
+    ["monthly rent until december", "Every month, until 31 December"],
+    ["gym every tuesday until december", "Every Tuesday, until 31 December"],
+    ["walk daily until the end of february", "Every day, until the end of February"],
+    ["walk daily until the end of the month", "Every day, until the end of the month"],
+    ["daily 7am walk", "Every day, 07:00"],
+    ["monthly rent", "Every month (in quotes, “monthly rent” stays a title)"],
+    ["weekly review", "Every week (in quotes, “weekly review” stays a title)"],
+    ["weekly review friday 4pm", "Every Friday, 16:00"],
+    ["every sunday", "Add what to do: “every sunday” alone has no title"],
+    ["every other friday", "Add what to do: “every other friday” alone has no title"],
     ["pills every day starting tomorrow", "Every day starting tomorrow"],
   ])("previews %j as %j", (text, words) => {
     expect(previewWords(parseCapture(text), "24")).toBe(words);
+  });
+
+  it.each<[string, string]>([
+    // Tuesday 10 November 2026, 12:00 in London.
+    ["cleaning every other friday", "Every other Friday, from 13 Nov"],
+    ["sync fortnightly", "Every other Tuesday, from 10 Nov"],
+    ["monthly rent until december", "Every month, until 31 December"],
+    ["walk daily until the end of february", "Every day, until 28 February 2027"],
+    ["walk daily until the end of the month", "Every day, until 30 November"],
+  ])("given the moment, previews %j as %j", (text, words) => {
+    expect(previewWords(parseCapture(text), "24", momentAt(new Date("2026-11-10T12:00:00Z"), "Europe/London"))).toBe(words);
   });
 
   it("writes the preview's times on the reader's clock", () => {

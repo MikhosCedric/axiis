@@ -78,7 +78,17 @@ export function MissingItem() {
   const alone = usePathname().startsWith("/item/");
   return (
     <div className="flex items-center gap-3 text-ink-2">
-      <p>That item is not here any more.</p>
+      <p>
+        That item is not here any more.
+        {alone && (
+          <>
+            {" "}
+            <Link href="/today" className="font-medium text-ink underline decoration-rule underline-offset-2 hover:decoration-ink">
+              Back to Today
+            </Link>
+          </>
+        )}
+      </p>
       {!alone && <CloseDetails />}
     </div>
   );

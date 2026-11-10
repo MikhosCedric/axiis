@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { headerClock } from "@/lib/clock";
 import {
   CLOCK_SETTINGS,
   clockCookieValue,
@@ -92,6 +93,16 @@ describe("readClock", () => {
     expect(readClock("auto-24")).toEqual({ setting: "auto", clock: "24" });
     expect(readClock(undefined)).toEqual({ setting: "auto", clock: "24" });
     expect(readClock("h12")).toEqual({ setting: "auto", clock: "24" });
+  });
+
+  it("with no clock said yet, writes the clock the request's first language uses", () => {
+    expect(readClock(undefined, headerClock("en-US,en;q=0.9"))).toEqual({ setting: "auto", clock: "12" });
+    expect(readClock(undefined, headerClock("en-GB,en;q=0.9"))).toEqual({ setting: "auto", clock: "24" });
+    expect(readClock("auto-24", headerClock("en-US"))).toEqual({ setting: "auto", clock: "24" });
+    expect(readClock("24", headerClock("en-US"))).toEqual({ setting: "24", clock: "24" });
+    expect(headerClock(null)).toBe("24");
+    expect(headerClock("*")).toBe("24");
+    expect(headerClock("not a language!")).toBe("24");
   });
 
   it("round-trips every setting through the cookie value", () => {
