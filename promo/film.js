@@ -696,7 +696,7 @@
       { t: 6.75, cx: 2072, cy: 560, s: 0.92, e: E.cam },
       { t: 12.45, cx: 2085, cy: 575, s: 0.965, e: E.lin },
       { t: 14.1, cx: 2960, cy: 540, s: 1.28, e: E.cam },
-      { t: 17.2, cx: 2982, cy: 544, s: 1.325, e: E.lin },
+      { t: 16.95, cx: 2981, cy: 544, s: 1.322, e: E.lin },
       // the dive: a whip back to the done vet item and into it; the next scene opens out of its head (keyed in assemble)
     ],
   };
@@ -724,7 +724,7 @@
     applyCam(A.world, cam);
     A.drift.update(t, cam);
     const [vx, vy] = camSpeed(T.cam, t);
-    A.mb(A.scene, vx * 0.12, vy * 0.12);
+    A.mb(A.scene, Math.min(1.6, vx * 0.1), Math.min(1, vy * 0.1)); // capped: the item stays readable through the whip
 
     // ---- the C key and the field
     appear(A.key, t, T.keyC - 0.35, T.keyOut, { dy: 14, blur: 8, dur: 0.5 });
@@ -892,7 +892,8 @@
     }
 
     // ---- the hand
-    const grabPt = (x, y) => toScreen(cam, x + 30, y + 27);
+    // the hand holds the chip by its left end, above the slot time and below the dropped label
+    const grabPt = (x, y) => toScreen(cam, x + 6, y + 14);
     if (t >= T.cursorIn && t < T.drop + 1.1) {
       const [gx, gy] = grabPt(rowX, rowY);
       let x, y;
@@ -905,11 +906,11 @@
       } else {
         const [ex, ey] = grabPt(sh.x + sh.lx(VET.s) - 26, sh.y + sh.ly(1) - 27);
         const p = P(t, T.drop + 0.1, T.drop + 1.0);
-        x = ex + p * 70; y = ey + p * 90;
+        x = ex - p * 110; y = ey + p * 60; // away down-left, clear of the label and the time
       }
       const c1 = click(t, T.grab);
       const held = t >= T.grab && t < T.drop ? 0.6 : 0;
-      cursor(x, y, P(t, T.cursorIn, T.cursorIn + 0.25) * (1 - P(t, T.drop + 0.6, T.drop + 1.0)), Math.max(c1.press, held), c1.ripple != null && c1.ripple < 1 ? c1.ripple : null);
+      cursor(x, y, P(t, T.cursorIn, T.cursorIn + 0.25) * (1 - P(t, T.drop + 0.3, T.drop + 0.7)), Math.max(c1.press, held), c1.ripple != null && c1.ripple < 1 ? c1.ripple : null);
     } else if (t >= T.cursor2 && t < T.click + 1.4) {
       const [hx, hy] = toScreen(cam, sh.x + sh.lx(VET.s) + 9, sh.y + sh.ly(1));
       const p = P(t, T.cursor2, T.click - 0.05, E.ax);
@@ -1110,7 +1111,7 @@
     applyCam(B.world, cam);
     B.drift.update(t, cam);
     const [vx, vy] = camSpeed(T.cam, t);
-    B.vel = [vx * 0.12, vy * 0.12];
+    B.vel = [Math.min(1.6, vx * 0.1), Math.min(1, vy * 0.1)]; // capped, so the pull back out of the circle stays readable
     kin(B.t4a, t, T.t4, T.t4out, { part: 0 });
     kin(B.t4a, t, T.t4 + 0.2, T.t4out, { part: 1 });
     kin(B.t4b, t, T.t4b, T.t4bout, { part: 0 });
@@ -1421,7 +1422,7 @@
     applyCam(C.world, cam);
     C.drift.update(t, cam);
     const [vx, vy] = camSpeed(T.cam, t);
-    C.mb(C.scene, vx * 0.12, vy * 0.12);
+    C.mb(C.scene, Math.min(1.6, vx * 0.1), Math.min(1, vy * 0.1));
     kin(C.t5, t, T.t5, null);
     kin(C.t5b, t, T.t5 + 0.25, null);
     C.subs.forEach(([a, b], i) => {
@@ -1642,7 +1643,7 @@
   const D = MODE === "film" ? buildSceneD() : null;
   // the match cut into Connect: A dives into the done vet item; B opens out of the same item, as close, and pulls back
   const AV = [A.sh.x + A.sh.lx(VET.s) + 9, A.sh.y + A.sh.ly(1)];
-  TF.cam.push({ t: 17.98, cx: AV[0] + 40, cy: AV[1], s: 2.05, e: bez(0.62, 0, 0.3, 1) });
+  TF.cam.push({ t: TB.open0, cx: AV[0] + 40, cy: AV[1], s: 2.05, e: bez(0.45, 0, 0.25, 1) }); // lands, and holds, as the circle opens
   let BV = null;
   if (B) {
     const R0 = { x: 0, y: 0, w: 1130, h: 770 };
@@ -1680,7 +1681,7 @@
 
     // A to B: Connect opens in a circle out of the done item's head, and a hairline rides its edge
     if (onB && t < TB.open1) {
-      const [ox, oy] = toScreen(camAt(TB.cam, t), BV[0], BV[1]);
+      const [ox, oy] = toScreen(camAt(TF.cam, t), AV[0], AV[1]); // exactly on the A-side head (B is framed to match)
       const p = P(t, TB.open0, TB.open1, bez(0.6, 0, 0.22, 1));
       const r = lerp(10, 2300, p);
       S(B.scene, { clipPath: `circle(${r.toFixed(1)}px at ${ox.toFixed(1)}px ${oy.toFixed(1)}px)`, zIndex: 2 });

@@ -33,7 +33,7 @@ No scene hard-cuts: every change overlaps the outgoing and incoming scenes and c
 | 10.2 to 12.4 | The verdigris now line drops through the staves at 11:52, then runs to 12:31; as it crosses 12:30 the beam fills solid verdigris and its label takes weight. | clock flag, tabular |
 | 12.4 to 14.1 | Camera pushes in toward the beam; the Next up card rises in. | |
 | 14.5 to 15.4 | Click on the head: the ink sweep fills the beam, then it turns hollow (done). The same glyph in Next up sweeps too, and the list closes up (Design sync, Run, Packing list). | "Done, without the fanfare." |
-| 17.2 to 18.32 | Match cut. The camera whips back to the done vet item and dives into it (motion blur); Connect opens in a circle out of the same item's head, framed just as close, with a hairline riding the circle's edge, then pulls back. | |
+| 16.95 to 18.32 | Match cut. The camera whips back to the done vet item and dives into it (motion blur capped at 1.6 px so it stays readable), landing at 17.72; Connect opens in a circle exactly on that item's head, framed to match, with a hairline riding the circle's edge, holds to 18.02, then pulls back. | |
 | 18.3 | A smaller Today panel; the vet item takes focus, a note card unfolds beside it and a hairline draws from the task to the note's link. | "Everything connects." Note: "Notes for the vet" |
 | 21.2 to 22.2 | The note leaves, the panel widens. | "One item. Every view." |
 | 22.4 | The hand clicks Week: today's ten items glide (staggered, on a slight arc) from the staves into Tuesday's column; the rest of the week ripples in around them. | |
@@ -58,7 +58,9 @@ shrinks and drops into the window as the outbox line; a caption hairline rules i
   the score fragments plus floating product forms (solid, dashed and hollow glyphs, a note chip, key caps) that drift,
   bob and tilt. The grain travels with the camera, so it reads as the paper.
 - Camera: every shot breathes (a few px of drift and 0.45% zoom on slow sines on top of the keyed moves); fast moves get
-  a directional SVG blur sized by camera speed.
+  a directional SVG blur sized by camera speed, capped at 1.6 px horizontal and 1 px vertical.
+- The hand holds the dragged chip by its left end and leaves down-left after the drop, so it never covers the dropped
+  label or the slot time.
 - Pops (a damped overshoot to about 1.06): the C and Enter keys, the chip landing in the Inbox, the Inbox count (3 to 4
   and back), the beam as it goes live and as it is clicked, the done head (spring), the Week/Month pill and labels,
   "8 more", the note's link, the tray icon, the Offline badge, Ctrl Alt A, the outbox line, the desktop Inbox count.
@@ -143,7 +145,7 @@ downbeat, add `-itsoffset -<seconds>` before `-i track.wav`.
   contrast, cut timing, no empty frames. Fixes from the first pass: a wrapping key label, the end of the capture shot
   reframed, the Ctrl Alt A key caps moved off the window into the text column, the desktop window made shorter,
   zero-offset focus halos removed, the poster moment reframed so the Inbox is not cropped.
-- `ffprobe`: `axiis-promo.mp4` h264 1920x1080 30/1 yuv420p, 40.000 s, 15.9 MB; `axiis-promo-15s.mp4` h264 1920x1080
+- `ffprobe`: `axiis-promo.mp4` h264 1920x1080 30/1 yuv420p, 40.000 s, 16.1 MB; `axiis-promo-15s.mp4` h264 1920x1080
   30/1 yuv420p, 15.000 s, 6.3 MB; `axiis-hero-loop.webm` vp9 1280x720 30/1 yuv420p, 9.000 s, 0.90 MB (crf 24: the moving life layer costs bits, crf 16 gave 1.33 MB; crf 33
   gave 0.2 MB but soft type); `axiis-poster.jpg` 1920x1080, 0.20 MB.
 - The loop's seam sits inside the dissolve: frames 0, 120, 200 and 269 of the webm were extracted and checked.
