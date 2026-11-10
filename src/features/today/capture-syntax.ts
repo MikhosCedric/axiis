@@ -2,7 +2,7 @@ import type { LocalDate } from "@/domain/item";
 import { MAX_COUNT, type Rule, type RuleEnd } from "@/domain/recurrence";
 import { parseTagName, tagKey, type TagName } from "@/domain/tag";
 import { WEEK_LENGTH, weekOf } from "@/features/week/week-of";
-import { addDays, parseLocalDate } from "@/lib/dates";
+import { addDays, instantAt, parseLocalDate, toLocalDate } from "@/lib/dates";
 import type { CaptureResult, Landed } from "./commands";
 import { formatMinutes, type Clock } from "@/lib/clock";
 import { cadenceHit, cadenceWords, dateWords, monthName, monthWord, ruleDay, type Cadence } from "./capture-repeat";
@@ -305,7 +305,9 @@ function scan(tokens: readonly Token[], allow: Allow): Scan {
   fromStart: while (lo < hi) {
     for (let n = Math.min(MAX_WORDS, hi - lo); n >= 1; n--) {
       const hit = hitAt(tokens, lo, lo + n);
-      if (hit && fits(hit, afterDay, true)) {
+      // "every 2nd tuesday of the month" is not every other Tuesday, and Axiis has no rule for it, so it stays in the title.
+      const ofMonth = hit?.slot === "repeat" && tokens[lo + n]?.low === "of";
+      if (hit && !ofMonth && fits(hit, afterDay, true)) {
         take(hit, lo);
         afterDay = opensTime(hit);
         lo += n;
@@ -467,19 +469,53 @@ function ruleEnd(end: RepeatEnd, first: LocalDate, today: LocalDate): RuleEnd | 
 /** A series a capture makes: its first date and its rule. */
 export type CaptureSeries = { first: LocalDate; rule: Rule };
 
+/** The moment a line is read: today's date, and whether a time of day today has already come. */
+export type Moment = { today: LocalDate; begun: (minutes: number) => boolean };
+
+/**
+ * The moment `now` is in `timeZone`. A time has come once its instant today is
+ * at or before `now`, found with `instantAt`, so a day the clocks change reads
+ * that day's own clock.
+ */
+export function momentAt(now: Date, timeZone: string): Moment {
+  const today = toLocalDate(now, timeZone);
+  return { today, begun: (minutes) => instantAt(today, minutes, timeZone).getTime() <= now.getTime() };
+}
+
+/** The moment on this device, for a preview as the line is typed; the server reads its own when the line is sent. */
+export function momentHere(): Moment {
+  return momentAt(new Date(), Intl.DateTimeFormat().resolvedOptions().timeZone);
+}
+
+/**
+ * True when a repeating line's first day passes over today: it has a time,
+ * that time has come today, and the line did not name today itself.
+ */
+export function passesToday(c: CaptureText, moment: Moment): boolean {
+  return c.repeat !== undefined && c.time !== null && !(c.day?.kind === "in" && c.day.days === 0) && moment.begun(c.time.start);
+}
+
 /**
  * Pins a typed repeat to dates. The first day is the first one on or after
- * `from` that the repeat falls on: today when today is one of its days, even
- * if the time has passed, so "every tuesday 7:00" typed on a Tuesday evening
- * starts today, as the detail panel's repeat does. A weekly repeat on one
- * weekday is stored as a plain weekly rule on that day, the form the panel's
- * menu names. Null when it would end before it starts or past the dates
- * Axiis plans on.
+ * `from` that the repeat falls on. When that is today and `passToday` is set
+ * (the line's time has already come, see `passesToday`), it is the next day
+ * the repeat falls on instead: the next of its weekdays, tomorrow for a daily
+ * one, this day next week, month or year for one that names no weekday. A
+ * weekly repeat on one weekday is stored as a plain weekly rule on that day,
+ * the form the panel's menu names. Null when it would end before it starts
+ * or past the dates Axiis plans on.
  */
-export function seriesFor(repeat: RepeatWords, from: LocalDate, today: LocalDate): CaptureSeries | null {
+export function seriesFor(repeat: RepeatWords, from: LocalDate, today: LocalDate, passToday = false): CaptureSeries | null {
   const byDay = repeat.freq === "weekly" ? repeat.byDay : [];
+  const falls = (day: LocalDate) => byDay.length === 0 || byDay.includes(ruleDay(weekdayOf(day)));
   let first = from;
-  while (byDay.length > 0 && !byDay.includes(ruleDay(weekdayOf(first)))) first = addDays(first, 1);
+  while (!falls(first)) first = addDays(first, 1);
+  if (passToday && first === today) {
+    if (repeat.freq === "monthly") first = addMonths(today, 1);
+    else if (repeat.freq === "yearly") first = addMonths(today, 12);
+    else first = addDays(today, repeat.freq === "weekly" && byDay.length === 0 ? WEEK_LENGTH : 1);
+    while (!falls(first)) first = addDays(first, 1);
+  }
   const end = ruleEnd(repeat.end, first, today);
   if (!end || (end.kind === "until" && end.on < first)) return null;
   const { interval } = repeat;
@@ -515,10 +551,34 @@ function endWords(end: RepeatEnd): string | null {
   }
 }
 
-/** What a line will do, for a preview under the field before it is sent, or null when it is all title. */
-export function previewWords(c: CaptureText, clock: Clock): string | null {
+/**
+ * How a repeat reads, capitalised, with its first day when that needs saying:
+ * the one typed ("starting tomorrow"), or, given the `moment`, the next day it
+ * falls on when its time today has passed. Given the moment, a weekly repeat
+ * that names no weekday names today's.
+ */
+function repeatPreview(c: CaptureText & { repeat: RepeatWords }, moment: Moment | undefined): string {
+  const typedDay = c.day?.kind === "weekday" ? ruleDay(c.day.weekday) : null;
+  if (!moment) return `${capitalise(cadenceWords(c.repeat, typedDay))}${c.day ? ` starting ${dayWordText(c.day)}` : ""}`;
+  const { today } = moment;
+  const from = c.day ? dayOf(c.day, today) : today;
+  const passed = passesToday(c, moment);
+  const series = seriesFor(c.repeat, from, today, passed);
+  const first = series?.first ?? from;
+  const cadence = capitalise(cadenceWords(c.repeat, typedDay ?? ruleDay(weekdayOf(first))));
+  const movedOff = passed && seriesFor(c.repeat, from, today)?.first === today && first !== today;
+  if (movedOff) return `${cadence} starting ${first === addDays(today, 1) ? "tomorrow" : formatDayIn(first, today)}`;
+  return `${cadence}${c.day ? ` starting ${dayWordText(c.day)}` : ""}`;
+}
+
+/**
+ * What a line will do, for a preview under the field before it is sent, or
+ * null when it is all title. Given the `moment` it is read at, a repeat whose
+ * time today has passed says the later day it starts on.
+ */
+export function previewWords(c: CaptureText, clock: Clock, moment?: Moment): string | null {
   const day = c.repeat
-    ? `${capitalise(cadenceWords(c.repeat, c.day?.kind === "weekday" ? ruleDay(c.day.weekday) : null))}${c.day ? ` starting ${dayWordText(c.day)}` : ""}`
+    ? repeatPreview({ ...c, repeat: c.repeat }, moment)
     : c.day
       ? dayWordText(c.day)
       : c.time
@@ -543,7 +603,7 @@ export function tagList(tags: readonly string[]): string {
 type Captured = Extract<CaptureResult, { ok: true }>;
 
 /** Lines the capture field's placeholder turns through on an account's first day, each one real capture syntax. */
-export const CAPTURE_EXAMPLES = ["dentist tomorrow 9:00 #health", "call Sam friday 14:00 for 30m", "buy milk"] as const;
+export const CAPTURE_EXAMPLES = ["dentist tomorrow 9:00 #health", "call Sam friday 14:00 for 30m", "buy milk", "gym every tuesday 7:30 to 9"] as const;
 
 /** Above the capture field on an account's first day. */
 export const CAPTURE_LEAD = "Type one thing you have to do. Add a day or a time and it lands on its line.";

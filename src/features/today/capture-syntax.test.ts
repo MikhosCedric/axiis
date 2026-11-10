@@ -193,10 +193,12 @@ describe("capturedLine", () => {
 });
 
 describe("CAPTURE_EXAMPLES", () => {
-  it("are lines capture reads as written: two plans and one plain line", () => {
-    expect(CAPTURE_EXAMPLES.map((line) => previewWords(parseCapture(line), "24") !== null)).toEqual([true, true, false]);
+  it("are lines capture reads as written: two plans, one plain line and one repeat", () => {
+    expect(CAPTURE_EXAMPLES.map((line) => previewWords(parseCapture(line), "24") !== null)).toEqual([true, true, false, true]);
     expect(parseCapture(CAPTURE_EXAMPLES[0])).toMatchObject({ title: "dentist", time: { start: 540 }, tags: ["health"] });
     expect(parseCapture(CAPTURE_EXAMPLES[1])).toMatchObject({ title: "call Sam", time: { start: 840, length: 30 } });
+    expect(parseCapture(CAPTURE_EXAMPLES[3])).toMatchObject({ title: "gym", time: { start: 450, length: 90 }, repeat: { freq: "weekly", byDay: ["TU"] } });
+    expect(previewWords(parseCapture(CAPTURE_EXAMPLES[3]), "24")).toBe("Every Tuesday, 07:30 to 09:00");
   });
 });
 

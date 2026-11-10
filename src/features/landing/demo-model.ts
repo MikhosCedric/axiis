@@ -1,5 +1,7 @@
 import { SNAP_MINUTES, clamp, snap } from "@/features/score/snap";
-import { dayWordText, parseCapture } from "@/features/today/capture-syntax";
+import { cadenceWords, ruleDay, weekdayNames } from "@/features/today/capture-repeat";
+import { dayWordText, parseCapture, type DayWord, type RepeatWords } from "@/features/today/capture-syntax";
+import type { Weekday } from "@/domain/recurrence";
 import type { TagName } from "@/domain/tag";
 
 /**
@@ -9,8 +11,47 @@ import type { TagName } from "@/domain/tag";
 export type Placement =
   | { kind: "nothing" }
   | { kind: "inbox"; title: string; tags: TagName[] }
-  | { kind: "anytime"; title: string; day: string; tags: TagName[] }
-  | { kind: "timed"; title: string; day: string; start: number; end: number; tags: TagName[] };
+  | { kind: "anytime"; title: string; day: string; tags: TagName[]; repeats: Repeats | null }
+  | { kind: "timed"; title: string; day: string; start: number; end: number; tags: TagName[]; repeats: Repeats | null };
+
+/**
+ * How a captured line repeats, in the parser's own words ("every other Tuesday"), and the days of a
+ * sample week it falls on, Monday first (0) to Sunday (6). `week` is empty when the week alone cannot
+ * show it: every other week, every 3 days, every month, or a weekly repeat whose day is today's.
+ */
+export type Repeats = { words: string; week: number[] };
+
+/** Monday first, as the sample week is drawn. */
+const WEEK: readonly Weekday[] = ["MO", "TU", "WE", "TH", "FR", "SA", "SU"];
+const SHORT = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+
+const capitalise = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+
+function repeatsOf(repeat: RepeatWords, typed: DayWord | null): { label: string; repeats: Repeats } {
+  const typedDay = typed?.kind === "weekday" ? ruleDay(typed.weekday) : null;
+  const words = cadenceWords(repeat, typedDay);
+  if (repeat.freq !== "weekly") {
+    const week = repeat.freq === "daily" && repeat.interval === 1 ? [0, 1, 2, 3, 4, 5, 6] : [];
+    return { label: typed ? dayWordText(typed) : capitalise(words), repeats: { words, week } };
+  }
+  const days = repeat.byDay.length > 0 ? repeat.byDay : typedDay ? [typedDay] : [];
+  const week = repeat.interval === 1 ? days.map((d) => WEEK.indexOf(d)).sort((a, b) => a - b) : [];
+  // A row name says where it lands in a few words; one that skips weeks is said whole, so it is not read as every week.
+  const label = typed
+    ? dayWordText(typed)
+    : repeat.interval !== 1
+      ? capitalise(words)
+      : words === "every weekday"
+        ? "Weekdays"
+        : words === "every weekend"
+          ? "Weekends"
+          : days.length === 1
+            ? `${weekdayNames(days)}s`
+            : days.length > 1
+              ? week.map((i) => SHORT[i]).join(", ")
+              : "Each week";
+  return { label, repeats: { words, week } };
+}
 
 /**
  * The app's own numbers, written here so the landing does not carry the modules that hold them;
@@ -22,12 +63,15 @@ export const LANDING_NEXT_UP_MAX = 3;
 export function placeCapture(text: string): Placement {
   if (!text.trim()) return { kind: "nothing" };
   const read = parseCapture(text);
-  const day = read.day ? dayWordText(read.day) : "today";
+  // A repeat is always planned, as capture plans it: its row is named for the days it falls on.
+  const repeat = read.repeat ? repeatsOf(read.repeat, read.day) : null;
+  const day = repeat?.label ?? (read.day ? dayWordText(read.day) : "today");
+  const repeats = repeat?.repeats ?? null;
   if (read.time) {
     const end = read.time.start + (read.time.length ?? LANDING_DEFAULT_MINUTES);
-    return { kind: "timed", title: read.title, day, start: read.time.start, end, tags: read.tags };
+    return { kind: "timed", title: read.title, day, start: read.time.start, end, tags: read.tags, repeats };
   }
-  if (read.day) return { kind: "anytime", title: read.title, day, tags: read.tags };
+  if (read.day || repeats) return { kind: "anytime", title: read.title, day, tags: read.tags, repeats };
   return { kind: "inbox", title: read.title, tags: read.tags };
 }
 

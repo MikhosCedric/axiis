@@ -6,7 +6,7 @@ import { useEffect, useRef, useState, useTransition, type FormEvent, type ReactN
 import { useClock } from "@/components/shell/clock-context";
 import { captureAction as serverCapture } from "./actions";
 import type { ActionResult, CaptureResult } from "./commands";
-import { CAPTURE_EXAMPLES, CAPTURE_LEAD, capturedLine, firstCapturedLine, parseCapture, previewWords } from "./capture-syntax";
+import { CAPTURE_EXAMPLES, CAPTURE_LEAD, capturedLine, firstCapturedLine, momentHere, parseCapture, previewWords, type Moment } from "./capture-syntax";
 import { TITLE_MAX } from "./model";
 import { useQueueCapture } from "@/components/shell/outbox";
 import { reach, UNREACHABLE } from "@/lib/reach";
@@ -89,7 +89,9 @@ export function CaptureField({
   const [pending, startTransition] = useTransition();
   const unmark = useRef<() => void>(() => {});
   const clock = useClock();
-  const preview = plans ? previewWords(parseCapture(value), clock) : null;
+  // Read when a key is pressed, not while rendering: a repeat whose time today has passed says the day it starts.
+  const [moment, setMoment] = useState<Moment | undefined>(undefined);
+  const preview = plans ? previewWords(parseCapture(value), clock, moment) : null;
   const example = useExample(firstDay);
   const pathname = usePathname();
   const queue = useQueueCapture();
@@ -147,7 +149,10 @@ export function CaptureField({
           id="capture"
           name="title"
           value={value}
-          onChange={(e) => setValue(e.target.value)}
+          onChange={(e) => {
+            setValue(e.target.value);
+            setMoment(momentHere());
+          }}
           onKeyDown={(e) => e.key === "Escape" && e.currentTarget.blur()}
           maxLength={TITLE_MAX}
           placeholder={firstDay ? example : placeholder}
