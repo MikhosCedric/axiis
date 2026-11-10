@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useSyncExternalStore, type ReactNode } from "react";
 import { captureAction } from "@/features/today/actions";
-import { enqueue, flush, readOutbox, remove, retitle, type Queued, type QueuedCapture } from "@/lib/outbox";
+import { enqueue, flush, purgeStale, readOutbox, remove, retitle, type Queued, type QueuedCapture } from "@/lib/outbox";
 import { reach, UNREACHABLE } from "@/lib/reach";
 
 /** Fired on the window whenever this tab changes the outbox, so every part showing it can read it again. */
@@ -81,6 +81,7 @@ export function PendingCaptures() {
   }, [owner, router]);
 
   useEffect(() => {
+    purgeStale(storage(), Date.now());
     void send();
     const onOnline = () => void send();
     window.addEventListener("online", onOnline);

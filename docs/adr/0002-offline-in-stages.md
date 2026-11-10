@@ -32,6 +32,10 @@ Offline arrives in three stages. Each ships on its own and none changes the sour
 - Until stage 2, opening the app offline shows the offline page, not data. This is stated in the app, not hidden.
 - Encryption of local data at rest, and a keychain-held key, are decided in 2c, not now (the outbox holds short text only).
 
+## Amendment, 2026-11-11
+
+The outbox still survives sign-out (the promise above stands). To limit how long plain text sits on a shared device, entries older than 30 days are removed for every account when the app opens, and the service worker deletes saved pages older than 7 days when it activates or saves, not only when one is read. The sign-in page tells the worker to drop all saved pages. A flush only sends the current user's entries, so another account never sends them.
+
 ## Rejected
 
 - **Starting with the local database.** Largest cost, and it cannot work with server-rendered pages anyway.

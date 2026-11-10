@@ -45,6 +45,31 @@ function write(store: Storage | undefined, owner: string, entries: QueuedCapture
   }
 }
 
+/** Longest an entry waits on a device; it matches the clamp on the time it was typed. */
+export const OUTBOX_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000;
+
+const PREFIX = "axiis-outbox:";
+
+/**
+ * Drops entries older than the limit from every owner's outbox on this device, so a capture left by an account
+ * that never returns does not sit there as plain text for ever. Newer entries stay, however the session ended.
+ */
+export function purgeStale(store: Storage | undefined, now: number): void {
+  try {
+    if (!store) return;
+    const owners: string[] = [];
+    for (let i = 0; i < store.length; i += 1) {
+      const k = store.key(i);
+      if (k?.startsWith(PREFIX)) owners.push(k.slice(PREFIX.length));
+    }
+    for (const owner of owners) {
+      const entries = readOutbox(store, owner);
+      const fresh = entries.filter((e) => now - e.at < OUTBOX_MAX_AGE_MS);
+      if (fresh.length !== entries.length) write(store, owner, fresh);
+    }
+  } catch {}
+}
+
 export type Queued = { ok: true; entry: QueuedCapture } | { ok: false; error: string };
 
 export const OUTBOX_FULL = "Too many captures are waiting to be sent. Reconnect to send them, then try again.";

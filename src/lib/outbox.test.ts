@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { enqueue, flush, markRefused, OUTBOX_FULL, OUTBOX_MAX, readOutbox, remove, retitle, type Sender } from "./outbox";
+import { enqueue, flush, markRefused, OUTBOX_FULL, OUTBOX_MAX, OUTBOX_MAX_AGE_MS, purgeStale, readOutbox, remove, retitle, type Sender } from "./outbox";
 
 function memory(): Storage {
   const data = new Map<string, string>();
@@ -38,6 +38,28 @@ describe("the outbox", () => {
     expect(enqueue(undefined, "a", "x", 1).ok).toBe(false);
     const broken = { ...memory(), setItem: () => { throw new Error("blocked"); } } as Storage;
     expect(enqueue(broken, "a", "x", 1).ok).toBe(false);
+  });
+
+  it("never sends one account's captures under another", async () => {
+    const store = memory();
+    enqueue(store, "alice", "alice's note", 1, "a1");
+    enqueue(store, "bob", "bob's note", 2, "b1");
+    const seen: string[] = [];
+    const send: Sender = async (title) => (seen.push(title), { ok: true });
+    await flush(store, "bob", send);
+    expect(seen).toEqual(["bob's note"]);
+    expect(ids(store, "alice")).toEqual(["alice's note"]);
+  });
+
+  it("purges entries older than the limit for every owner and keeps the rest", () => {
+    const store = memory();
+    const now = 10 * OUTBOX_MAX_AGE_MS;
+    enqueue(store, "a", "old", now - OUTBOX_MAX_AGE_MS - 1);
+    enqueue(store, "a", "new", now - 1000);
+    enqueue(store, "gone", "old too", 5);
+    purgeStale(store, now);
+    expect(ids(store, "a")).toEqual(["new"]);
+    expect(store.getItem("axiis-outbox:gone")).toBeNull();
   });
 
   it("ignores damaged data", () => {

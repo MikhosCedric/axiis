@@ -27,6 +27,7 @@ self.addEventListener("activate", (event) => {
       for (const name of await caches.keys()) {
         if (name.startsWith("axiis-") && name !== PAGES && name !== STATIC) await caches.delete(name);
       }
+      await purgeExpired().catch(() => {});
       await self.clients.claim();
     })(),
   );
@@ -34,6 +35,16 @@ self.addEventListener("activate", (event) => {
 
 async function dropEverything() {
   for (const name of await caches.keys()) if (name.startsWith("axiis-")) await caches.delete(name);
+}
+
+/** Deletes saved pages older than the age limit, so a copy does not outlive it just because it is never read. */
+async function purgeExpired() {
+  const cache = await caches.open(PAGES);
+  for (const request of await cache.keys()) {
+    const saved = await cache.match(request);
+    const at = saved ? Number(saved.headers.get(SAVED_HEADER)) : 0;
+    if (!saved || !(Date.now() - at < MAX_AGE_MS)) await cache.delete(request);
+  }
 }
 
 /** Keeps at most `max` entries, dropping the oldest saved. */
@@ -55,6 +66,7 @@ async function savePage(url, response) {
   await cache.delete(url);
   await cache.put(url, new Response(body, { status: response.status, statusText: response.statusText, headers }));
   await trim(cache, MAX_PAGES);
+  await purgeExpired().catch(() => {});
 }
 
 function offlinePage() {
@@ -145,6 +157,11 @@ async function forgetPage(path) {
 // a page that its own change has removed.
 self.addEventListener("message", (event) => {
   const data = event.data;
+  if (data && data.type === "forget-all") {
+    // The page saw it is signed out (session gone or expired): nothing read while signed in stays.
+    event.waitUntil(dropEverything().catch(() => {}));
+    return;
+  }
   if (data && data.type === "forget" && typeof data.path === "string" && data.path.startsWith("/")) {
     event.waitUntil(forgetPage(data.path).catch(() => {}));
     return;

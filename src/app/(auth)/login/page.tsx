@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { headers } from "next/headers";
+import { ForgetSavedPages } from "@/components/shell/offline";
 import { BrandHome, PageTurn, quietAction } from "@/components/public/site-chrome";
 import { safeNextPath } from "@/lib/auth/next-path";
 import { turnstileSiteKey } from "@/lib/turnstile";
@@ -25,6 +26,7 @@ export default async function LoginPage({ searchParams }: PageProps<"/login">) {
 
   return (
     <PageTurn>
+    <ForgetSavedPages />
     <main id="main" className={styles.page}>
       <SignInStage />
       <div className={styles.column}>
