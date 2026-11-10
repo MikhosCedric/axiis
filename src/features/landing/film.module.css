@@ -45,10 +45,3 @@
   outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
-
-.caption {
-  padding: var(--sp-2) 4px 2px;
-  font-size: var(--fs-caption);
-  line-height: 1.5;
-  color: var(--ink-3);
-}
