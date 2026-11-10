@@ -7,7 +7,8 @@ import { currentSection } from "@/features/landing/sections";
  * The public pages' script-driven motion, in one listener set, so each page pays for it once. CSS does all
  * the moving; this only says when. With reduced motion it does nothing, and the page is already drawn.
  *
- * - `data-reveal`: held back once seen to be below the fold, then let rise as it scrolls into view.
+ * - `data-reveal`: held back when below the fold, let rise as it scrolls into view, and held again when the
+ *   reader scrolls back up past it, so it rises on every pass.
  * - `data-loop`: an ambient loop, marked `data-offscreen` while out of view so its CSS can pause it.
  * - `data-parallax="<px>"`: shifted up to that many pixels against a fine pointer, so layers part as it moves.
  * - `data-glow`: a sheet whose lamp (`data-glow-spot`) follows the pointer across it, and whose shadow
@@ -102,7 +103,22 @@ function reveal() {
     { rootMargin: "0px 0px -12% 0px" },
   );
   for (const el of below) io.observe(el);
-  return () => io.disconnect();
+  // Scrolled back up past a section, it is held again, so it rises again the next time it comes. Only
+  // leaving by the bottom edge counts; sections the reader has passed upward stay as they are.
+  const away = new IntersectionObserver((entries) => {
+    for (const entry of entries) {
+      if (entry.isIntersecting || entry.boundingClientRect.top <= innerHeight) continue;
+      const el = entry.target as HTMLElement;
+      if (el.dataset.reveal !== "in") continue;
+      el.dataset.reveal = "wait";
+      io.observe(el);
+    }
+  });
+  for (const el of below) away.observe(el);
+  return () => {
+    io.disconnect();
+    away.disconnect();
+  };
 }
 
 function loops() {
