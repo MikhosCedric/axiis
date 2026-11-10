@@ -13,6 +13,7 @@ import {
   moveArea,
   removeArea,
   renameArea,
+  restoreArea,
   scheduleDeletion,
   setAreaColor,
   undoDeletion,
@@ -40,6 +41,10 @@ export async function setAreaColorAction(id: string, color: string | null): Prom
 
 export async function removeAreaAction(id: string): Promise<ActionResult> {
   return refreshed(await removeArea(await getAreasRepo(), id));
+}
+
+export async function restoreAreaAction(id: string): Promise<ActionResult> {
+  return refreshed(await restoreArea(await getAreasRepo(), id));
 }
 
 export async function moveAreaAction(id: string, direction: string): Promise<ActionResult> {

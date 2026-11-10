@@ -400,7 +400,7 @@ test.describe("settings layout", () => {
       await page.setViewportSize({ width, height: 900 });
       await page.goto("/dev/settings");
       const index = page.getByRole("navigation", { name: "Settings sections" });
-      await expect(index.getByRole("link")).toHaveText(["Areas", "Tags", "Display", "Your data"]);
+      await expect(index.getByRole("link")).toHaveText(["Areas", "Tags", "Display", "Keyboard", "Your data"]);
 
       const nav = (await index.boundingBox())!;
       const areas = (await page.getByRole("region", { name: "Areas" }).boundingBox())!;
@@ -414,10 +414,14 @@ test.describe("settings layout", () => {
     });
   }
 
-  test("at 375px the sections stack with no index and no sideways scroll", async ({ page }) => {
+  test("at 375px the index is a row above the stacked sections, with no sideways scroll", async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 812 });
     await page.goto("/dev/settings");
-    await expect(page.getByRole("navigation", { name: "Settings sections" })).toBeHidden();
+    const index = page.getByRole("navigation", { name: "Settings sections" });
+    await expect(index).toBeVisible();
+    const row = (await index.boundingBox())!;
+    const areas = (await page.getByRole("region", { name: "Areas" }).boundingBox())!;
+    expect(row.y + row.height).toBeLessThan(areas.y);
     await expect(page.getByRole("region", { name: "Display" })).toBeAttached();
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(375);
   });
@@ -508,7 +512,7 @@ test("settings: a tag can be renamed, and deleted after a yes", async ({ page })
   await expect(trips).toHaveValue("trips");
 
   await tags.getByRole("button", { name: "Delete #trips" }).click();
-  await tags.getByRole("group", { name: "Delete #trips? Its items stay." }).getByRole("button", { name: "Yes" }).click();
+  await tags.getByRole("group", { name: /^Delete #trips\?/ }).getByRole("button", { name: "Yes" }).click();
   await expect(trips).toHaveCount(0);
   await expect(tags.getByRole("listitem")).toHaveCount(4);
 });

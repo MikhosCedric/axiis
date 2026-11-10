@@ -1,5 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { CLOCK_SETTINGS, clockCookieValue, readClock, readDensity, readFocus, readTheme, readTour } from "./cookies";
+import { CLOCK_SETTINGS, clockCookieValue, readClock, readDensity, readFocus, readReminders, readTheme, readTour } from "./cookies";
+
+describe("readReminders", () => {
+  it("keeps desktop reminders on unless they were turned off", () => {
+    expect(readReminders(undefined)).toBe(true);
+    expect(readReminders("on")).toBe(true);
+    expect(readReminders("nonsense")).toBe(true);
+    expect(readReminders("off")).toBe(false);
+  });
+});
 
 describe("readFocus", () => {
   it("is on only when the device saved it on", () => {

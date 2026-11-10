@@ -49,7 +49,7 @@ export function TaggedView({
           {data.tag.name}
         </h1>
         <p className="page-summary">{taggedSummary(data.rows)}</p>
-        {actions && <TagToolbar key={data.tag.id} tag={data.tag} actions={actions} />}
+        {actions && <TagToolbar key={data.tag.id} tag={{ ...data.tag, open: data.rows.filter((r) => !r.done).length }} actions={actions} />}
         <p role="status" className={`mt-4 min-h-5 text-[13px] ${ticks.status?.error ? "font-medium text-ink" : "text-ink-2"}`}>
           {ticks.status?.text}
         </p>

@@ -7,17 +7,33 @@ import type { TagSummary } from "@/domain/tag";
 import { TagsSection, type TagActions } from "@/features/tags/tags-section";
 import { AreasSection, type AreaActions } from "./areas-section";
 import { DeleteAccountSection, type DeletionActions } from "./delete-account-section";
+import { DesktopSection } from "./desktop-section";
 import { DisplaySection } from "./display-section";
+import { KeyboardSection } from "./keyboard-section";
+import { SectionIndex, type SettingsPart } from "./section-index";
 
 export const EXPORT_PATH = "/settings/export";
 
-/** The page's parts, in order. From 1180px they are listed in a sticky index beside the page. */
-const PARTS = [
-  { id: "areas", name: "Areas" },
-  { id: "tags", name: "Tags" },
-  { id: "display", name: "Display" },
-  { id: "your-data", name: "Your data" },
-] as const;
+/** The page's parts, in order. A row of links under the heading; from 1180px a sticky index beside the page. */
+function partsOf(desktop: boolean): SettingsPart[] {
+  return [
+    { id: "areas", name: "Areas" },
+    { id: "tags", name: "Tags" },
+    { id: "display", name: "Display" },
+    { id: "keyboard", name: "Keyboard" },
+    ...(desktop ? [{ id: "desktop", name: "Desktop app" }] : []),
+    { id: "your-data", name: "Your data" },
+  ];
+}
+
+const plainButton =
+  "mt-4 inline-flex items-center rounded-lg border border-rule px-3.5 py-2 font-medium text-ink no-underline hover:bg-hover active:bg-press pointer-coarse:min-h-11";
+
+/** How many items wait in Recently deleted, in words. */
+function deletedWords(n: number): string {
+  if (n === 0) return "Nothing is there now.";
+  return n === 1 ? "One item is there now." : `${n} items are there now.`;
+}
 
 export function SettingsView({
   email,
@@ -32,6 +48,8 @@ export function SettingsView({
   density = "spacious",
   clock = { setting: "auto", clock: "24" },
   colorHint = true,
+  deletedCount = null,
+  desktop = null,
 }: {
   email: string | null;
   areas: Area[];
@@ -49,10 +67,15 @@ export function SettingsView({
   clock?: { setting: ClockSetting; clock: Clock };
   /** The suggestion to colour areas has not been dismissed on this device. */
   colorHint?: boolean;
+  /** How many items are in Recently deleted, or null when not counted. */
+  deletedCount?: number | null;
+  /** In the desktop app, its settings as saved on this device; null on the web, where the section is not shown. */
+  desktop?: { reminders: boolean } | null;
 }) {
+  const parts = partsOf(desktop !== null);
   return (
     <div
-      className="max-w-[640px] px-4 pt-6 pb-16 rail:px-9 rail:pt-8 min-[1180px]:grid min-[1180px]:mx-auto min-[1180px]:max-w-[968px] min-[1180px]:grid-cols-[11rem_minmax(0,1fr)] min-[1180px]:gap-x-12"
+      className="max-w-[640px] px-4 pt-6 pb-16 rail:px-9 rail:pt-8 min-[1180px]:grid min-[1180px]:mx-auto min-[1180px]:max-w-[968px] min-[1180px]:grid-cols-[10rem_minmax(0,1fr)] min-[1180px]:gap-x-12"
     >
       <header className="min-[1180px]:col-span-2">
         <BackLink />
@@ -68,19 +91,9 @@ export function SettingsView({
         </p>
       </header>
 
-      <nav aria-label="Settings sections" className="hidden min-[1180px]:sticky min-[1180px]:top-8 min-[1180px]:mt-10 min-[1180px]:block min-[1180px]:self-start">
-        <ul className="border-t border-rule">
-          {PARTS.map((part) => (
-            <li key={part.id} className="border-b border-rule-soft">
-              <a href={`#${part.id}`} className="block rounded-md px-2 py-2 font-medium text-ink-2 no-underline hover:bg-hover active:bg-press hover:text-ink">
-                {part.name}
-              </a>
-            </li>
-          ))}
-        </ul>
-      </nav>
+      <SectionIndex parts={parts} />
 
-      <div className="mt-10 min-w-0 space-y-12 [&>*]:scroll-mt-8">
+      <div className="mt-10 min-w-0 space-y-12 [&>*]:scroll-mt-8 max-rail:[&>*]:scroll-mt-24">
         <div id="areas">
           <AreasSection areas={areas} actions={areaActions} colorHint={colorHint} />
         </div>
@@ -93,16 +106,26 @@ export function SettingsView({
           <DisplaySection theme={theme} density={density} clock={clock} />
         </div>
 
+        <div id="keyboard">
+          <KeyboardSection />
+        </div>
+
+        {desktop && (
+          <div id="desktop">
+            <DesktopSection reminders={desktop.reminders} />
+          </div>
+        )}
+
         <div id="your-data" className="space-y-12">
           <section aria-labelledby="trash-heading">
             <h2 id="trash-heading" className="font-display text-xl font-medium">
               Recently deleted
             </h2>
-            <p className="mt-1.5 max-w-[60ch] text-ink-2">Items you deleted in the last 30 days can be brought back.</p>
-            <Link
-              href="/trash"
-              className="mt-4 inline-flex items-center rounded-lg border border-rule px-3.5 py-2 font-medium text-ink no-underline hover:bg-hover active:bg-press pointer-coarse:min-h-11"
-            >
+            <p className="mt-1.5 max-w-[60ch] text-ink-2">
+              Items you delete wait here for 30 days, and each can be restored.
+              {deletedCount !== null && <> {deletedWords(deletedCount)}</>}
+            </p>
+            <Link href="/trash" className={plainButton}>
               Open recently deleted
             </Link>
           </section>
@@ -115,11 +138,7 @@ export function SettingsView({
               One JSON file with every item, note, checklist, area, tag and link in your account, including items and
               areas you have deleted. Times are in UTC. Nothing changes in your account when you export.
             </p>
-            <a
-              href={EXPORT_PATH}
-              download
-              className="mt-4 inline-flex items-center rounded-lg border border-rule px-3.5 py-2 font-medium text-ink no-underline hover:bg-hover active:bg-press pointer-coarse:min-h-11"
-            >
+            <a href={EXPORT_PATH} download className={plainButton}>
               Download export
             </a>
           </section>

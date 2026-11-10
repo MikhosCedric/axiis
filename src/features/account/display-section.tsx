@@ -93,12 +93,15 @@ export function DisplaySection({
   const shownTheme = useTheme(theme);
   const [shownDensity, setDensity] = useState(density);
   const [shownClock, setClock] = useState(clock);
+  // Each choice saves at once; this says so, and where it is kept.
+  const [saved, setSaved] = useState<string | null>(null);
 
   /** Times the server wrote, such as the Month's marks, need the new cookie, so the page is drawn again. */
   function chooseClock(setting: ClockSetting) {
     const device = deviceClock();
     setClock({ setting, clock: setting === "auto" ? device : setting });
     document.cookie = `${CLOCK_COOKIE}=${clockCookieValue(setting, device)}; path=/; max-age=31536000; samesite=lax`;
+    setSaved("Time format saved on this device.");
     router.refresh();
   }
 
@@ -110,7 +113,11 @@ export function DisplaySection({
       <p className="mt-1.5 max-w-[60ch] text-ink-2">How Axiis looks on this device.</p>
 
       <h3 className="mt-5 font-medium text-ink">Theme</h3>
-      <Choice label="Theme" options={THEMES} names={THEME_LABEL} value={shownTheme} onChoose={applyTheme} />
+      <Choice label="Theme" options={THEMES} names={THEME_LABEL} value={shownTheme} onChoose={(next) => {
+          applyTheme(next);
+          setSaved("Theme saved on this device.");
+        }}
+      />
 
       <h3 className="mt-6 font-medium text-ink">Density</h3>
       <p className="mt-1 max-w-[60ch] text-ink-2">
@@ -125,12 +132,16 @@ export function DisplaySection({
         onChoose={(next) => {
           setDensity(next);
           saveDensity(next);
+          setSaved("Density saved on this device.");
         }}
       />
 
       <h3 className="mt-6 font-medium text-ink">Time format</h3>
       <p className="mt-1 max-w-[60ch] text-ink-2">How every time in Axiis is written. A time can be typed either way.</p>
       <Choice label="Time format" options={CLOCK_SETTINGS} names={clockNames(shownClock.clock)} value={shownClock.setting} onChoose={chooseClock} />
+      <p role="status" className="mt-3 min-h-5 text-[13px] text-ink-2">
+        {saved}
+      </p>
     </section>
   );
 }

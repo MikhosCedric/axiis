@@ -8,7 +8,8 @@ import type { AreaColor } from "@/domain/area-color";
 import { parseTagName, TAG_NAME_MAX, type TagId, type TagName, type TagSummary } from "@/domain/tag";
 import { ConfirmDelete } from "@/features/detail/confirm-delete";
 import type { ActionResult } from "@/features/today/commands";
-import { openCount, TAGS_PATH, tagHref } from "./model";
+import { deletePrompt, openCount, TAGS_PATH, tagHref } from "./model";
+import { tagDeleted, tagRenamed } from "./tag-pages";
 import { latestSave } from "@/lib/latest-save";
 import { reach } from "@/lib/reach";
 
@@ -54,12 +55,13 @@ export function TagsSection({
   // Arrow keys through the palette choose a colour per press; only the last of a run needs to reach the server.
   const saveColor = useMemo(() => latestSave((id: string, color: AreaColor | null) => actions.color(id, color)), [actions]);
 
-  function run(optimistic: Change, work: () => Promise<ActionResult>) {
+  function run(optimistic: Change, work: () => Promise<ActionResult>, done?: () => void) {
     setError(null);
     startTransition(async () => {
       change(optimistic);
       const result = await reach(work());
       if (!result.ok) setError(result.error);
+      else done?.();
     });
   }
 
@@ -85,7 +87,7 @@ export function TagsSection({
             >
               <TagName
                 tag={tag}
-                onSave={(name) => run({ kind: "rename", id: tag.id, name }, () => actions.rename(tag.id, name))}
+                onSave={(name) => run({ kind: "rename", id: tag.id, name }, () => actions.rename(tag.id, name), () => tagRenamed(tag.name, name))}
                 onError={setError}
               />
               <SwatchButton
@@ -105,8 +107,8 @@ export function TagsSection({
               <ConfirmDelete
                 compact
                 label={`Delete #${tag.name}`}
-                prompt={`Delete #${tag.name}? Its items stay.`}
-                onConfirm={() => run({ kind: "remove", id: tag.id }, () => actions.remove(tag.id))}
+                prompt={deletePrompt(tag)}
+                onConfirm={() => run({ kind: "remove", id: tag.id }, () => actions.remove(tag.id), () => tagDeleted(tag.name))}
               />
               {picking === tag.id && (
                 <ColorPicker
@@ -184,7 +186,7 @@ export function TagName({
  * Rename, recolour or delete the tag a page is about. Renaming moves the page to the new name; deleting leaves it
  * for the tag list, since the page would have nothing to show.
  */
-export function TagToolbar({ tag, actions }: { tag: Pick<TagSummary, "id" | "name" | "color">; actions: TagActions }) {
+export function TagToolbar({ tag, actions }: { tag: Pick<TagSummary, "id" | "name" | "color"> & { open?: number }; actions: TagActions }) {
   const router = useRouter();
   const prefix = useId();
   const [error, setError] = useState<string | null>(null);
@@ -205,15 +207,26 @@ export function TagToolbar({ tag, actions }: { tag: Pick<TagSummary, "id" | "nam
       <div className="surface grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-x-1 px-3 py-1">
         <TagName
           tag={tag}
-          onSave={(name) => after(actions.rename(tag.id, name), () => router.replace(tagHref(name)))}
+          onSave={(name) =>
+            after(actions.rename(tag.id, name), () => {
+              tagRenamed(tag.name, name);
+              router.replace(tagHref(name));
+            })
+          }
           onError={setError}
         />
         <SwatchButton name={`#${tag.name}`} color={tag.color} open={picking} controls={`${prefix}-colors`} onToggle={() => setPicking((o) => !o)} />
         <ConfirmDelete
           compact
           label={`Delete #${tag.name}`}
-          prompt={`Delete #${tag.name}? Its items stay.`}
-          onConfirm={() => after(actions.remove(tag.id), () => router.push(TAGS_PATH))}
+          prompt={deletePrompt(tag)}
+          onConfirm={() =>
+            after(actions.remove(tag.id), () => {
+              tagDeleted(tag.name);
+              // Replace, not push: Back should not return to the page of a tag that is gone.
+              router.replace(TAGS_PATH);
+            })
+          }
         />
         {picking && (
           <ColorPicker

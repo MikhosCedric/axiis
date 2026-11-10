@@ -121,9 +121,34 @@ self.addEventListener("fetch", (event) => {
   event.respondWith(fetch(request).catch(() => offlinePage()));
 });
 
-// The page asks to keep itself on its first visit, when this worker did not yet control it.
+/** A path compared the way tag names are: decoded and in any case. */
+function samePath(a, b) {
+  const plain = (p) => {
+    try {
+      return decodeURIComponent(p).toLowerCase();
+    } catch {
+      return p.toLowerCase();
+    }
+  };
+  return plain(a) === plain(b);
+}
+
+/** Drops every saved copy of a page that no longer exists (a deleted or renamed tag's), with any query. */
+async function forgetPage(path) {
+  const cache = await caches.open(PAGES);
+  for (const request of await cache.keys()) {
+    if (samePath(new URL(request.url).pathname, path)) await cache.delete(request);
+  }
+}
+
+// The page asks to keep itself on its first visit, when this worker did not yet control it, and to forget
+// a page that its own change has removed.
 self.addEventListener("message", (event) => {
   const data = event.data;
+  if (data && data.type === "forget" && typeof data.path === "string" && data.path.startsWith("/")) {
+    event.waitUntil(forgetPage(data.path).catch(() => {}));
+    return;
+  }
   if (!data || data.type !== "keep" || typeof data.url !== "string") return;
   const url = new URL(data.url, self.location.origin);
   if (url.origin !== self.location.origin || !readable(url.pathname)) return;

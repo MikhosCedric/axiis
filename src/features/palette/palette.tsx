@@ -41,7 +41,8 @@ import {
 } from "./model";
 import { GuideBody, GuideContext, Kbd, type GuideTopic } from "./guide";
 import styles from "./palette.module.css";
-import { parseVisits, RECENT_KEY, remember, visitTitle, worthRemembering, type Visit } from "./recent";
+import { forget, remember, visitTitle, worthRemembering } from "./recent";
+import { changeVisits, readVisits } from "./recent-store";
 import { setSequencePending } from "./sequence";
 import { areaShortcut, CAPTURE_KEY, globalShortcut, goShortcut, GO_KEY, GO_WINDOW_MS } from "./shortcuts";
 import { areaHref } from "@/features/filter/href";
@@ -72,27 +73,23 @@ const TITLE_DELAY_MS = 400;
 /** What the empty palette suggests typing. */
 export const EMPTY_HINT = "Try “next friday”, “nov 3”, a #tag, or a line to capture.";
 
-function readVisits(): Visit[] {
-  try {
-    return parseVisits(window.localStorage.getItem(RECENT_KEY));
-  } catch {
-    return [];
-  }
-}
-
-/** Remembers each page this browser opens that is not a place, so the palette can offer it again. */
+/**
+ * Remembers each page this browser opens that is not a place, so the palette can offer it again. A page that
+ * says it is missing (`data-not-found`, such as a deleted tag's) is forgotten instead, so an old link does not
+ * stay in Recent.
+ */
 function useRememberVisits() {
   const pathname = usePathname();
   useEffect(() => {
     if (!worthRemembering(pathname)) return;
     const timer = window.setTimeout(() => {
+      if (document.querySelector("[data-not-found]")) {
+        changeVisits((list) => forget(list, pathname));
+        return;
+      }
       const title = visitTitle(document.title);
       if (!title) return;
-      try {
-        window.localStorage.setItem(RECENT_KEY, JSON.stringify(remember(readVisits(), { href: pathname, title })));
-      } catch {
-        // Storage is off or full: the palette simply has nothing recent to offer.
-      }
+      changeVisits((list) => remember(list, { href: pathname, title }));
     }, TITLE_DELAY_MS);
     return () => window.clearTimeout(timer);
   }, [pathname]);

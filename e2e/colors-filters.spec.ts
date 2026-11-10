@@ -161,7 +161,7 @@ signedIn.describe("colours and filters", () => {
     await page.goto("/tags/chores");
     await hydrated(page);
     await page.getByRole("button", { name: "Delete #chores" }).click();
-    await page.getByRole("group", { name: "Delete #chores? Its items stay." }).getByRole("button", { name: "Yes" }).click();
+    await page.getByRole("group", { name: /^Delete #chores\? It comes off \d+ open items?\. The items stay\.$/ }).getByRole("button", { name: "Yes" }).click();
     await expect(page).toHaveURL(/\/tags$/);
     await expect(page.getByRole("textbox", { name: "Rename #chores" })).toHaveCount(0);
   });
