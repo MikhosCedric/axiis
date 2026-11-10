@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState, type ChangeEvent, type KeyboardEvent as ReactKeyboardEvent } from "react";
+import { useLayoutEffect, useRef, useState, type ChangeEvent, type KeyboardEvent as ReactKeyboardEvent } from "react";
 import type { LocalDate } from "@/domain/item";
 import { formatDayHeading } from "@/features/today/format";
 import { keepSpans, spanHrefs } from "@/features/week/span";
@@ -29,7 +29,8 @@ export function DayNav({ date, today, mode }: { date: LocalDate; today: LocalDat
   const previous = navTarget("previous", date, today);
   const next = navTarget("next", date, today);
 
-  useEffect(() => {
+  // A layout effect, so the listener for this day is swapped in the commit that draws it (see month-nav.tsx).
+  useLayoutEffect(() => {
     function onKey(e: KeyboardEvent) {
       const target = e.target as HTMLElement | null;
       const action = shortcutAction({

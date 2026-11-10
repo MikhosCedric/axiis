@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState, type ChangeEvent, type KeyboardEvent as ReactKeyboardEvent } from "react";
+import { useLayoutEffect, useRef, useState, type ChangeEvent, type KeyboardEvent as ReactKeyboardEvent } from "react";
 import type { LocalDate } from "@/domain/item";
 import { isTypingTarget, shortcutAction } from "@/features/day/nav";
 import { FIRST_DATE, LAST_DATE, parseLocalDate } from "@/lib/dates";
@@ -30,7 +30,8 @@ export function WeekNav({ days, today }: { days: LocalDate[]; today: LocalDate }
   const next = weekNavTarget("next", start, today);
   const isThisWeek = days.includes(today);
 
-  useEffect(() => {
+  // A layout effect, so the listener for this week is swapped in the commit that draws it (see month-nav.tsx).
+  useLayoutEffect(() => {
     function onKey(e: KeyboardEvent) {
       const target = e.target as HTMLElement | null;
       const action = shortcutAction({
