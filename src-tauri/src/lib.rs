@@ -37,6 +37,17 @@ const DESKTOP_COOKIE_SCRIPT: &str = "(() => { const https = location.protocol ==
 /// items still to start) and tells Rust, which draws the taskbar badge and the tray menu and speaks the reminders. Our pages can call this one command and nothing else (see `capabilities/default.json`).
 const BADGE_SCRIPT: &str = "(() => { if (!window.__TAURI_INTERNALS__) return; let last = ''; let lastR = ''; let queued = false; const send = () => { queued = false; if (document.readyState === 'loading') return; const shell = document.getElementById('app-shell'); const inbox = shell ? Number(shell.dataset.inbox) || 0 : 0; const overdue = shell ? Number(shell.dataset.overdue) || 0 : 0; const raw = shell ? shell.dataset.tray || '' : ''; let rows = []; try { const v = JSON.parse(raw || '[]'); if (Array.isArray(v)) rows = v.filter((r) => typeof r === 'string'); } catch (e) {} const rraw = shell ? shell.dataset.reminders || '' : ''; if (rraw !== lastR) { lastR = rraw; let items = []; try { const v = JSON.parse(rraw || '[]'); if (Array.isArray(v)) items = v.filter((r) => r && typeof r.id === 'string' && typeof r.title === 'string' && Number.isFinite(r.at)); } catch (e) {} window.__TAURI_INTERNALS__.invoke('set_reminders', { items }).catch(() => {}); } const key = inbox + ',' + overdue + ',' + raw; if (key === last) return; last = key; window.__TAURI_INTERNALS__.invoke('set_badge', { inbox, overdue, rows }).catch(() => {}); }; const queue = () => { if (!queued) { queued = true; requestAnimationFrame(send); } }; new MutationObserver(queue).observe(document, { subtree: true, childList: true, attributes: true, attributeFilter: ['data-inbox', 'data-overdue', 'data-tray', 'data-reminders'] }); document.addEventListener('DOMContentLoaded', queue); queue(); })();";
 
+/// Settings' "Download export" link, in the app: the page fetches the file as usual and hands its text to
+/// `save_export`, which asks where to save it with the system dialog. In a browser this script is absent and the link
+/// downloads as before; if anything here fails before the hand-off, the link is followed as a normal download.
+const EXPORT_SCRIPT: &str = "(() => { if (!window.__TAURI_INTERNALS__) return; let busy = false; document.addEventListener('click', (e) => { if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return; const a = e.target instanceof Element ? e.target.closest('a[href]') : null; if (!a || a.dataset.nativeSave === 'skip') return; let url; try { url = new URL(a.href, location.href); } catch (err) { return; } if (url.origin !== location.origin || url.pathname !== '/settings/export') return; e.preventDefault(); if (busy) return; busy = true; let handed = false; fetch(url.href, { credentials: 'same-origin', cache: 'no-store' }).then(async (res) => { if (!res.ok) throw new Error('export ' + res.status); const m = /filename=\"?([^\";]+)\"?/i.exec(res.headers.get('Content-Disposition') || ''); const text = await res.text(); handed = true; return window.__TAURI_INTERNALS__.invoke('save_export', { name: m ? m[1] : '', text }); }).catch(() => { if (handed) return; a.dataset.nativeSave = 'skip'; a.click(); delete a.dataset.nativeSave; }).finally(() => { busy = false; }); }, true); })();";
+
+/// The longest export the shell will write. An export at the account quotas is well under this; anything larger is
+/// refused rather than held twice in memory.
+const EXPORT_MAX_BYTES: usize = 128 * 1024 * 1024;
+const EXPORT_NAME_CHARS: usize = 80;
+const EXPORT_DEFAULT_NAME: &str = "axiis-export.json";
+
 /// How often a shell left running in the tray looks for a new version.
 const UPDATE_EVERY_SECS: u64 = 6 * 60 * 60;
 static LAST_UPDATE_CHECK: AtomicU64 = AtomicU64::new(0);
@@ -380,6 +391,112 @@ fn set_reminders(app: AppHandle, items: Vec<ReminderIn>) {
     };
 }
 
+/// Whether `id` is an item key the app's `?item=` takes: a stored item's uuid, or `<series uuid>~<YYYY-MM-DD>` for an
+/// occurrence. Anything else from the page is never put in an address.
+fn item_key(id: &str) -> bool {
+    fn uuid(s: &str) -> bool {
+        let groups: Vec<&str> = s.split('-').collect();
+        groups.len() == 5
+            && groups.iter().zip([8, 4, 4, 4, 12]).all(|(g, n)| g.len() == n && g.chars().all(|c| c.is_ascii_hexdigit()))
+    }
+    fn date(s: &str) -> bool {
+        let b = s.as_bytes();
+        b.len() == 10
+            && b[4] == b'-'
+            && b[7] == b'-'
+            && b.iter().enumerate().all(|(i, c)| i == 4 || i == 7 || c.is_ascii_digit())
+    }
+    match id.split_once('~') {
+        None => uuid(id),
+        Some((series, day)) => uuid(series) && date(day),
+    }
+}
+
+/// Where a click on a reminder goes: Today with that item open, as the app's own links do (`/today?item=<key>`).
+fn reminder_target(origin: &Url, id: &str) -> Option<Url> {
+    if !item_key(id) {
+        return None;
+    }
+    let mut target = origin.clone();
+    target.set_path("/today");
+    target.query_pairs_mut().append_pair("item", id);
+    Some(target)
+}
+
+/// A click on a reminder (the toast itself, while it is on screen) brings the window forward on that item. Windows
+/// reports no click once the toast has gone to the Action Center; the tray icon still brings the window back.
+fn open_reminder(app: &AppHandle, performed: &tauri_plugin_notification::ActionPerformed) {
+    let id = performed.notification().and_then(|n| n.extra().get("item")).and_then(|v| v.as_str());
+    if let (Some(target), Some(window)) = (id.and_then(|id| reminder_target(&site_origin(), id)), app.get_webview_window("main")) {
+        let _ = window.navigate(target);
+    }
+    show_main(app);
+}
+
+/// A page of ours (not the bundled offline page), which is the only place an export can come from.
+fn is_our_page(url: &Url) -> bool {
+    matches!(url.scheme(), "http" | "https") && allowed(url) && url.host_str() != Some("tauri.localhost")
+}
+
+/// The name the save dialog suggests, from what the page sent: letters, digits, `-`, `_` and `.` only, no folder, no
+/// name Windows reserves, cut short, always `.json`.
+fn export_name(raw: &str) -> String {
+    let base = raw.rsplit(['/', '\\']).next().unwrap_or("");
+    let kept: String = base.chars().filter(|c| c.is_ascii_alphanumeric() || "-_.".contains(*c)).collect();
+    let stem = if kept.to_ascii_lowercase().ends_with(".json") { &kept[..kept.len() - 5] } else { &kept[..] };
+    let stem: String = stem.trim_matches('.').chars().take(EXPORT_NAME_CHARS - 5).collect();
+    let stem = stem.trim_end_matches('.');
+    let reserved = ["CON", "PRN", "AUX", "NUL", "COM1", "COM2", "COM3", "COM4", "COM5", "COM6", "COM7", "COM8", "COM9", "LPT1", "LPT2", "LPT3", "LPT4", "LPT5", "LPT6", "LPT7", "LPT8", "LPT9"];
+    let device = stem.split('.').next().is_some_and(|first| reserved.contains(&first.to_ascii_uppercase().as_str()));
+    if stem.is_empty() || device {
+        EXPORT_DEFAULT_NAME.to_string()
+    } else {
+        format!("{stem}.json")
+    }
+}
+
+/// Whether an export of `len` bytes may be written: something, and not more than the cap.
+fn export_fits(len: usize) -> bool {
+    len > 0 && len <= EXPORT_MAX_BYTES
+}
+
+fn say_export_failed(app: &AppHandle, window: &tauri::WebviewWindow, text: &str) {
+    use tauri_plugin_dialog::{DialogExt, MessageDialogKind};
+    app.dialog().message(text).title("Axiis").kind(MessageDialogKind::Error).parent(window).show(|_| {});
+}
+
+/// The third thing our pages may ask of the shell, and the only one that touches the disk: save this export where the
+/// user picks in the system dialog. Main window, our origin, a size cap and a cleaned name; the page never names the
+/// folder or sees the path. `false` when the user cancels.
+#[tauri::command]
+async fn save_export(app: AppHandle, window: tauri::WebviewWindow, name: String, text: String) -> Result<bool, String> {
+    use tauri_plugin_dialog::DialogExt;
+    if window.label() != "main" || !window.url().is_ok_and(|u| is_our_page(&u)) {
+        return Err("not allowed here".into());
+    }
+    if !export_fits(text.len()) {
+        say_export_failed(&app, &window, "This export is too large for the app to save. Download it from axiis-lovat.vercel.app in a browser instead.");
+        return Err("too large".into());
+    }
+    let Some(path) = app
+        .dialog()
+        .file()
+        .set_parent(&window)
+        .set_title("Save your Axiis export")
+        .set_file_name(export_name(&name))
+        .add_filter("JSON", &["json"])
+        .blocking_save_file()
+    else {
+        return Ok(false);
+    };
+    let written = path.into_path().map_err(|e| e.to_string()).and_then(|p| std::fs::write(p, text.as_bytes()).map_err(|e| e.to_string()));
+    if let Err(e) = written {
+        say_export_failed(&app, &window, "The export could not be saved there. Nothing was changed. Try another folder.");
+        return Err(e);
+    }
+    Ok(true)
+}
+
 /// Looks every few seconds and speaks what has come due. Runs for as long as the shell does, window or no window.
 fn speak_reminders(app: AppHandle) {
     std::thread::spawn(move || loop {
@@ -396,7 +513,11 @@ fn speak_reminders(app: AppHandle) {
         }
         drop(reminders);
         for r in ready {
-            let _ = app.notification().builder().title(&r.title).body(minutes_words(r.at - now)).show();
+            let mut note = app.notification().builder().title(&r.title).body(minutes_words(r.at - now));
+            if item_key(&r.id) {
+                note = note.extra("item", &r.id);
+            }
+            let _ = note.show();
         }
     });
 }
@@ -411,12 +532,14 @@ fn capture(app: &AppHandle) {
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
-        .invoke_handler(tauri::generate_handler![set_badge, set_reminders])
+        .invoke_handler(tauri::generate_handler![set_badge, set_reminders, save_export])
         .plugin(tauri_plugin_updater::Builder::new().build())
         // A second launch brings the running app forward instead of opening another.
         .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| show_main(app)))
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_notification::init())
+        // Used from Rust only, for the export's Save dialog; the page gets no dialog API.
+        .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_deep_link::init())
         .plugin(
             tauri_plugin_global_shortcut::Builder::new()
@@ -432,6 +555,9 @@ pub fn run() {
         .setup(|app| {
             let handle = app.handle().clone();
             app.manage(Mutex::new(Reminders::default()));
+            // Registered before the first reminder, since a notification shown with no handler reports no click.
+            let click_handle = handle.clone();
+            let _ = app.notification().on_action(move |performed| open_reminder(&click_handle, performed));
             speak_reminders(handle.clone());
 
             // The address to open. A debug build may be pointed at a dev server; a release build never reads this.
@@ -455,6 +581,7 @@ pub fn run() {
                 // Tells the sign-in page this is the app, so it returns to the app by deep link instead of a web page.
                 .initialization_script(DESKTOP_COOKIE_SCRIPT)
                 .initialization_script(BADGE_SCRIPT)
+                .initialization_script(EXPORT_SCRIPT)
                 .on_navigation(move |url| route_navigation(&nav_handle, url))
                 .on_new_window(move |url, features| open_new_window(&window_handle, url, features))
                 .build()?;
@@ -639,6 +766,53 @@ mod tests {
         assert_eq!(minutes_words(1), "Starts in 1 minute");
         assert_eq!(minutes_words(60_001), "Starts in 2 minutes");
         assert_eq!(minutes_words(REMINDER_LEAD_MS), "Starts in 10 minutes");
+    }
+
+    #[test]
+    fn only_an_item_key_is_put_in_a_reminder_address() {
+        let id = "0b7c1d2e-1111-4222-8333-444455556666";
+        assert!(item_key(id));
+        assert!(item_key(&format!("{id}~2026-11-09")));
+        for bad in ["", "abc", &format!("{id}~"), &format!("{id}~2026-1-09"), &format!("{id}&next=x"), "0b7c1d2e-1111-4222-8333-44445555666g", &format!("{id}~2026-11-09~x")] {
+            assert!(!item_key(bad), "{bad}");
+        }
+        assert_eq!(
+            reminder_target(&origin(), &format!("{id}~2026-11-09")).map(|u| u.to_string()).as_deref(),
+            Some("https://axiis-lovat.vercel.app/today?item=0b7c1d2e-1111-4222-8333-444455556666%7E2026-11-09")
+        );
+        assert_eq!(reminder_target(&origin(), "../settings"), None);
+    }
+
+    #[test]
+    fn the_export_name_is_plain_and_ends_in_json() {
+        assert_eq!(export_name("axiis-export-2026-11-10.json"), "axiis-export-2026-11-10.json");
+        assert_eq!(export_name("..\\..\\Windows\\evil.exe"), "evil.exe.json");
+        assert_eq!(export_name("/etc/passwd"), "passwd.json");
+        assert_eq!(export_name("a b<c>:\"d|?*.JSON"), "abcd.json");
+        assert_eq!(export_name(""), EXPORT_DEFAULT_NAME);
+        assert_eq!(export_name("...json"), EXPORT_DEFAULT_NAME);
+        assert_eq!(export_name("con.json"), EXPORT_DEFAULT_NAME);
+        assert_eq!(export_name("Nul.tar.json"), EXPORT_DEFAULT_NAME);
+        assert_eq!(export_name("console.json"), "console.json");
+        let long = export_name(&"x".repeat(500));
+        assert_eq!(long.len(), EXPORT_NAME_CHARS);
+        assert!(long.ends_with(".json"));
+    }
+
+    #[test]
+    fn an_export_is_written_only_within_the_cap() {
+        assert!(!export_fits(0));
+        assert!(export_fits(1));
+        assert!(export_fits(EXPORT_MAX_BYTES));
+        assert!(!export_fits(EXPORT_MAX_BYTES + 1));
+    }
+
+    #[test]
+    fn an_export_comes_only_from_our_pages() {
+        assert!(is_our_page(&"https://axiis-lovat.vercel.app/settings".parse().unwrap()));
+        assert!(!is_our_page(&"http://tauri.localhost/index.html".parse().unwrap()));
+        assert!(!is_our_page(&"https://evil.example/settings".parse().unwrap()));
+        assert!(!is_our_page(&"tauri://localhost/".parse().unwrap()));
     }
 
     #[test]
