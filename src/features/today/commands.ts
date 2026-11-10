@@ -6,6 +6,7 @@ import { dayWords } from "@/features/inbox/model";
 import { DEFAULT_MINUTES } from "@/features/score/drop";
 import { tagCaptured } from "@/features/tags/commands";
 import { instantAt, toLocalDate, wallMinutes } from "@/lib/dates";
+import type { WeekStart } from "@/features/week/week-of";
 import { materialize } from "@/lib/items/occurrences";
 import type { ItemsRepo } from "@/lib/items/repo";
 import { saveFailure } from "@/lib/quota";
@@ -93,16 +94,18 @@ export async function captureTask(
   defaultOn: LocalDate | null = null,
   /** Made on the device when the capture was typed; a resend of the same one stores a single item. */
   clientId?: ItemId,
+  /** The first day of the user's week, which "next week" counts from; Monday when not given. */
+  weekStart?: WeekStart,
 ): Promise<CaptureResult> {
   const text = titleSchema.safeParse(raw);
   if (!text.success) return { ok: false, error: TOO_LONG };
-  const said = parseCapture(text.data);
+  const said = parseCapture(text.data, { weekStart });
   const today = toLocalDate(now, timeZone);
-  const named = said.day ? dayOf(said.day, today) : null;
+  const named = said.day ? dayOf(said.day, today, said.weekStart) : null;
   let on = named ?? defaultOn ?? (said.time ? today : null);
 
   // A repeat is always planned: from the day it names, else the default day, else today; past today when its time has come.
-  const series = said.repeat ? seriesFor(said.repeat, on ?? today, today, passesToday(said, momentAt(now, timeZone))) : null;
+  const series = said.repeat ? seriesFor(said.repeat, on ?? today, today, passesToday(said, momentAt(now, timeZone)), said.weekStart) : null;
   if (said.repeat && !series) return { ok: false, error: ENDS_BEFORE };
   if (series) on = series.first;
 

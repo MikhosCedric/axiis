@@ -1,4 +1,5 @@
 import type { Clock } from "@/lib/clock";
+import type { WeekStart } from "@/features/week/week-of";
 import type { ItemType, LocalDate } from "@/domain/item";
 import { parseTagName, tagKey, type TagName } from "@/domain/tag";
 import { PLACES } from "@/components/shell/places";
@@ -76,6 +77,7 @@ export function paletteSections(
   find: Find,
   selected: Target | null = null,
   recent: readonly Visit[] = [],
+  weekStart?: WeekStart,
 ): Section[] {
   const text = input.trim();
   const places = rank(DESTINATIONS, text, (p) => [p.label, ...p.also]);
@@ -121,7 +123,7 @@ export function paletteSections(
     target: { key: r.id, title: r.title, type: r.type, done: r.done, href: r.href },
   }));
 
-  const read = parseCapture(text);
+  const read = parseCapture(text, { weekStart });
   const understood = previewWords(read, clock);
   const what = same.length ? "as a new task" : "as a task";
   const label = read.untitled
