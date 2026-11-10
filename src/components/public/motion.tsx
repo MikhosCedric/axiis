@@ -54,10 +54,24 @@ function sections() {
       nav.querySelectorAll("a").forEach((a, i) => a.toggleAttribute("aria-current", i === next));
     }
   };
-  // Crossing the probe line is the only time the answer can change, so only then are the boxes read.
+  // Crossing the probe line is the usual time the answer changes, so that is when the boxes are read. A box can
+  // also move without crossing it (a section settling from its entrance, a jump by an in-page link), so the
+  // answer is read once more when scrolling comes to rest.
   const io = new IntersectionObserver(mark, { rootMargin: `-${PROBE * 100}% 0px -${99 - PROBE * 100}% 0px` });
   for (const t of targets) io.observe(t);
-  return () => io.disconnect();
+  let rest = 0;
+  const settle = () => {
+    clearTimeout(rest);
+    rest = window.setTimeout(mark, 150);
+  };
+  addEventListener("scroll", settle, { passive: true });
+  addEventListener("resize", settle);
+  return () => {
+    io.disconnect();
+    clearTimeout(rest);
+    removeEventListener("scroll", settle);
+    removeEventListener("resize", settle);
+  };
 }
 
 function anchors() {
