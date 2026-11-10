@@ -24,6 +24,7 @@ import { DoneDemo } from "@/features/landing/done-demo";
 import { DragDemo } from "@/features/landing/drag-demo";
 import { HeroDrift, Seam } from "@/features/landing/drift";
 import { FocusDemo } from "@/features/landing/focus-demo";
+import { Film } from "@/features/landing/film";
 import { HeroFloaters } from "@/features/landing/floaters";
 import { LiveScore } from "@/features/landing/live-score";
 import { MonthDemo } from "@/features/landing/month-demo";
@@ -231,6 +232,30 @@ export default async function Home() {
                   The Week and the Month show the same items further out.
                 </Movement>
               </div>
+            </div>
+          </div>
+        </section>
+
+        <section className={styles.filmSection} aria-labelledby="film-title">
+          <div className={`${siteWrap} ${styles.filmGrid}`}>
+            <div className={styles.filmText}>
+              <Rise as="h2" id="film-title" className={styles.heading} text="A day, start to finish" />
+              <p className={`${styles.storyLead} ${styles.reveal}`} data-reveal="">
+                Write it down, drop it on the day, watch the line reach it, and finish it.
+              </p>
+              <p className={`${styles.filmNote} ${styles.reveal}`} data-reveal="">
+                Axiis also runs on Windows, with a list in the tray and a reminder before each timed item.{" "}
+                <a
+                  href="https://github.com/MikhosCedric/axiis/releases/latest"
+                  className={`text-ink underline decoration-(--rule) underline-offset-4 ${drawnLink}`}
+                >
+                  Get Axiis for Windows
+                </a>
+                .
+              </p>
+            </div>
+            <div className={`${styles.filmFrame} ${styles.reveal}`} data-reveal="">
+              <Film />
             </div>
           </div>
         </section>

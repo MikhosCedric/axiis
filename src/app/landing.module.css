@@ -1089,3 +1089,37 @@
     rotate: 0.45deg;
   }
 }
+
+/* The film: words and a loop side by side on a wide screen, stacked on a narrow one. */
+.filmSection {
+  padding-block: var(--section-y);
+}
+
+.filmGrid {
+  display: grid;
+  gap: var(--sp-5);
+  align-items: start;
+}
+
+@media (min-width: 1024px) {
+  .filmGrid {
+    grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+    column-gap: var(--sp-6);
+  }
+}
+
+.filmText {
+  display: grid;
+  gap: var(--sp-3);
+  max-width: 34rem;
+}
+
+.filmFrame {
+  min-width: 0;
+}
+
+.filmNote {
+  font-size: var(--fs-body);
+  line-height: 1.55;
+  color: var(--ink-2);
+}
