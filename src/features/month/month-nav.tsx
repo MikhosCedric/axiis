@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState, type ReactNode } from "react";
+import { useLayoutEffect, useState, type ReactNode } from "react";
 import type { LocalDate } from "@/domain/item";
 import { isTypingTarget, shortcutAction } from "@/features/day/nav";
 import { keepSpans, spanHrefs } from "@/features/week/span";
@@ -48,7 +48,9 @@ export function MonthNav({ month, today }: { month: YearMonth; today: LocalDate 
   const next = monthNavTarget("next", month, today);
   const isThisMonth = month === monthOf(today);
 
-  useEffect(() => {
+  // A layout effect, so the listener for this month is swapped in the same commit that draws it. A passive effect
+  // left the last month's listener on for a moment after the new month showed, and a quick ] then moved two months.
+  useLayoutEffect(() => {
     function onKey(e: KeyboardEvent) {
       const target = e.target as HTMLElement | null;
       const action = shortcutAction({

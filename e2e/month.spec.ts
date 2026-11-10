@@ -7,6 +7,16 @@ import { hydrated, signedIn } from "./session";
 
 const cell = (page: Page, name: RegExp) => page.getByRole("gridcell", { name });
 
+/**
+ * The grid is under the Month's loading boundary, which hydrates after the layout's `html[data-hydrated]`.
+ * A key pressed on a day before then is lost when React cannot hydrate the boundary on the spot, so
+ * wait for the grid's own mark (src/features/month/month-view.tsx).
+ */
+async function gridHydrated(page: Page) {
+  await hydrated(page);
+  await page.locator("[role=grid][data-hydrated]").waitFor({ state: "attached" });
+}
+
 async function axe(page: Page) {
   const { violations } = await new AxeBuilder({ page }).analyze();
   return violations.filter((v) => v.impact === "serious" || v.impact === "critical").map((v) => `${v.id}: ${v.nodes.map((n) => n.target).join(" ")}`);
@@ -113,7 +123,7 @@ signedIn.describe("the Month", () => {
     const first = cell(page, /^Friday 1 May/);
     await expect(first).toHaveAttribute("tabindex", "0");
     await expect(page.getByRole("gridcell").and(page.locator("[tabindex='0']"))).toHaveCount(1);
-    await hydrated(page);
+    await gridHydrated(page);
     await first.focus();
     await page.keyboard.press("ArrowRight");
     await expect(cell(page, /^Saturday 2 May/)).toBeFocused();
@@ -146,13 +156,10 @@ signedIn.describe("the Month", () => {
 
   signedIn("captures onto the day in focus, and a drag moves the item to another day", async ({ page }) => {
     await page.goto("/month/2099-08");
-    await hydrated(page);
-    // The page can refresh once more after hydrating and drop the focus, so focus and press again until it takes.
-    await expect(async () => {
-      await cell(page, /^Saturday 1 August/).focus();
-      await page.keyboard.press("ArrowRight");
-      await expect(page.getByRole("textbox", { name: "Capture for Sunday 2 August" })).toBeVisible({ timeout: 1000 });
-    }).toPass();
+    await gridHydrated(page);
+    await cell(page, /^Saturday 1 August/).focus();
+    await page.keyboard.press("ArrowRight");
+    await expect(page.getByRole("textbox", { name: "Capture for Sunday 2 August" })).toBeVisible();
     await page.getByRole("textbox", { name: "Capture for Sunday 2 August" }).fill("Water the garden 7:30");
     await page.keyboard.press("Enter");
     await expect(page.getByText("Planned for Sunday 2 August, 07:30.")).toBeVisible();
