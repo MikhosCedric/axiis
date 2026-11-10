@@ -9,7 +9,7 @@ import { instantAt, toLocalDate, wallMinutes } from "@/lib/dates";
 import { materialize } from "@/lib/items/occurrences";
 import type { ItemsRepo } from "@/lib/items/repo";
 import { saveFailure } from "@/lib/quota";
-import { dayOf, parseCapture, seriesFor, seriesWords } from "./capture-syntax";
+import { dayOf, momentAt, parseCapture, passesToday, seriesFor, seriesWords } from "./capture-syntax";
 import { TITLE_MAX } from "./model";
 
 export type ActionResult = { ok: true } | { ok: false; error: string };
@@ -101,8 +101,8 @@ export async function captureTask(
   const named = said.day ? dayOf(said.day, today) : null;
   let on = named ?? defaultOn ?? (said.time ? today : null);
 
-  // A repeat is always planned: from the day it names, else the default day, else today.
-  const series = said.repeat ? seriesFor(said.repeat, on ?? today, today) : null;
+  // A repeat is always planned: from the day it names, else the default day, else today; past today when its time has come.
+  const series = said.repeat ? seriesFor(said.repeat, on ?? today, today, passesToday(said, momentAt(now, timeZone))) : null;
   if (said.repeat && !series) return { ok: false, error: ENDS_BEFORE };
   if (series) on = series.first;
 
