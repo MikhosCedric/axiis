@@ -209,9 +209,11 @@ signedIn.describe("comfort and access", () => {
     await page.evaluate(() => window.scrollBy(0, 700));
     await expect(page.locator(".title-bar")).toHaveAttribute("data-folded");
     for (const selector of ["header.glass", "nav.glass-rail", ".title-bar"]) {
-      expect(await style(page, selector, "backdrop-filter"), selector).toBe("none");
-      // Solid: no alpha, or an alpha of 1 (how a colour mid-transition is written).
-      expect(await style(page, selector, "background-color"), selector).toMatch(/^rgba?\(\d+, \d+, \d+(, 1)?\)$/);
+      await expect.poll(() => style(page, selector, "backdrop-filter"), { message: selector }).toBe("none");
+      // Solid: no alpha, or an alpha of 1. A bar that has just folded is still fading its colour in, so wait for it.
+      await expect
+        .poll(() => style(page, selector, "background-color"), { message: selector })
+        .toMatch(/^rgba?\(\d+, \d+, \d+(, 1)?\)$/);
     }
   });
 
@@ -246,6 +248,8 @@ signedIn.describe("no axe violations on the polished surfaces", () => {
         await page.emulateMedia({ colorScheme, reducedMotion: "reduce" });
         await page.goto(path);
         await hydrated(page);
+        // The page streams in under a loading boundary; axe reads it once its heading has arrived.
+        await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
         expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
       });
     }

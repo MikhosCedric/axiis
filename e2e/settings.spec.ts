@@ -106,7 +106,7 @@ signedIn.describe("settings", () => {
     expect((await context.cookies()).find((c) => c.name === "reminders")?.value).toBe("off");
     // The refresh after the choice streams the title back in; axe reads the page once it is there.
     await expect(page).toHaveTitle(/Settings/);
-    expect(await axe(page)).toEqual([]);
+    await expect.poll(() => axe(page)).toEqual([]);
   });
 
   signedIn("merging a tag says what changes, moves its items, and a page filtered by it says it is gone", async ({ page }) => {
