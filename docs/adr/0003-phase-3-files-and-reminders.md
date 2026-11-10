@@ -2,6 +2,8 @@
 
 Status: reminders accepted 2026-11-10 (the owner said to start on them, taking the defaults below: works while the app runs in the tray, 10 minute lead); files still proposed and waiting on question 2. Builds on ADR-0001 and ADR-0002.
 
+Update 2026-11-10: reminders open their item on a click (while the toast is on screen; Windows reports nothing for a click from the Action Center). Export is built as a Save dialog driven from Rust (`save_export`, see below and `docs/desktop-plan.md`); import is not built and still waits on question 2.
+
 ## Context
 
 Phase 3 of `docs/desktop-plan.md` adds what the web could not do. Multi-window (`/item/<id>` as its own window) and the tray Today list are built. Two features are left that were planned as "needs the local store from Phase 2": reminders, and files (export and import). The local store (stage 2c) is not built and waits on a client-rendered UI, so reminders should not wait for it if there is a cheaper way.
@@ -23,6 +25,7 @@ Rejected: waiting for 2c (weeks of work for the same notification), and a Window
 ### Files
 
 - **Export** stays the existing route (`/settings/export`, one JSON file, `version: 1`). What is unverified is how WebView2 treats the download. The shell should handle it itself with Tauri's download hook: save into the Downloads folder under the suggested name and tell the user where, instead of relying on WebView2's default.
+  - Built differently (2026-11-10): a system Save dialog instead of a silent save to Downloads, so the user picks the place. A shell script in the main window fetches the route on the link's click and passes the text to one command, `save_export`; Rust checks the window and origin, caps the size at 128 MB, cleans the name, shows the dialog (`tauri-plugin-dialog`, Rust only) and writes the file. The page gets no file or dialog API and never sees the path.
 - **Import** is new and takes only our own export. A Server Action reads the file, checks it with a strict schema (version 1, size cap, row caps per table), maps every id to a new one, and inserts through the same repo and Row Level Security as any write. It never overwrites or deletes; running it twice duplicates, so it shows a preview count first and asks to confirm. Items from other apps (CSV) are out of scope here.
 
 ## Consequences
