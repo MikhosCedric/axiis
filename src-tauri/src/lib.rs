@@ -21,7 +21,7 @@ use tauri_plugin_updater::UpdaterExt;
 
 /// The one origin the window may show. Anything else opens in the system browser.
 const HOST: &str = "axiis-lovat.vercel.app";
-const START: &str = "https://axiis-lovat.vercel.app/";
+const START: &str = "https://axiis-lovat.vercel.app/?app=1";
 
 /// Pressed anywhere in Windows: bring Axiis forward with the capture field ready.
 const CAPTURE_HOTKEY: &str = "ctrl+alt+a";
