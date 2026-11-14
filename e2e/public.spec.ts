@@ -137,7 +137,7 @@ test("the web manifest names the app and starts on today", async ({ request }) =
   const response = await request.get("/manifest.webmanifest");
   expect(response.status()).toBe(200);
   const manifest = await response.json();
-  expect(manifest).toMatchObject({ short_name: "Axiis", start_url: "/today", display: "standalone" });
+  expect(manifest).toMatchObject({ short_name: "Axiis", start_url: "/?app=1", display: "standalone" });
   expect(manifest.icons.length).toBeGreaterThan(0);
 });
 
@@ -199,4 +199,10 @@ test("every page carries a nonce policy, and the page runs under it without a vi
   await page.getByRole("button", { name: "Switch between light and dark" }).click();
   await expect(html).toHaveAttribute("data-theme", /light|dark/);
   expect(violations).toEqual([]);
+});
+
+test("an installed app that is signed out opens on sign-in, not the landing page", async ({ request }) => {
+  const response = await request.get("/?app=1", { maxRedirects: 0 });
+  expect(response.status()).toBe(307);
+  expect(response.headers().location).toContain("/login");
 });

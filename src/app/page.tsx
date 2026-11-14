@@ -15,7 +15,7 @@ import {
   quietAction,
   siteWrap,
 } from "@/components/public/site-chrome";
-import { readStartPage, START_PAGE_COOKIE, startPath } from "@/components/shell/cookies";
+import { DESKTOP_COOKIE, readStartPage, START_PAGE_COOKIE, startPath } from "@/components/shell/cookies";
 import { getRequestClock } from "@/components/shell/request-clock";
 import { AREA_COLORS } from "@/domain/area-color";
 import { DELETION_GRACE_DAYS } from "@/features/account/commands";
@@ -111,7 +111,7 @@ const KEYS: Record<Section["id"], readonly (readonly [keys: readonly string[], d
 
 const vars = (v: Record<string, number | string>) => v as CSSProperties;
 
-export default async function Home() {
+export default async function Home({ searchParams }: { searchParams: Promise<{ app?: string }> }) {
   // A signed-in visit, and the end of sign-in, which lands here, opens the start page chosen in Settings.
   const saved = await cookies();
   const start = startPath(readStartPage(saved.get(START_PAGE_COOKIE)?.value));
@@ -119,6 +119,9 @@ export default async function Home() {
   const supabase = await createClient();
   const { data } = await supabase.auth.getClaims();
   if (data?.claims) redirect(start);
+  // An installed app (the desktop shell, or the browser's install) has no use for the brochure: signed out,
+  // it opens on sign-in. The start address says so, and the shell's cookie covers an older install.
+  if ((await searchParams).app === "1" || saved.get(DESKTOP_COOKIE)?.value === "1") redirect("/login");
 
   const month = monthOf(toLocalDate(new Date(), "UTC"));
   const { clock } = await getRequestClock();

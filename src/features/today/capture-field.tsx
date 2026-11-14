@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState, useTransition, type FormEvent, type ReactNode } from "react";
 import { useClock } from "@/components/shell/clock-context";
+import { useWeekStart } from "@/components/shell/week-start-context";
 import { captureAction as serverCapture } from "./actions";
 import type { ActionResult, CaptureResult } from "./commands";
 import { CAPTURE_EXAMPLES, CAPTURE_LEAD, capturedLine, firstCapturedLine, momentHere, parseCapture, previewWords, type Moment } from "./capture-syntax";
@@ -89,9 +90,10 @@ export function CaptureField({
   const [pending, startTransition] = useTransition();
   const unmark = useRef<() => void>(() => {});
   const clock = useClock();
+  const weekStart = useWeekStart();
   // Read when a key is pressed, not while rendering: a repeat whose time today has passed says the day it starts.
   const [moment, setMoment] = useState<Moment | undefined>(undefined);
-  const preview = plans ? previewWords(parseCapture(value), clock, moment) : null;
+  const preview = plans ? previewWords(parseCapture(value, { weekStart }), clock, moment) : null;
   const example = useExample(firstDay);
   const pathname = usePathname();
   const queue = useQueueCapture();

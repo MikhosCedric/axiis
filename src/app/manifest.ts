@@ -7,7 +7,7 @@ export default function manifest(): MetadataRoute.Manifest {
     name: `${SITE_NAME}: tasks and time, on one page`,
     short_name: SITE_NAME,
     description: SITE_DESCRIPTION,
-    start_url: "/today",
+    start_url: "/?app=1",
     scope: "/",
     display: "standalone",
     background_color: PAPER_LIGHT,

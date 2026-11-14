@@ -2,7 +2,7 @@
 
 import { refresh } from "next/cache";
 import { planDateSchema } from "@/domain/item";
-import { getNow, getTimeZone } from "@/features/day/server";
+import { getNow, getTimeZone, getWeekStart } from "@/features/day/server";
 import { captureTask, type CaptureResult } from "@/features/today/commands";
 import { getItemsRepo } from "@/lib/items";
 
@@ -12,7 +12,7 @@ import { getItemsRepo } from "@/lib/items";
  */
 export async function captureOnAction(title: string, on: string): Promise<CaptureResult> {
   const day = planDateSchema.safeParse(on);
-  const result = await captureTask(await getItemsRepo(), title, getNow(), await getTimeZone(), day.success ? day.data : null);
+  const result = await captureTask(await getItemsRepo(), title, getNow(), await getTimeZone(), day.success ? day.data : null, undefined, await getWeekStart());
   if (result.ok) refresh();
   return result;
 }
