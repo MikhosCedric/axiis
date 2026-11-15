@@ -18,14 +18,14 @@ describe("namesNoDay", () => {
 
 describe("dayHref", () => {
   it("uses /today for today and /day/<date> for any other day", () => {
-    expect(dayHref(today, today, "score")).toBe("/today");
-    expect(dayHref(d("2026-10-07"), today, "score")).toBe("/day/2026-10-07");
+    expect(dayHref(today, today, "grid")).toBe("/today");
+    expect(dayHref(d("2026-10-07"), today, "grid")).toBe("/day/2026-10-07");
   });
 
   it("keeps the list view and leaves the default view out of the URL", () => {
     expect(dayHref(today, today, "list")).toBe("/today?view=list");
     expect(dayHref(d("2026-10-05"), today, "list")).toBe("/day/2026-10-05?view=list");
-    expect(dayHref(d("2026-10-05"), today, "score")).not.toContain("?");
+    expect(dayHref(d("2026-10-05"), today, "grid")).not.toContain("?");
   });
 });
 
@@ -37,7 +37,7 @@ describe("readDayQuery", () => {
   });
 
   it("reads an occurrence key, which names one day of a series", () => {
-    expect(readDayQuery({ item: `${id}~2026-10-12` })).toEqual({ mode: "score", itemId: `${id}~2026-10-12` });
+    expect(readDayQuery({ item: `${id}~2026-10-12` })).toEqual({ mode: "grid", itemId: `${id}~2026-10-12` });
   });
 
   it("falls back to the score and no selection for anything else", () => {
@@ -49,7 +49,7 @@ describe("readDayQuery", () => {
       { item: `not-a-uuid~2026-10-12` },
     ];
     for (const q of [{}, { view: "week" }, { view: ["list", "list"] }, ...bad]) {
-      expect(readDayQuery(q)).toEqual({ mode: "score", itemId: null });
+      expect(readDayQuery(q)).toEqual({ mode: "grid", itemId: null });
     }
   });
 });

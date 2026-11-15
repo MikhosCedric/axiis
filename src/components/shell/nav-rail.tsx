@@ -91,7 +91,7 @@ function useCalendarLinks(today: LocalDate): CalendarLinks {
   const startsOn = useWeekStart();
   const keep = useKeepFilter();
   const view = calendarView(pathname, today, startsOn);
-  const mode = view.span === "day" && params.get(DAY_VIEW_PARAM) === "list" ? "list" : "score";
+  const mode = view.span === "day" && params.get(DAY_VIEW_PARAM) === "list" ? "list" : "grid";
   return {
     view,
     dayHref: (date) => keep(spanHrefs(date, today, mode, startsOn)[view.span ?? "day"]),

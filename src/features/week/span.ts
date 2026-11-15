@@ -10,12 +10,12 @@ export type Span = "day" | "week" | "month";
 /**
  * Where Day, Week and Month in the side panel (and the D, W and M keys) go from a page whose focus is `anchor`:
  * the day itself (today when the week or month holds it), the week holding it
- * and the month holding it. The day keeps its Score or List.
+ * and the month holding it. The day keeps its grid or List.
  */
 export function spanHrefs(
   anchor: LocalDate,
   today: LocalDate,
-  mode: DayViewMode = "score",
+  mode: DayViewMode = "grid",
   startsOn: WeekStart = WEEK_STARTS_ON,
 ): Record<Span, string> {
   return { day: dayHref(anchor, today, mode), week: weekHref(anchor, today, startsOn), month: monthHref(monthOf(anchor), today) };

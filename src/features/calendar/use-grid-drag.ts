@@ -3,7 +3,7 @@
 import { useEffect, useLayoutEffect, useRef, type PointerEvent as ReactPointerEvent, type RefObject } from "react";
 import type { LocalDate, ShownItem } from "@/domain/item";
 import { localMinutes } from "@/lib/dates";
-import { changes, minutesAt, moveTo, resizeTo, slotFor, toAnyTime, type Placement, type Slot } from "./grid-drop";
+import { changes, minutesAt, moveTo, resizeTo, slotFor, toAnyTime, toInbox, type Placement, type Slot } from "./grid-drop";
 
 export type DragKind = "move" | "resize" | "create";
 
@@ -112,7 +112,13 @@ export function useGridDrag(scroller: RefObject<HTMLElement | null>, live: Live,
         inside(el.getBoundingClientRect(), g.x, g.y),
       );
       const col = columnAt(g.x);
-      if (cell) g.placement = toAnyTime(cell.dataset.anytime as LocalDate);
+      // The Inbox tray sits under the grid, outside what scrolls: a drop there takes the day away.
+      const tray = scroller.current?.parentElement?.querySelector<HTMLElement>("[data-drop='tray']");
+      const frame = scroller.current?.getBoundingClientRect();
+      if (tray && inside(tray.getBoundingClientRect(), g.x, g.y)) g.placement = toInbox();
+      // Something with no day yet is planned only where it is dropped, never by the nearest edge.
+      else if (g.item!.schedule.kind === "unscheduled" && !(frame && inside(frame, g.x, g.y))) g.placement = null;
+      else if (cell) g.placement = toAnyTime(cell.dataset.anytime as LocalDate);
       else if (col) g.placement = moveTo(g.item!, col.date, minutesAt(g.y - col.rect.top) - g.grab, timeZone, fallback);
     }
     const key = keyOf(g);

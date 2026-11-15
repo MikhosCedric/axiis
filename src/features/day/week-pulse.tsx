@@ -34,7 +34,7 @@ export function WeekPulse({ pulse, today }: { pulse: PulseData; today: LocalDate
           return (
             <li key={d.date}>
               <Link
-                href={keep(dayHref(d.date, today, "score"))}
+                href={keep(dayHref(d.date, today, "grid"))}
                 title={`Open ${formatDayHeading(d.date)}`}
                 className={`grid justify-items-center gap-0.5 rounded-lg py-1.5 hover:bg-hover active:bg-press ${isToday ? "bg-hover" : ""}`}
               >

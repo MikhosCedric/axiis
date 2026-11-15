@@ -1,11 +1,10 @@
 "use client";
 
 import { MotionList } from "@/components/motion-list";
-import { ViewTransition } from "react";
+import { ViewTransition, type ReactNode } from "react";
 import { AreaLabel } from "@/components/area-mark";
 import { repeats, type Area, type LocalDate, type ShownItem } from "@/domain/item";
 import { DueMark } from "@/features/today/due-mark";
-import { DoneFold } from "./score-view";
 import { RepeatMark } from "@/features/today/repeat-mark";
 import { RowTags } from "@/features/tags/row-tags";
 import { formatClock } from "@/lib/clock";
@@ -17,6 +16,21 @@ import type { ChildCount } from "@/lib/items/repo";
 import { quickItem } from "@/features/actions/quick-item";
 import { renameKey, useQuick } from "@/features/actions/context";
 import { RenameField, RowActions, rowProps } from "@/features/actions/row-actions";
+
+/** Done items folded away under one quiet line that opens in place. */
+function DoneFold({ count, children, listClassName }: { count: number; children: ReactNode; listClassName: string }) {
+  return (
+    <details className="group">
+      <summary className="inline-flex min-h-9 cursor-pointer list-none items-center gap-1.5 rounded-md px-2 text-[13px] font-medium text-ink-3 hover:bg-hover hover:text-ink-2 pointer-coarse:min-h-11 [&::-webkit-details-marker]:hidden">
+        <svg viewBox="0 0 12 12" width={10} height={10} aria-hidden="true" className="transition-transform group-open:rotate-90 motion-reduce:transition-none">
+          <path d="M4 2l4 4-4 4" fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+        Done ({count})
+      </summary>
+      <ul className={listClassName}>{children}</ul>
+    </details>
+  );
+}
 
 const TITLE_WEIGHT: Record<BeamState, string> = {
   planned: "font-medium text-ink",

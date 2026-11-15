@@ -1,15 +1,15 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { weekCalendar } from "@/features/calendar/load";
 import { readDayQuery } from "@/features/day/nav";
-import { getTodayDate } from "@/features/day/server";
 import { DetailPanel } from "@/features/detail/detail-panel";
 import { weekOf, weekTitle } from "@/features/week/model";
 import { getWeek } from "@/features/week/server";
-import { WeekNav } from "@/features/week/week-nav";
 import { WeekView } from "@/features/week/week-view";
 import { filterWeek } from "@/features/filter/apply";
 import { getFilter } from "@/features/filter/server";
 import { TagColorsProvider } from "@/features/tags/tag-colors";
+import { getItemsRepo } from "@/lib/items";
 import { parseLocalDate } from "@/lib/dates";
 
 export async function generateMetadata({ params }: PageProps<"/week/[date]">): Promise<Metadata> {
@@ -22,10 +22,11 @@ export default async function WeekPage({ params, searchParams }: PageProps<"/wee
   const date = parseLocalDate((await params).date);
   if (!date) notFound();
   const { itemId } = readDayQuery(await searchParams);
-  const [data, today, filter] = await Promise.all([getWeek(date), getTodayDate(), getFilter(searchParams, true)]);
+  const [data, filter, repo] = await Promise.all([getWeek(date), getFilter(searchParams, true), getItemsRepo()]);
+  const calendar = await weekCalendar(repo, filterWeek(data, filter));
   return (
     <TagColorsProvider value={data.tagColors}>
-      <WeekView data={filterWeek(data, filter)} filter={filter} nav={<WeekNav days={data.days} today={today} />} detail={<DetailPanel itemId={itemId} />} />
+      <WeekView calendar={calendar} days={data.days} from={date} weekFull={data.weekFull} filter={filter} detail={<DetailPanel itemId={itemId} />} />
     </TagColorsProvider>
   );
 }

@@ -4,7 +4,7 @@ import { parseVisits, remember, RECENT_MAX, visitTitle, worthRemembering } from 
 describe("recent visits", () => {
   it("remembers days, weeks, months, notes and tags, not the places or search and settings", () => {
     expect(["/day/2026-11-03", "/week/2026-11-02", "/month/2026-12", "/notes/abc", "/tags/home"].every(worthRemembering)).toBe(true);
-    expect(["/today", "/week", "/month", "/inbox", "/notes", "/tags", "/search", "/settings", "/settings/export", "/dev/score"].some(worthRemembering)).toBe(false);
+    expect(["/today", "/week", "/month", "/inbox", "/notes", "/tags", "/search", "/settings", "/settings/export", "/dev/day"].some(worthRemembering)).toBe(false);
   });
 
   it("drops the site's name from a title", () => {

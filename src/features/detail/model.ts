@@ -11,7 +11,7 @@ import { formatClock, parseClock, type Clock } from "@/lib/clock";
 import type { Created, SearchRow } from "@/features/notes/model";
 import type { PlanFor } from "@/features/inbox/model";
 import { DEFAULT_MINUTES } from "@/features/score/drop";
-import { DAY_MINUTES } from "@/features/score/layout";
+import { DAY_MINUTES } from "@/features/calendar/grid-layout";
 
 /**
  * What an item may do with subtasks, mirroring the database trigger: only a

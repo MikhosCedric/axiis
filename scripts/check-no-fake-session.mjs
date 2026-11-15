@@ -77,7 +77,7 @@ async function serveAndProbe() {
     }
     await expectRedirect("/today", "/login?next=%2Ftoday");
     await expectRedirect("/settings/export", "/login?next=%2Fsettings%2Fexport");
-    await expectRedirect("/dev/score", "/login?next=%2Fdev%2Fscore");
+    await expectRedirect("/dev/day", "/login?next=%2Fdev%2Fday");
   } finally {
     server.kill();
   }

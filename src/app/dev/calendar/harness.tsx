@@ -19,7 +19,7 @@ import { captureTask, setDone } from "@/features/today/commands";
 import { fakeRepo, tagByTitle } from "@/features/today/test-support";
 import { moveItem } from "@/features/week/commands";
 import type { ItemsRepo } from "@/lib/items/repo";
-import { WEEK_TAGS } from "../week/fixture";
+import { WEEK_TAGS } from "./week-fixture";
 import { loadCalendar } from "./fixture";
 
 const LATENCY_MS = 250;

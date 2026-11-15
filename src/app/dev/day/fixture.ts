@@ -105,7 +105,7 @@ export function loadDayData(repo: ItemsRepo, now: Date, timeZone: string): Promi
 }
 
 /** Tags on fixture items, by title. The stand-up's go on its series, so every occurrence wears them. */
-export const SCORE_TAGS: Record<string, string[]> = {
+export const DAY_TAGS: Record<string, string[]> = {
   "Write the launch brief": ["launch", "writing"],
   "Stand-up": ["team"],
   "Renew passport": ["errands", "travel"],

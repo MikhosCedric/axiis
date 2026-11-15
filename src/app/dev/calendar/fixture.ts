@@ -6,7 +6,7 @@ import { loadWeek } from "@/features/week/load";
 import { weekOf } from "@/features/week/model";
 import { instantAt } from "@/lib/dates";
 import type { ItemsRepo } from "@/lib/items/repo";
-import { seedWeek } from "../week/fixture";
+import { seedWeek } from "./week-fixture";
 
 const COLORS: Record<string, AreaColor> = { Work: "indigo", Home: "clay", Health: "sage" };
 

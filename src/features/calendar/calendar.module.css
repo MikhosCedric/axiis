@@ -419,3 +419,51 @@
       height 90ms cubic-bezier(0.16, 1, 0.3, 1);
   }
 }
+
+/* The Inbox, under the grid and outside what scrolls, so it is in reach of a drag from any hour. */
+.tray {
+  padding: 12px 14px 14px;
+  border-top: 1px solid var(--rule);
+}
+
+.trayChip {
+  max-width: min(34ch, 100%);
+  margin-bottom: 0;
+}
+
+.trayChip .face {
+  position: relative;
+  inset: auto;
+  height: 100%;
+}
+
+/* A first-day example: the outline of a planned block, with nothing to press. */
+.example {
+  --tint: var(--ink);
+  position: absolute;
+  left: 2px;
+  right: 2px;
+  padding: 3px 8px;
+  border: 1.5px dashed color-mix(in srgb, var(--tint) 45%, var(--rule));
+  border-radius: 6px;
+  font-size: 12.5px;
+  font-weight: 500;
+  line-height: 16px;
+  color: var(--ink-3);
+  overflow: hidden;
+  pointer-events: none;
+}
+
+@media (pointer: coarse) {
+  .trayChip {
+    height: 44px;
+  }
+
+  .trayChip .face {
+    align-items: center;
+  }
+
+  .trayChip .tick {
+    height: 44px;
+  }
+}

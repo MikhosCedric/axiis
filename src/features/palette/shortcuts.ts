@@ -2,8 +2,8 @@ import { PLACES } from "@/components/shell/places";
 import type { KeyPress } from "@/features/day/nav";
 import { SNAP_MINUTES } from "@/features/score/snap";
 
-/** A key as `KeyboardEvent#key` names it, with Ctrl (Cmd on a Mac) or Shift held when set. */
-export type Chord = { key: string; mod?: true; shift?: true };
+/** A key as `KeyboardEvent#key` names it, with Ctrl (Cmd on a Mac), Alt (Option on a Mac) or Shift held when set. */
+export type Chord = { key: string; mod?: true; alt?: true; shift?: true };
 
 /** The code that answers a shortcut. The table's test asks each one whether it really does. */
 export type Handler =
@@ -14,8 +14,8 @@ export type Handler =
   | "day-nav"
   | "span"
   | "capture"
-  | "score-item"
-  | "week-item"
+  | "grid-item"
+  | "grid-slot"
   | "month-grid"
   | "inbox"
   | "row"
@@ -100,7 +100,7 @@ export const SHORTCUTS: ShortcutGroup[] = [
       { chords: [k("e")], does: "Rename it in place", handler: "row" },
       { chords: [k("p")], does: "Plan it: today, tomorrow, next week, a date or a time", handler: "row" },
       { chords: [k("d")], does: "Mark done or not done", handler: "row" },
-      { chords: [k("Delete"), k("Backspace")], does: "Delete it, with Undo (on the Score and the Week, back to the Inbox)", handler: "row" },
+      { chords: [k("Delete"), k("Backspace")], does: "Delete it, with Undo", handler: "row" },
       { chords: [k(".")], does: "More: duplicate, make an event or a task, move to the Inbox, open details", handler: "row" },
       { chords: [k("ContextMenu"), k("F10", { shift: true })], does: "Every action, as a menu", handler: "row" },
       { chords: [k("x")], does: "Choose it for a change to many; Shift or Ctrl with a click chooses too, and Escape lets them go", handler: "row" },
@@ -115,30 +115,24 @@ export const SHORTCUTS: ShortcutGroup[] = [
     ],
   },
   {
-    where: "A task on the Score",
+    where: "A block on the Day or the Week",
     shortcuts: [
-      { chords: [k("Enter")], does: "Open its details", handler: "score-item" },
-      { chords: [k(" ")], does: "Mark done or not done", handler: "score-item" },
-      { chords: [k("Escape")], does: "Close the details", handler: "score-item" },
-      { chords: [k("ArrowLeft"), k("ArrowRight")], does: `Move it ${SNAP_MINUTES} minutes earlier or later`, handler: "score-item" },
-      {
-        chords: [k("ArrowLeft", { shift: true }), k("ArrowRight", { shift: true })],
-        does: `Make it ${SNAP_MINUTES} minutes shorter or longer`,
-        handler: "score-item",
-      },
-      { chords: [k("ArrowUp"), k("ArrowDown")], does: "Move it to the area above or below, or give an Inbox item a time", handler: "score-item" },
-      { chords: [k("Backspace"), k("Delete")], does: "Take its time away, back to the Inbox", handler: "score-item" },
+      { chords: [k("ArrowUp"), k("ArrowDown")], does: "The block before or after it that day (on an Inbox item, Up gives it a day)", handler: "grid-item" },
+      { chords: [k("ArrowLeft"), k("ArrowRight")], does: "The nearest block on the day before or after", handler: "grid-item" },
+      { chords: [k("Enter")], does: "Open its details", handler: "grid-item" },
+      { chords: [k(" ")], does: "Show it in brief, with its done tick, Edit and Delete", handler: "grid-item" },
+      { chords: [k("ArrowUp", { alt: true }), k("ArrowDown", { alt: true })], does: `Move it ${SNAP_MINUTES} minutes earlier or later, or give an any-time item a time`, handler: "grid-item" },
+      { chords: [k("ArrowLeft", { alt: true }), k("ArrowRight", { alt: true })], does: "Move it a day earlier or later", handler: "grid-item" },
+      { chords: [k("ArrowUp", { shift: true }), k("ArrowDown", { shift: true })], does: `Make it ${SNAP_MINUTES} minutes shorter or longer`, handler: "grid-item" },
+      { chords: [k("Home", { alt: true })], does: "Take its time away: that day, at any time", handler: "grid-item" },
     ],
   },
   {
-    where: "A task on the Week",
+    where: "An empty slot on the Day or the Week",
     shortcuts: [
-      { chords: [k("Enter")], does: "Open its details", handler: "week-item" },
-      { chords: [k(" ")], does: "Mark done or not done", handler: "week-item" },
-      { chords: [k("Escape")], does: "Close the details", handler: "week-item" },
-      { chords: [k("ArrowLeft"), k("ArrowRight")], does: "Move it a day earlier or later", handler: "week-item" },
-      { chords: [k("ArrowUp")], does: "Give an Inbox item a day", handler: "week-item" },
-      { chords: [k("Backspace"), k("Delete")], does: "Send it back to the Inbox", handler: "week-item" },
+      { chords: [k("ArrowUp"), k("ArrowDown")], does: "Half an hour earlier or later; with Shift, a quarter", handler: "grid-slot" },
+      { chords: [k("ArrowLeft"), k("ArrowRight")], does: "The same time on the day before or after", handler: "grid-slot" },
+      { chords: [k("Enter")], does: "Add an item there", handler: "grid-slot" },
     ],
   },
   {
@@ -250,12 +244,12 @@ const SPOKEN: Record<string, string> = {
 /** The caps to draw for a chord, as on the keyboard: ["Ctrl", "K"] or ["⌘", "K"]. */
 export function chordCaps(chord: Chord, mac: boolean): string[] {
   const key = NAMES[chord.key] ?? chord.key.toUpperCase();
-  return [...(chord.mod ? [mac ? "⌘" : "Ctrl"] : []), ...(chord.shift ? ["Shift"] : []), key];
+  return [...(chord.mod ? [mac ? "⌘" : "Ctrl"] : []), ...(chord.alt ? [mac ? "⌥" : "Alt"] : []), ...(chord.shift ? ["Shift"] : []), key];
 }
 
 /** The chord as words, for a screen reader: "Control K", "Shift Left arrow". */
 export function chordSpoken(chord: Chord, mac: boolean, then?: Chord): string {
   const key = SPOKEN[chord.key] ?? NAMES[chord.key] ?? chord.key.toUpperCase();
-  const spoken = [...(chord.mod ? [mac ? "Command" : "Control"] : []), ...(chord.shift ? ["Shift"] : []), key].join(" ");
+  const spoken = [...(chord.mod ? [mac ? "Command" : "Control"] : []), ...(chord.alt ? [mac ? "Option" : "Alt"] : []), ...(chord.shift ? ["Shift"] : []), key].join(" ");
   return then ? `${spoken} then ${chordSpoken(then, mac)}` : spoken;
 }

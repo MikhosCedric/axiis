@@ -8,7 +8,7 @@ import { materialize, resolveKey } from "@/lib/items/occurrences";
 import type { ItemsRepo } from "@/lib/items/repo";
 import type { ActionResult } from "@/features/today/commands";
 import { TITLE_MAX } from "@/features/today/model";
-import { DAY_MINUTES } from "@/features/score/layout";
+import { DAY_MINUTES } from "@/features/calendar/grid-layout";
 import { buildDetail, firstDay, retypable, subtaskPolicy, takesDue, TYPE_CHOICES, type DetailView, type Scope, type TimeOfDay } from "./model";
 import { firstOccurrence, repeatSchema, ruleFor } from "./repeat";
 import { byName, tagColors } from "@/domain/tag";

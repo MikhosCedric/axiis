@@ -3,28 +3,33 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent as ReactPointerEvent } from "react";
 import { AreaLabel } from "@/components/area-mark";
 import { Floating } from "@/components/floating";
+import type { AreaColor } from "@/domain/area-color";
 import { repeats, type Area, type LocalDate, type ShownItem } from "@/domain/item";
 import { useQuick, type RowHooks } from "@/features/actions/context";
 import type { QuickItem } from "@/features/actions/model";
 import { quickItem } from "@/features/actions/quick-item";
 import { rowProps } from "@/features/actions/row-actions";
+import { SameInInbox } from "@/features/inbox/same-in-inbox";
 import type { ActionResult, CaptureResult } from "@/features/today/commands";
 import { DoneToggle } from "@/features/today/done-toggle";
 import { dueWords } from "@/features/today/due";
 import { DueMark } from "@/features/today/due-mark";
 import { formatDayHeading } from "@/features/today/format";
 import { STATE_WORD } from "@/features/today/item-name";
-import { stateOf, type BeamState } from "@/features/today/model";
+import { EMPTY_TRAY, INBOX, stateOf, TRAY_FULL, type BeamState } from "@/features/today/model";
 import { RepeatMark } from "@/features/today/repeat-mark";
 import { formatHour, formatMinutes, type Clock } from "@/lib/clock";
 import { utcMidnight } from "@/lib/dates";
 import type { ChildCount } from "@/lib/items/repo";
 import type { Box } from "@/lib/placement";
 import styles from "./calendar.module.css";
-import { DEFAULT_MINUTES, keyPlacement, wallSpan, type KeyContext, type Placement, type Slot } from "./grid-drop";
+import { DEFAULT_MINUTES, keyPlacement, toAnyTime, wallSpan, type KeyContext, type Placement, type Slot } from "./grid-drop";
 import { blockBox, DAY_MINUTES, GRID_PX, HOUR_PX, layoutGrid, openMinute, segmentOn, yAt, type Block, type CalendarMode } from "./grid-layout";
 import { QuickCreate } from "./quick-create";
 import { useGridDrag, type DragPreview } from "./use-grid-drag";
+
+/** An example block for an account's first day: drawn faint, never stored, never a target. Minutes from midnight. */
+export type GridExample = { title: string; start: number; end: number; color: AreaColor | null };
 
 export type CalendarGridProps = {
   /** The days drawn as columns, in order: one, three or seven. */
@@ -46,6 +51,10 @@ export type CalendarGridProps = {
   selectedId?: string | null;
   /** Focus: everything but what is happening now steps back. */
   dim?: boolean;
+  /** The Inbox, as a tray under the grid: drag one onto a day or a time to plan it, and a block back to clear its day. */
+  tray?: { items: readonly ShownItem[]; full: boolean };
+  /** Faint examples on today's column (or the first), for an account that has stored nothing yet. */
+  examples?: readonly GridExample[];
   /** The length a new item, or one given a time, gets. */
   defaultMinutes?: number;
   /** Opens the detail panel for an item, or closes it with null. */
@@ -86,6 +95,8 @@ export function CalendarGrid({
   tags = {},
   selectedId = null,
   dim = false,
+  tray,
+  examples = [],
   defaultMinutes = DEFAULT_MINUTES,
   onSelect,
   onPlace,
@@ -109,6 +120,8 @@ export function CalendarGrid({
   const nowAt = layout.now;
   const byId = useMemo(() => new Map(items.map((i) => [i.id as string, i])), [items]);
   const areaOf = (item: ShownItem) => areas.find((a) => a.id === item.areaId) ?? null;
+  /** The day a tray item is given from the keyboard, and where examples are drawn: today when it shows, else the first day. */
+  const anchor = days.includes(today) ? today : days[0];
   const keyCtx: KeyContext = { days, timeZone, now: nowAt?.minutes ?? null, today, fallback: defaultMinutes };
 
   const columnEl = (day: LocalDate) => scroller.current?.querySelector<HTMLElement>(`[data-day-col="${day}"]`) ?? null;
@@ -150,7 +163,7 @@ export function CalendarGrid({
     // A move to another day takes the block out of one column and draws it in the next, a render or two after
     // the key. Finding the old element must not end the watch, so it runs until the reader moves on, or a moment passes.
     const active = document.activeElement;
-    const el = scroller.current?.querySelector<HTMLElement>(`[data-nav][data-id="${want.id}"]`);
+    const el = scroller.current?.parentElement?.querySelector<HTMLElement>(`[data-nav][data-id="${want.id}"]`);
     const movedOn = active !== null && active !== document.body && active !== el && active.isConnected;
     if (movedOn || performance.now() > want.until) {
       refocus.current = null;
@@ -205,6 +218,26 @@ export function CalendarGrid({
       onPlace(item, placement);
     } else if (moveFocus(e.currentTarget, e.key)) {
       e.preventDefault();
+    }
+  }
+
+  /** An item in the tray has no day to walk from: Up gives it one, the day the grid is about, at any time. */
+  function trayKey(e: KeyboardEvent<HTMLElement>, item: ShownItem) {
+    if (quick) {
+      const q = quickOf(item);
+      if (quick.keyDown(e, q.item, q.hooks)) return;
+    }
+    if (e.ctrlKey || e.metaKey || e.altKey || e.shiftKey) return;
+    if (e.key === "Enter") {
+      e.preventDefault();
+      onSelect(item.id);
+    } else if (e.key === " ") {
+      e.preventDefault();
+      setPeek({ id: item.id, at: boxOf(e.currentTarget) });
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      refocus.current = { id: item.id, until: e.timeStamp + 3000 };
+      onPlace(item, toAnyTime(anchor));
     }
   }
 
@@ -371,6 +404,70 @@ export function CalendarGrid({
   const overAny = (day: LocalDate) =>
     preview?.kind === "move" && preview.placement?.schedule.kind === "day" && preview.placement.schedule.on === day && preview.item.schedule.kind !== "day";
 
+  const overTray = preview?.kind === "move" && preview.placement?.schedule.kind === "unscheduled" && preview.item.schedule.kind !== "unscheduled";
+
+  const trayChip = (item: ShownItem) => {
+    if (hidden(item)) return null;
+    const state = stateOf(item, now);
+    const q = quickOf(item);
+    const count = childCounts[item.id];
+    const due = state !== "done" && item.dueOn ? item.dueOn : null;
+    const { onKeyDown: _keys, ...row } = rowProps(quick, q.item, q.hooks) as { onKeyDown?: unknown };
+    void _keys;
+    const said = [
+      "in the Inbox",
+      areaOf(item)?.name ?? NO_AREA,
+      STATE_WORD[state],
+      repeats(item) && "repeats",
+      count && `${count.done} of ${count.total} subtasks done`,
+      due && dueWords(due, today).words,
+      tags[item.id]?.length ? `tagged ${tags[item.id].join(", ")}` : null,
+    ];
+    return (
+      <li
+        key={item.id}
+        data-item={item.id}
+        data-state={state}
+        className={`${styles.chip} ${styles.trayChip} ${styles[state]} ${areaOf(item)?.color ? "" : styles.plain} ${selectedId === item.id ? styles.selected : ""} ${lifted(item) ? styles.lifted : ""}`}
+        style={tint(item)}
+      >
+        <button
+          type="button"
+          {...row}
+          data-nav
+          data-id={item.id}
+          aria-label={[q.item.title, ...said.filter(Boolean)].join(", ")}
+          aria-describedby={KEYS_ID}
+          aria-haspopup="dialog"
+          className={styles.face}
+          onPointerDown={(e) => start(e, "move", anchor, item)}
+          onKeyDown={(e) => trayKey(e, item)}
+          onDoubleClick={() => {
+            straightToPanel.current = true;
+            window.setTimeout(() => (straightToPanel.current = false), 0);
+            setPeek(null);
+            onSelect(item.id);
+          }}
+          onClick={(e) => e.detail === 0 && setPeek({ id: item.id, at: boxOf(e.currentTarget) })}
+        >
+          <span className={styles.words}>
+            <span className={styles.title}>{q.item.title}</span>
+          </span>
+        </button>
+        <button
+          type="button"
+          aria-pressed={state === "done"}
+          aria-label={`Done: ${q.item.title}`}
+          className={styles.tick}
+          onPointerDown={(e) => e.stopPropagation()}
+          onClick={() => onToggleDone(item)}
+        >
+          <span className={styles.mark} />
+        </button>
+      </li>
+    );
+  };
+
   const peeked = peek ? byId.get(peek.id) : undefined;
   const hours = Array.from({ length: 23 }, (_, i) => i + 1);
 
@@ -452,6 +549,18 @@ export function CalendarGrid({
                 onKeyDown={(e) => cursorKey(e, col.date)}
                 onClick={() => openSlot({ day: col.date, start: cursor, length: defaultMinutes })}
               />
+              {col.date === anchor &&
+                examples.map((ex) => (
+                  <div
+                    key={ex.title}
+                    aria-hidden="true"
+                    data-example
+                    className={styles.example}
+                    style={{ ...(ex.color ? ({ "--tint": `var(--area-${ex.color})` } as CSSProperties) : {}), top: yAt(ex.start), height: yAt(ex.end - ex.start) - 1 }}
+                  >
+                    {ex.title} <span className={styles.meta}>{range(ex.start, ex.end)}</span>
+                  </div>
+                ))}
               {col.blocks.map((b) => block(b, col.date))}
               {ghostOn(col.date)}
               {nowAt?.day === i && (
@@ -465,10 +574,25 @@ export function CalendarGrid({
         </div>
       </div>
 
+      {tray && (
+        <section data-drop="tray" aria-labelledby="calendar-tray-h" className={`${styles.tray} ${overTray ? styles.over : ""}`}>
+          <h3 id="calendar-tray-h" className="font-display text-lg leading-tight font-medium">
+            {INBOX}
+          </h3>
+          <p className="mt-1 mb-3 text-[13px] text-ink-3">
+            No day yet. <span className="pointer-coarse:hidden">Drag one onto a day to plan it for that time.</span>
+            <span className="hidden pointer-coarse:inline">Press and hold one, then drag it onto a day to plan it for that time.</span> Drag a block back
+            here to clear its day. <SameInInbox />
+          </p>
+          {tray.items.length ? <ul className="flex flex-wrap gap-2">{tray.items.map(trayChip)}</ul> : <p className="text-[13px] text-ink-3">{EMPTY_TRAY}</p>}
+          {tray.full && <p className="mt-3 text-[13px] text-ink-3">{TRAY_FULL}</p>}
+        </section>
+      )}
+
       <p id={KEYS_ID} className="sr-only">
         Arrow keys move between items. Enter opens one, Space shows it in brief, D marks it done. Alt with Up or Down moves it a quarter
         hour, Alt with Left or Right a day, Shift with Up or Down changes its length, Alt Home takes its time away, and Alt Down gives an
-        any-time item a time. On an empty slot, Up and Down choose the time and Enter adds an item there.
+        any-time item a time. On an empty slot, Up and Down choose the time and Enter adds an item there. On an item in the Inbox, Up gives it a day.
       </p>
 
       {peek && peeked && (
@@ -487,7 +611,7 @@ export function CalendarGrid({
           onClosed={(back) => {
             const id = peek.id;
             setPeek(null);
-            if (back) scroller.current?.querySelector<HTMLElement>(`[data-nav][data-id="${id}"]`)?.focus();
+            if (back) scroller.current?.parentElement?.querySelector<HTMLElement>(`[data-nav][data-id="${id}"]`)?.focus();
           }}
           onToggleDone={() => onToggleDone(peeked)}
           onEdit={() => {
@@ -495,7 +619,7 @@ export function CalendarGrid({
             onSelect(peeked.id);
           }}
           onDelete={() => {
-            const face = scroller.current?.querySelector<HTMLElement>(`[data-nav][data-id="${peek.id}"]`);
+            const face = scroller.current?.parentElement?.querySelector<HTMLElement>(`[data-nav][data-id="${peek.id}"]`);
             const q = quickOf(peeked);
             setPeek(null);
             if (face) quick?.run("delete", q.item, q.hooks, face);
