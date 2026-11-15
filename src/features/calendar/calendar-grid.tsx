@@ -96,7 +96,7 @@ export function CalendarGrid({
 }: CalendarGridProps) {
   const quick = useQuick();
   const scroller = useRef<HTMLDivElement>(null);
-  const refocus = useRef<string | null>(null);
+  const refocus = useRef<{ id: string; until: number } | null>(null);
   /** Set by a double-click, so the press that ended it does not also open the block in brief. */
   const straightToPanel = useRef(false);
   const [preview, setPreview] = useState<DragPreview | null>(null);
@@ -145,11 +145,18 @@ export function CalendarGrid({
 
   // After a key moved a block, focus follows it to where it was drawn again.
   useEffect(() => {
-    const id = refocus.current;
-    if (!id) return;
-    const el = scroller.current?.querySelector<HTMLElement>(`[data-nav][data-id="${id}"]`);
-    if (el && document.activeElement !== el) el.focus();
-    if (el) refocus.current = null;
+    const want = refocus.current;
+    if (!want) return;
+    // A move to another day takes the block out of one column and draws it in the next, a render or two after
+    // the key. Finding the old element must not end the watch, so it runs until the reader moves on, or a moment passes.
+    const active = document.activeElement;
+    const el = scroller.current?.querySelector<HTMLElement>(`[data-nav][data-id="${want.id}"]`);
+    const movedOn = active !== null && active !== document.body && active !== el && active.isConnected;
+    if (movedOn || performance.now() > want.until) {
+      refocus.current = null;
+      return;
+    }
+    if (el && active !== el) el.focus();
   });
 
   const quickOf = (item: ShownItem): { item: QuickItem; hooks: RowHooks } => ({
@@ -194,7 +201,7 @@ export function CalendarGrid({
       const placement = keyPlacement(keyCtx, item, e);
       if (!placement) return;
       e.preventDefault();
-      refocus.current = item.id;
+      refocus.current = { id: item.id, until: e.timeStamp + 3000 };
       onPlace(item, placement);
     } else if (moveFocus(e.currentTarget, e.key)) {
       e.preventDefault();
