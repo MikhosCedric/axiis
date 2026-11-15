@@ -118,6 +118,19 @@ signedIn.describe("colours and filters", () => {
     expect(await axe(page)).toEqual([]);
   });
 
+  signedIn("D on a focused item is that item's key, and switches to the day only when no item has it", async ({ page }) => {
+    await page.goto("/week/2099-05-18");
+    await hydrated(page);
+    const item = page.getByRole("button", { name: /^Draft the budget/ });
+    await item.focus();
+    await page.keyboard.press("d");
+    await expect(page.getByRole("button", { name: /^Draft the budget.*done/i })).toBeVisible();
+    await expect(page).toHaveURL("/week/2099-05-18");
+    await page.getByRole("heading", { level: 1 }).getByRole("button").focus();
+    await page.keyboard.press("d");
+    await expect(page).toHaveURL("/day/2099-05-18");
+  });
+
   signedIn("the chip widens back to every area, and an unknown area is ignored", async ({ page }) => {
     await page.goto(`/week/2099-05-18?area=${WORK}`);
     await page.getByRole("link", { name: "Stop showing only Work" }).click();
