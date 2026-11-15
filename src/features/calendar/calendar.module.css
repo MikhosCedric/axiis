@@ -1,0 +1,421 @@
+/* The calendar's time grid: one sheet, hours down, days across. Colour here is the area's own, as a soft
+   tint under ink; verdigris stays for now, a drag's landing place and focus. */
+
+.frame {
+  --gutter: 44px;
+  --col-min: 0px;
+  position: relative;
+  overflow: auto;
+  overscroll-behavior: contain;
+  max-height: max(22rem, calc(100svh - 12rem));
+  --tracks: var(--gutter) repeat(var(--days), minmax(var(--col-min), 1fr));
+}
+
+.week {
+  --col-min: 92px;
+}
+
+@media (min-width: 760px) {
+  .frame {
+    --gutter: 56px;
+  }
+}
+
+.head {
+  position: sticky;
+  top: 0;
+  z-index: 6;
+  display: grid;
+  grid-template-columns: var(--tracks);
+  min-width: min-content;
+  background: var(--sheet);
+  border-bottom: 1px solid var(--rule);
+}
+
+.corner,
+.anyLabel {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  background: var(--sheet);
+}
+
+.dayHead {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  min-width: 0;
+  padding: 10px 8px 8px;
+  border-left: 1px solid var(--rule-soft);
+  font-family: var(--font-display);
+  font-weight: 500;
+  line-height: 1;
+  color: var(--ink-2);
+}
+
+.dayNum {
+  font-size: 22px;
+  letter-spacing: -0.015em;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.dayName {
+  font-size: 13px;
+}
+
+/* Today: the date in verdigris over a short solid line, the live line form. */
+.today .dayNum {
+  color: var(--accent);
+  box-shadow: 0 5px 0 -2px var(--accent);
+}
+
+.today .dayName {
+  color: var(--ink);
+}
+
+.anyLabel {
+  padding: 7px 6px 6px 0;
+  border-top: 1px solid var(--rule-soft);
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1.15;
+  text-align: right;
+  color: var(--ink-3);
+}
+
+.anyCell {
+  min-width: 0;
+  min-height: 32px;
+  padding: 4px 3px 2px;
+  border-top: 1px solid var(--rule-soft);
+  border-left: 1px solid var(--rule-soft);
+}
+
+.over {
+  background: var(--accent-wash);
+  box-shadow: inset 0 0 0 1.5px var(--accent);
+}
+
+.body {
+  position: relative;
+  display: grid;
+  grid-template-columns: var(--tracks);
+  min-width: min-content;
+}
+
+.gutter {
+  position: sticky;
+  left: 0;
+  z-index: 4;
+  background: var(--sheet);
+}
+
+.hour {
+  position: absolute;
+  right: 6px;
+  translate: 0 -50%;
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1;
+  white-space: nowrap;
+  color: var(--ink-3);
+  font-variant-numeric: tabular-nums;
+}
+
+.nowLabel {
+  color: var(--accent);
+  font-weight: 700;
+  background: var(--sheet);
+  padding: 2px 0 2px 2px;
+}
+
+/* Hairline hour rules, with a fainter one on the half hour. */
+.col {
+  position: relative;
+  min-width: 0;
+  border-left: 1px solid var(--rule-soft);
+  background-image:
+    linear-gradient(to bottom, var(--rule-soft) 0 1px, transparent 1px),
+    linear-gradient(to bottom, color-mix(in srgb, var(--rule-soft) 45%, transparent) 0 1px, transparent 1px);
+  background-size:
+    100% var(--hour),
+    100% var(--hour);
+  background-position:
+    0 -1px,
+    0 calc(var(--hour) / 2 - 1px);
+  touch-action: pan-x pan-y;
+}
+
+.colToday {
+  background-color: color-mix(in srgb, var(--accent) 3%, transparent);
+}
+
+.now {
+  position: absolute;
+  left: 0;
+  right: 0;
+  /* Under the blocks, so it never strikes through a title; the block it crosses wears the live mark. */
+  z-index: 0;
+  height: 2px;
+  margin-top: -1px;
+  background: var(--accent);
+  pointer-events: none;
+}
+
+.nowDot {
+  position: absolute;
+  left: -1px;
+  z-index: 3;
+  width: 10px;
+  height: 10px;
+  margin-top: -5px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 0 2px var(--sheet);
+  pointer-events: none;
+}
+
+/* A block: the area's colour as a soft tint, ink on top. `--tint` is set inline; none is plain ink. */
+.block,
+.chip {
+  --tint: var(--ink);
+  --wash: light-dark(color-mix(in srgb, var(--tint) 17%, var(--sheet)), color-mix(in srgb, var(--tint) 30%, var(--sheet)));
+  background: var(--wash);
+  color: var(--ink);
+  border-radius: 6px;
+  /* A sheet-coloured edge parts neighbours that share a column. */
+  box-shadow: 0 0 0 1px var(--sheet);
+  overflow: hidden;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+}
+
+.block {
+  position: absolute;
+  z-index: 1;
+}
+
+.chip {
+  position: relative;
+  height: 24px;
+  margin-bottom: 3px;
+}
+
+.plain {
+  --wash: light-dark(color-mix(in srgb, var(--ink) 8%, var(--sheet)), color-mix(in srgb, var(--ink) 13%, var(--sheet)));
+}
+
+.block:hover,
+.chip:hover,
+.block:focus-within,
+.chip:focus-within {
+  z-index: 2;
+  background: color-mix(in srgb, var(--ink) 5%, var(--wash));
+}
+
+.face {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: flex-start;
+  width: 100%;
+  padding: 3px 6px 3px 25px;
+  border-radius: inherit;
+  text-align: left;
+  font-size: 12.5px;
+  line-height: 16px;
+  cursor: grab;
+  overflow: hidden;
+  outline-offset: -2px;
+}
+
+.words {
+  display: block;
+  flex: 1;
+  min-width: 0;
+}
+
+.short .face,
+.chip .face {
+  padding-block: 4px;
+}
+
+.short .words,
+.chip .words {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.title {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.meta {
+  color: color-mix(in srgb, var(--ink) 78%, var(--wash));
+  font-variant-numeric: tabular-nums;
+}
+
+.stack .meta {
+  display: block;
+}
+
+/* The done tick, drawn as the item's line form: dashed planned, solid live, hollow done. */
+.tick {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  max-height: 100%;
+  border-radius: 6px;
+  color: color-mix(in srgb, var(--tint) 55%, var(--ink));
+  cursor: pointer;
+  outline-offset: -2px;
+}
+
+.tick:hover {
+  background: var(--hover);
+}
+
+.tick:active {
+  background: var(--press);
+}
+
+.mark {
+  display: block;
+  width: 12px;
+}
+
+.planned .mark {
+  height: 2.5px;
+  background: repeating-linear-gradient(to right, currentColor 0 3.5px, transparent 3.5px 5.5px);
+}
+
+.live .mark {
+  height: 3.5px;
+  border-radius: 2px;
+  background: var(--accent);
+}
+
+.done .mark {
+  height: 8px;
+  border: 1.5px solid currentColor;
+  border-radius: 4px;
+}
+
+.done {
+  --wash: light-dark(color-mix(in srgb, var(--tint) 7%, var(--sheet)), color-mix(in srgb, var(--tint) 11%, var(--sheet)));
+}
+
+.done .title {
+  font-weight: 500;
+  text-decoration: line-through;
+  text-decoration-color: color-mix(in srgb, var(--ink) 45%, transparent);
+  color: var(--ink-3);
+}
+
+.done .meta {
+  color: var(--ink-3);
+}
+
+.selected {
+  box-shadow:
+    0 0 0 1px var(--sheet),
+    inset 0 0 0 1.5px var(--ink);
+}
+
+.lifted {
+  opacity: 0.4;
+}
+
+/* Focus mode: everything but what is happening now steps back. */
+.dim .block:not(.live),
+.dim .chip {
+  opacity: 0.38;
+}
+
+.continuesBefore {
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+}
+
+.continuesAfter {
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+.grip {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1;
+  height: 7px;
+  cursor: ns-resize;
+  touch-action: none;
+}
+
+@media (pointer: coarse) {
+  .grip {
+    height: 12px;
+  }
+}
+
+/* Where a drag would land, or the slot a new item is being made for. */
+.ghost {
+  position: absolute;
+  left: 2px;
+  right: 2px;
+  z-index: 4;
+  padding: 2px 6px;
+  border: 1.5px dashed var(--accent);
+  border-radius: 6px;
+  background: var(--accent-wash);
+  font-size: 11.5px;
+  font-weight: 600;
+  line-height: 15px;
+  white-space: nowrap;
+  overflow: hidden;
+  color: var(--ink);
+  pointer-events: none;
+  font-variant-numeric: tabular-nums;
+}
+
+/* The keyboard's way onto empty time: unseen until it has focus. */
+.cursor {
+  position: absolute;
+  left: 2px;
+  right: 2px;
+  z-index: 2;
+  border-radius: 6px;
+  opacity: 0;
+  pointer-events: none;
+  outline-offset: -2px;
+}
+
+.cursor:focus-visible {
+  opacity: 1;
+  background: var(--accent-wash);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .block,
+  .chip {
+    transition:
+      background-color 120ms cubic-bezier(0.16, 1, 0.3, 1),
+      opacity 120ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .ghost {
+    transition:
+      top 90ms cubic-bezier(0.16, 1, 0.3, 1),
+      height 90ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+}
