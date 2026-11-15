@@ -155,10 +155,13 @@ export function useGridDrag(scroller: RefObject<HTMLElement | null>, live: Live,
     setPreview(null);
     if (!commit) return;
     const { onTap, onSlot, onDrop, fallback } = latest.current;
+    // What opens a popover waits for this press to end: opened inside it, the browser would take the same
+    // press for a click outside the popover and close it at once.
     if (g.kind === "create") {
-      onSlot(g.active && g.slot ? g.slot : slotFor(g.day, g.from, g.from, fallback));
+      const slot = g.active && g.slot ? g.slot : slotFor(g.day, g.from, g.from, fallback);
+      window.setTimeout(() => onSlot(slot), 0);
     } else if (!g.active) {
-      if (g.kind === "move") onTap(g.item!, g.el);
+      if (g.kind === "move") window.setTimeout(() => onTap(g.item!, g.el), 0);
     } else if (g.placement && changes(g.item!, g.placement)) {
       onDrop(g.item!, g.placement);
     }

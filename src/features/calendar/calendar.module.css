@@ -155,23 +155,25 @@
   position: absolute;
   left: 0;
   right: 0;
-  z-index: 3;
+  /* Under the blocks, so it never strikes through a title; the block it crosses wears the live mark. */
+  z-index: 0;
   height: 2px;
   margin-top: -1px;
   background: var(--accent);
   pointer-events: none;
 }
 
-.now::before {
-  content: "";
+.nowDot {
   position: absolute;
-  left: -5px;
-  top: -4px;
+  left: -1px;
+  z-index: 3;
   width: 10px;
   height: 10px;
+  margin-top: -5px;
   border-radius: 50%;
   background: var(--accent);
   box-shadow: 0 0 0 2px var(--sheet);
+  pointer-events: none;
 }
 
 /* A block: the area's colour as a soft tint, ink on top. `--tint` is set inline; none is plain ink. */
@@ -216,7 +218,8 @@
 .face {
   position: absolute;
   inset: 0;
-  display: block;
+  display: flex;
+  align-items: flex-start;
   width: 100%;
   padding: 3px 6px 3px 25px;
   border-radius: inherit;
@@ -228,9 +231,20 @@
   outline-offset: -2px;
 }
 
+.words {
+  display: block;
+  flex: 1;
+  min-width: 0;
+}
+
 .short .face,
 .chip .face {
   padding-block: 4px;
+}
+
+.short .words,
+.chip .words {
+  overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
 }

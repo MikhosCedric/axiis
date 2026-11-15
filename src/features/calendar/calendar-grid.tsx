@@ -97,6 +97,8 @@ export function CalendarGrid({
   const quick = useQuick();
   const scroller = useRef<HTMLDivElement>(null);
   const refocus = useRef<string | null>(null);
+  /** Set by a double-click, so the press that ended it does not also open the block in brief. */
+  const straightToPanel = useRef(false);
   const [preview, setPreview] = useState<DragPreview | null>(null);
   const [peek, setPeek] = useState<Peek | null>(null);
   const [creating, setCreating] = useState<Creating | null>(null);
@@ -124,7 +126,9 @@ export function CalendarGrid({
       timeZone,
       fallback: defaultMinutes,
       onDrop: onPlace,
-      onTap: (item, from) => setPeek({ id: item.id, at: boxOf(from) }),
+      onTap: (item, from) => {
+        if (!straightToPanel.current) setPeek({ id: item.id, at: boxOf(from) });
+      },
       onSlot: openSlot,
     },
     setPreview,
@@ -263,21 +267,27 @@ export function CalendarGrid({
           onPointerDown={onPointerDown}
           onKeyDown={(e) => keyDown(e, item)}
           onDoubleClick={() => {
+            // The second press's own tap is still waiting its turn; it comes before this is cleared.
+            straightToPanel.current = true;
+            window.setTimeout(() => (straightToPanel.current = false), 0);
             setPeek(null);
             onSelect(item.id);
           }}
           // A click with no pointer behind it: a screen reader or voice control pressing the button.
           onClick={(e) => e.detail === 0 && setPeek({ id: item.id, at: boxOf(e.currentTarget) })}
         >
-          <span className={styles.title}>{q.item.title}</span>
-          {words.time && <> <span className={styles.meta}>{words.time}</span></>}
-          {(repeats(item) || words.count || words.due) && (
-            <span className={styles.meta}>
-              {repeats(item) && <> <RepeatMark /></>}
-              {words.count && <> {words.count}</>}
-              {words.due && <> <DueMark dueOn={words.due} today={today} /></>}
-            </span>
-          )}
+          {/* One element holds every word drawn, so a block scrolled half out of view is judged whole (Label in Name). */}
+          <span className={styles.words}>
+            <span className={styles.title}>{q.item.title}</span>
+            {words.time && <> <span className={styles.meta}>{words.time}</span></>}
+            {(repeats(item) || words.count || words.due) && (
+              <span className={styles.meta}>
+                {repeats(item) && <> <RepeatMark /></>}
+                {words.count && <> {words.count}</>}
+                {words.due && <> <DueMark dueOn={words.due} today={today} className="text-inherit!" /></>}
+              </span>
+            )}
+          </span>
         </button>
         <button
           type="button"
@@ -437,7 +447,12 @@ export function CalendarGrid({
               />
               {col.blocks.map((b) => block(b, col.date))}
               {ghostOn(col.date)}
-              {nowAt?.day === i && <div className={styles.now} data-now aria-hidden="true" style={{ top: nowAt.top }} />}
+              {nowAt?.day === i && (
+                <>
+                  <div className={styles.now} data-now aria-hidden="true" style={{ top: nowAt.top }} />
+                  <div className={styles.nowDot} aria-hidden="true" style={{ top: nowAt.top }} />
+                </>
+              )}
             </div>
           ))}
         </div>

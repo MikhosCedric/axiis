@@ -107,6 +107,7 @@ export function CalendarHarness({
 
   return (
     <QuickActionsProvider areas={data.areas} today={data.today} actions={quick}>
+      <main id="main">
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-rule bg-paper-2 px-4 py-2 text-[13px] text-ink-2">
         <span>Calendar harness with fixture data in {tz}. Saves stay in this tab.</span>
         <Segmented label="Span" chosen={span} segments={SPANS} onChoose={(key) => setSpan(key as CalendarMode)} className="h-[34px] pointer-coarse:h-11" />
@@ -119,7 +120,7 @@ export function CalendarHarness({
           Make saves fail
         </label>
       </div>
-      <main id="main" className="px-3 pt-4 pb-10 rail:px-8 rail:pt-6">
+      <div className="px-3 pt-4 pb-10 rail:px-8 rail:pt-6">
         <h1 className="headline mb-4">Calendar</h1>
         <CalendarView
           data={data}
@@ -140,6 +141,7 @@ export function CalendarHarness({
             ) : null
           }
         />
+      </div>
       </main>
     </QuickActionsProvider>
   );
