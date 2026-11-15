@@ -88,7 +88,8 @@ test.describe("capture field", () => {
     await page.goto("/dev/lists?empty");
     await field(page).fill("Pack for the city tomorrow #trip");
     await expect(page.locator("#capture-preview")).toHaveCount(0);
-    await expect(page.getByRole("button", { name: "Guide" })).toHaveCount(0);
+    // Every page has the Guide at the end of its title row; here it has no capture words to explain.
+    await expect(page.getByRole("button", { name: "Guide" })).toHaveCount(1);
     await field(page).press("Enter");
     await expect(status(page)).toHaveText("Captured. It is open, ready for its lines.");
     const details = page.getByRole("complementary", { name: "Details" });

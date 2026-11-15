@@ -170,13 +170,13 @@ export function CalendarBar({
         </Link>
         {/* One pair, so the steps never wrap apart. */}
         <span className="inline-flex flex-none">
-          <StepLink href={keep(now.href(previous))} className={`${button} w-10 rounded-r-none pointer-coarse:w-11`} aria-keyshortcuts="[" title={`Previous ${words.one} ( [ )`}>
+          <StepLink href={keep(now.href(previous))} className={`${button} w-11 rounded-r-none`} aria-keyshortcuts="[" title={`Previous ${words.one} ( [ )`}>
             <Chevron to="back" />
             <span className="sr-only">
               Previous {words.one}, {now.name(previous)}
             </span>
           </StepLink>
-          <StepLink href={keep(now.href(next))} className={`${button} -ml-px w-10 rounded-l-none pointer-coarse:w-11`} aria-keyshortcuts="]" title={`Next ${words.one} ( ] )`}>
+          <StepLink href={keep(now.href(next))} className={`${button} -ml-px w-11 rounded-l-none`} aria-keyshortcuts="]" title={`Next ${words.one} ( ] )`}>
             <Chevron to="on" />
             <span className="sr-only">
               Next {words.one}, {now.name(next)}
@@ -264,7 +264,7 @@ function DateJump({
 
   return (
     <>
-      <h1 id={titleId} className="headline min-w-0 @max-[56rem]/page:order-3 @max-[56rem]/page:basis-full">
+      <h1 id={titleId} className="headline min-w-0 @max-[56rem]/page:order-3 @max-[56rem]/page:basis-full @min-[56rem]/page:whitespace-nowrap">
         <button
           ref={trigger}
           type="button"
@@ -304,7 +304,7 @@ function DateJump({
               min={FIRST_DATE}
               max={LAST_DATE}
               defaultValue={anchor}
-              className="h-9 w-full min-w-0 rounded-md border border-field bg-sheet px-2 text-[13px] font-normal text-ink tabular pointer-coarse:h-11"
+              className="h-9 w-full min-w-0 rounded-md border border-field bg-sheet px-2 text-[13px] font-normal text-ink tabular focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-accent pointer-coarse:h-11"
             />
           </label>
           <button type="submit" className={`${button} px-3`}>

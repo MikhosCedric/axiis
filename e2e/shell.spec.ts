@@ -14,9 +14,11 @@ test("the Score and Week trays are the Inbox and link to it", async ({ page }) =
   await expect(page.getByText("Captured, with no day yet. Plan each one when you are ready.")).toBeVisible();
 });
 
-test("the week's date field shows the focus ring", async ({ page }) => {
+test("the date jump's typed date field shows the focus ring", async ({ page }) => {
   await page.goto("/dev/week");
-  const picker = page.getByLabel("Go to the week of a date");
+  await hydrated(page);
+  await page.getByRole("heading", { level: 1 }).getByRole("button").click();
+  const picker = page.getByLabel("Go to date");
   await picker.focus();
   await expect(picker).toHaveCSS("outline-style", "solid");
   await expect(picker).toHaveCSS("outline-width", "2px");
@@ -33,19 +35,37 @@ test("the Tags index starts at the same left edge as Lists", async ({ page }) =>
 test.describe("the rail", () => {
   test.use({ viewport: { width: 1280, height: 800 } });
 
-  test("groups its places under Plan, Capture and Library, each with a hint, and lists the areas as filters", async ({ page }) => {
+  test("holds Create, a small month, the areas as ticks, then Calendar, Tasks and Library, each place with a hint", async ({ page }) => {
     await page.goto("/dev/palette");
+    await hydrated(page);
     const rail = page.getByRole("navigation", { name: "Primary" });
-    await expect(rail.getByRole("heading")).toHaveText(["Plan", "Capture", "Library", "Open today, by area"]);
-    await expect(rail.getByRole("list", { name: "Plan" }).getByRole("link")).toHaveText(["Today", "Week", "Month", "Due"]);
-    await expect(rail.getByRole("list", { name: "Capture" }).getByRole("link")).toHaveText(["Inbox"]);
-    await expect(rail.getByRole("list", { name: "Library" }).getByRole("link")).toHaveText(["Lists", "Notes", "Tags", "Done"]);
+    await expect(rail.getByRole("heading")).toHaveText(["Areas", "Calendar", "Tasks", "Library"]);
+    await expect(rail.getByRole("list", { name: "Calendar" }).getByRole("link")).toHaveText(["Day", "Week", "Month"]);
+    await expect(rail.getByRole("list", { name: "Tasks" }).getByRole("link")).toHaveText([/^Inbox/, /^Due/, "Done"]);
+    await expect(rail.getByRole("list", { name: "Library" }).getByRole("link")).toHaveText(["Lists", "Notes", "Tags"]);
     await expect(rail.getByRole("link", { name: "Inbox" })).toHaveAttribute("title", "Captured, with no day yet");
-    await expect(rail.getByRole("link", { name: "Month" })).toHaveAttribute("title", "The whole month at a glance");
-    const areas = rail.getByRole("region", { name: "Open today, by area" }).getByRole("link");
-    await expect(areas).toHaveText([/^Work/, /^Home/, /^Health/]);
-    await expect(areas.first()).toHaveAttribute("title", "Show only Work (A then 1)");
+    await expect(rail.getByRole("link", { name: "Month", exact: true })).toHaveAttribute("title", "The whole month at a glance ( M )");
+    const areas = rail.getByRole("region", { name: "Areas" }).getByRole("checkbox");
+    await expect(areas).toHaveCount(3);
+    for (const name of ["Work", "Home", "Health"]) await expect(rail.getByRole("checkbox", { name: new RegExp(`^${name}`) })).toBeChecked();
     await expect(rail.getByRole("link", { name: "Search" })).toHaveCount(0);
+
+    // Create comes first and shows its key; with no capture field on this page it opens the palette.
+    const create = rail.getByRole("button", { name: /^Create/ });
+    await expect(create).toHaveAttribute("aria-keyshortcuts", "c");
+    await create.click();
+    await expect(page.getByRole("dialog", { name: "Search and commands" })).toBeVisible();
+    await page.keyboard.press("Escape");
+
+    // The small month: this month, today marked, one day in the Tab order, arrows move by a day and a week.
+    const month = rail.getByRole("group", { name: /^[A-Z][a-z]+ \d{4}$/ });
+    await expect(month.getByRole("link", { name: /, today/ })).toHaveAttribute("aria-current", "date");
+    await expect(month.locator('a[tabindex="0"]')).toHaveCount(1);
+    await month.locator('a[tabindex="0"]').focus();
+    const from = await month.locator('a[tabindex="0"]').getAttribute("data-date");
+    await page.keyboard.press("ArrowDown");
+    const to = await page.evaluate(() => document.activeElement?.getAttribute("data-date"));
+    expect((Date.parse(`${to}T00:00:00Z`) - Date.parse(`${from}T00:00:00Z`)) / 86_400_000).toBe(7);
   });
 
   test("one search field at the top opens the palette", async ({ page }) => {
@@ -128,7 +148,6 @@ test.describe("shell on a phone", () => {
     };
     await page.goto("/dev/score");
     await atLeastThumb(page.getByRole("group", { name: "View" }).getByRole("button"));
-    await atLeastThumb(page.getByRole("group", { name: "Day, week or month" }).getByRole("link"));
     await page.goto("/");
     await atLeastThumb(page.getByRole("banner").getByRole("link", { name: "Sign in" }));
     await atLeastThumb(page.getByRole("navigation", { name: "Site" }).getByRole("link"));
@@ -138,17 +157,20 @@ test.describe("shell on a phone", () => {
     await page.goto("/dev/palette");
     const nav = page.getByRole("navigation", { name: "Primary" });
     const bar = nav.getByRole("listitem");
-    await expect(bar).toHaveText(["Today", "Week", "Due", "Inbox", "More"]);
+    await expect(bar).toHaveText(["Day", "Week", "Inbox", "Due", "More"]);
     const box = (await nav.boundingBox())!;
     expect(box.y + box.height).toBeCloseTo(812, 0);
 
     const more = nav.getByRole("button", { name: "More" });
     await more.click();
     const sheet = page.getByRole("dialog", { name: "More" });
-    await expect(sheet.getByRole("heading")).toHaveText(["Plan", "Library", "Open today, by area", "Account"]);
-    await expect(sheet.getByRole("list", { name: "Plan" }).getByRole("link")).toHaveText([/^Month/]);
+    await expect(sheet.getByRole("heading")).toHaveText(["Areas", "Calendar", "Tasks", "Library", "Account"]);
+    await expect(sheet.getByRole("list", { name: "Calendar" }).getByRole("link")).toHaveText([/^Month/]);
+    await expect(sheet.getByRole("list", { name: "Tasks" }).getByRole("link")).toHaveText([/^Done/]);
+    await expect(sheet.getByRole("checkbox")).toHaveCount(3);
+    await expect(sheet.getByRole("link", { name: /, today/ })).toHaveAttribute("aria-current", "date");
     await expect(sheet.getByRole("link", { name: /^Month/ })).toHaveAccessibleName("Month The whole month at a glance");
-    await expect(sheet.getByRole("list", { name: "Library" }).getByRole("link")).toHaveText([/^Lists/, /^Notes/, /^Tags/, /^Done/]);
+    await expect(sheet.getByRole("list", { name: "Library" }).getByRole("link")).toHaveText([/^Lists/, /^Notes/, /^Tags/]);
     await expect(sheet.getByRole("link", { name: /^Lists/ })).toHaveAccessibleName("Lists Checklists and how far along each is");
     await expect(sheet.getByRole("list", { name: "Account" }).getByRole("listitem")).toHaveText([/Theme/, /^Settings/, /Sign out/]);
     for (const control of [

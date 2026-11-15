@@ -30,7 +30,7 @@ Match Google Calendar unless `PRODUCT.md` forbids it.
 
 ## How the shell stage built items 3 and 4
 
-- **Places** (`src/components/shell/places.ts`): groups are Calendar, Tasks, Library. The Today place is named Day in the panel and the phone bar (`navLabel`), since there it is a span, not a date. From a calendar view the three calendar places keep the day on screen (`spanHrefs`), as the removed switch did; from any other page they open today, this week and this month.
+- **Places** (`src/components/shell/places.ts`): groups are Calendar, Tasks, Library. Done, which became a page of its own while this was built, sits under Tasks. The Today place is named Day in the panel and the phone bar (`navLabel`), since there it is a span, not a date. From a calendar view the three calendar places keep the day on screen (`spanHrefs`), as the removed switch did; from any other page they open today, this week and this month.
 - **The small month** (`mini-month.tsx`): the Month view's grid maths and keys (`monthGrid`, `gridStep`), the reader's week start. A day opens in the span on screen, or as a day from a page that is no calendar view. Days in view sit on a band of Press Tint; today is filled with Ink, as on the Month.
 - **Areas**: a tick per area, kept per device in the `hidden-areas` cookie beside the other display choices. Every view's filter carries the hidden ids (`ViewFilter.hidden`, read once per request by `getFilter`), so no view reads anything more. This replaces the rail's area links. An address with `?area=` still shows that one area alone, even an unticked one, with its chip; `?tag=` is unchanged. Items with no area always show.
 - **Create** does what `C` does: the page's capture field where it has one, the palette's capture elsewhere.

@@ -356,6 +356,7 @@ function AreaChecks({ areas, shown, roomy = false }: { areas: NavArea[]; shown: 
               {/* The box is the area's colour, as its blocks are; an area with none is drawn in ink. Ticked is filled, unticked is hollow. */}
               <span
                 aria-hidden="true"
+                data-area-color={a.color ?? undefined}
                 className="inline-flex size-4 flex-none items-center justify-center rounded-[4px] border-[1.5px] text-sheet peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-accent"
                 style={{ borderColor: a.color ? `var(--area-${a.color})` : "var(--ink-2)", backgroundColor: on ? (a.color ? `var(--area-${a.color})` : "var(--ink-2)") : "transparent" }}
               >
