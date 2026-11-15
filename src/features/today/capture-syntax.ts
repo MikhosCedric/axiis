@@ -1,7 +1,7 @@
 import type { LocalDate } from "@/domain/item";
 import { MAX_COUNT, type Rule, type RuleEnd } from "@/domain/recurrence";
 import { parseTagName, tagKey, type TagName } from "@/domain/tag";
-import { WEEK_LENGTH, weekOf } from "@/features/week/week-of";
+import { WEEK_LENGTH, WEEK_STARTS_ON, weekOf, type WeekStart } from "@/features/week/week-of";
 import { addDays, instantAt, parseLocalDate, toLocalDate } from "@/lib/dates";
 import type { CaptureResult, Landed } from "./commands";
 import { formatMinutes, type Clock } from "@/lib/clock";
@@ -46,6 +46,8 @@ export type CaptureText = {
   quoteToKeep?: string;
   /** Set when the line is all title only because it is a repeat with nothing to name it ("every sunday"). */
   untitled?: true;
+  /** The first day of the week "next week" counts from; set only when it is not Monday, so a Monday line is read as it always was. */
+  weekStart?: WeekStart;
 };
 
 const WEEKDAYS = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
@@ -347,7 +349,12 @@ function unescape(title: string): string {
  * or a word after a backslash, stays as typed. A line that would leave no
  * title is all title.
  */
-export function parseCapture(text: string): CaptureText {
+export function parseCapture(text: string, options: { weekStart?: WeekStart } = {}): CaptureText {
+  const read = readCapture(text);
+  return options.weekStart !== undefined && options.weekStart !== WEEK_STARTS_ON ? { ...read, weekStart: options.weekStart } : read;
+}
+
+function readCapture(text: string): CaptureText {
   const line = text.trim();
   const literal: CaptureText = { title: line, day: null, time: null, tags: [] };
   const quoted = /^["“]([\s\S]*)["”]$/.exec(line);
@@ -425,14 +432,14 @@ function nextDate(month: number, day: number, from: LocalDate): LocalDate {
  * today included; "next" is that day in next week. A day and month with no
  * year is the next one, today included.
  */
-export function dayOf(word: DayWord, today: LocalDate): LocalDate {
+export function dayOf(word: DayWord, today: LocalDate, weekStart: WeekStart = WEEK_STARTS_ON): LocalDate {
   switch (word.kind) {
     case "in":
       return addDays(today, word.days);
     case "on":
       return word.date;
     case "weekday": {
-      const from = word.next ? addDays(weekOf(today)[0], WEEK_LENGTH) : today;
+      const from = word.next ? addDays(weekOf(today, weekStart)[0], WEEK_LENGTH) : today;
       return addDays(from, (word.weekday - weekdayOf(from) + WEEK_LENGTH) % WEEK_LENGTH);
     }
     case "date":
@@ -473,7 +480,7 @@ function monthEnd(month: number, from: LocalDate): LocalDate {
 }
 
 /** A typed end as a rule's end, counted from the first day; null when it is not a date Axiis plans on. */
-function ruleEnd(end: RepeatEnd, first: LocalDate, today: LocalDate): RuleEnd | null {
+function ruleEnd(end: RepeatEnd, first: LocalDate, today: LocalDate, weekStart: WeekStart): RuleEnd | null {
   const until = (on: LocalDate | null): RuleEnd | null => (on && parseLocalDate(on) ? { kind: "until", on } : null);
   switch (end.kind) {
     case "never":
@@ -484,7 +491,7 @@ function ruleEnd(end: RepeatEnd, first: LocalDate, today: LocalDate): RuleEnd | 
       return until(addDays(after, -1));
     }
     case "until":
-      return until(end.day.kind === "date" ? nextDate(end.day.month, end.day.day, first) : dayOf(end.day, today));
+      return until(end.day.kind === "date" ? nextDate(end.day.month, end.day.day, first) : dayOf(end.day, today, weekStart));
     case "monthEnd":
       return until(monthEnd(end.month ?? Number(first.slice(5, 7)), first));
   }
@@ -529,7 +536,7 @@ export function passesToday(c: CaptureText, moment: Moment): boolean {
  * the form the panel's menu names. Null when it would end before it starts
  * or past the dates Axiis plans on.
  */
-export function seriesFor(repeat: RepeatWords, from: LocalDate, today: LocalDate, passToday = false): CaptureSeries | null {
+export function seriesFor(repeat: RepeatWords, from: LocalDate, today: LocalDate, passToday = false, weekStart: WeekStart = WEEK_STARTS_ON): CaptureSeries | null {
   const byDay = repeat.freq === "weekly" ? repeat.byDay : [];
   const falls = (day: LocalDate) => byDay.length === 0 || byDay.includes(ruleDay(weekdayOf(day)));
   let first = from;
@@ -540,7 +547,7 @@ export function seriesFor(repeat: RepeatWords, from: LocalDate, today: LocalDate
     else first = addDays(today, repeat.freq === "weekly" && byDay.length === 0 ? WEEK_LENGTH : 1);
     while (!falls(first)) first = addDays(first, 1);
   }
-  const end = ruleEnd(repeat.end, first, today);
+  const end = ruleEnd(repeat.end, first, today, weekStart);
   if (!end || (end.kind === "until" && end.on < first)) return null;
   const { interval } = repeat;
   const rule: Rule =
@@ -586,12 +593,12 @@ function repeatPreview(c: CaptureText & { repeat: RepeatWords }, moment: Moment 
   const typedDay = c.day?.kind === "weekday" ? ruleDay(c.day.weekday) : null;
   if (!moment) return `${capitalise(cadenceWords(c.repeat, typedDay))}${c.day ? ` starting ${dayWordText(c.day)}` : ""}`;
   const { today } = moment;
-  const from = c.day ? dayOf(c.day, today) : today;
+  const from = c.day ? dayOf(c.day, today, c.weekStart) : today;
   const passed = passesToday(c, moment);
-  const series = seriesFor(c.repeat, from, today, passed);
+  const series = seriesFor(c.repeat, from, today, passed, c.weekStart);
   const first = series?.first ?? from;
   const cadence = capitalise(cadenceWords(c.repeat, typedDay ?? ruleDay(weekdayOf(first))));
-  const movedOff = passed && seriesFor(c.repeat, from, today)?.first === today && first !== today;
+  const movedOff = passed && seriesFor(c.repeat, from, today, false, c.weekStart)?.first === today && first !== today;
   if (movedOff) return `${cadence} starting ${first === addDays(today, 1) ? "tomorrow" : formatDayIn(first, today)}`;
   if (c.day) return `${cadence} starting ${dayWordText(c.day)}`;
   // "Every other Friday" could be either of two, so it says which it starts on.
@@ -616,7 +623,7 @@ const yearOfDate = (date: LocalDate) => date.slice(0, 4);
 function monthEndOn(c: CaptureText & { repeat: RepeatWords }, month: number | null, moment: Moment | undefined): LocalDate | null {
   if (moment) {
     const { today } = moment;
-    const end = seriesFor(c.repeat, c.day ? dayOf(c.day, today) : today, today, passesToday(c, moment))?.rule.end;
+    const end = seriesFor(c.repeat, c.day ? dayOf(c.day, today, c.weekStart) : today, today, passesToday(c, moment), c.weekStart)?.rule.end;
     return end?.kind === "until" ? end.on : null;
   }
   // February's last day needs a year; any other month's is the same every year.

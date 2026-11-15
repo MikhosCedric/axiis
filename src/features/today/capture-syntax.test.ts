@@ -239,3 +239,26 @@ describe("a captured repeat", () => {
     expect(firstCapturedLine(gym, "24").text).toBe("Gym is today from 07:30 to 09:00, and repeats every Tuesday.");
   });
 });
+
+describe("next <weekday> and the first day of the week", () => {
+  const sunday = parseCapture("trip next sunday").day!;
+  const tuesday = parseCapture("trip next tuesday").day!;
+  it("parseCapture carries the week start only when it is Sunday", () => {
+    expect(parseCapture("trip next sunday").weekStart).toBeUndefined();
+    expect(parseCapture("trip next sunday", { weekStart: 1 }).weekStart).toBeUndefined();
+    expect(parseCapture("trip next sunday", { weekStart: 0 }).weekStart).toBe(0);
+  });
+  it("counts next week from Monday by default, from Sunday when asked", () => {
+    // Wednesday 11 Nov 2026: a Monday-week ends on Sunday the 15th, so next week's Sunday is the 22nd; a Sunday-week's next Sunday opens on the 15th.
+    expect(dayOf(sunday, d("2026-11-11"))).toBe("2026-11-22");
+    expect(dayOf(sunday, d("2026-11-11"), 1)).toBe("2026-11-22");
+    expect(dayOf(sunday, d("2026-11-11"), 0)).toBe("2026-11-15");
+    expect(dayOf(tuesday, d("2026-11-11"), 1)).toBe("2026-11-17");
+    expect(dayOf(tuesday, d("2026-11-11"), 0)).toBe("2026-11-17");
+  });
+  it("moves a Sunday's next week a week later with a Sunday start", () => {
+    // Sunday 15 Nov closes a Monday-week and opens a Sunday-week.
+    expect(dayOf(tuesday, d("2026-11-15"), 1)).toBe("2026-11-17");
+    expect(dayOf(tuesday, d("2026-11-15"), 0)).toBe("2026-11-24");
+  });
+});

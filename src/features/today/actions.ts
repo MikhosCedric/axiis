@@ -1,7 +1,7 @@
 "use server";
 
 import { refresh } from "next/cache";
-import { getNow, getTimeZone } from "@/features/day/server";
+import { getNow, getTimeZone, getWeekStart } from "@/features/day/server";
 import { getItemsRepo } from "@/lib/items";
 import { captureTask, queuedId, setDone, typedAt, type ActionResult, type CaptureResult, type QueuedEntry } from "./commands";
 
@@ -10,7 +10,7 @@ import { captureTask, queuedId, setDone, typedAt, type ActionResult, type Captur
 
 export async function captureAction(title: string, entry?: QueuedEntry): Promise<CaptureResult> {
   const now = getNow();
-  const result = await captureTask(await getItemsRepo(), title, typedAt(entry, now), await getTimeZone(), null, queuedId(entry));
+  const result = await captureTask(await getItemsRepo(), title, typedAt(entry, now), await getTimeZone(), null, queuedId(entry), await getWeekStart());
   if (result.ok) refresh();
   return result;
 }

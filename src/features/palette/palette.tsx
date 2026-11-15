@@ -14,6 +14,7 @@ import {
   type ReactNode,
 } from "react";
 import { useClock } from "@/components/shell/clock-context";
+import { useWeekStart } from "@/components/shell/week-start-context";
 import type { LocalDate } from "@/domain/item";
 import { isTypingTarget } from "@/features/day/nav";
 import { SELECTED_ITEM_PARAM } from "@/features/day/types";
@@ -327,6 +328,7 @@ function PaletteBody({
 }) {
   const router = useRouter();
   const clock = useClock();
+  const weekStart = useWeekStart();
   const pathname = usePathname();
   const query = useSearchParams().toString();
   const id = useId();
@@ -361,7 +363,7 @@ function PaletteBody({
 
   const sections = target
     ? actSections(input, target)
-    : withAreas(paletteSections(input, today, clock, find, selected, recent), areaSection(input, areas, { pathname, query }));
+    : withAreas(paletteSections(input, today, clock, find, selected, recent, weekStart), areaSection(input, areas, { pathname, query }));
   const commands = sections.flatMap((s) => s.commands);
   const current = commands.length ? Math.min(active, commands.length - 1) : -1;
   const optionId = (c: Command) => `${id}-${c.id}`;

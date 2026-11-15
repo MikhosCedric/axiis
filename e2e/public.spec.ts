@@ -137,7 +137,7 @@ test("the web manifest names the app and starts on today", async ({ request }) =
   const response = await request.get("/manifest.webmanifest");
   expect(response.status()).toBe(200);
   const manifest = await response.json();
-  expect(manifest).toMatchObject({ short_name: "Axiis", start_url: "/today", display: "standalone" });
+  expect(manifest).toMatchObject({ short_name: "Axiis", start_url: "/?app=1", display: "standalone" });
   expect(manifest.icons.length).toBeGreaterThan(0);
 });
 
@@ -235,4 +235,10 @@ test("the sitemap lists Help and the changelog, and the manifest offers shortcut
 test("/capture sends a stranger to sign in", async ({ page }) => {
   await page.goto("/capture?text=hello");
   await expect(page).toHaveURL(/\/login\?next=%2Fcapture/);
+});
+
+test("an installed app that is signed out opens on sign-in, not the landing page", async ({ request }) => {
+  const response = await request.get("/?app=1", { maxRedirects: 0 });
+  expect(response.status()).toBe(307);
+  expect(response.headers().location).toContain("/login");
 });
