@@ -3,7 +3,7 @@ import { dayHref, type KeyPress } from "@/features/day/nav";
 import type { DayViewMode } from "@/features/day/types";
 import { addMonths, anchorOf, firstOf, monthHref, monthOf, parseYearMonth } from "@/features/month/model";
 import { addDays, parseLocalDate } from "@/lib/dates";
-import { anchorDay, WEEK_STARTS_ON, weekHref, weekOf, type WeekStart } from "./model";
+import { anchorDay, narrowDays, WEEK_STARTS_ON, weekHref, weekOf, type WeekStart } from "./model";
 
 export type Span = "day" | "week" | "month";
 
@@ -28,12 +28,12 @@ export function keepSpans(hrefs: Record<Span, string>, keep: (href: string) => s
 
 /**
  * What a signed-in address shows of the calendar: which span, the day it is about (`anchor`), and
- * the first and last day in view. A page that is no calendar view has no span and no days in view;
+ * the first and last day in view (`narrow`: as a phone shows the Week, three days). A page that is no calendar view has no span and no days in view;
  * its anchor is today, so the side panel's month opens on this month and a day picked there opens that day.
  */
 export type CalendarView = { span: Span | null; anchor: LocalDate; from: LocalDate | null; to: LocalDate | null };
 
-export function calendarView(pathname: string, today: LocalDate, startsOn: WeekStart = WEEK_STARTS_ON): CalendarView {
+export function calendarView(pathname: string, today: LocalDate, startsOn: WeekStart = WEEK_STARTS_ON, narrow = false): CalendarView {
   const [, root, rest] = /^\/(today|day|week|month)(?:\/([^/]+))?\/?$/.exec(pathname) ?? [];
   if (root === "today" && rest === undefined) return { span: "day", anchor: today, from: today, to: today };
   if (root === "day") {
@@ -43,7 +43,8 @@ export function calendarView(pathname: string, today: LocalDate, startsOn: WeekS
   if (root === "week") {
     const date = rest === undefined ? today : parseLocalDate(rest);
     if (date) {
-      const days = weekOf(date, startsOn);
+      // A narrow screen shows three days of the week, from the day its address names.
+      const days = narrow ? narrowDays(date) : weekOf(date, startsOn);
       return { span: "week", anchor: anchorDay(days, today), from: days[0], to: days[days.length - 1] };
     }
   }

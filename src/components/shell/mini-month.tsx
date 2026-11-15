@@ -12,7 +12,7 @@ import { addDays, FIRST_DATE, LAST_DATE } from "@/lib/dates";
 import { useWeekStart } from "./week-start-context";
 
 const stepButton =
-  "inline-flex size-7 flex-none items-center justify-center rounded-md text-ink-2 hover:bg-hover hover:text-ink active:bg-press disabled:pointer-events-none disabled:opacity-40 pointer-coarse:size-11";
+  "inline-flex size-6 flex-none items-center justify-center rounded-md text-ink-2 hover:bg-hover hover:text-ink active:bg-press disabled:pointer-events-none disabled:opacity-40 pointer-coarse:size-11";
 
 function Chevron({ back }: { back?: boolean }) {
   return (
@@ -103,8 +103,9 @@ export function MiniMonth({
 
   return (
     <div className={className}>
-      <div className="flex items-center gap-0.5">
-        <p id={id} aria-live="polite" className="min-w-0 flex-1 truncate pl-1.5 font-display text-[15px] leading-none font-medium">
+      {/* The longest title, "September 2026", has to fit the side panel beside both steps: never cut short. */}
+      <div className="flex items-center">
+        <p id={id} aria-live="polite" className="flex-1 pl-1.5 font-display text-[14px] leading-none font-medium tracking-[-0.01em] whitespace-nowrap">
           {formatMonthHeading(month)}
         </p>
         <button type="button" className={stepButton} disabled={month <= monthOf(FIRST_DATE)} onClick={() => turn(-1)} title={`Show ${formatMonthHeading(previous)}`}>
