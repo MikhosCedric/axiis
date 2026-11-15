@@ -48,9 +48,10 @@ export const FIND_MAX = 6;
 
 type Destination = { label: string; href: string | null; hint: string; also: readonly string[]; go?: string | null };
 
-/** Every page, then the Guide, which opens a dialog rather than a page. */
+/** Every page, the Help page, then the Guide, which opens a dialog rather than a page. */
 const DESTINATIONS: Destination[] = [
   ...PLACES,
+  { label: "Help", href: "/help", hint: "Capture words, keys, offline, the app", also: ["manual", "docs", "changelog", "what is new"] },
   { label: "Guide", href: null, hint: "Help and every shortcut", also: ["help", "keyboard shortcuts", "keys"] },
 ];
 

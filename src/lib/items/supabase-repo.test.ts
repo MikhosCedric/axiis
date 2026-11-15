@@ -102,6 +102,30 @@ describe("SupabaseItemsRepo.listDue", () => {
   });
 });
 
+describe("SupabaseItemsRepo.listDone", () => {
+  it("reads live, top-level, finished tasks and checklists, newest completion first, bounded", async () => {
+    const { repo, requests } = stubbed();
+    await repo.listDone(51, new Date("2026-10-07T10:00:00Z"));
+    const q = requests[0];
+    expect(q.get("status")).toBe("eq.done");
+    expect(q.getAll("completed_at")).toEqual(["not.is.null", "lt.2026-10-07T10:00:00.000Z"]);
+    expect(q.get("deleted_at")).toBe("is.null");
+    expect(q.get("rrule")).toBe("is.null");
+    expect(q.get("series_id")).toBe("is.null");
+    expect(q.get("parent_id")).toBe("is.null");
+    expect(q.get("type")).toBe("neq.note");
+    expect(q.get("order")).toBe("completed_at.desc,created_at.desc");
+    expect(q.get("limit")).toBe("51");
+  });
+
+  it("has no upper cut without `before`, and never reads past the cap", async () => {
+    const { repo, requests } = stubbed();
+    await repo.listDone(100_000);
+    expect(requests[0].getAll("completed_at")).toEqual(["not.is.null"]);
+    expect(requests[0].get("limit")).toBe("500");
+  });
+});
+
 describe("SupabaseItemsRepo.listDueIn", () => {
   it("reads live, non-repeating items due inside the dates, bounded, soonest first, without body", async () => {
     const { repo, requests } = stubbed();
@@ -152,6 +176,7 @@ describe("SupabaseItemsRepo columns", () => {
     await repo.listOverrides(d("2026-10-05"), d("2026-10-12"));
     await repo.listChildren(SERIES);
     await repo.listDue(new Date(0));
+    await repo.listDone(10);
     await repo.listBehind(day);
     await repo.listSeries();
     for (const select of selects(requests)) expect(select.split(",")).not.toContain("body");

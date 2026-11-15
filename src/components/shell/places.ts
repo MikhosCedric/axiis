@@ -1,4 +1,5 @@
 import type { LocalDate } from "@/domain/item";
+import { DONE_PATH } from "@/features/done/model";
 import { DUE_PATH } from "@/features/due/model";
 import { LISTS_PATH } from "@/features/lists/model";
 import { MONTH_PATH } from "@/features/month/model";
@@ -8,7 +9,7 @@ import { TAGS_PATH } from "@/features/tags/model";
 export const PLACE_GROUPS = ["Plan", "Capture", "Library"] as const;
 export type PlaceGroup = (typeof PLACE_GROUPS)[number];
 
-export type PlaceId = "today" | "week" | "month" | "due" | "inbox" | "lists" | "notes" | "tags" | "search" | "settings";
+export type PlaceId = "today" | "week" | "month" | "due" | "inbox" | "lists" | "notes" | "tags" | "done" | "search" | "settings";
 
 /**
  * Every page a person can go to, for the rail, the phone bar, the palette and the G-then-letter keys.
@@ -96,6 +97,17 @@ export const PLACES: readonly Place[] = [
     goAlias: "#",
     also: ["labels"],
     here: under(TAGS_PATH),
+  },
+  {
+    id: "done",
+    label: "Done",
+    href: DONE_PATH,
+    hint: "What you finished, by day",
+    group: "Library",
+    tab: false,
+    go: "f",
+    also: ["completed", "history", "log"],
+    here: at(DONE_PATH),
   },
   { id: "search", label: "Search", href: "/search", hint: "Find any task or note", group: null, tab: false, go: "s", also: ["find"], here: at("/search") },
   {

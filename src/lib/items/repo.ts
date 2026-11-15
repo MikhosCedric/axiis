@@ -16,6 +16,8 @@ export const LISTS_LIMIT = 200;
 
 /** Most items one read of the Due page returns. */
 export const DUE_LIMIT = 200;
+/** Most items one read of the Done page returns, across every "Show earlier". */
+export const DONE_LIMIT = 500;
 /** Most items one read of what is left over from earlier days returns. */
 export const BEHIND_LIMIT = 50;
 /** Most waiting items (no day) one day read returns. */
@@ -89,6 +91,11 @@ export interface ItemsRepo {
    * at or after `doneSince`, so a mistaken tick can be undone.
    */
   listDue(doneSince: Date): Promise<Item[]>;
+  /**
+   * Live top-level tasks and checklists that are done, not repeating, newest completion first, at most `limit`
+   * (never more than `DONE_LIMIT`). With `before`, only ones completed before that instant.
+   */
+  listDone(limit: number, before?: Date): Promise<Item[]>;
   /**
    * Live items due on a date in `[fromDate, toDate)` that are not notes, not
    * series and not dropped, open or done, by due date, at most `RANGE_LIMIT`.

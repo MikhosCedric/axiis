@@ -13,7 +13,7 @@ const MAX_STATIC = 400;
 const MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
 
 // The reading views. A path matches when it is one of these or sits under one.
-const READABLE = ["/today", "/inbox", "/week", "/month", "/due", "/lists", "/notes", "/day", "/tags", "/search"];
+const READABLE = ["/today", "/inbox", "/week", "/month", "/due", "/done", "/lists", "/notes", "/day", "/tags", "/search"];
 
 function readable(pathname) {
   return READABLE.some((root) => pathname === root || pathname.startsWith(root + "/"));
