@@ -35,6 +35,13 @@ export const DueIcon = () => (
   </Icon>
 );
 
+export const DoneIcon = () => (
+  <Icon>
+    <circle cx="9" cy="9" r="6.5" />
+    <path d="M6.3 9.2l2 2 3.6-4" />
+  </Icon>
+);
+
 export const InboxIcon = () => (
   <Icon>
     <path d="M2.5 10.5l2-6h9l2 6v4h-13z" />

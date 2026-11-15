@@ -1,4 +1,5 @@
 import type { LocalDate } from "@/domain/item";
+import { DONE_PATH } from "@/features/done/model";
 import { DUE_PATH } from "@/features/due/model";
 import { LISTS_PATH } from "@/features/lists/model";
 import { MONTH_PATH } from "@/features/month/model";
@@ -8,7 +9,7 @@ import { TAGS_PATH } from "@/features/tags/model";
 export const PLACE_GROUPS = ["Calendar", "Tasks", "Library"] as const;
 export type PlaceGroup = (typeof PLACE_GROUPS)[number];
 
-export type PlaceId = "today" | "week" | "month" | "due" | "inbox" | "lists" | "notes" | "tags" | "search" | "settings";
+export type PlaceId = "today" | "week" | "month" | "due" | "inbox" | "lists" | "notes" | "tags" | "done" | "search" | "settings";
 
 /**
  * Every page a person can go to, for the side panel, the phone bar, the palette and the G-then-letter keys.
@@ -103,6 +104,17 @@ export const PLACES: readonly Place[] = [
     go: "d",
     also: ["deadlines", "deadline", "overdue"],
     here: at(DUE_PATH),
+  },
+  {
+    id: "done",
+    label: "Done",
+    href: DONE_PATH,
+    hint: "What you finished, by day",
+    group: "Tasks",
+    tab: false,
+    go: "f",
+    also: ["completed", "history", "log"],
+    here: at(DONE_PATH),
   },
   { id: "lists", label: "Lists", href: LISTS_PATH, hint: "Checklists and how far along each is", group: "Library", tab: false, go: "l", also: ["checklists"], here: at(LISTS_PATH) },
   { id: "notes", label: "Notes", href: "/notes", hint: "Writing", group: "Library", tab: false, go: "n", also: [], here: under("/notes") },

@@ -8,7 +8,7 @@ const today = "2026-10-06" as LocalDate;
 describe("PLACES", () => {
   it("groups the side panel's places as Calendar, Tasks and Library", () => {
     const grouped = Object.fromEntries(PLACE_GROUPS.map((g) => [g, PLACES.filter((p) => p.group === g).map((p) => p.navLabel ?? p.label)]));
-    expect(grouped).toEqual({ Calendar: ["Day", "Week", "Month"], Tasks: ["Inbox", "Due"], Library: ["Lists", "Notes", "Tags"] });
+    expect(grouped).toEqual({ Calendar: ["Day", "Week", "Month"], Tasks: ["Inbox", "Due", "Done"], Library: ["Lists", "Notes", "Tags"] });
   });
 
   it("keeps four tabs for the phone bar", () => {
@@ -43,6 +43,7 @@ describe("PLACES", () => {
       ["m", "/month"],
       ["i", "/inbox"],
       ["d", "/due"],
+      ["f", "/done"],
       ["l", "/lists"],
       ["n", "/notes"],
       ["h", "/tags"],

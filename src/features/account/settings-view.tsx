@@ -23,6 +23,7 @@ function partsOf(desktop: boolean): SettingsPart[] {
     { id: "display", name: "Display" },
     { id: "keyboard", name: "Keyboard", touchHidden: true },
     ...(desktop ? [{ id: "desktop", name: "Desktop app" }] : []),
+    { id: "help", name: "Help" },
     { id: "your-data", name: "Your data" },
   ];
 }
@@ -121,6 +122,26 @@ export function SettingsView({
             <DesktopSection reminders={desktop.reminders} />
           </div>
         )}
+
+        <div id="help">
+          <section aria-labelledby="help-heading">
+            <h2 id="help-heading" className="font-display text-xl font-medium">
+              Help
+            </h2>
+            <p className="mt-1.5 max-w-[60ch] text-ink-2">
+              Capture words, keys, views, working offline and the desktop app, written out in one place. The changelog lists
+              what has changed, and when.
+            </p>
+            <p className="mt-4 flex flex-wrap gap-3">
+              <Link href="/help" className={`${plainButton} !mt-0`}>
+                Open Help
+              </Link>
+              <Link href="/changelog" className={`${plainButton} !mt-0`}>
+                Open the changelog
+              </Link>
+            </p>
+          </section>
+        </div>
 
         <div id="your-data" className="space-y-12">
           <section aria-labelledby="trash-heading">

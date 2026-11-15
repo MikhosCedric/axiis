@@ -17,6 +17,7 @@ import { MiniMonth } from "./mini-month";
 import { useWeekStart } from "./week-start-context";
 import {
   BrandMark,
+  DoneIcon,
   DueIcon,
   InboxIcon,
   ListsIcon,
@@ -44,6 +45,7 @@ const ICONS: Record<PlaceId, ReactNode> = {
   week: <WeekIcon />,
   month: <MonthIcon />,
   due: <DueIcon />,
+  done: <DoneIcon />,
   inbox: <InboxIcon />,
   lists: <ListsIcon />,
   notes: <NotesIcon />,

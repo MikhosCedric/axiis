@@ -400,7 +400,7 @@ test.describe("settings layout", () => {
       await page.setViewportSize({ width, height: 900 });
       await page.goto("/dev/settings");
       const index = page.getByRole("navigation", { name: "Settings sections" });
-      await expect(index.getByRole("link")).toHaveText(["Areas", "Tags", "Display", "Keyboard", "Your data"]);
+      await expect(index.getByRole("link")).toHaveText(["Areas", "Tags", "Display", "Keyboard", "Help", "Your data"]);
 
       const nav = (await index.boundingBox())!;
       const areas = (await page.getByRole("region", { name: "Areas" }).boundingBox())!;

@@ -7,6 +7,8 @@ const PAGES = [
   "/login",
   "/privacy",
   "/terms",
+  "/help",
+  "/changelog",
   "/dev/no-such-page",
   "/dev/score",
   "/dev/score?view=list",
