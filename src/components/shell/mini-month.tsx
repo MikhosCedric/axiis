@@ -28,7 +28,8 @@ const inSpan = (date: LocalDate) => date >= FIRST_DATE && date <= LAST_DATE;
  * A small month to jump by: the side panel's, the More sheet's and the one under a calendar view's
  * title. Each day is a link to `hrefFor(day)`. The days the page shows (`from` to `to`) sit on a
  * band of Press Tint, today is filled with Ink as the Month view fills it, and days of the
- * neighbouring months are quiet. One day takes Tab; arrows, Home, End, Page Up and Page Down move
+ * neighbouring months are quiet. It is a group of links, not a second grid beside the Month view's:
+ * each link names its day in full, and says when it is today or in view. One day takes Tab; arrows, Home, End, Page Up and Page Down move
  * between days as they do on the Month view, turning the month when they leave it.
  */
 export function MiniMonth({
@@ -115,16 +116,16 @@ export function MiniMonth({
           <span className="sr-only">Show {formatMonthHeading(next)}</span>
         </button>
       </div>
-      <div ref={grid} role="grid" aria-labelledby={id} className="mt-1.5 grid gap-y-0.5">
-        <div role="row" className="grid grid-cols-7">
+      <div ref={grid} role="group" aria-labelledby={id} className="mt-1.5 grid gap-y-0.5">
+        <div aria-hidden="true" className="grid grid-cols-7">
           {weeks[0].map((date) => (
-            <span key={date} role="columnheader" aria-label={weekdayName(date, "long")} className="pb-1 text-center text-[11px] leading-none font-medium text-ink-3">
+            <span key={date} className="pb-1 text-center text-[11px] leading-none font-medium text-ink-3">
               {weekdayName(date, "short").slice(0, 2)}
             </span>
           ))}
         </div>
         {weeks.map((week, w) => (
-          <div key={week[0]} role="row" className="grid grid-cols-7">
+          <div key={week[0]} className="grid grid-cols-7">
             {week.map((date, i) => {
               const isToday = date === today;
               const shown = from !== null && to !== null && date >= from && date <= to;
@@ -136,8 +137,6 @@ export function MiniMonth({
               return (
                 <div
                   key={date}
-                  role="gridcell"
-                  aria-selected={shown}
                   className={`flex justify-center ${shown ? "bg-press" : ""} ${starts ? "rounded-l-full" : ""} ${ends ? "rounded-r-full" : ""}`}
                 >
                   <Link
@@ -150,7 +149,7 @@ export function MiniMonth({
                     tabIndex={date === tabStop ? 0 : -1}
                     aria-current={isToday ? "date" : undefined}
                     aria-disabled={ok ? undefined : true}
-                    aria-label={`${formatDayIn(date, today)}${isToday ? ", today" : ""}`}
+                    aria-label={`${formatDayIn(date, today)}${isToday ? ", today" : ""}${shown ? ", in view" : ""}`}
                     onClick={(e) => {
                       if (!ok) return e.preventDefault();
                       setFocused(date);
