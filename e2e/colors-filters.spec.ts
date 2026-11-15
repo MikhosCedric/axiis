@@ -237,22 +237,22 @@ signedIn.describe("colours and filters on a phone", () => {
     await context.addCookies([{ name: "axiis-e2e-account", value: "filters", url: baseURL }]);
   });
 
-  signedIn("More holds the areas, and choosing one narrows the page", async ({ page }) => {
+  signedIn("More holds the areas as ticks a thumb tall, and unticking one hides it", async ({ page }) => {
     await page.goto(DAY);
     const sheet = page.getByRole("dialog", { name: "More" });
     await hydrated(page);
     await page.getByRole("button", { name: "More", exact: true }).click();
     await expect(sheet).toBeVisible();
-    const work = sheet.getByRole("link", { name: /^Work/ });
-    await expect(work).toBeVisible();
-    expect((await work.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+    const home = sheet.locator("label").filter({ hasText: "Home" });
+    await expect(home).toBeVisible();
+    expect((await home.boundingBox())!.height).toBeGreaterThanOrEqual(44);
     expect(await axe(page)).toEqual([]);
-    await work.click();
-    await expect(page).toHaveURL(new RegExp(`${DAY}\\?area=${WORK}$`));
-    await expect(chips(page)).toContainText("Work");
+    await home.click();
+    await expect(sheet.getByRole("checkbox", { name: /^Home/ })).not.toBeChecked();
+    await page.keyboard.press("Escape");
+    await expect(ferns(page)).toHaveCount(0);
+    await expect(staffLabel(page, "Work")).toBeVisible();
     const width = await page.evaluate(() => document.documentElement.scrollWidth);
     expect(width).toBeLessThanOrEqual(375);
-    await page.getByRole("link", { name: "Stop showing only Work" }).click();
-    await expect(page).toHaveURL(new RegExp(`${DAY}$`));
   });
 });

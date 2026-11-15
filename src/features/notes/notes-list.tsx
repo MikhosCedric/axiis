@@ -11,7 +11,6 @@ import { PlusIcon, SearchIcon } from "./icons";
 import type { NoteRow, NotesActions } from "./model";
 import { reach } from "@/lib/reach";
 import { PageHeader } from "@/components/shell/page-header";
-import { place } from "@/components/shell/places";
 import { FilterChips } from "@/features/filter/filter-chip";
 import { GuideButton, NO_TOPICS } from "@/features/palette/guide";
 import { useKeepFilter } from "@/features/filter/keep-filter";
@@ -97,7 +96,6 @@ export function NotesList({
           </button>
         }
       >
-        <p className="page-summary">{place("notes").hint}, and what each note is linked to.</p>
         <FilterChips filter={filter} className="mt-2.5" />
       </PageHeader>
 

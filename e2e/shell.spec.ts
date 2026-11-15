@@ -50,12 +50,11 @@ test.describe("the rail", () => {
     for (const name of ["Work", "Home", "Health"]) await expect(rail.getByRole("checkbox", { name: new RegExp(`^${name}`) })).toBeChecked();
     await expect(rail.getByRole("link", { name: "Search" })).toHaveCount(0);
 
-    // Create comes first and shows its key; with no capture field on this page it opens the palette.
+    // Create comes first and shows its key; like C, it goes to the page's capture field (the palette captures where a page has none).
     const create = rail.getByRole("button", { name: /^Create/ });
     await expect(create).toHaveAttribute("aria-keyshortcuts", "c");
     await create.click();
-    await expect(page.getByRole("dialog", { name: "Search and commands" })).toBeVisible();
-    await page.keyboard.press("Escape");
+    await expect(page.locator("#capture")).toBeFocused();
 
     // The small month: this month, today marked, one day in the Tab order, arrows move by a day and a week.
     const month = rail.getByRole("group", { name: /^[A-Z][a-z]+ \d{4}$/ });

@@ -107,11 +107,15 @@ signedIn.describe("segmented controls", () => {
     await expect(panel.getByRole("link", { name: "Week", exact: true })).toHaveAttribute("aria-current", "page");
     await panel.getByRole("link", { name: "Month", exact: true }).click();
     await expect(page).toHaveURL("/month/2099-05");
-    // M, W and D do the same from the keyboard.
+    const title = (name: string) => expect(page.getByRole("heading", { level: 1, name })).toBeVisible();
+    // W, D and M do the same from the keyboard, once the view is up.
+    await title("May 2099");
     await page.keyboard.press("w");
     await expect(page).toHaveURL("/week/2099-04-27");
+    await title("27 April to 3 May");
     await page.keyboard.press("d");
     await expect(page).toHaveURL("/day/2099-04-27");
+    await title("Monday 27 April");
     await page.keyboard.press("m");
     await expect(page).toHaveURL("/month/2099-04");
   });
