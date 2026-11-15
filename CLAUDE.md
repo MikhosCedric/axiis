@@ -1,5 +1,9 @@
 ## Agent skills
 
+### Quality playbook
+
+Read `docs/agents/quality-playbook.md` before any feature, fix or review. It is the method to follow, whatever the model: what to read, how to plan, how to brief helpers, how to check, and how to report.
+
 ### Issue tracker
 
 Issues live in GitHub Issues (via the `gh` CLI; no remote configured yet). See `docs/agents/issue-tracker.md`.
