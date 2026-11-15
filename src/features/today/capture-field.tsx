@@ -1,12 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState, useTransition, type FormEvent, type ReactNode } from "react";
 import { useClock } from "@/components/shell/clock-context";
 import { captureAction as serverCapture } from "./actions";
 import type { ActionResult, CaptureResult } from "./commands";
 import { CAPTURE_EXAMPLES, CAPTURE_LEAD, capturedLine, firstCapturedLine, momentHere, parseCapture, previewWords, type Moment } from "./capture-syntax";
+import { CAPTURE_PARAM, readPrefill } from "./capture-prefill";
 import { TITLE_MAX } from "./model";
 import { useQueueCapture } from "@/components/shell/outbox";
 import { reach, UNREACHABLE } from "@/lib/reach";
@@ -84,7 +85,8 @@ export function CaptureField({
   screenStatus?: ReactNode;
 }) {
   const input = useRef<HTMLInputElement>(null);
-  const [value, setValue] = useState("");
+  const params = useSearchParams();
+  const [value, setValue] = useState(() => readPrefill(params.get(CAPTURE_PARAM) ?? undefined) ?? "");
   const [status, setStatus] = useState<Status | null>(null);
   const [pending, startTransition] = useTransition();
   const unmark = useRef<() => void>(() => {});
@@ -97,6 +99,18 @@ export function CaptureField({
   const queue = useQueueCapture();
 
   useEffect(() => () => unmark.current(), []);
+
+  // Words from the home-screen shortcut or the share menu arrive as ?capture=. They fill the field, never save, and leave the address.
+  const router = useRouter();
+  const handed = params.get(CAPTURE_PARAM);
+  useEffect(() => {
+    if (handed === null) return;
+    input.current?.focus();
+    const rest = new URLSearchParams(params.toString());
+    rest.delete(CAPTURE_PARAM);
+    router.replace(rest.size ? `${pathname}?${rest}` : pathname, { scroll: false });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [handed]);
 
   function submit(e: FormEvent) {
     e.preventDefault();

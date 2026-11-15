@@ -8,7 +8,7 @@ const today = "2026-10-06" as LocalDate;
 describe("PLACES", () => {
   it("groups the rail's places as Plan, Capture and Library", () => {
     const grouped = Object.fromEntries(PLACE_GROUPS.map((g) => [g, PLACES.filter((p) => p.group === g).map((p) => p.label)]));
-    expect(grouped).toEqual({ Plan: ["Today", "Week", "Month", "Due"], Capture: ["Inbox"], Library: ["Lists", "Notes", "Tags"] });
+    expect(grouped).toEqual({ Plan: ["Today", "Week", "Month", "Due"], Capture: ["Inbox"], Library: ["Lists", "Notes", "Tags", "Done"] });
   });
 
   it("keeps four tabs for the phone bar", () => {
@@ -38,6 +38,7 @@ describe("PLACES", () => {
       ["l", "/lists"],
       ["n", "/notes"],
       ["h", "/tags"],
+      ["f", "/done"],
       ["s", "/search"],
       [",", "/settings"],
     ]);

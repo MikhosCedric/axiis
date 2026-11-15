@@ -130,7 +130,7 @@ test("sitemap.xml lists only the public pages", async ({ request }) => {
   const response = await request.get("/sitemap.xml");
   expect(response.status()).toBe(200);
   const locs = [...(await response.text()).matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => new URL(m[1]).pathname);
-  expect(locs.sort()).toEqual(["/", "/privacy", "/terms"]);
+  expect(locs.sort()).toEqual(["/", "/changelog", "/help", "/privacy", "/terms"]);
 });
 
 test("the web manifest names the app and starts on today", async ({ request }) => {
@@ -199,4 +199,40 @@ test("every page carries a nonce policy, and the page runs under it without a vi
   await page.getByRole("button", { name: "Switch between light and dark" }).click();
   await expect(html).toHaveAttribute("data-theme", /light|dark/);
   expect(violations).toEqual([]);
+});
+
+test("Help is public and covers capture words, keys, offline, the desktop app and export", async ({ page }) => {
+  await page.goto("/help");
+  await expect(page).toHaveURL("/help");
+  await expect(page.getByRole("heading", { level: 1, name: "Help" })).toBeVisible();
+  for (const name of ["Capture words", "Views", "Keys", "Printing", "Offline", "Desktop app", "Install and share", "Export and delete"]) {
+    await expect(page.getByRole("heading", { level: 2, name })).toBeVisible();
+  }
+  // The key list is the app's own table, not a copy: its Go-to chords are there.
+  await expect(page.getByText("Go to Done")).toBeVisible();
+  await expect(page.getByText(/!/)).toHaveCount(0);
+  await expect(page.getByRole("contentinfo").getByRole("link", { name: "Help" })).toHaveAttribute("href", "/help");
+});
+
+test("the changelog is public, newest first, and linked from the footer", async ({ page }) => {
+  await page.goto("/changelog");
+  await expect(page.getByRole("heading", { level: 1, name: "Changelog" })).toBeVisible();
+  const dates = await page.locator("main time").evaluateAll((els) => els.map((e) => e.getAttribute("datetime")!));
+  expect(dates.length).toBeGreaterThan(5);
+  expect(dates).toEqual([...dates].sort().reverse());
+  await expect(page.getByRole("contentinfo").getByRole("link", { name: "Changelog" })).toHaveAttribute("href", "/changelog");
+});
+
+test("the sitemap lists Help and the changelog, and the manifest offers shortcuts and a share target", async ({ request }) => {
+  const sitemap = await (await request.get("/sitemap.xml")).text();
+  expect(sitemap).toContain("/help");
+  expect(sitemap).toContain("/changelog");
+  const manifest = await (await request.get("/manifest.webmanifest")).json();
+  expect(manifest.shortcuts.map((s: { name: string }) => s.name)).toEqual(["Capture", "Today", "Inbox"]);
+  expect(manifest.share_target).toMatchObject({ action: "/capture", method: "GET", params: { title: "title", text: "text", url: "url" } });
+});
+
+test("/capture sends a stranger to sign in", async ({ page }) => {
+  await page.goto("/capture?text=hello");
+  await expect(page).toHaveURL(/\/login\?next=%2Fcapture/);
 });

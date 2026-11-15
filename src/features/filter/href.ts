@@ -10,8 +10,8 @@ import { SELECTED_ITEM_PARAM } from "@/features/day/types";
 export const AREA_PARAM = "area";
 export const TAG_PARAM = "tag";
 
-/** The pages a filter narrows: every day, week and month, the Inbox, Due, Lists and the notes list. */
-const FILTERABLE = /^\/(today|day\/[^/]+|week(\/[^/]+)?|month(\/[^/]+)?|inbox|due|lists|notes)\/?$/;
+/** The pages a filter narrows: every day, week and month, the Inbox, Due, Done, Lists and the notes list. */
+const FILTERABLE = /^\/(today|day\/[^/]+|week(\/[^/]+)?|month(\/[^/]+)?|inbox|due|done|lists|notes)\/?$/;
 
 export const filterable = (pathname: string) => FILTERABLE.test(pathname);
 

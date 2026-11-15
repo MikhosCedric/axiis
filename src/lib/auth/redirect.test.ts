@@ -19,6 +19,8 @@ describe("resolveAuthRedirect", () => {
     "/login",
     "/privacy",
     "/terms",
+    "/help",
+    "/changelog",
     "/robots.txt",
     "/sitemap.xml",
     "/manifest.webmanifest",

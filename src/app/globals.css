@@ -701,3 +701,65 @@
     animation: none !important;
   }
 }
+
+/*
+ * Print. Generic on purpose: ink on white, no chrome, hairlines kept, done items hollow, one day to a page.
+ * Today, Week, a list and a note all print through these; per-view layout is left to the views.
+ */
+@media print {
+  :root:root:root {
+    color-scheme: light;
+  }
+  html,
+  body,
+  #app-shell,
+  #app-shell main {
+    background: #fff !important;
+    color: #000;
+  }
+  /* The rail, the phone bar, banners, notices and everything that only acts. */
+  #app-shell > nav,
+  #app-shell nav[aria-label="Primary"],
+  #app-shell [role="status"]:empty,
+  #app-shell button:not([data-quick-focus]):not([data-open]):not([data-item]),
+  #app-shell form,
+  #app-shell [data-quick-actions],
+  #app-shell [aria-label="Quick actions"],
+  [data-print="hide"] {
+    display: none !important;
+  }
+  #app-shell {
+    display: block !important;
+  }
+  * {
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+  .surface {
+    background: transparent !important;
+    border-color: #999 !important;
+  }
+  li,
+  tr {
+    break-inside: avoid;
+    border-color: #bbb !important;
+  }
+  /* One day to a page: the sections that stand for a day. */
+  .done-day,
+  [data-print="day"] {
+    break-after: page;
+  }
+  .done-day:last-child,
+  [data-print="day"]:last-child {
+    break-after: auto;
+  }
+  h1,
+  h2,
+  h3 {
+    break-after: avoid;
+  }
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
+}

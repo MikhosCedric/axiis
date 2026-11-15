@@ -23,7 +23,7 @@ const row = (n: number, over: Partial<SearchRow> = {}): SearchRow => ({
 
 describe("paletteSections", () => {
   it("offers every page, then the Guide, when nothing is typed", () => {
-    expect(labels("   ")).toEqual({ go: ["Today", "Week", "Month", "Due", "Inbox", "Lists", "Notes", "Tags", "Search", "Settings", "Guide"] });
+    expect(labels("   ")).toEqual({ go: ["Today", "Week", "Month", "Due", "Inbox", "Lists", "Notes", "Tags", "Done", "Search", "Settings", "Help", "Guide"] });
   });
 
   it("puts the pages visited lately before every page when nothing is typed, and names each page's G key", () => {
@@ -61,7 +61,7 @@ describe("paletteSections", () => {
   });
 
   it("ranks pages against the typing, keywords included", () => {
-    expect(labels("se").go).toEqual(["Search", "Settings", "Today", "Inbox"]);
+    expect(labels("se").go).toEqual(["Search", "Settings", "Today", "Inbox", "Help"]);
     expect(labels("find").go).toEqual(["Search"]);
     expect(labels("export").go).toEqual(["Settings"]);
     expect(labels("unscheduled").go).toEqual(["Inbox"]);

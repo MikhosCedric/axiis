@@ -8,6 +8,8 @@ const PUBLIC_PATHS: ReadonlySet<string> = new Set([
   LOGIN_PATH,
   "/privacy",
   "/terms",
+  "/help",
+  "/changelog",
   "/robots.txt",
   "/sitemap.xml",
   "/manifest.webmanifest",

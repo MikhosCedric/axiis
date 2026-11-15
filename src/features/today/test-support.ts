@@ -2,6 +2,7 @@ import type { Area, AreaId, DayRange, Item, ItemId, ItemPatch, NewItem } from "@
 import { sameTag, type Tag, type TagId, type TagName } from "@/domain/tag";
 import {
   BEHIND_LIMIT,
+  DONE_LIMIT,
   DUE_LIMIT,
   INBOX_LIMIT,
   LISTS_LIMIT,
@@ -142,6 +143,20 @@ export function fakeRepo(items: Item[] = [], areas: Area[] = []) {
         )
         .sort((a, b) => (a.dueOn! < b.dueOn! ? -1 : a.dueOn! > b.dueOn! ? 1 : a.createdAt.getTime() - b.createdAt.getTime()))
         .slice(0, DUE_LIMIT);
+    },
+    async listDone(limit, before) {
+      return items
+        .filter(
+          (i) =>
+            i.status === "done" &&
+            i.completedAt !== null &&
+            (!before || i.completedAt < before) &&
+            i.parentId === null &&
+            i.type !== "note" &&
+            i.recurrence.kind === "none",
+        )
+        .sort((a, b) => b.completedAt!.getTime() - a.completedAt!.getTime())
+        .slice(0, Math.max(1, Math.min(limit, DONE_LIMIT)));
     },
     async listDueIn(fromDate, toDate) {
       return single()
