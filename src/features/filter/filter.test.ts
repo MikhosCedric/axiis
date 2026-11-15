@@ -12,7 +12,7 @@ import { loadWeek } from "@/features/week/load";
 import { filterDay, filterInbox, filterRows, filterWeek } from "./apply";
 import { areaSection } from "@/features/palette/model";
 import { areaHref, filterable, withFilter } from "./href";
-import { checkTag, filterWords, keeps, NO_FILTER, readFilter, scopePrefix, scopeWords, type ViewFilter } from "./model";
+import { checkTag, filterWords, isFiltered, keeps, narrows, NO_FILTER, readFilter, scopePrefix, scopeWords, type ViewFilter } from "./model";
 
 const work = { ...area("Work"), color: "slate" as const };
 const home = area("Home");
@@ -35,6 +35,45 @@ describe("readFilter", () => {
     expect(readFilter({ tag: "   " }, [], { tags: true }).tag).toBeNull();
     expect(readFilter({ tag: "x".repeat(40) }, [], { tags: true }).tag).toBeNull();
     expect(readFilter({ tag: "errands" }, [], { tags: false }).tag).toBeNull();
+  });
+});
+
+describe("hidden areas", () => {
+  const hideHome: ViewFilter = { area: null, tag: null, hidden: [home.id] };
+
+  it("reads only hidden ids that are still the user's areas", () => {
+    expect(readFilter({}, [work, home], { tags: true, hidden: [home.id, "gone"] })).toEqual(hideHome);
+    expect(readFilter({}, [work, home], { tags: true, hidden: ["gone"] })).toEqual(NO_FILTER);
+  });
+
+  it("leaves a hidden area's items out, keeps items with no area, and says nothing in words", () => {
+    expect(keeps(hideHome, { areaId: home.id }, undefined)).toBe(false);
+    expect(keeps(hideHome, { areaId: work.id }, undefined)).toBe(true);
+    expect(keeps(hideHome, { areaId: null }, undefined)).toBe(true);
+    expect([isFiltered(hideHome), narrows(hideHome), scopeWords(hideHome)]).toEqual([false, true, ""]);
+    expect(filterRows([{ areaId: work.id }, { areaId: home.id }, { areaId: null }], hideHome)).toEqual([{ areaId: work.id }, { areaId: null }]);
+  });
+
+  it("shows an area named in the address even when it is hidden", () => {
+    const named: ViewFilter = { area: home, tag: null, hidden: [home.id] };
+    expect(keeps(named, { areaId: home.id }, undefined)).toBe(true);
+    expect(keeps(named, { areaId: work.id }, undefined)).toBe(false);
+  });
+
+  it("drops a hidden area's items and its staff from a day, and offers no move-all for what is left over", async () => {
+    const before = { kind: "day" as const, on: "2026-10-01" as LocalDate };
+    const { repo } = fakeRepo(
+      [
+        makeItem({ title: "Work now", areaId: work.id, schedule: at(9) }),
+        makeItem({ title: "Home now", areaId: home.id, schedule: at(10) }),
+        makeItem({ title: "Old work", areaId: work.id, schedule: before }),
+      ],
+      [work, home],
+    );
+    const day = filterDay(await loadDay(repo, DAY, NOW, "UTC"), hideHome);
+    expect(day.view.scheduled.map((e) => e.item.title)).toEqual(["Work now"]);
+    expect(day.areas.map((a) => a.name)).toEqual(["Work"]);
+    expect(await loadLeftover(repo, DAY, "UTC", hideHome)).toMatchObject({ total: 1, filtered: true });
   });
 });
 

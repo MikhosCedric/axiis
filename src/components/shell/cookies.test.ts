@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { headerClock } from "@/lib/clock";
+import { hiddenAreasValue, readHiddenAreas } from "./cookies";
 import {
   CLOCK_SETTINGS,
   clockCookieValue,
@@ -112,5 +113,21 @@ describe("readClock", () => {
         expect(read).toEqual({ setting, clock: setting === "auto" ? device : setting });
       }
     }
+  });
+});
+
+describe("hidden areas", () => {
+  const a = "00000000-0000-4000-9000-000000000001";
+  const b = "00000000-0000-4000-9000-000000000002";
+
+  it("reads ids joined by full stops, dropping repeats and anything that is no id", () => {
+    expect(readHiddenAreas(undefined)).toEqual([]);
+    expect(readHiddenAreas("")).toEqual([]);
+    expect(readHiddenAreas(`${a}.${b}.${a}.<script>.`)).toEqual([a, b]);
+  });
+
+  it("writes what it reads, and nothing when every area shows", () => {
+    expect(readHiddenAreas(hiddenAreasValue([a, b]))).toEqual([a, b]);
+    expect(hiddenAreasValue([])).toBe("");
   });
 });

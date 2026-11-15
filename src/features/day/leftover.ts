@@ -5,7 +5,7 @@ import type { ActionResult } from "@/features/today/commands";
 import { moveItem } from "@/features/week/commands";
 import { dayRangeFor, toLocalDate } from "@/lib/dates";
 import type { ItemsRepo } from "@/lib/items/repo";
-import { isFiltered, keeps, NO_FILTER, type ViewFilter } from "@/features/filter/model";
+import { keeps, narrows, NO_FILTER, type ViewFilter } from "@/features/filter/model";
 import { LEFTOVER_SHOWN, type LeftoverData } from "./leftover-model";
 
 /**
@@ -23,7 +23,8 @@ export async function loadLeftover(
   if (items.length === 0) return null;
   return {
     total: items.length,
-    filtered: isFiltered(filter),
+    // Hidden areas count too: "move all" would move items the reader cannot see.
+    filtered: narrows(filter),
     rows: items.slice(0, LEFTOVER_SHOWN).map((item) => {
       const day = item.schedule.kind === "timed" ? toLocalDate(item.schedule.start, timeZone) : item.schedule.kind === "day" ? item.schedule.on : today;
       return { id: item.id, type: item.type, title: displayTitle(item), planned: `Planned ${formatDayIn(day, today)}` };

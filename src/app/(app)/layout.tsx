@@ -11,6 +11,7 @@ import { undoDeletionAction } from "@/features/account/actions";
 import { DeletionBanner } from "@/features/account/deletion-banner";
 import { getDeletionDay } from "@/features/account/deletion-day";
 import { getRailAreas, getRailBadges, getReminders, getTodayDate, getTrayRows } from "@/features/day/server";
+import { getHiddenAreas } from "@/features/filter/server";
 import { QuickIconSprite } from "@/features/actions/icon-sprite";
 import { QuickActionsProvider } from "@/features/actions/provider";
 import { PaletteProvider } from "@/features/palette/palette";
@@ -23,7 +24,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
   const desktop = jar.get(DESKTOP_COOKIE)?.value === "1";
   // Settings can turn reminders off; the shell then simply finds none to speak.
   const remind = desktop && readReminders(jar.get(REMINDERS_COOKIE)?.value);
-  const [today, areas, deletesOn, badges, owner, tray, reminders] = await Promise.all([
+  const [today, areas, deletesOn, badges, owner, tray, reminders, hidden] = await Promise.all([
     getTodayDate(),
     getRailAreas(),
     getDeletionDay(),
@@ -31,6 +32,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
     getOutboxOwner(),
     desktop ? getTrayRows() : Promise.resolve([]),
     remind ? getReminders() : Promise.resolve([]),
+    getHiddenAreas(),
   ]);
 
   return (
@@ -47,7 +49,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
         style={{ "--rail-w": min ? "64px" : "216px" } as React.CSSProperties}
         className="min-h-dvh rail:grid rail:grid-cols-[var(--rail-w,216px)_minmax(0,1fr)] motion-safe:rail:transition-[grid-template-columns] motion-safe:rail:duration-200"
       >
-        <NavRail today={today} areas={areas} badges={badges} min={min} />
+        <NavRail today={today} areas={areas} badges={badges} min={min} hidden={hidden} />
         {/* On a phone the places bar is fixed to the bottom, so the page ends above it. */}
         <main id="main" className="ground min-w-0 overflow-x-clip max-rail:pb-[calc(4rem+env(safe-area-inset-bottom))]">
           {deletesOn && <DeletionBanner deletesOn={deletesOn} undo={undoDeletionAction} />}
