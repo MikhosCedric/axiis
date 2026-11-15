@@ -1,5 +1,6 @@
 "use client";
 
+import { PageHeader } from "@/components/shell/page-header";
 import { TitleBar } from "@/components/shell/title-bar";
 import { Segmented } from "@/components/segmented";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
@@ -293,20 +294,41 @@ export function DayView({
     <div className={selectedParam ? "min-[1180px]:grid min-[1180px]:grid-cols-[minmax(0,1fr)_328px]" : ""}>
       <div className="@container/page min-w-0 px-4 pt-6 pb-14 rail:px-9 rail:pt-8">
         <TitleBar heading="day-title">{formatDayHeading(date)}</TitleBar>
-        <header className="page-head">
-          {/* A server element can arrive late as a lazy chunk, which React then checks for a key among its siblings. */}
-          <Fragment key="nav">{nav}</Fragment>
-          <div className="min-w-0">
-            <h1 id="day-title" className="headline">
-              <DayHeading date={date} />
-            </h1>
-            <GlanceLine glance={glance} timeZone={timeZone} scope={scopeWords(filter)} />
-            <FilterChips filter={filter} className="mt-2.5" />
-          </div>
-        </header>
-
-        <div className="mt-6 mb-3 flex flex-wrap items-start gap-x-3 gap-y-1">
-          <div className="min-w-0 flex-[1_1_280px] rail:max-w-[440px] @max-[40rem]/page:flex-[1_1_100%]! @max-[40rem]/page:max-w-none!">
+        <PageHeader
+          heading={
+            // The calendar bar carries the title. A server element can arrive late as a lazy chunk, which React then checks for a key among its siblings.
+            <Fragment key="nav">
+              {nav ?? (
+                <h1 id="day-title" className="headline">
+                  <DayHeading date={date} />
+                </h1>
+              )}
+            </Fragment>
+          }
+          controls={
+            <>
+              <Segmented
+                label="View"
+                chosen={shownMode}
+                segments={MODES.map(({ mode, label }) => ({ key: mode, label }))}
+                onChoose={(m) => switchMode(m as DayViewMode)}
+                className="h-[38px] pointer-coarse:h-12"
+              />
+              {isToday && !firstDay && (
+                <button
+                  type="button"
+                  aria-pressed={focusOn}
+                  onClick={toggleFocus}
+                  title="Show only what is next and what is due today"
+                  className={`press rounded-lg border border-rule px-3.5 py-2 font-medium pointer-coarse:py-3 ${focusOn ? "border-ink bg-ink text-paper" : "text-ink-2 hover:bg-hover active:bg-press"}`}
+                >
+                  Focus
+                </button>
+              )}
+              <GuideButton topics={DAY_GUIDE} />
+            </>
+          }
+          capture={
             <CaptureField
               captureAction={actions.capture}
               firstDay={firstDay}
@@ -326,27 +348,11 @@ export function DayView({
                 </p>
               }
             />
-          </div>
-          <Segmented
-            label="View"
-            chosen={shownMode}
-            segments={MODES.map(({ mode, label }) => ({ key: mode, label }))}
-            onChoose={(m) => switchMode(m as DayViewMode)}
-            className="h-[38px] pointer-coarse:h-12"
-          />
-          {isToday && !firstDay && (
-            <button
-              type="button"
-              aria-pressed={focusOn}
-              onClick={toggleFocus}
-              title="Show only what is next and what is due today"
-              className={`press rounded-lg border border-rule px-3.5 py-2 font-medium pointer-coarse:py-3 ${focusOn ? "border-ink bg-ink text-paper" : "text-ink-2 hover:bg-hover active:bg-press"}`}
-            >
-              Focus
-            </button>
-          )}
-          <GuideButton topics={DAY_GUIDE} className="ml-auto" />
-        </div>
+          }
+        >
+          <GlanceLine glance={glance} timeZone={timeZone} scope={scopeWords(filter)} />
+          <FilterChips filter={filter} className="mt-2.5" />
+        </PageHeader>
 
         {isToday && tour && <Tour />}
 

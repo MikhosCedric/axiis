@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { AreaMark } from "@/components/area-mark";
+import { PageHeader } from "@/components/shell/page-header";
+import { GuideButton, NO_TOPICS } from "@/features/palette/guide";
 import type { TagSummary } from "@/domain/tag";
 import { openCount, tagHref } from "./model";
 import { TagsSection, type TagActions } from "./tags-section";
@@ -17,12 +19,13 @@ export function TagIndexView({
 }) {
   return (
     <div className="mx-auto max-w-[880px] px-4 pt-6 pb-14 rail:px-9 rail:pt-8">
-      <h1 className="headline">Tags</h1>
-      <p className="page-summary">
-        {tags.length === 0
-          ? "No tags yet. Add one from any item's details."
-          : `${tags.length === 1 ? "One tag" : `${tags.length} tags`}. Open one to see everything that carries it.`}
-      </p>
+      <PageHeader heading={<h1 className="headline">Tags</h1>} controls={<GuideButton topics={NO_TOPICS} />}>
+        <p className="page-summary">
+          {tags.length === 0
+            ? "No tags yet. Add one from any item's details."
+            : `${tags.length === 1 ? "One tag" : `${tags.length} tags`}. Open one to see everything that carries it.`}
+        </p>
+      </PageHeader>
       {actions && tags.length > 0 && (
         <div className="mt-6">
           <TagsSection bare tags={tags} actions={actions} hrefFor={hrefFor} />

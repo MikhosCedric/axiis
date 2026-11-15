@@ -23,7 +23,7 @@ const row = (n: number, over: Partial<SearchRow> = {}): SearchRow => ({
 
 describe("paletteSections", () => {
   it("offers every page, then the Guide, when nothing is typed", () => {
-    expect(labels("   ")).toEqual({ go: ["Today", "Week", "Month", "Due", "Inbox", "Lists", "Notes", "Tags", "Search", "Settings", "Guide"] });
+    expect(labels("   ")).toEqual({ go: ["Today", "Week", "Month", "Inbox", "Due", "Lists", "Notes", "Tags", "Search", "Settings", "Guide"] });
   });
 
   it("puts the pages visited lately before every page when nothing is typed, and names each page's G key", () => {

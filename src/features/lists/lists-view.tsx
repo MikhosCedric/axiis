@@ -14,7 +14,9 @@ import { setDoneAction } from "@/features/today/actions";
 import { DoneToggle, useDoneToggles, type SetDone } from "@/features/today/done-toggle";
 import { Glyph } from "@/features/today/glyph";
 import { RepeatMark } from "@/features/today/repeat-mark";
+import { PageHeader } from "@/components/shell/page-header";
 import { FilterChips } from "@/features/filter/filter-chip";
+import { GuideButton, NO_TOPICS } from "@/features/palette/guide";
 import { NO_FILTER, scopePrefix, type ViewFilter } from "@/features/filter/model";
 import { captureChecklistAction } from "./actions";
 import { listsSummary, progressShare, progressWords, type ListRow, type ListsData } from "./model";
@@ -48,26 +50,29 @@ export function ListsView({
   return (
     <div className={selectedParam ? "min-[1180px]:grid min-[1180px]:grid-cols-[minmax(0,1fr)_328px]" : ""}>
       <div className="mx-auto w-full max-w-[880px] min-w-0 px-4 pt-6 pb-14 rail:px-9 rail:pt-8">
-        <h1 className="headline">Lists</h1>
-        <p className="page-summary">
-          {place("lists").hint}. {scopePrefix(filter)}
-          {listsSummary(data.rows)}
-        </p>
-        <FilterChips filter={filter} className="mt-2.5" />
-
-        <div className="mt-6 mb-3">
-          <CaptureField
-            captureAction={captureAndOpen}
-            label="New checklist"
-            placeholder="Name a checklist, then add its lines"
-            plans={false}
-            screenStatus={
-              <p role="status" className={ticks.status?.error ? "font-medium text-ink" : "text-ink-2"}>
-                {ticks.status?.text}
-              </p>
-            }
-          />
-        </div>
+        <PageHeader
+          heading={<h1 className="headline">Lists</h1>}
+          controls={<GuideButton topics={NO_TOPICS} />}
+          capture={
+            <CaptureField
+              captureAction={captureAndOpen}
+              label="New checklist"
+              placeholder="Name a checklist, then add its lines"
+              plans={false}
+              screenStatus={
+                <p role="status" className={ticks.status?.error ? "font-medium text-ink" : "text-ink-2"}>
+                  {ticks.status?.text}
+                </p>
+              }
+            />
+          }
+        >
+          <p className="page-summary">
+            {place("lists").hint}. {scopePrefix(filter)}
+            {listsSummary(data.rows)}
+          </p>
+          <FilterChips filter={filter} className="mt-2.5" />
+        </PageHeader>
 
         {data.rows.length > 0 ? (
           <ul className="surface overflow-hidden px-3 py-1.5 [&_li:last-child]:border-b-0 mt-2">

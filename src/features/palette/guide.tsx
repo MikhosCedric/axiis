@@ -22,6 +22,9 @@ type GuideControls = {
 
 export const GuideContext = createContext<GuideControls>({ open: () => {}, show: () => () => {} });
 
+/** For a page with no words or gestures of its own to explain: its Guide opens on the shortcuts. */
+export const NO_TOPICS: readonly GuideTopic[] = [];
+
 /**
  * The one way into the Guide on a screen, at the end of its tool row. It also
  * tells the Guide which topics this screen has, so ? opens on the same ones.
@@ -29,7 +32,7 @@ export const GuideContext = createContext<GuideControls>({ open: () => {}, show:
 export function GuideButton({ topics, className = "" }: { topics: readonly GuideTopic[]; className?: string }) {
   const { open, show } = useContext(GuideContext);
   const key = topics.join(" ");
-  useEffect(() => show(key.split(" ") as GuideTopic[]), [show, key]);
+  useEffect(() => show(key ? (key.split(" ") as GuideTopic[]) : NO_TOPICS), [show, key]);
   return (
     <button
       type="button"
@@ -132,7 +135,7 @@ function MonthTopic({ id }: { id: string }) {
       <p>
         Click a day, or press Enter on it, to open it. The arrow keys move between days, Page Up and Page Down change
         the month. Drag an item to another day to move it there. What you capture lands on the day in focus unless you
-        name another. Jump to month goes to any month, as does typing one in the palette, such as “nov 2026”.
+        name another. The title opens a small month to jump by, with a field for a typed date; typing a month in the palette goes there too, such as “nov 2026”.
       </p>
     </Topic>
   );

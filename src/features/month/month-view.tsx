@@ -23,6 +23,7 @@ import type { LocalDate } from "@/domain/item";
 import { dayHref } from "@/features/day/nav";
 import { DetailAside } from "@/features/detail/detail-aside";
 import { useItemSelection } from "@/features/detail/use-item-selection";
+import { PageHeader } from "@/components/shell/page-header";
 import { GuideButton, type GuideTopic } from "@/features/palette/guide";
 import { CaptureField } from "@/features/today/capture-field";
 import { formatDayHeading } from "@/features/today/format";
@@ -259,19 +260,18 @@ export function MonthView({
   return (
     <div className={selectedParam ? "min-[1180px]:grid min-[1180px]:grid-cols-[minmax(0,1fr)_328px]" : ""}>
       <div className="@container/page min-w-0 px-4 pt-6 pb-14 rail:px-9 rail:pt-8">
-        <header className="page-head">
-          <Fragment key="nav">{nav}</Fragment>
-          <div className="min-w-0">
-            <h1 id="month-h" className="headline">
-              {formatMonthHeading(month)}
-            </h1>
-            <p className="page-summary">{data.summary}</p>
-            <FilterChips filter={filter} className="mt-2.5" />
-          </div>
-        </header>
-
-        <div className="mt-6 mb-3 flex flex-wrap items-start gap-x-3 gap-y-1">
-          <div className="min-w-0 flex-[1_1_280px] rail:max-w-[440px]">
+        <PageHeader
+          heading={
+            <Fragment key="nav">
+              {nav ?? (
+                <h1 id="month-h" className="headline">
+                  {formatMonthHeading(month)}
+                </h1>
+              )}
+            </Fragment>
+          }
+          controls={<GuideButton topics={MONTH_GUIDE} />}
+          capture={
             <CaptureField
               captureAction={(title) => captureOnAction(title, active)}
               label={`Capture for ${formatDayHeading(active)}`}
@@ -282,9 +282,11 @@ export function MonthView({
                 </p>
               }
             />
-          </div>
-          <GuideButton topics={MONTH_GUIDE} className="ml-auto" />
-        </div>
+          }
+        >
+          <p className="page-summary">{data.summary}</p>
+          <FilterChips filter={filter} className="mt-2.5" />
+        </PageHeader>
 
         <section aria-label="Days of the month" className="@container/month">
           <div

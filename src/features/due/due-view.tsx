@@ -9,7 +9,9 @@ import { DetailAside } from "@/features/detail/detail-aside";
 import { useItemSelection } from "@/features/detail/use-item-selection";
 import { setDoneAction } from "@/features/today/actions";
 import { DoneToggle, useDoneToggles, type SetDone } from "@/features/today/done-toggle";
+import { PageHeader } from "@/components/shell/page-header";
 import { FilterChips } from "@/features/filter/filter-chip";
+import { GuideButton, NO_TOPICS } from "@/features/palette/guide";
 import { NO_FILTER, scopePrefix, type ViewFilter } from "@/features/filter/model";
 import type { LocalDate } from "@/domain/item";
 import { shortPlanned } from "@/features/day/leftover-model";
@@ -39,12 +41,13 @@ export function DueView({
   return (
     <div className={selectedParam ? "min-[1180px]:grid min-[1180px]:grid-cols-[minmax(0,1fr)_328px]" : ""}>
       <div className="mx-auto w-full max-w-[880px] min-w-0 px-4 pt-6 pb-14 rail:px-9 rail:pt-8">
-        <h1 className="headline">Due</h1>
-        <p className="page-summary">
-          {place("due").hint}. {scopePrefix(filter)}
-          {dueSummary(rows)}
-        </p>
-        <FilterChips filter={filter} className="mt-2.5" />
+        <PageHeader heading={<h1 className="headline">Due</h1>} controls={<GuideButton topics={NO_TOPICS} />}>
+          <p className="page-summary">
+            {place("due").hint}. {scopePrefix(filter)}
+            {dueSummary(rows)}
+          </p>
+          <FilterChips filter={filter} className="mt-2.5" />
+        </PageHeader>
         <p role="status" className={`mt-4 min-h-5 text-[13px] ${ticks.status?.error ? "font-medium text-ink" : "text-ink-2"}`}>
           {ticks.status?.text}
         </p>

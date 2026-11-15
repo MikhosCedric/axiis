@@ -10,7 +10,10 @@ import { AreaMark } from "@/components/area-mark";
 import { PlusIcon, SearchIcon } from "./icons";
 import type { NoteRow, NotesActions } from "./model";
 import { reach } from "@/lib/reach";
+import { PageHeader } from "@/components/shell/page-header";
+import { place } from "@/components/shell/places";
 import { FilterChips } from "@/features/filter/filter-chip";
+import { GuideButton, NO_TOPICS } from "@/features/palette/guide";
 import { useKeepFilter } from "@/features/filter/keep-filter";
 import { NO_FILTER, type ViewFilter } from "@/features/filter/model";
 
@@ -78,19 +81,25 @@ export function NotesList({
 
   return (
     <div className="mx-auto max-w-[880px] px-4 pt-6 pb-16 rail:px-9 rail:pt-8">
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <h1 className="headline">Notes</h1>
-        <button
-          type="button"
-          onClick={newNote}
-          disabled={creating}
-          className="inline-flex items-center gap-2 rounded-md bg-ink px-3 py-1.5 font-medium text-paper hover:opacity-90 active:opacity-80 disabled:opacity-60 pointer-coarse:min-h-11"
-        >
-          <PlusIcon />
-          New note
-        </button>
-      </div>
-      <FilterChips filter={filter} className="mt-2.5" />
+      <PageHeader
+        heading={<h1 className="headline">Notes</h1>}
+        controls={<GuideButton topics={NO_TOPICS} />}
+        capture={
+          // A note starts as a page of its own, so this page's capture is a button, in capture's spot.
+          <button
+            type="button"
+            onClick={newNote}
+            disabled={creating}
+            className="inline-flex h-10 items-center gap-2 rounded-lg bg-ink px-3.5 font-medium text-paper hover:opacity-90 active:opacity-80 disabled:opacity-60 pointer-coarse:min-h-11"
+          >
+            <PlusIcon />
+            New note
+          </button>
+        }
+      >
+        <p className="page-summary">{place("notes").hint}, and what each note is linked to.</p>
+        <FilterChips filter={filter} className="mt-2.5" />
+      </PageHeader>
 
       <form role="search" action={pathname} onSubmit={(e) => e.preventDefault()} className="mt-6">
         <label htmlFor="notes-search" className="sr-only">
