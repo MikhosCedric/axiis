@@ -92,7 +92,7 @@ signedIn.describe("settings", () => {
     await page.setViewportSize({ width: 1280, height: 900 });
     await page.goto("/settings");
     const index = page.getByRole("navigation", { name: "Settings sections" });
-    await expect(index.getByRole("link")).toHaveText(["Areas", "Tags", "Display", "Keyboard", "Your data"]);
+    await expect(index.getByRole("link")).toHaveText(["Areas", "Tags", "Display", "Keyboard", "Help", "Your data"]);
     await expect(page.getByRole("heading", { name: "Keyboard" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Desktop app" })).toHaveCount(0);
     expect(await axe(page)).toEqual([]);
@@ -100,7 +100,7 @@ signedIn.describe("settings", () => {
     await context.addCookies([{ name: "axiis_desktop", value: "1", url: baseURL }]);
     await page.reload();
     await hydrated(page);
-    await expect(index.getByRole("link")).toHaveText(["Areas", "Tags", "Display", "Keyboard", "Desktop app", "Your data"]);
+    await expect(index.getByRole("link")).toHaveText(["Areas", "Tags", "Display", "Keyboard", "Desktop app", "Help", "Your data"]);
     await page.getByRole("group", { name: "Reminders" }).getByRole("button", { name: "Off" }).click();
     await expect(page.getByText("Reminders are off.")).toBeVisible();
     expect((await context.cookies()).find((c) => c.name === "reminders")?.value).toBe("off");

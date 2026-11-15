@@ -113,6 +113,8 @@ const FOOTER_LINKS = [
     head: "Axiis",
     links: [
       { href: "/", label: "Home" },
+      { href: "/help", label: "Help" },
+      { href: "/changelog", label: "Changelog" },
       { href: "/login", label: "Sign in" },
     ],
   },

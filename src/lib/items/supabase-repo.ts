@@ -16,6 +16,7 @@ import { sameTag, type Tag, type TagId, type TagName, type TagSummary } from "@/
 import { AREA_COLUMNS, ITEM_COLUMNS, LIST_COLUMNS, areaFromRow, itemFromRow, newItemToInsert, patchToUpdate } from "./mappers";
 import {
   BEHIND_LIMIT,
+  DONE_LIMIT,
   DUE_LIMIT,
   INBOX_LIMIT,
   LISTS_LIMIT,
@@ -200,6 +201,18 @@ export class SupabaseItemsRepo implements ItemsRepo {
       .order("created_at")
       .limit(DUE_LIMIT);
     return unwrap("listDue", result, itemList);
+  }
+
+  async listDone(limit: number, before?: Date): Promise<Item[]> {
+    let q = this.single()
+      .is("series_id", null)
+      .is("parent_id", null)
+      .eq("status", "done")
+      .not("completed_at", "is", null)
+      .neq("type", "note");
+    if (before) q = q.lt("completed_at", before.toISOString());
+    const result = await q.order("completed_at", { ascending: false }).order("created_at", { ascending: false }).limit(Math.max(1, Math.min(limit, DONE_LIMIT)));
+    return unwrap("listDone", result, itemList);
   }
 
   async listDueIn(fromDate: LocalDate, toDate: LocalDate): Promise<Item[]> {
