@@ -70,7 +70,6 @@ export function ScoreHarness({
         data={data}
         mode={mode}
         actions={actions}
-        nav={<p className="text-[13px] text-ink-3">Date navigation slot</p>}
         detail={
           item ? (
             <div>

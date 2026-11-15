@@ -84,7 +84,7 @@ signedIn.describe("area colours", () => {
     await expect(dot(staffLabel(page, "Home"))).toHaveAttribute("data-area-color", "moss");
     await expect(dot(staffLabel(page, "Health"))).toHaveCount(0);
     expect(await fill(staffLabel(page, "Work"))).toBe(CLAY.light);
-    const readout = page.getByRole("region", { name: "Open today, by area" });
+    const readout = page.getByRole("region", { name: "Areas" });
     await expect(dot(readout)).toHaveCount(2);
     await expect(readout.getByRole("listitem").filter({ hasText: "Work" }).locator("[data-area-color]")).toHaveAttribute("data-area-color", "clay");
     const budget = page.locator(`[data-item="${BUDGET}"]`);

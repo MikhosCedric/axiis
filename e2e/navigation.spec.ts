@@ -131,7 +131,7 @@ signedIn.describe("the Week on a phone", () => {
     await expect(today).toBeInViewport();
   });
 
-  signedIn("Previous and Next keep their names when they shrink to chevrons", async ({ page }) => {
+  signedIn("Today, Previous and Next are named and a thumb wide, and there is no span switch in the bar", async ({ page }) => {
     await open(page, "/week");
     const steps = page.getByRole("navigation", { name: "Week" });
     await expect(steps.getByRole("link", { name: /^Previous week, / })).toBeVisible();
@@ -140,10 +140,12 @@ signedIn.describe("the Week on a phone", () => {
       const box = await link.boundingBox();
       expect(box!.width).toBeGreaterThanOrEqual(44);
     }
-    const group = steps.getByRole("group", { name: "Day, week or month" });
-    await expect(group.getByRole("link")).toHaveText(["Day", "Week", "Month"]);
-    const [switchBox, previousBox] = [await group.boundingBox(), await steps.getByRole("link", { name: /^Previous week/ }).boundingBox()];
-    expect(Math.abs(switchBox!.y - previousBox!.y)).toBeLessThan(2);
+    await expect(steps.getByRole("link")).toHaveCount(3);
+    await expect(steps.getByRole("link", { name: "Today" })).toBeVisible();
+    // The side panel (the bottom bar here) is the only switch between the day, the week and the month.
+    await expect(page.getByRole("group", { name: "Day, week or month" })).toHaveCount(0);
+    const [todayBox, previousBox] = [await steps.getByRole("link", { name: "Today" }).boundingBox(), await steps.getByRole("link", { name: /^Previous week/ }).boundingBox()];
+    expect(Math.abs(todayBox!.y - previousBox!.y)).toBeLessThan(2);
   });
 });
 

@@ -8,6 +8,7 @@ import { gridStep } from "@/features/month/grid-step";
 import { rowKey } from "@/features/inbox/model";
 import { menuStep, rowKeyAction } from "@/features/actions/model";
 import { keyDestination, weekOf } from "@/features/week/model";
+import { spanShortcut } from "@/features/week/span";
 import { instantAt } from "@/lib/dates";
 import { areaShortcut, CAPTURE_KEY, chordCaps, chordSpoken, globalShortcut, goShortcut, GO_ALIASES, GO_PLACES, SHORTCUTS, type Chord, type Handler } from "./shortcuts";
 
@@ -45,9 +46,9 @@ const answers: Record<Handler, (chord: Chord) => boolean> = {
   "day-nav": (c) =>
     shortcutAction(press(c)) !== null &&
     shortcutAction(press({ key: c.key.toUpperCase() })) !== null &&
-    source("day/day-nav.tsx").includes("shortcutAction(") &&
-    source("week/week-nav.tsx").includes("shortcutAction(") &&
-    source("month/month-nav.tsx").includes("shortcutAction("),
+    source("../components/shell/calendar-bar.tsx").includes("shortcutAction(") &&
+    ["day/day-nav.tsx", "week/week-nav.tsx", "month/month-nav.tsx"].every((file) => source(file).includes("<CalendarBar")),
+  span: (c) => spanShortcut(press(c)) !== null && source("../components/shell/calendar-bar.tsx").includes("spanShortcut("),
   capture: (c) =>
     c.key === CAPTURE_KEY
       ? source("palette/palette.tsx").includes('document.getElementById("capture")')

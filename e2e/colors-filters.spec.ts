@@ -21,7 +21,9 @@ async function axe(page: Page) {
 }
 
 const rail = (page: Page) => page.getByRole("navigation", { name: "Primary" }).first();
-const railArea = (page: Page, name: string) => rail(page).getByRole("region", { name: "Open today, by area" }).getByRole("link", { name: new RegExp(`^${name}`) });
+const areaTick = (page: Page, name: string) => rail(page).getByRole("region", { name: "Areas" }).getByRole("checkbox", { name: new RegExp(`^${name}`) });
+const areaRow = (page: Page, name: string) => rail(page).getByRole("region", { name: "Areas" }).locator("label").filter({ hasText: name });
+const ferns = (page: Page) => page.getByRole("button", { name: /^Water the ferns/ });
 const chips = (page: Page) => page.getByRole("group", { name: "Filter" });
 const staffLabel = (page: Page, name: string) => page.locator("[data-staff-label]").filter({ hasText: name });
 
@@ -46,13 +48,11 @@ signedIn.describe("colours and filters", () => {
     await context.addCookies([{ name: "axiis-e2e-account", value: "filters", url: baseURL }]);
   });
 
-  signedIn("an area in the rail narrows the day, and day, week and month links keep it", async ({ page }) => {
+  signedIn("an address with an area narrows the day, and the steps and the side panel's day, week and month keep it", async ({ page }) => {
     await page.goto(DAY);
     await expect(chips(page)).toHaveCount(0);
-    await railArea(page, "Work").click();
-    await expect(page).toHaveURL(new RegExp(`${DAY}\\?area=${WORK}$`));
+    await page.goto(`${DAY}?area=${WORK}`);
     await expect(chips(page)).toContainText(/Showing only *Work/);
-    await expect(railArea(page, "Work")).toHaveAttribute("aria-current", "true");
     await expect(staffLabel(page, "Work")).toBeVisible();
     await expect(staffLabel(page, "Home")).toHaveCount(0);
     await expect(page.getByText("Water the ferns")).toHaveCount(0);
@@ -62,7 +62,7 @@ signedIn.describe("colours and filters", () => {
     await expect(page).toHaveURL(new RegExp(`/day/2099-05-21\\?area=${WORK}$`));
     await expect(chips(page)).toContainText("Work");
 
-    await page.getByRole("navigation", { name: "Day" }).getByRole("link", { name: "Week" }).click();
+    await rail(page).getByRole("link", { name: "Week", exact: true }).click();
     await expect(page).toHaveURL(new RegExp(`/week/2099-05-18\\?area=${WORK}$`));
     await page.getByRole("navigation", { name: "Week" }).getByRole("link", { name: /Previous week/ }).click();
     await page.getByRole("navigation", { name: "Week" }).getByRole("link", { name: /Next week/ }).click();
@@ -82,7 +82,56 @@ signedIn.describe("colours and filters", () => {
     await expect(page.locator(".page-summary")).toContainText("In Work:");
   });
 
-  signedIn("the chip and the rail both widen back to every area, and an unknown area is ignored", async ({ page }) => {
+  signedIn("unticking an area in the side panel hides it in every view on this device, and an address that names it still shows it", async ({ page }) => {
+    await page.goto(DAY);
+    await hydrated(page);
+    await expect(areaTick(page, "Work")).toBeChecked();
+    await expect(ferns(page)).toBeVisible();
+
+    await areaRow(page, "Home").click();
+    await expect(areaTick(page, "Home")).not.toBeChecked();
+    await expect(ferns(page)).toHaveCount(0);
+    await expect(staffLabel(page, "Home")).toHaveCount(0);
+    await expect(staffLabel(page, "Work")).toBeVisible();
+    // No chip and no address change: this is a display choice, not a filter in the address.
+    await expect(chips(page)).toHaveCount(0);
+    await expect(page).toHaveURL(new RegExp(`${DAY}$`));
+
+    // Kept on a reload and on the other views.
+    await page.goto("/week/2099-05-18");
+    await expect(areaTick(page, "Home")).not.toBeChecked();
+    await expect(page.getByRole("button", { name: /^Draft the budget/ })).toBeVisible();
+    await expect(page.getByRole("button", { name: /^Water the ferns/ })).toHaveCount(0);
+    await page.goto("/month/2099-05");
+    await expect(page.getByRole("grid", { name: "May 2099" }).getByText("Water the ferns")).toHaveCount(0);
+
+    // A link that names the hidden area still shows it, alone.
+    await page.goto(`${DAY}?area=${HOME}`);
+    await expect(ferns(page)).toBeVisible();
+    await expect(chips(page)).toContainText("Home");
+
+    await page.goto(DAY);
+    await hydrated(page);
+    await areaRow(page, "Home").click();
+    await expect(areaTick(page, "Home")).toBeChecked();
+    await expect(ferns(page)).toBeVisible();
+    expect(await axe(page)).toEqual([]);
+  });
+
+  signedIn("D on a focused item is that item's key, and switches to the day only when no item has it", async ({ page }) => {
+    await page.goto("/week/2099-05-18");
+    await hydrated(page);
+    const item = page.getByRole("button", { name: /^Draft the budget/ });
+    await item.focus();
+    await page.keyboard.press("d");
+    await expect(page.getByRole("button", { name: /^Draft the budget.*done/i })).toBeVisible();
+    await expect(page).toHaveURL("/week/2099-05-18");
+    await page.getByRole("heading", { level: 1 }).getByRole("button").focus();
+    await page.keyboard.press("d");
+    await expect(page).toHaveURL("/day/2099-05-18");
+  });
+
+  signedIn("the chip widens back to every area, and an unknown area is ignored", async ({ page }) => {
     await page.goto(`/week/2099-05-18?area=${WORK}`);
     await page.getByRole("link", { name: "Stop showing only Work" }).click();
     await expect(page).toHaveURL(/\/week\/2099-05-18$/);
@@ -91,7 +140,7 @@ signedIn.describe("colours and filters", () => {
 
     await page.goto(`${DAY}?area=${HOME}`);
     await expect(staffLabel(page, "Work")).toHaveCount(0);
-    await railArea(page, "Home").click();
+    await page.getByRole("link", { name: "Stop showing only Home" }).click();
     await expect(page).toHaveURL(new RegExp(`${DAY}$`));
     await expect(staffLabel(page, "Work")).toBeVisible();
 
@@ -201,22 +250,22 @@ signedIn.describe("colours and filters on a phone", () => {
     await context.addCookies([{ name: "axiis-e2e-account", value: "filters", url: baseURL }]);
   });
 
-  signedIn("More holds the areas, and choosing one narrows the page", async ({ page }) => {
+  signedIn("More holds the areas as ticks a thumb tall, and unticking one hides it", async ({ page }) => {
     await page.goto(DAY);
     const sheet = page.getByRole("dialog", { name: "More" });
     await hydrated(page);
     await page.getByRole("button", { name: "More", exact: true }).click();
     await expect(sheet).toBeVisible();
-    const work = sheet.getByRole("link", { name: /^Work/ });
-    await expect(work).toBeVisible();
-    expect((await work.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+    const home = sheet.locator("label").filter({ hasText: "Home" });
+    await expect(home).toBeVisible();
+    expect((await home.boundingBox())!.height).toBeGreaterThanOrEqual(44);
     expect(await axe(page)).toEqual([]);
-    await work.click();
-    await expect(page).toHaveURL(new RegExp(`${DAY}\\?area=${WORK}$`));
-    await expect(chips(page)).toContainText("Work");
+    await home.click();
+    await expect(sheet.getByRole("checkbox", { name: /^Home/ })).not.toBeChecked();
+    await page.keyboard.press("Escape");
+    await expect(ferns(page)).toHaveCount(0);
+    await expect(staffLabel(page, "Work")).toBeVisible();
     const width = await page.evaluate(() => document.documentElement.scrollWidth);
     expect(width).toBeLessThanOrEqual(375);
-    await page.getByRole("link", { name: "Stop showing only Work" }).click();
-    await expect(page).toHaveURL(new RegExp(`${DAY}$`));
   });
 });

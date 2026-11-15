@@ -96,18 +96,28 @@ const watchSlides = (page: Page) =>
 const slides = (page: Page) => page.evaluate(() => (window as unknown as { __slides: number }).__slides);
 
 signedIn.describe("segmented controls", () => {
-  signedIn("the chosen span sits under an Ink thumb, which slides to the new span before the page turns", async ({ page }) => {
-    await page.goto("/today");
+  signedIn("there is no span switch at the top of a view: the side panel's Day, Week and Month switch, and keep the day on screen", async ({ page }) => {
+    await page.goto("/day/2099-05-20");
     await hydrated(page);
-    const span = page.getByRole("group", { name: "Day, week or month" });
-    await expect(span.getByRole("link", { name: "Day" }).locator(".segment-thumb")).toHaveCount(1);
-    await expect(span.getByRole("link", { name: "Day" })).toHaveCSS("color", await page.evaluate(() => getComputedStyle(document.body).backgroundColor));
-    await watchSlides(page);
-    await span.getByRole("link", { name: "Week" }).click();
-    await expect.poll(() => slides(page)).toBeGreaterThan(0);
-    await expect(page).toHaveURL(/week/);
-    await expect(span.getByRole("link", { name: "Week" }).locator(".segment-thumb")).toHaveCount(1);
-    await expect(span.getByRole("link", { name: "Week" })).toHaveAttribute("aria-current", "page");
+    await expect(page.getByRole("group", { name: "Day, week or month" })).toHaveCount(0);
+    const panel = page.getByRole("navigation", { name: "Primary" }).first();
+    await expect(panel.getByRole("link", { name: "Day", exact: true })).toHaveAttribute("aria-current", "page");
+    await panel.getByRole("link", { name: "Week", exact: true }).click();
+    await expect(page).toHaveURL("/week/2099-05-18");
+    await expect(panel.getByRole("link", { name: "Week", exact: true })).toHaveAttribute("aria-current", "page");
+    await panel.getByRole("link", { name: "Month", exact: true }).click();
+    await expect(page).toHaveURL("/month/2099-05");
+    const title = (name: string) => expect(page.getByRole("heading", { level: 1, name })).toBeVisible();
+    // W, D and M do the same from the keyboard, once the view is up.
+    await title("May 2099");
+    await page.keyboard.press("w");
+    await expect(page).toHaveURL("/week/2099-04-27");
+    await title("27 April to 3 May");
+    await page.keyboard.press("d");
+    await expect(page).toHaveURL("/day/2099-04-27");
+    await title("Monday 27 April");
+    await page.keyboard.press("m");
+    await expect(page).toHaveURL("/month/2099-04");
   });
 
   signedIn("Score and List slide their thumb, and nothing slides under reduced motion", async ({ page }) => {

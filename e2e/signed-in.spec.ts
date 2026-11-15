@@ -120,7 +120,7 @@ signedIn.describe("signed in", () => {
   });
 
   for (const [label, path, heading] of [
-    ["Today", "/today", null],
+    ["Day", "/today", null],
     ["Week", "/week", null],
     ["Inbox", "/inbox", "Inbox"],
     ["Due", "/due", "Due"],

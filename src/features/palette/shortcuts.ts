@@ -12,6 +12,7 @@ export type Handler =
   | "go"
   | "area"
   | "day-nav"
+  | "span"
   | "capture"
   | "score-item"
   | "week-item"
@@ -66,16 +67,19 @@ export const SHORTCUTS: ShortcutGroup[] = [
   {
     where: "Show one area",
     shortcuts: [
-      { chords: [k(AREA_KEY)], then: k("1"), does: `Show only the first area, through ${AREA_KEYS_MAX} for the ninth, in the rail's order`, handler: "area" },
+      { chords: [k(AREA_KEY)], then: k("1"), does: `Show only the first area, through ${AREA_KEYS_MAX} for the ninth, in the side panel's order`, handler: "area" },
       { chords: [k(AREA_KEY)], then: k("0"), does: "Show all areas again", handler: "area" },
     ],
   },
   {
-    where: "Today, Week and Month",
+    where: "Day, Week and Month",
     shortcuts: [
       { chords: [k("[")], does: "Previous day, week or month", handler: "day-nav" },
       { chords: [k("]")], does: "Next day, week or month", handler: "day-nav" },
       { chords: [k("t")], does: "Back to today, this week or this month", handler: "day-nav" },
+      { chords: [k("d")], does: "Show the day (on a focused item, D marks it done)", handler: "span" },
+      { chords: [k("w")], does: "Show the week that holds it", handler: "span" },
+      { chords: [k("m")], does: "Show the month that holds it", handler: "span" },
       { chords: [k("Escape")], does: "Leave the capture field", handler: "capture" },
     ],
   },
@@ -189,7 +193,7 @@ export function goShortcut(waiting: boolean, e: KeyPress): GoStep {
 export type AreaStep = "wait" | { index: number | null } | null;
 
 /**
- * The area sequence: A, then a digit. 1 to 9 pick that area in the rail's order
+ * The area sequence: A, then a digit. 1 to 9 pick that area in the side panel's order
  * (`count` areas exist), 0 shows every area again. Like G, never while typing or
  * with a modifier held, and any other key ends the wait.
  */

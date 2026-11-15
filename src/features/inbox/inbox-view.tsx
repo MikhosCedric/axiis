@@ -25,6 +25,7 @@ import type { Area, Item, LocalDate } from "@/domain/item";
 import { DetailAside } from "@/features/detail/detail-aside";
 import { useItemSelection } from "@/features/detail/use-item-selection";
 import { captureAction, setDoneAction } from "@/features/today/actions";
+import { PageHeader } from "@/components/shell/page-header";
 import { GuideButton, type GuideTopic } from "@/features/palette/guide";
 import { CaptureField } from "@/features/today/capture-field";
 import type { ActionResult } from "@/features/today/commands";
@@ -192,23 +193,14 @@ export function InboxView({
   return (
     <div className={selectedParam ? "min-[1180px]:grid min-[1180px]:grid-cols-[minmax(0,1fr)_328px]" : ""}>
       <div className="mx-auto w-full max-w-[880px] min-w-0 px-4 pt-6 pb-14 rail:px-9 rail:pt-8">
-        <header>
-          <h1
-            ref={heading}
-            tabIndex={-1}
-            className="headline outline-none"
-          >
-            Inbox
-          </h1>
-          <p className="page-summary">
-            {place("inbox").hint}. Plan each one when you are ready. {scopePrefix(filter)}
-            {inboxSummary(shown)}
-          </p>
-          <FilterChips filter={filter} className="mt-2.5" />
-        </header>
-
-        <div className="mt-6 mb-3 flex flex-wrap items-start gap-x-3 gap-y-1">
-          <div className="min-w-0 flex-[1_1_280px] rail:max-w-[440px]">
+        <PageHeader
+          heading={
+            <h1 ref={heading} tabIndex={-1} className="headline outline-none">
+              Inbox
+            </h1>
+          }
+          controls={<GuideButton topics={INBOX_GUIDE} />}
+          capture={
             <CaptureField
               captureAction={actions.capture}
               screenStatus={
@@ -217,9 +209,14 @@ export function InboxView({
                 </p>
               }
             />
-          </div>
-          <GuideButton topics={INBOX_GUIDE} className="ml-auto" />
-        </div>
+          }
+        >
+          <p className="page-summary">
+            {place("inbox").hint}. Plan each one when you are ready. {scopePrefix(filter)}
+            {inboxSummary(shown)}
+          </p>
+          <FilterChips filter={filter} className="mt-2.5" />
+        </PageHeader>
 
         <section aria-labelledby="inbox-list-h" className="group/inbox">
           <h2 id="inbox-list-h" className="sr-only">

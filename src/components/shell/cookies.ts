@@ -82,6 +82,24 @@ export function readWeekStart(value: string | undefined): WeekStart {
 
 export const weekStartSetting = (start: WeekStart): WeekStartSetting => (start === 0 ? "sunday" : "monday");
 
+/**
+ * The areas unticked in the side panel, as their ids joined by full stops. Per device, like the
+ * other display choices: every view leaves those areas' items out (see `features/filter`).
+ */
+export const HIDDEN_AREAS_COOKIE = "hidden-areas";
+const AREA_ID = /^[0-9a-f-]{1,40}$/i;
+/** More ids than this is not a list a person made by unticking areas. */
+const HIDDEN_AREAS_MAX = 100;
+
+/** The hidden area ids the cookie names. Anything that could not be an id is dropped, and so are repeats. */
+export function readHiddenAreas(value: string | undefined): string[] {
+  if (!value) return [];
+  return [...new Set(value.split(".").filter((id) => AREA_ID.test(id)))].slice(0, HIDDEN_AREAS_MAX);
+}
+
+/** The cookie's value for a set of hidden areas; empty when every area shows. */
+export const hiddenAreasValue = (ids: readonly string[]) => readHiddenAreas(ids.join(".")).join(".");
+
 /** The page the app opens on at its root and after sign-in. */
 export const START_PAGE_COOKIE = "start-page";
 export const START_PAGES = ["today", "week", "month", "inbox", "due"] as const;

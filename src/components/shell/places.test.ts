@@ -6,13 +6,21 @@ import { PLACE_GROUPS, PLACES } from "./places";
 const today = "2026-10-06" as LocalDate;
 
 describe("PLACES", () => {
-  it("groups the rail's places as Plan, Capture and Library", () => {
-    const grouped = Object.fromEntries(PLACE_GROUPS.map((g) => [g, PLACES.filter((p) => p.group === g).map((p) => p.label)]));
-    expect(grouped).toEqual({ Plan: ["Today", "Week", "Month", "Due"], Capture: ["Inbox"], Library: ["Lists", "Notes", "Tags", "Done"] });
+  it("groups the side panel's places as Calendar, Tasks and Library", () => {
+    const grouped = Object.fromEntries(PLACE_GROUPS.map((g) => [g, PLACES.filter((p) => p.group === g).map((p) => p.navLabel ?? p.label)]));
+    expect(grouped).toEqual({ Calendar: ["Day", "Week", "Month"], Tasks: ["Inbox", "Due", "Done"], Library: ["Lists", "Notes", "Tags"] });
   });
 
   it("keeps four tabs for the phone bar", () => {
-    expect(PLACES.filter((p) => p.tab).map((p) => p.label)).toEqual(["Today", "Week", "Due", "Inbox"]);
+    expect(PLACES.filter((p) => p.tab).map((p) => p.navLabel ?? p.label)).toEqual(["Day", "Week", "Inbox", "Due"]);
+  });
+
+  it("gives the three calendar places the keys D, W and M, and no other place a span", () => {
+    expect(PLACES.flatMap((p) => (p.span ? [[p.id, p.span.is, p.span.key]] : []))).toEqual([
+      ["today", "day", "d"],
+      ["week", "week", "w"],
+      ["month", "month", "m"],
+    ]);
   });
 
   it("gives every place a short hint, and each place knows its own page", () => {
@@ -33,12 +41,12 @@ describe("PLACES", () => {
       ["t", "/today"],
       ["w", "/week"],
       ["m", "/month"],
-      ["d", "/due"],
       ["i", "/inbox"],
+      ["d", "/due"],
+      ["f", "/done"],
       ["l", "/lists"],
       ["n", "/notes"],
       ["h", "/tags"],
-      ["f", "/done"],
       ["s", "/search"],
       [",", "/settings"],
     ]);

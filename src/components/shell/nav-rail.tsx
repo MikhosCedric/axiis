@@ -1,16 +1,20 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useSearchParams } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useId, useRef, useState, type ReactNode } from "react";
-import { RAIL_COOKIE } from "./cookies";
-import { AreaMark } from "@/components/area-mark";
+import { HIDDEN_AREAS_COOKIE, hiddenAreasValue, RAIL_COOKIE } from "./cookies";
 import type { AreaColor } from "@/domain/area-color";
 import type { LocalDate } from "@/domain/item";
+import { DAY_VIEW_PARAM } from "@/features/day/types";
 import { useKeepFilter } from "@/features/filter/keep-filter";
-import { AREA_PARAM, areaHref, filterable } from "@/features/filter/href";
+import { filterable } from "@/features/filter/href";
 import { useOpenPalette } from "@/features/palette/palette";
+import { CAPTURE_KEY } from "@/features/palette/shortcuts";
 import { useIsMac } from "@/features/palette/use-is-mac";
+import { calendarView, keepSpans, spanHrefs, type CalendarView, type Span } from "@/features/week/span";
+import { MiniMonth } from "./mini-month";
+import { useWeekStart } from "./week-start-context";
 import {
   BrandMark,
   DoneIcon,
@@ -68,7 +72,41 @@ function usePlaceHref(): (href: string) => string {
   return (href) => (filterable(href) ? keep(href) : href);
 }
 
+type CalendarLinks = {
+  view: CalendarView;
+  /** Where a day picked in the small month goes: that day in the span on screen, or the day itself from any other page. */
+  dayHref: (date: LocalDate) => string;
+  /** On a calendar view, the day, week and month that hold the day it is about. Null anywhere else. */
+  spans: Record<Span, string> | null;
+};
+
+/**
+ * The side panel is the only switch between the day, the week and the month (ADR-0004), so from a
+ * calendar view its three calendar places keep the date on screen, and its small month moves that
+ * view to the day picked. The page's area or tag filter and the day's List view come along.
+ */
+function useCalendarLinks(today: LocalDate): CalendarLinks {
+  const pathname = usePathname();
+  const params = useSearchParams();
+  const startsOn = useWeekStart();
+  const keep = useKeepFilter();
+  const view = calendarView(pathname, today, startsOn);
+  const mode = view.span === "day" && params.get(DAY_VIEW_PARAM) === "list" ? "list" : "score";
+  return {
+    view,
+    dayHref: (date) => keep(spanHrefs(date, today, mode, startsOn)[view.span ?? "day"]),
+    spans: view.span ? keepSpans(spanHrefs(view.anchor, today, mode, startsOn), keep) : null,
+  };
+}
+
+/** A place's name where the panel and the phone bar draw it. */
+const navName = (p: Place) => p.navLabel ?? p.label;
+
+/** The tooltip: what the place holds, and the key that switches to it from another calendar view. */
+const navTitle = (p: Place) => (p.span ? `${p.hint} ( ${p.span.key.toUpperCase()} )` : p.hint);
+
 const NO_BADGES: NavBadges = { inbox: 0, overdue: 0 };
+const NO_HIDDEN: readonly string[] = [];
 
 /** The number for a place, if it has one: the Inbox counts quietly, overdue in full ink. */
 function badgeFor(id: PlaceId, badges: NavBadges): { n: number; word: string; hot: boolean } | null {
@@ -88,18 +126,74 @@ function Badge({ n, hot, className = "" }: { n: number; hot: boolean; className?
   );
 }
 
-export function NavRail({ today, areas, badges = NO_BADGES, min = false }: { today: LocalDate; areas: NavArea[]; badges?: NavBadges; min?: boolean }) {
+export function NavRail({
+  today,
+  areas,
+  badges = NO_BADGES,
+  min = false,
+  hidden = NO_HIDDEN,
+}: {
+  today: LocalDate;
+  areas: NavArea[];
+  badges?: NavBadges;
+  min?: boolean;
+  /** The areas unticked on this device, as the layout read them from the cookie. */
+  hidden?: readonly string[];
+}) {
   const pathname = usePathname();
+  const shown = useShownAreas(hidden);
   return (
     <>
       <PhoneHeader />
-      <Rail pathname={pathname} today={today} areas={areas} badges={badges} min={min} />
-      <PhoneBar pathname={pathname} today={today} areas={areas} badges={badges} />
+      <Rail pathname={pathname} today={today} areas={areas} badges={badges} min={min} shown={shown} />
+      <PhoneBar pathname={pathname} today={today} areas={areas} badges={badges} shown={shown} />
     </>
   );
 }
 
-function Rail({ pathname, today, areas, badges, min: savedMin }: { pathname: string; today: LocalDate; areas: NavArea[]; badges: NavBadges; min: boolean }) {
+type ShownAreas = { hidden: readonly string[]; toggle: (id: string) => void };
+
+/**
+ * Which areas are unticked, kept in a cookie like the other display choices of this device. A tick
+ * shows at once; the page is then asked again, and every view's filter reads the cookie
+ * (`getFilter`), so the area's items leave or come back on whatever page is up.
+ */
+function useShownAreas(saved: readonly string[]): ShownAreas {
+  const router = useRouter();
+  const [was, setWas] = useState(saved);
+  const [hidden, setHidden] = useState(saved);
+  if (was !== saved) {
+    setWas(saved);
+    setHidden(saved);
+  }
+  return {
+    hidden,
+    toggle(id) {
+      const next = hidden.includes(id) ? hidden.filter((h) => h !== id) : [...hidden, id];
+      setHidden(next);
+      const value = hiddenAreasValue(next);
+      document.cookie = `${HIDDEN_AREAS_COOKIE}=${value}; path=/; max-age=${value ? 31536000 : 0}; samesite=lax`;
+      router.refresh();
+    },
+  };
+}
+
+function Rail({
+  pathname,
+  today,
+  areas,
+  badges,
+  min: savedMin,
+  shown,
+}: {
+  pathname: string;
+  today: LocalDate;
+  areas: NavArea[];
+  badges: NavBadges;
+  min: boolean;
+  shown: ShownAreas;
+}) {
+  const calendar = useCalendarLinks(today);
   // The sidebar folds to icons; the choice is remembered in a cookie the layout reads, so it never flashes the other way.
   const [min, setMin] = useState(savedMin);
   function toggle() {
@@ -112,8 +206,10 @@ function Rail({ pathname, today, areas, badges, min: savedMin }: { pathname: str
     <nav
       aria-label="Primary"
       data-min={min ? "" : undefined}
-      className="group/rail sticky top-0 flex h-dvh flex-col gap-6 overflow-x-hidden overflow-y-auto border-r border-rule-soft bg-paper-2 px-4 py-6 data-[min]:px-2.5 max-rail:hidden"
+      className="group/rail sticky top-0 flex h-dvh flex-col border-r border-rule-soft bg-paper-2 pt-6 pb-4 max-rail:hidden"
     >
+      {/* The panel scrolls between its head and the account row, which both stay put. */}
+      <div className="flex min-h-0 flex-1 flex-col gap-5 overflow-x-hidden overflow-y-auto px-4 pb-4 group-data-[min]/rail:px-2.5">
       <div className="flex items-center justify-between group-data-[min]/rail:flex-col group-data-[min]/rail:gap-3">
         <Wordmark />
         <button
@@ -128,29 +224,58 @@ function Rail({ pathname, today, areas, badges, min: savedMin }: { pathname: str
           </svg>
         </button>
       </div>
-      <SearchField />
-
-      <div className="grid gap-5">
-        {PLACE_GROUPS.map((group) => (
-          <PlaceList key={group} heading={group} places={PLACES.filter((p) => p.group === group)} pathname={pathname} today={today} badges={badges} />
-        ))}
+      <div className="grid gap-2">
+        <CreateButton />
+        <SearchField />
       </div>
 
+      <MiniMonth
+        today={today}
+        anchor={calendar.view.anchor}
+        from={calendar.view.from}
+        to={calendar.view.to}
+        hrefFor={calendar.dayHref}
+        className="group-data-[min]/rail:hidden"
+      />
+
       {areas.length > 0 && (
-        <section aria-labelledby="areas-h" className="border-t border-rule-soft pt-4 group-data-[min]/rail:hidden">
-          <h2 id="areas-h" className={`mx-2 mb-2 ${overline}`}>
-            Open today, by area
+        <section aria-labelledby="areas-h" className="group-data-[min]/rail:hidden">
+          <h2 id="areas-h" className={`mx-2 mb-1.5 ${overline}`}>
+            Areas
           </h2>
-          <AreaLinks areas={areas} />
+          <AreaChecks areas={areas} shown={shown} />
         </section>
       )}
 
-      <AccountMenu settingsHere={SETTINGS.here(pathname, today)} />
+      <div className="grid gap-5">
+        {PLACE_GROUPS.map((group) => (
+          <PlaceList key={group} heading={group} places={PLACES.filter((p) => p.group === group)} pathname={pathname} today={today} badges={badges} spans={calendar.spans} />
+        ))}
+      </div>
+      </div>
+
+      <div className="border-t border-rule-soft px-4 pt-3 group-data-[min]/rail:px-2.5">
+        <AccountMenu settingsHere={SETTINGS.here(pathname, today)} />
+      </div>
     </nav>
   );
 }
 
-function PlaceList({ heading, places, pathname, today, badges }: { heading: string; places: Place[]; pathname: string; today: LocalDate; badges: NavBadges }) {
+function PlaceList({
+  heading,
+  places,
+  pathname,
+  today,
+  badges,
+  spans,
+}: {
+  heading: string;
+  places: Place[];
+  pathname: string;
+  today: LocalDate;
+  badges: NavBadges;
+  spans: Record<Span, string> | null;
+}) {
   const id = useId();
   const hrefOf = usePlaceHref();
   return (
@@ -165,14 +290,15 @@ function PlaceList({ heading, places, pathname, today, badges }: { heading: stri
           return (
             <li key={p.id}>
               <Link
-                href={hrefOf(p.href)}
-                title={p.hint}
+                href={p.span && spans ? spans[p.span.is] : hrefOf(p.href)}
+                title={navTitle(p)}
+                aria-keyshortcuts={p.span && spans ? p.span.key : undefined}
                 aria-current={here ? "page" : undefined}
                 aria-describedby={badge ? `${id}-${p.id}` : undefined}
                 className={`${here ? current : quiet} relative pointer-coarse:min-h-11 group-data-[min]/rail:justify-center`}
               >
                 {ICONS[p.id]}
-                <span className="group-data-[min]/rail:sr-only">{p.label}</span>
+                <span className="group-data-[min]/rail:sr-only">{navName(p)}</span>
                 {badge && (
                   <Badge n={badge.n} hot={badge.hot} className="ml-auto group-data-[min]/rail:absolute group-data-[min]/rail:top-0 group-data-[min]/rail:right-0 group-data-[min]/rail:ml-0 group-data-[min]/rail:px-1 group-data-[min]/rail:text-[10px] group-data-[min]/rail:leading-4" />
                 )}
@@ -210,60 +336,77 @@ function SearchField() {
   );
 }
 
-/** The area a page is narrowed to: a raised sheet with the ink tick, like the current place. */
-const areaHere =
-  "relative bg-sheet text-ink font-semibold [--ground:var(--sheet)] shadow-[inset_0_0_0_1px_var(--rule-soft)] before:absolute before:inset-y-1.5 before:left-0 before:w-[3px] before:rounded-full before:bg-ink";
-
 /**
- * Each area with how many items it has open today. Choosing one narrows the page you are on to it
- * (or Today, from a page that cannot be narrowed); choosing it again shows every area. Set smaller and
- * lighter than the places, since it is a lens on them rather than a place of its own.
+ * The reader's areas, each with a tick that shows or hides it in every view on this device, and how
+ * many items it has open today. Set smaller and lighter than the places, since it is a lens on them
+ * rather than a place of its own. An address that names one area (`?area=`) still shows that area alone.
  */
-function AreaLinks({ areas, chips = false, onGo }: { areas: NavArea[]; chips?: boolean; onGo?: () => void }) {
-  const pathname = usePathname();
-  const query = useSearchParams().toString();
-  const shown = new URLSearchParams(query).get(AREA_PARAM);
-  const look = (here: boolean) =>
-    chips
-      ? `inline-flex min-h-11 items-center gap-2 rounded-full border px-3.5 text-[15px] ${here ? "border-ink font-semibold text-ink shadow-[inset_0_0_0_1px_var(--ink)]" : "border-rule text-ink-2 hover:bg-hover hover:text-ink active:bg-press"}`
-      : `flex items-center gap-2.5 rounded-md px-2 py-1 text-[13px] pointer-coarse:min-h-11 ${here ? areaHere : "text-ink-2 hover:bg-hover hover:text-ink active:bg-press"}`;
+function AreaChecks({ areas, shown, roomy = false }: { areas: NavArea[]; shown: ShownAreas; roomy?: boolean }) {
   return (
-    <ul className={chips ? "flex flex-wrap gap-2 px-5 pt-1 pb-1" : "grid gap-0.5"}>
-      {areas.map((a, i) => {
-        const here = shown === a.id && filterable(pathname);
-        const keys = i < 9 ? ` (A then ${i + 1})` : "";
+    <ul className={roomy ? "px-2" : "grid gap-px"}>
+      {areas.map((a) => {
+        const on = !shown.hidden.includes(a.id);
         return (
           <li key={a.id}>
-            <Link
-              href={areaHref(pathname, query, here ? null : a.id)}
-              // The same page under another filter: prefetching it would draw a hidden copy of the page for each area.
-              prefetch={false}
-              aria-current={here ? "true" : undefined}
-              title={here ? "Show all areas (A then 0)" : `Show only ${a.name}${keys}`}
-              onClick={onGo}
-              className={look(here)}
+            <label
+              title={on ? `Hide ${a.name} in every view` : `Show ${a.name} in every view`}
+              className={`flex cursor-pointer items-center gap-2.5 rounded-md hover:bg-hover active:bg-press ${roomy ? "min-h-12 px-3 text-[15px]" : "px-2 py-1 text-[13px] pointer-coarse:min-h-11"} ${on ? "text-ink" : "text-ink-2"}`}
             >
-              {/* In the rail an area with no colour keeps the dot's room, so every name starts at one edge. */}
-              <span className="inline-flex min-w-0 items-center gap-1.5">
-                {a.color ? <AreaMark color={a.color} /> : !chips && <span aria-hidden="true" className="size-2 flex-none" />}
-                <span className="truncate">{a.name}</span>
+              <input type="checkbox" checked={on} onChange={() => shown.toggle(a.id)} className="peer sr-only" />
+              {/* The box is the area's colour, as its blocks are; an area with none is drawn in ink. Ticked is filled, unticked is hollow. */}
+              <span
+                aria-hidden="true"
+                data-area-color={a.color ?? undefined}
+                className="inline-flex size-4 flex-none items-center justify-center rounded-[4px] border-[1.5px] text-sheet peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-accent"
+                style={{ borderColor: a.color ? `var(--area-${a.color})` : "var(--ink-2)", backgroundColor: on ? (a.color ? `var(--area-${a.color})` : "var(--ink-2)") : "transparent" }}
+              >
+                {on && (
+                  <svg viewBox="0 0 12 12" width={12} height={12} fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M2.5 6.2l2.4 2.4 4.6-5" />
+                  </svg>
+                )}
               </span>
-              <span className="sr-only">
-                , {a.open} open today{here ? ", shown alone; choose again to show every area" : ""}
-              </span>
-              {a.open > 0 && !chips && (
-                <span
-                  aria-hidden="true"
-                  title={`${a.open} open today`}
-                  className="ml-auto h-1.5 flex-none rounded-full bg-ink-3 opacity-55"
-                  style={{ width: Math.min(8 + a.open * 7, 72) }}
-                />
+              <span className="min-w-0 flex-1 truncate">{a.name}</span>
+              {a.open > 0 && (
+                <span className="flex-none text-xs text-ink-3 tabular" title={`${a.open} open today`}>
+                  <span aria-hidden="true">{a.open}</span>
+                  <span className="sr-only">, {a.open} open today</span>
+                </span>
               )}
-            </Link>
+            </label>
           </li>
         );
       })}
     </ul>
+  );
+}
+
+/**
+ * Create, at the head of the panel: it opens capture, the way everything is made here. Where the
+ * page has a capture field it goes there, as C does; anywhere else the palette captures.
+ */
+function CreateButton() {
+  const openPalette = useOpenPalette();
+  return (
+    <button
+      type="button"
+      onClick={() => {
+        const field = document.getElementById("capture");
+        if (field) field.focus();
+        else openPalette();
+      }}
+      aria-keyshortcuts={CAPTURE_KEY}
+      title={`Create: capture a task, an event or a note ( ${CAPTURE_KEY.toUpperCase()} )`}
+      className="press flex h-10 w-full items-center gap-2 rounded-lg bg-ink pr-1.5 pl-3 font-medium text-paper hover:opacity-90 active:opacity-80 pointer-coarse:min-h-11 group-data-[min]/rail:justify-center group-data-[min]/rail:px-0"
+    >
+      <svg viewBox="0 0 16 16" width={16} height={16} aria-hidden="true" fill="none" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round">
+        <path d="M8 3v10M3 8h10" />
+      </svg>
+      <span className="flex-1 text-left group-data-[min]/rail:sr-only">Create</span>
+      <kbd aria-hidden="true" className="flex-none rounded border border-paper/40 px-1.5 font-sans text-[10.5px] leading-4 font-semibold group-data-[min]/rail:hidden">
+        {CAPTURE_KEY.toUpperCase()}
+      </kbd>
+    </button>
   );
 }
 
@@ -374,8 +517,9 @@ const sheetRow = "min-h-12 px-3 text-[15px]";
  * The phone's places: four tabs a thumb reaches, and More, a sheet with the rest. The bar is fixed to the
  * bottom of the screen on Rail Paper; the page leaves room for it (see the (app) layout).
  */
-function PhoneBar({ pathname, today, areas, badges }: { pathname: string; today: LocalDate; areas: NavArea[]; badges: NavBadges }) {
+function PhoneBar({ pathname, today, areas, badges, shown }: { pathname: string; today: LocalDate; areas: NavArea[]; badges: NavBadges; shown: ShownAreas }) {
   const tabId = useId();
+  const calendar = useCalendarLinks(today);
   const sheet = useRef<HTMLDialogElement>(null);
   const hrefOf = usePlaceHref();
   const button = useRef<HTMLButtonElement>(null);
@@ -402,13 +546,13 @@ function PhoneBar({ pathname, today, areas, badges }: { pathname: string; today:
           return (
             <li key={p.id} className="flex flex-1">
               <Link
-                href={hrefOf(p.href)}
+                href={p.span && calendar.spans ? calendar.spans[p.span.is] : hrefOf(p.href)}
                 aria-current={here ? "page" : undefined}
                 aria-describedby={badge ? `${tabId}-${p.id}` : undefined}
                 className={here ? tabHere : tabQuiet}
               >
                 {ICONS[p.id]}
-                {p.label}
+                {navName(p)}
                 {badge && <Badge n={badge.n} hot={badge.hot} className="absolute top-1.5 left-1/2 ml-1.5 min-w-5 text-center" />}
               </Link>
               {badge && (
@@ -446,24 +590,41 @@ function PhoneBar({ pathname, today, areas, badges }: { pathname: string; today:
         <ul className="px-2">
           <SheetPlace place={SEARCH} here={SEARCH.here(pathname, today)} onGo={close} />
         </ul>
+        <div className="mt-3 border-t border-rule-soft px-5 pt-4">
+          <MiniMonth
+            today={today}
+            anchor={calendar.view.anchor}
+            from={calendar.view.from}
+            to={calendar.view.to}
+            hrefFor={calendar.dayHref}
+            onGo={close}
+            className="mx-auto max-w-[340px]"
+          />
+        </div>
+        {areas.length > 0 && (
+          <div className="mt-3 border-t border-rule-soft pt-3">
+            <h2 className={`mx-5 mb-1 ${overline}`}>Areas</h2>
+            <AreaChecks areas={areas} shown={shown} roomy />
+          </div>
+        )}
         {PLACE_GROUPS.map((group) => {
           const places = rest.filter((p) => p.group === group);
           return (
             places.length > 0 && (
               <SheetSection key={group} heading={group}>
                 {places.map((p) => (
-                  <SheetPlace key={p.id} place={p} here={p.here(pathname, today)} onGo={close} />
+                  <SheetPlace
+                    key={p.id}
+                    place={p}
+                    href={p.span && calendar.spans ? calendar.spans[p.span.is] : undefined}
+                    here={p.here(pathname, today)}
+                    onGo={close}
+                  />
                 ))}
               </SheetSection>
             )
           );
         })}
-        {areas.length > 0 && (
-          <div className="mt-3 border-t border-rule-soft pt-3">
-            <h2 className={`mx-5 mb-1 ${overline}`}>Open today, by area</h2>
-            <AreaLinks areas={areas} chips onGo={close} />
-          </div>
-        )}
         <SheetSection heading="Account">
           <li>
             <ThemeToggle className={`${quiet} ${sheetRow} w-full`} />
@@ -501,19 +662,19 @@ function SheetSection({ heading, children }: { heading: string; children: ReactN
 }
 
 /** A place in the More sheet: its name, and under it what the place holds. Both are its name, as both are drawn. */
-function SheetPlace({ place, here, onGo }: { place: Place; here: boolean; onGo: () => void }) {
+function SheetPlace({ place, href, here, onGo }: { place: Place; href?: string; here: boolean; onGo: () => void }) {
   const hrefOf = usePlaceHref();
   return (
     <li>
       <Link
-        href={hrefOf(place.href)}
+        href={href ?? hrefOf(place.href)}
         aria-current={here ? "page" : undefined}
         onClick={onGo}
         className={`${here ? current : quiet} ${sheetRow} py-2`}
       >
         {ICONS[place.id]}
         <span className="grid">
-          <span>{place.label}</span>{" "}
+          <span>{navName(place)}</span>{" "}
           <span className="text-[13px] font-normal text-ink-3">
             {place.hint}
           </span>

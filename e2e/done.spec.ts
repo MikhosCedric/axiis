@@ -44,7 +44,9 @@ signedIn.describe("Done", () => {
     await page.keyboard.press("g");
     await page.keyboard.press("f");
     await expect(page).toHaveURL(/\/done$/);
-    await page.getByRole("navigation", { name: "Primary" }).getByRole("link", { name: "Health" }).first().click();
+    // A then a digit narrows the page to an area, in the side panel's order.
+    await page.keyboard.press("a");
+    await page.keyboard.press("3");
     await expect(page).toHaveURL(/area=/);
     await expect(page.getByText("Morning run")).toBeVisible();
     await expect(page.getByText("Write the Q4 plan")).toHaveCount(0);

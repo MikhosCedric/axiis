@@ -33,10 +33,10 @@
 
 /*
  * The rail's account menu, a popover in the top layer. The rail is always the first 216px of the
- * window and its account row always sits 24px off its foot, so the menu opens just above that row.
+ * window and its account row always sits 16px off its foot, so the menu opens just above that row.
  */
 .menu {
-  inset: auto auto 66px 16px;
+  inset: auto auto 60px 16px;
   width: 184px;
   margin: 0;
   padding: 4px;
@@ -50,7 +50,7 @@
 
 @media (pointer: coarse) {
   .menu {
-    bottom: 74px;
+    bottom: 68px;
   }
 }
 
