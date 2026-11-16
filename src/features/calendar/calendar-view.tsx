@@ -101,6 +101,7 @@ export function CalendarView({
   actions = serverActions,
   examples,
   offer,
+  trayHost,
   className = "",
   children,
 }: {
@@ -117,6 +118,8 @@ export function CalendarView({
   examples?: readonly GridExample[];
   /** What to offer after a move saved, if anything. */
   offer?: (item: ShownItem, placement: Placement) => PlaceOffer | null;
+  /** Where the grid draws its Inbox instead of under itself; null until that place has mounted. */
+  trayHost?: HTMLElement | null;
   /** For the column the grid and the page around it sit in. */
   className?: string;
   children?: (ctx: CalendarContext, grid: ReactNode) => ReactNode;
@@ -226,6 +229,7 @@ export function CalendarView({
       selectedId={shownSelected}
       dim={dim}
       tray={tray ? { items: tray, full: data.trayFull ?? false } : undefined}
+      trayHost={trayHost}
       examples={examples}
       onSelect={select}
       onPlace={place}

@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent as ReactPointerEvent } from "react";
+import { createPortal } from "react-dom";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
 import { AreaLabel } from "@/components/area-mark";
 import { Floating } from "@/components/floating";
 import type { AreaColor } from "@/domain/area-color";
@@ -24,7 +25,7 @@ import type { ChildCount } from "@/lib/items/repo";
 import type { Box } from "@/lib/placement";
 import styles from "./calendar.module.css";
 import { DEFAULT_MINUTES, keyPlacement, toAnyTime, wallSpan, type KeyContext, type Placement, type Slot } from "./grid-drop";
-import { blockBox, DAY_MINUTES, GRID_PX, HOUR_PX, layoutGrid, openMinute, segmentOn, yAt, type Block, type CalendarMode } from "./grid-layout";
+import { blockBox, DAY_MINUTES, fitHourPx, gridHeight, layoutGrid, openMinute, rangeSpans, scaleOf, segmentOn, visibleRange, yAt, type Block, type CalendarMode } from "./grid-layout";
 import { QuickCreate } from "./quick-create";
 import { useGridDrag, type DragPreview } from "./use-grid-drag";
 
@@ -53,6 +54,8 @@ export type CalendarGridProps = {
   dim?: boolean;
   /** The Inbox, as a tray under the grid: drag one onto a day or a time to plan it, and a block back to clear its day. */
   tray?: { items: readonly ShownItem[]; full: boolean };
+  /** Where the Inbox is drawn instead of under the grid (the Day's side column). Null: not drawn yet, its place is not mounted. Left out: under the grid. */
+  trayHost?: HTMLElement | null;
   /** Faint examples on today's column (or the first), for an account that has stored nothing yet. */
   examples?: readonly GridExample[];
   /** The length a new item, or one given a time, gets. */
@@ -75,6 +78,10 @@ const weekday = new Intl.DateTimeFormat("en-GB", { weekday: "short", timeZone: "
 const NO_AREA = "No area";
 /** The rows the any-time strip takes before it folds the rest under a "+N more" button. */
 const ANY_ROWS = 3;
+/** The height of the "Earlier hours" and "Later hours" rows at the ends of the grid. */
+const EXPANDER_PX = 28;
+/** The page keeps this much under the grid when the grid is fitted to the window. */
+const BOTTOM_GAP = 16;
 
 type Peek = { id: string; at: Box };
 type Creating = { slot: Slot; at: Box };
@@ -110,6 +117,7 @@ export function CalendarGrid({
   selectedId = null,
   dim = false,
   tray,
+  trayHost,
   examples = [],
   defaultMinutes = DEFAULT_MINUTES,
   onSelect,
@@ -132,7 +140,26 @@ export function CalendarGrid({
   /** The days whose any-time row is opened out past three rows. */
   const [anyOpen, setAnyOpen] = useState<Set<LocalDate>>(new Set());
 
-  const layout = useMemo(() => layoutGrid({ days, items, timeZone, now }), [days, items, timeZone, now]);
+  /** The hours past the default range that the reader opened out, at either end. */
+  const [earlier, setEarlier] = useState(false);
+  const [later, setLater] = useState(false);
+  /** On a desktop window: the height the grid is given so the page itself does not scroll (null on a phone), and the head's height. */
+  const [fit, setFit] = useState<{ height: number; head: number } | null>(null);
+
+  // The hours drawn: from an hour before the first planned thing, or 07:00, to an hour after the last, or 22:00.
+  const nowMinutes = useMemo(() => layoutGrid({ days, items: [], timeZone, now }).now?.minutes ?? null, [days, timeZone, now]);
+  const hoursShown = useMemo(
+    () => visibleRange(rangeSpans(days, items, timeZone), nowMinutes === null ? null : Math.floor(nowMinutes / 60) * 60, { earlier, later }),
+    [days, items, timeZone, nowMinutes, earlier, later],
+  );
+  const showEarlier = hoursShown.from > 0 || earlier;
+  const showLater = hoursShown.to < DAY_MINUTES || later;
+  const hourPx = fitHourPx(
+    (hoursShown.to - hoursShown.from) / 60,
+    fit ? fit.height - fit.head - (showEarlier ? EXPANDER_PX : 0) - (showLater ? EXPANDER_PX : 0) - 2 : null,
+  );
+  const scale = useMemo(() => scaleOf(hoursShown.from, hoursShown.to, hourPx), [hoursShown.from, hoursShown.to, hourPx]);
+  const layout = useMemo(() => layoutGrid({ days, items, timeZone, now, scale }), [days, items, timeZone, now, scale]);
   const nowAt = layout.now;
   const byId = useMemo(() => new Map(items.map((i) => [i.id as string, i])), [items]);
   const areaOf = (item: ShownItem) => areas.find((a) => a.id === item.areaId) ?? null;
@@ -146,7 +173,7 @@ export function CalendarGrid({
     const col = columnEl(slot.day)?.getBoundingClientRect();
     if (!col) return;
     setPeek(null);
-    setCreating({ slot, at: { left: col.left + 2, top: col.top + yAt(slot.start), width: col.width - 4, height: yAt(slot.length) } });
+    setCreating({ slot, at: { left: col.left + 2, top: col.top + yAt(slot.start, scale), width: col.width - 4, height: slot.length * scale.ppm } });
   }
 
   const start = useGridDrag(
@@ -154,6 +181,7 @@ export function CalendarGrid({
     {
       timeZone,
       fallback: defaultMinutes,
+      scale,
       onDrop: onPlace,
       onTap: (item, from) => {
         if (!straightToPanel.current) setPeek({ id: item.id, at: boxOf(from) });
@@ -165,12 +193,58 @@ export function CalendarGrid({
 
   // Open on now, or on the morning of a day that is not today. Again when the days shown change.
   const span = days.join();
+  // The scroll the grid set itself, so a scroll by the reader can be told apart: after that it stays where they put it.
+  const opened = useRef<{ span: string; top: number; moved: boolean }>({ span: "", top: 0, moved: false });
+  const fitHeight = fit?.height;
   useLayoutEffect(() => {
     const el = scroller.current;
-    if (el) el.scrollTop = yAt(openMinute(layoutGrid({ days, items: [], timeZone, now }).now));
+    if (!el) return;
+    if (opened.current.span !== span) opened.current = { span, top: 0, moved: false };
+    if (opened.current.moved) return;
+    const minute = openMinute(nowMinutes === null ? null : { day: 0, minutes: nowMinutes, top: 0 }, hoursShown.from);
+    // On the top of the range the Earlier hours row stays in view; below it, the row is scrolled past.
+    const top = minute <= hoursShown.from ? 0 : Math.max(0, Math.round(yAt(minute, scale) + (showEarlier ? EXPANDER_PX : 0)));
+    el.scrollTop = top;
+    opened.current.top = el.scrollTop;
     // Not on every tick of now: later renders keep wherever the reader scrolled to.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [span]);
+  }, [span, scale.ppm, scale.from, fitHeight]);
+
+  // On a desktop window the grid is given the height left under the page's head, so the page itself does not scroll
+  // and the grid is the one place that does. A phone lets the page scroll as one, with the day heads sticky.
+  useLayoutEffect(() => {
+    const el = scroller.current;
+    const section = el?.parentElement;
+    if (!el || !section) return;
+    const wide = window.matchMedia("(min-width: 760px)");
+    function measure() {
+      if (!el || !section) return;
+      if (!wide.matches) {
+        document.documentElement.style.removeProperty("--calendar-fit");
+        setFit((f) => (f === null ? f : null));
+        return;
+      }
+      const top = el.getBoundingClientRect().top + window.scrollY;
+      let below = section.offsetHeight - el.offsetHeight;
+      for (let n = section.nextElementSibling; n; n = n.nextElementSibling) below += (n as HTMLElement).offsetHeight || 0;
+      const height = Math.max(352, Math.floor(window.innerHeight - top - below - BOTTOM_GAP));
+      const head = el.querySelector<HTMLElement>("[data-head]")?.offsetHeight ?? 0;
+      document.documentElement.style.setProperty("--calendar-fit", `${height}px`);
+      setFit((f) => (f && f.height === height && f.head === head ? f : { height, head }));
+    }
+    measure();
+    window.addEventListener("resize", measure);
+    const watch = new ResizeObserver(measure);
+    watch.observe(document.body);
+    watch.observe(el.querySelector("[data-head]")!);
+    wide.addEventListener("change", measure);
+    return () => {
+      window.removeEventListener("resize", measure);
+      watch.disconnect();
+      wide.removeEventListener("change", measure);
+      document.documentElement.style.removeProperty("--calendar-fit");
+    };
+  }, []);
 
   // After a key moved a block, focus follows it to where it was drawn again.
   useEffect(() => {
@@ -179,7 +253,7 @@ export function CalendarGrid({
     // A move to another day takes the block out of one column and draws it in the next, a render or two after
     // the key. Finding the old element must not end the watch, so it runs until the reader moves on, or a moment passes.
     const active = document.activeElement;
-    const el = scroller.current?.parentElement?.querySelector<HTMLElement>(`[data-nav][data-id="${want.id}"]`);
+    const el = document.querySelector<HTMLElement>(`[data-nav][data-id="${want.id}"]`);
     const movedOn = active !== null && active !== document.body && active !== el && active.isConnected;
     if (movedOn || performance.now() > want.until) {
       refocus.current = null;
@@ -262,14 +336,15 @@ export function CalendarGrid({
     const step = e.shiftKey ? 15 : 30;
     if (e.key === "ArrowDown" || e.key === "ArrowUp") {
       e.preventDefault();
-      const next = Math.max(0, Math.min(DAY_MINUTES - step, cursor + (e.key === "ArrowDown" ? step : -step)));
+      const next = Math.max(hoursShown.from, Math.min(hoursShown.to - step, cursor + (e.key === "ArrowDown" ? step : -step)));
       setCursor(next);
       const el = scroller.current;
       // Keep the slot in view under the sticky head as it travels.
       if (el) {
         const head = el.querySelector<HTMLElement>("[data-head]")?.offsetHeight ?? 0;
-        if (yAt(next) < el.scrollTop) el.scrollTop = yAt(next);
-        else if (yAt(next + 60) > el.scrollTop + el.clientHeight - head) el.scrollTop = yAt(next + 60) - el.clientHeight + head;
+        const top = (m: number) => yAt(m, scale) + (showEarlier ? EXPANDER_PX : 0);
+        if (top(next) < el.scrollTop) el.scrollTop = top(next);
+        else if (top(next + 60) > el.scrollTop + el.clientHeight - head) el.scrollTop = top(next + 60) - el.clientHeight + head;
       }
     } else if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
       e.preventDefault();
@@ -402,7 +477,7 @@ export function CalendarGrid({
       const slot = preview?.kind === "create" ? preview.slot : creating!.slot;
       if (slot.day !== day) return null;
       return (
-        <div className={styles.ghost} data-ghost style={{ top: yAt(slot.start), height: Math.max(18, yAt(slot.length)) }}>
+        <div className={styles.ghost} data-ghost style={{ top: yAt(slot.start, scale), height: Math.max(18, slot.length * scale.ppm) }}>
           {range(slot.start, slot.start + slot.length)}
         </div>
       );
@@ -412,7 +487,7 @@ export function CalendarGrid({
     if (!seg) return null;
     const s = wallSpan({ ...preview.item, schedule: preview.placement.schedule }, timeZone)!;
     return (
-      <div className={styles.ghost} data-ghost style={{ top: yAt(seg.start), height: Math.max(18, yAt(seg.end - seg.start)) }}>
+      <div className={styles.ghost} data-ghost style={{ top: yAt(seg.start, scale), height: Math.max(18, (seg.end - seg.start) * scale.ppm) }}>
         {range(s.start, s.end)}
       </div>
     );
@@ -484,8 +559,23 @@ export function CalendarGrid({
     );
   };
 
+  const trayNode =
+    tray && examples.length === 0 ? (
+      <section data-drop="tray" aria-labelledby="calendar-tray-h" className={`${styles.tray} ${trayHost ? styles.trayRail : ""} ${overTray ? styles.over : ""}`}>
+        <TrayHeading as={trayHost ? "h2" : "h3"}>
+          {INBOX}
+        </TrayHeading>
+        <p className="mt-1 mb-3 text-[13px] text-ink-3">
+          No day yet. <span className="pointer-coarse:hidden">Drag one onto the grid to plan it for that time{trayHost ? ", or click it to plan it for today. " : ". Drag a block back here to clear its day. "}</span>
+          <span className="hidden pointer-coarse:inline">Press and hold one, then drag it onto a day to plan it for that time. </span>
+          <SameInInbox />
+        </p>
+        {tray.items.length ? <ul className={`flex flex-wrap gap-2 ${trayHost ? styles.trayList : ""}`}>{tray.items.map(trayChip)}</ul> : <p className="text-[13px] text-ink-3">{EMPTY_TRAY}</p>}
+        {tray.full && <p className="mt-3 text-[13px] text-ink-3">{TRAY_FULL}</p>}
+      </section>
+    ) : null;
   const peeked = peek ? byId.get(peek.id) : undefined;
-  const hours = Array.from({ length: 23 }, (_, i) => i + 1);
+  const hours = Array.from({ length: Math.max(0, (hoursShown.to - hoursShown.from) / 60 - 1) }, (_, i) => hoursShown.from / 60 + i + 1);
 
   return (
     <section aria-labelledby="calendar-grid-h" className={`surface overflow-clip [--paper:var(--sheet)] ${className}`}>
@@ -495,8 +585,12 @@ export function CalendarGrid({
       <div
         ref={scroller}
         data-calendar-grid={mode}
-        className={`${styles.frame} ${mode === "week" ? styles.week : ""} ${dim ? styles.dim : ""}`}
-        style={{ "--days": days.length, "--hour": `${HOUR_PX}px` } as CSSProperties}
+        data-from={hoursShown.from}
+        className={`${styles.frame} ${mode === "week" ? styles.week : ""} ${dim ? styles.dim : ""} ${fit ? styles.fit : ""}`}
+        onScroll={(e) => {
+          if (Math.abs(e.currentTarget.scrollTop - opened.current.top) > 3) opened.current.moved = true;
+        }}
+        style={{ "--days": days.length, "--hour": `${hourPx}px`, ...(fit ? { height: fit.height } : {}) } as CSSProperties}
       >
         <div className={styles.head} data-head>
           <div className={styles.corner} />
@@ -550,10 +644,15 @@ export function CalendarGrid({
           ))}
         </div>
 
-        <div className={styles.body} style={{ height: GRID_PX }}>
+        {showEarlier && (
+          <button type="button" data-expand="earlier" aria-expanded={earlier} className={styles.expander} onClick={() => setEarlier((v) => !v)}>
+            {earlier ? "Hide earlier hours" : "Earlier hours"}
+          </button>
+        )}
+        <div className={styles.body} style={{ height: gridHeight(scale) }}>
           <div className={styles.gutter} aria-hidden="true">
             {hours.map((h) => (
-              <span key={h} data-hour={h} className={styles.hour} style={{ top: yAt(h * 60), visibility: nowAt && Math.abs(nowAt.minutes - h * 60) < 14 ? "hidden" : undefined }}>
+              <span key={h} data-hour={h} className={styles.hour} style={{ top: yAt(h * 60, scale), visibility: nowAt && Math.abs(nowAt.minutes - h * 60) < 14 ? "hidden" : undefined }}>
                 {formatHour(h, clock)}
               </span>
             ))}
@@ -576,7 +675,7 @@ export function CalendarGrid({
                 type="button"
                 data-slot-cursor={col.date}
                 className={styles.cursor}
-                style={{ top: yAt(cursor), height: yAt(30) }}
+                style={{ top: yAt(cursor, scale), height: 30 * scale.ppm }}
                 aria-label={`New item, ${formatDayHeading(col.date)}, ${formatMinutes(cursor, clock)}`}
                 aria-describedby={KEYS_ID}
                 onKeyDown={(e) => cursorKey(e, col.date)}
@@ -589,7 +688,7 @@ export function CalendarGrid({
                     aria-hidden="true"
                     data-example
                     className={styles.example}
-                    style={{ ...(ex.color ? ({ "--tint": `var(--area-${ex.color})` } as CSSProperties) : {}), top: yAt(ex.start), height: yAt(ex.end - ex.start) - 1 }}
+                    style={{ ...(ex.color ? ({ "--tint": `var(--area-${ex.color})` } as CSSProperties) : {}), top: yAt(ex.start, scale), height: (ex.end - ex.start) * scale.ppm - 1 }}
                   >
                     {ex.title} <span className={styles.meta}>{range(ex.start, ex.end)}</span>
                   </div>
@@ -605,22 +704,14 @@ export function CalendarGrid({
             </div>
           ))}
         </div>
+        {showLater && (
+          <button type="button" data-expand="later" aria-expanded={later} className={styles.expander} onClick={() => setLater((v) => !v)}>
+            {later ? "Hide later hours" : "Later hours"}
+          </button>
+        )}
       </div>
 
-      {tray && examples.length === 0 && (
-        <section data-drop="tray" aria-labelledby="calendar-tray-h" className={`${styles.tray} ${overTray ? styles.over : ""}`}>
-          <h3 id="calendar-tray-h" className="font-display text-lg leading-tight font-medium">
-            {INBOX}
-          </h3>
-          <p className="mt-1 mb-3 text-[13px] text-ink-3">
-            No day yet. <span className="pointer-coarse:hidden">Drag one onto a day to plan it for that time.</span>
-            <span className="hidden pointer-coarse:inline">Press and hold one, then drag it onto a day to plan it for that time.</span> Drag a block back
-            here to clear its day. <SameInInbox />
-          </p>
-          {tray.items.length ? <ul className="flex flex-wrap gap-2">{tray.items.map(trayChip)}</ul> : <p className="text-[13px] text-ink-3">{EMPTY_TRAY}</p>}
-          {tray.full && <p className="mt-3 text-[13px] text-ink-3">{TRAY_FULL}</p>}
-        </section>
-      )}
+      {trayNode && (trayHost === undefined ? trayNode : trayHost ? createPortal(trayNode, trayHost) : null)}
 
       <p id={KEYS_ID} className="sr-only">
         Arrow keys move between items. Enter opens one, Space shows it in brief, D marks it done. Alt with Up or Down moves it a quarter
@@ -644,15 +735,24 @@ export function CalendarGrid({
           onClosed={(back) => {
             const id = peek.id;
             setPeek(null);
-            if (back) scroller.current?.parentElement?.querySelector<HTMLElement>(`[data-nav][data-id="${id}"]`)?.focus();
+            if (back) document.querySelector<HTMLElement>(`[data-nav][data-id="${id}"]`)?.focus();
           }}
           onToggleDone={() => onToggleDone(peeked)}
+          onPlan={
+            peeked.schedule.kind === "unscheduled"
+              ? () => {
+                  setPeek(null);
+                  onPlace(peeked, toAnyTime(anchor));
+                }
+              : undefined
+          }
+          planWord={anchor === today ? "Plan for today" : `Plan for ${formatDayHeading(anchor)}`}
           onEdit={() => {
             setPeek(null);
             onSelect(peeked.id);
           }}
           onDelete={() => {
-            const face = scroller.current?.parentElement?.querySelector<HTMLElement>(`[data-nav][data-id="${peek.id}"]`);
+            const face = document.querySelector<HTMLElement>(`[data-nav][data-id="${peek.id}"]`);
             const q = quickOf(peeked);
             setPeek(null);
             if (face) quick?.run("delete", q.item, q.hooks, face);
@@ -683,6 +783,15 @@ export function CalendarGrid({
   );
 }
 
+/** The Inbox heading: a section heading of its own in the Day's side column (it comes before the grid in the page), one level under the grid's otherwise. */
+function TrayHeading({ as: Tag, children }: { as: "h2" | "h3"; children: ReactNode }) {
+  return (
+    <Tag id="calendar-tray-h" className="font-display text-lg leading-tight font-medium">
+      {children}
+    </Tag>
+  );
+}
+
 /** A block in brief, over the grid: what it is and when, its done tick, and the way on to the panel or to deleting it. */
 function BlockPeek({
   at,
@@ -696,6 +805,8 @@ function BlockPeek({
   onToggleDone,
   onEdit,
   onDelete,
+  onPlan,
+  planWord,
 }: {
   at: Box;
   item: ShownItem;
@@ -708,6 +819,8 @@ function BlockPeek({
   onToggleDone: () => void;
   onEdit: () => void;
   onDelete: () => void;
+  onPlan?: () => void;
+  planWord: string;
 }) {
   const quiet = "press rounded-md border border-rule px-3 py-1.5 text-[13px] font-medium text-ink hover:bg-hover active:bg-press pointer-coarse:min-h-11";
   return (
@@ -730,7 +843,12 @@ function BlockPeek({
         <span aria-hidden="true" className="mr-auto text-[13px] text-ink-2">
           {state === "done" ? "Done" : STATE_WORD[state] === "happening now" ? "Happening now" : "Planned"}
         </span>
-        <button type="button" data-autofocus className={quiet} onClick={onEdit}>
+        {onPlan && (
+          <button type="button" data-autofocus className={quiet} onClick={onPlan}>
+            {planWord}
+          </button>
+        )}
+        <button type="button" data-autofocus={onPlan ? undefined : ""} className={quiet} onClick={onEdit}>
           Edit
         </button>
         {canDelete && (

@@ -73,7 +73,7 @@ signedIn.describe("a busy day", () => {
     await expect(planned).toHaveCSS("opacity", "0.38");
     await expect(live).toHaveCSS("opacity", "1");
     await expect(leftOver).toBeHidden();
-    await expect(page.getByRole("region", { name: "Next up" }).getByText("Send the invoice")).toBeVisible();
+    await expect(page.getByRole("region", { name: "Next up" }).getByRole("button", { name: "Send the invoice", exact: true })).toBeVisible();
 
     await page.reload();
     await expect(page.getByRole("button", { name: "Focus", exact: true })).toHaveAttribute("aria-pressed", "true");

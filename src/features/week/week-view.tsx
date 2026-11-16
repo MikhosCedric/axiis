@@ -52,7 +52,7 @@ export function WeekView({
       mode={narrow ? "3day" : "week"}
       detail={detail}
       actions={actions}
-      className="@container/page px-4 pt-6 pb-14 rail:px-9 rail:pt-8"
+      className="@container/page px-4 pt-6 pb-14 rail:px-9 rail:pt-8 rail:pb-4"
     >
       {(ctx, grid) => <WeekPage ctx={ctx} grid={grid} calendar={calendar} days={days} from={from} weekFull={weekFull} filter={filter} capture={actions?.capture} />}
     </CalendarView>
@@ -95,9 +95,10 @@ function WeekPage({
     <>
       <TitleBar heading="week-title">{formatWeekHeading(days)}</TitleBar>
       <PageHeader
+        inline
         heading={<CalendarBar span="week" date={days[0]} from={from} today={today} titleId="week-title" />}
         controls={<GuideButton topics={WEEK_GUIDE} />}
-        capture={<CaptureField captureAction={capture} screenStatus={ctx.status} />}
+        capture={<CaptureField inline captureAction={capture} screenStatus={ctx.status} />}
       >
         <p className="page-summary max-rail:mt-2 max-rail:line-clamp-2 max-rail:text-sm" title={summary}>
           {summary}

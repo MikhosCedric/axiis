@@ -4,7 +4,10 @@ import { expect, test, type Locator, type Page } from "@playwright/test";
 // The calendar's time grid on its harness: a fixed week in the past (Monday 9 to Sunday 15 March 2026) in
 // UTC, so today is never one of its days and nothing below depends on when the tests run.
 const WEEK = "/dev/calendar?date=2026-03-11&tz=UTC";
-const HOUR_PX = 52;
+/** What the grid is drawn at: the first hour of its visible range and how tall an hour is, read off the page. */
+async function scale(page: Page) {
+  return page.locator("[data-calendar-grid]").evaluate((el) => ({ from: Number((el as HTMLElement).dataset.from), hour: parseFloat(getComputedStyle(el).getPropertyValue("--hour")) }));
+}
 const MON = "2026-03-09";
 const TUE = "2026-03-10";
 const THU = "2026-03-12";
@@ -18,7 +21,8 @@ const block = (page: Page, name: RegExp) => page.locator("[data-calendar-grid]")
 async function at(page: Page, day: string, minutes: number) {
   const box = await column(page, day).boundingBox();
   if (!box) throw new Error(`no column for ${day}`);
-  return { x: box.x + box.width / 2, y: box.y + (minutes * HOUR_PX) / 60 };
+  const s = await scale(page);
+  return { x: box.x + box.width / 2, y: box.y + ((minutes - s.from) * s.hour) / 60 };
 }
 
 async function drag(page: Page, from: { x: number; y: number }, to: { x: number; y: number }, { escape = false } = {}) {
@@ -108,7 +112,7 @@ test.describe("calendar grid", () => {
     const call = block(page, /^Call the landlord 12:00, to 12:30, Tuesday 10 March, Home, planned/);
     const from = await middle(call);
     const to = await at(page, THU, 0);
-    await drag(page, from, { x: to.x, y: from.y + HOUR_PX });
+    await drag(page, from, { x: to.x, y: from.y + (await scale(page)).hour });
     await expect(block(page, /^Call the landlord 13:00, to 13:30, Thursday 12 March/)).toBeVisible();
     await expect(call).toHaveCount(0);
     await page.getByRole("button", { name: "Undo" }).click();
@@ -127,7 +131,7 @@ test.describe("calendar grid", () => {
   test("a block's bottom edge drags to change its length", async ({ page }) => {
     const notes = block(page, /^Ship the release notes 11:00 to 12:00, Friday 13 March/);
     const { box } = await middle(notes);
-    await drag(page, { x: box.x + box.width / 2, y: box.y + box.height - 2 }, { x: box.x + box.width / 2, y: box.y + box.height + HOUR_PX / 2 });
+    await drag(page, { x: box.x + box.width / 2, y: box.y + box.height - 2 }, { x: box.x + box.width / 2, y: box.y + box.height + (await scale(page)).hour / 2 });
     await expect(block(page, /^Ship the release notes 11:00 to 12:30, Friday 13 March/)).toBeVisible();
   });
 
@@ -232,7 +236,7 @@ test.describe("calendar grid", () => {
     await page.getByLabel("Make saves fail").check();
     const call = block(page, /^Call the landlord 12:00, to 12:30, Tuesday 10 March/);
     const from = await middle(call);
-    await drag(page, from, { x: from.x, y: from.y + HOUR_PX });
+    await drag(page, from, { x: from.x, y: from.y + (await scale(page)).hour });
     await expect(page.locator("[data-calendar-status]")).toContainText("did not save");
     await expect(call).toBeVisible();
   });
@@ -243,7 +247,11 @@ test.describe("calendar grid, where it opens", () => {
 
   test("a week that is not this one opens on the morning", async ({ page }) => {
     await open(page);
-    expect(await page.locator("[data-calendar-grid]").evaluate((el) => el.scrollTop)).toBe(7 * HOUR_PX);
+    // On the smart range's first hour (07:00, or earlier when something is planned before it), not at 01:00.
+    const s = await scale(page);
+    expect(s.from).toBeLessThanOrEqual(7 * 60);
+    expect(await page.locator("[data-calendar-grid]").evaluate((el) => el.scrollTop)).toBe(0);
+    await expect(page.locator("[data-calendar-grid] [data-hour]").first()).toBeVisible();
     await expect(page.locator("[data-now]")).toHaveCount(0);
   });
 
@@ -253,9 +261,13 @@ test.describe("calendar grid, where it opens", () => {
     const now = page.locator("[data-now]");
     await expect(now).toHaveCount(1);
     const top = await now.evaluate((el) => parseFloat((el as HTMLElement).style.top));
-    expect(top).toBeCloseTo((13 * 60 + 20) * (HOUR_PX / 60), 1);
-    // It opens a little before now.
-    expect(await page.locator("[data-calendar-grid]").evaluate((el) => el.scrollTop)).toBe(11 * HOUR_PX);
+    const s = await scale(page);
+    expect(top).toBeCloseTo(((13 * 60 + 20 - s.from) * s.hour) / 60, 1);
+    // It opens a little before now: 11:00 is at the top, unless the whole range fits and nothing scrolls.
+    const scrolled = await page.locator("[data-calendar-grid]").evaluate((el) => el.scrollTop);
+    const expected = Math.max(0, ((11 * 60 - s.from) * s.hour) / 60 + (s.from > 0 ? 28 : 0));
+    const room = await page.locator("[data-calendar-grid]").evaluate((el) => el.scrollHeight - el.clientHeight);
+    expect(scrolled).toBeCloseTo(Math.min(expected, room), 0);
   });
 
   test("writes the hours on the 12-hour clock when that is the reader's", async ({ page, context }) => {

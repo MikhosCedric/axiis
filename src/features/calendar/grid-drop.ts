@@ -3,7 +3,7 @@ import { changes, DEFAULT_MINUTES, MIN_MINUTES, type Placement } from "@/feature
 import { clamp, SNAP_MINUTES, snap } from "@/features/score/snap";
 import { addDays, instantAt, localMinutes, toLocalDate, utcMidnight } from "@/lib/dates";
 import { formatMinutes, type Clock } from "@/lib/clock";
-import { DAY_MINUTES, minutesAtY } from "./grid-layout";
+import { DAY_MINUTES, FULL_DAY, minutesAtY, type Scale } from "./grid-layout";
 
 // What a gesture on the grid asks for, as the `Placement` the Score's `placeItem` command already saves.
 // Times are built from wall-clock minutes with `instantAt`, never by adding hours to an instant.
@@ -14,8 +14,8 @@ const DAY_MS = 86_400_000;
 const daysBetween = (from: LocalDate, to: LocalDate) => Math.round((utcMidnight(to) - utcMidnight(from)) / DAY_MS);
 
 /** A pointer's offset down a day column as minutes, held inside the day. */
-export function minutesAt(y: number): number {
-  return clamp(minutesAtY(y), 0, DAY_MINUTES);
+export function minutesAt(y: number, scale: Scale = FULL_DAY): number {
+  return clamp(minutesAtY(y, scale), 0, DAY_MINUTES);
 }
 
 /** Where a timed item starts: its own day and the wall-clock minutes of its start and end from that day's midnight. */

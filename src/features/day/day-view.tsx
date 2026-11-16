@@ -28,6 +28,9 @@ import { formatClock } from "@/lib/clock";
 import { dayRangeFor, instantAt } from "@/lib/dates";
 import { EXAMPLES_NOTE, exampleBlocks } from "./first-day";
 import { dayGlance } from "./glance";
+import { ProgressLine } from "@/components/progress-line";
+import type { DueSoonData } from "./due-soon";
+import { DueSoonStrip } from "./due-soon-strip";
 import type { LeftoverData } from "./leftover-model";
 import { LeftoverStrip } from "./leftover-strip";
 import { ListView } from "./list-view";
@@ -70,6 +73,7 @@ export function DayView({
   detail,
   leftover,
   pulse,
+  dueSoon,
   focus: focusSaved = false,
   tour = false,
   filter = NO_FILTER,
@@ -82,6 +86,8 @@ export function DayView({
   leftover?: LeftoverData | null;
   /** The week's planned and done counts a day at a time. Today's page passes it; it shows beside the day on wide screens. */
   pulse?: PulseData | null;
+  /** The next few due dates, beside the day on wide screens. Today's page passes it. */
+  dueSoon?: DueSoonData | null;
   /** Focus, as this device last left it. */
   focus?: boolean;
   /** Show the getting-started tour: a new account, or the Guide asked for it again. */
@@ -99,6 +105,8 @@ export function DayView({
   const calendar = useMemo(() => dayCalendar(data), [data]);
   const firstDay = data.firstDay && data.view.scheduled.length + data.view.waiting.length === 0;
   const [focusOn, setFocus] = useState(focusSaved);
+  // Where the grid draws its Inbox: in the side column, once that has mounted.
+  const [trayHost, setTrayHost] = useState<HTMLElement | null>(null);
   const focus = focusOn && isToday && !firstDay;
   const examples = useMemo<GridExample[]>(() => (firstDay ? exampleBlocks(areas) : []), [firstDay, areas]);
 
@@ -135,7 +143,8 @@ export function DayView({
       actions={actions}
       examples={examples}
       offer={offer}
-      className="@container/page px-4 pt-6 pb-14 rail:px-9 rail:pt-8"
+      trayHost={mode === "grid" ? trayHost : undefined}
+      className="@container/page px-4 pt-6 pb-14 rail:px-9 rail:pt-8 rail:pb-4"
     >
       {(ctx, grid) => (
         <DayPage
@@ -145,6 +154,8 @@ export function DayView({
           mode={mode}
           leftover={leftover ?? null}
           pulse={pulse ?? null}
+          dueSoon={dueSoon ?? null}
+          trayRef={setTrayHost}
           focus={focus}
           firstDay={firstDay}
           tour={tour}
@@ -187,6 +198,8 @@ function DayPage({
   mode,
   leftover,
   pulse,
+  dueSoon,
+  trayRef,
   focus,
   firstDay,
   tour,
@@ -200,6 +213,8 @@ function DayPage({
   mode: DayViewMode;
   leftover: LeftoverData | null;
   pulse: PulseData | null;
+  dueSoon: DueSoonData | null;
+  trayRef: (el: HTMLElement | null) => void;
   focus: boolean;
   firstDay: boolean;
   tour: boolean;
@@ -241,7 +256,17 @@ function DayPage({
   // Focus leaves only what is next beside the day: what is left over and the week come back with it off.
   const leftNode = isToday && leftover && !focus ? <LeftoverStrip data={leftover} onSelect={ctx.select} onStatus={ctx.say} /> : null;
   const pulseNode = isToday && !firstDay && !focus && pulse && pulse.total > 0 ? <WeekPulse pulse={pulse} today={today} /> : null;
-  const hasSide = Boolean(nextNode || planNode || leftNode || pulseNode);
+  const dueNode = dueSoon && !firstDay && !focus ? <DueSoonStrip data={dueSoon} onSelect={ctx.select} /> : null;
+  // The day's own progress, in the side column on wide screens (a narrow page keeps it under the summary).
+  const progressNode =
+    glance.total > 0 ? (
+      <section aria-label="Progress" className="surface side-part px-4 py-3">
+        <p className="text-[13px] font-semibold text-ink-2">{date === today ? "Today" : formatDayHeading(date)}</p>
+        <p className="mt-0.5 text-[13px] text-ink-3">{glance.done} of {glance.total} done</p>
+        <ProgressLine share={glance.done / glance.total} className="mt-2 w-full text-ink-2" />
+      </section>
+    ) : null;
+  const hasSide = Boolean(nextNode || planNode || leftNode || pulseNode || dueNode || progressNode || mode === "grid");
 
   const dayNode =
     mode === "list" ? (
@@ -272,7 +297,8 @@ function DayPage({
         heading={<CalendarBar span="day" date={date} today={today} mode={mode} titleId="day-title" />}
         controls={controls}
         controlsRow
-        capture={<CaptureField captureAction={capture} firstDay={firstDay} screenStatus={ctx.status} />}
+        inline={!firstDay}
+        capture={<CaptureField inline={!firstDay} captureAction={capture} firstDay={firstDay} screenStatus={ctx.status} />}
       >
         <GlanceLine glance={glance} timeZone={timeZone} scope={scopeWords(filter)} />
         <FilterChips filter={filter} className="mt-2.5" />
@@ -284,14 +310,18 @@ function DayPage({
           Narrow: one column, in the order they read, the week left out. */}
       <div
         data-focus={focus ? "" : undefined}
-        className={`flex flex-col ${hasSide ? "@min-[66rem]/page:grid @min-[66rem]/page:grid-cols-[minmax(0,1fr)_21rem] @min-[66rem]/page:grid-rows-[auto_1fr] @min-[66rem]/page:gap-x-8" : ""}`}
+        className={`flex flex-col ${hasSide ? "@min-[66rem]/page:grid @min-[66rem]/page:grid-cols-[minmax(0,42rem)_minmax(18rem,24rem)] @min-[66rem]/page:grid-rows-[auto_1fr] @min-[66rem]/page:justify-start @min-[66rem]/page:gap-x-8" : ""}`}
       >
         {hasSide && (
-          <div className="contents @min-[66rem]/page:surface @min-[66rem]/page:col-start-2 @min-[66rem]/page:row-start-1 @min-[66rem]/page:block @min-[66rem]/page:divide-y @min-[66rem]/page:divide-rule-soft @min-[66rem]/page:self-start @min-[66rem]/page:overflow-clip">
+          <div className="contents @min-[66rem]/page:surface @min-[66rem]/page:col-start-2 @min-[66rem]/page:row-start-1 @min-[66rem]/page:block @min-[66rem]/page:max-h-[var(--calendar-fit,none)] @min-[66rem]/page:divide-y @min-[66rem]/page:divide-rule-soft @min-[66rem]/page:self-start @min-[66rem]/page:overflow-y-auto">
+            {progressNode && <div className="order-[0] hidden @min-[66rem]/page:block">{progressNode}</div>}
             {nextNode && <div className="order-1">{nextNode}</div>}
             {planNode && <div className="order-2">{planNode}</div>}
-            {leftNode && <div className="order-4 mt-7 @min-[66rem]/page:mt-0">{leftNode}</div>}
-            {pulseNode && <div className="order-5 hidden @min-[66rem]/page:block">{pulseNode}</div>}
+            {/* The grid's Inbox: under the day on a narrow page, a card here on a wide one. */}
+            {mode === "grid" && <div ref={trayRef} className="order-4 mt-6 empty:hidden @min-[66rem]/page:order-3 @min-[66rem]/page:mt-0" />}
+            {leftNode && <div className="order-5 mt-7 @min-[66rem]/page:order-5 @min-[66rem]/page:mt-0">{leftNode}</div>}
+            {dueNode && <div className="order-6 hidden @min-[66rem]/page:block">{dueNode}</div>}
+            {pulseNode && <div className="order-7 hidden @min-[66rem]/page:block">{pulseNode}</div>}
           </div>
         )}
         <div className="order-3 min-w-0 @min-[66rem]/page:col-start-1 @min-[66rem]/page:row-span-2 @min-[66rem]/page:row-start-1">{dayNode}</div>
