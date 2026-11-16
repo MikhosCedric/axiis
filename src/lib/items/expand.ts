@@ -64,7 +64,8 @@ function fastForward(rule: Rule, firstOn: LocalDate, fromDate: LocalDate): { sta
  * 08:00 to 09:00 item reads 08:00 to 09:00 local on every day, the days the
  * clocks change included, whatever that lasts in real time. Monthly on the 31st skips months
  * without one, and a weekly rule whose weekdays leave out the first date's
- * weekday does not land on that first date, both as RFC 5545 says.
+ * weekday, or a monthly one on a weekday the first date is not, does not land
+ * on that first date, all as RFC 5545 says.
  */
 export function expandSeries(series: SeriesSource, span: SpanRange, timeZone: string): Occurrence[] {
   const s = series.schedule;
@@ -84,6 +85,8 @@ export function expandSeries(series: SeriesSource, span: SpanRange, timeZone: st
     dtstart: floating(start),
     wkst: RRule.MO,
     ...(byDay.length > 0 && { byweekday: byDay.map((d) => DAYS[d]) }),
+    // "The second Tuesday": picked within each month, on the same clockless dates.
+    ...(rule.freq === "monthly" && rule.onThe && { byweekday: [DAYS[rule.onThe.day].nth(rule.onThe.nth)] }),
     ...(rule.end.kind === "until" && { until: floating(rule.end.on) }),
     ...(count !== null && { count }),
   });

@@ -347,10 +347,38 @@ describe("how a repeat is said", () => {
     expect(previewWords(parseCapture(text), "24")).toBe(words);
   });
 
-  it("leaves a weekday of the month in the title, as no rule holds it", () => {
-    for (const text of ["every 2nd tuesday of the month rent", "rent every first tuesday of the month", "rent last tuesday of the month"]) {
-      expect(parseCapture(text).repeat).toBeUndefined();
-    }
+  it.each<[string, string, RepeatWords["onThe"], string]>([
+    ["rent every first monday", "rent", { nth: 1, day: "MO" }, "Every first Monday of the month"],
+    ["every last friday review", "review", { nth: -1, day: "FR" }, "Every last Friday of the month"],
+    ["every 2nd tue of the month rent", "rent", { nth: 2, day: "TU" }, "Every second Tuesday of the month"],
+    ["rent every first tuesday of the month", "rent", { nth: 1, day: "TU" }, "Every first Tuesday of the month"],
+    ["board each fourth thursday of every month", "board", { nth: 4, day: "TH" }, "Every fourth Thursday of the month"],
+    ["retro every 1st wed", "retro", { nth: 1, day: "WE" }, "Every first Wednesday of the month"],
+  ])("reads a weekday by its place in the month: %j", (text, title, onThe, words) => {
+    const read = parseCapture(text);
+    expect(read).toMatchObject({ title, repeat: { freq: "monthly", interval: 1, byDay: [], onThe } });
+    expect(previewWords(read, "24")).toBe(words);
+  });
+
+  it("leaves a place in the month with no every in the title", () => {
+    expect(parseCapture("rent last tuesday of the month").repeat).toBeUndefined();
+  });
+
+  it("pins a weekday by its place to its next date", () => {
+    // Tuesday 10 November 2026 is the second Tuesday.
+    const today = d("2026-11-10");
+    const on = (nth: 1 | 2 | 3 | 4 | -1, day: Weekday): RepeatWords => ({ ...monthly(), onThe: { nth, day } });
+    expect(seriesFor(on(2, "TU"), today, today)).toEqual({
+      first: "2026-11-10",
+      rule: { freq: "monthly", interval: 1, onThe: { nth: 2, day: "TU" }, end: never },
+    });
+    expect(seriesFor(on(2, "TU"), today, today, true)?.first).toBe("2026-12-08");
+    expect(seriesFor(on(1, "MO"), today, today)?.first).toBe("2026-12-07");
+    expect(seriesFor(on(-1, "FR"), today, today)?.first).toBe("2026-11-27");
+    expect(seriesWords({ freq: "monthly", interval: 1, onThe: { nth: -1, day: "FR" }, end: never }, d("2026-11-27"), today)).toBe(
+      "every last Friday of the month",
+    );
+    expect(cadenceWords({ freq: "monthly", interval: 3, byDay: [], onThe: { nth: 2, day: "TU" } }, null)).toBe("every 3 months on the second Tuesday");
   });
 
   it("names a weekly cadence's weekday only when it is known", () => {

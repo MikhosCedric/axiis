@@ -441,6 +441,7 @@ export function DetailSheet({
           {((repeat.kind === "off" && isOpen("repeat")) || isSeries || isOccurrence) && (
             <RepeatRows
               repeat={repeat}
+              startOn={view.day ?? view.today}
               save={(choice, show) =>
                 write(
                   () => {

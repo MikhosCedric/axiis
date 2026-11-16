@@ -92,6 +92,29 @@ function fixtures(): Item[] {
       schedule: { kind: "day", on: day("2026-10-04") },
       recurrence: { kind: "series", rule: { freq: "weekly", interval: 1, byDay: [], end: { kind: "count", count: 10 } } },
     }),
+    // 13 October 2026 is the second Tuesday, so the editor offers "On day 13" or "On the second Tuesday".
+    makeItem({
+      id: id(80),
+      title: "Book club",
+      areaId: areaId(2),
+      schedule: { kind: "day", on: day("2026-10-13") },
+      recurrence: { kind: "series", rule: { freq: "monthly", interval: 1, end: { kind: "never" } } },
+    }),
+    // A rule only capture could make before the editor: "bins every 3 weeks on mon, wed and fri".
+    makeItem({
+      id: id(81),
+      title: "Bins out",
+      areaId: areaId(2),
+      schedule: { kind: "day", on: day("2026-10-05") },
+      recurrence: { kind: "series", rule: { freq: "weekly", interval: 3, byDay: ["MO", "WE", "FR"], end: { kind: "never" } } },
+    }),
+    makeItem({
+      id: id(82),
+      title: "Team retro",
+      areaId: areaId(1),
+      schedule: { kind: "day", on: day("2026-10-30") },
+      recurrence: { kind: "series", rule: { freq: "monthly", interval: 1, onThe: { nth: -1, day: "FR" }, end: { kind: "never" } } },
+    }),
   ];
 }
 
@@ -108,6 +131,9 @@ const FIXTURES: { id: string; label: string }[] = [
   { id: id(60), label: "Repeating: the run series itself, two days skipped" },
   { id: occurrenceKey(id(60), day("2027-01-04")), label: "Repeating: a skipped run in January" },
   { id: occurrenceKey(id(70), day("2026-10-11")), label: "Repeating: plants, weekly for ten weeks" },
+  { id: id(80), label: "Repeating: book club, every month" },
+  { id: id(81), label: "Repeating: bins, every 3 weeks on three days" },
+  { id: id(82), label: "Repeating: retro, the last Friday of the month" },
   { id: occurrenceKey(id(60), day("2026-10-10")), label: "A Saturday the run does not happen" },
   { id: id(99), label: "An item that is gone" },
 ];

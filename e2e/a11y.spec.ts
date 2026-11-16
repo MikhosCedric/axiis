@@ -29,6 +29,9 @@ const PAGES = [
   "/dev/detail?item=00000000-0000-4000-8000-000000000001",
   "/dev/detail?item=00000000-0000-4000-8000-000000000060~2026-10-09",
   "/dev/detail?item=00000000-0000-4000-8000-000000000060",
+  // The repeat editor open: weekday toggles, and a weekday by its place in the month.
+  "/dev/detail?item=00000000-0000-4000-8000-000000000081",
+  "/dev/detail?item=00000000-0000-4000-8000-000000000082",
   "/dev/notes",
   "/dev/notes/00000000-0000-4000-8000-000000000020",
   "/dev/notes/search?q=bulbs",

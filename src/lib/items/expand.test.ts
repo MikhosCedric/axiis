@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { ItemId, LocalDate, Schedule, SpanRange } from "@/domain/item";
-import type { Rule } from "@/domain/recurrence";
+import { WEEKDAYS, nthWeekdayOn, type Rule, type Weekday } from "@/domain/recurrence";
 import { addDays, dayRangeFor, instantAt, localMinutes } from "@/lib/dates";
 import { MAX_OCCURRENCES, expandSeries, liveOccurrences, type SeriesSource } from "./expand";
 
@@ -148,6 +148,91 @@ describe("expandSeries calendar rules", () => {
   it("skips months with no 31st", () => {
     const s = series(onDay("2026-01-31"), { freq: "monthly", interval: 1, end: never });
     expect(dates(s, span("2026-01-01", "2026-08-01", "UTC"))).toEqual(["2026-01-31", "2026-03-31", "2026-05-31", "2026-07-31"]);
+  });
+
+  describe("monthly on a weekday by its place", () => {
+    const onThe = (nth: 1 | 2 | 3 | 4 | -1, day: Weekday, interval = 1, end: Rule["end"] = never): Rule => ({
+      freq: "monthly",
+      interval,
+      onThe: { nth, day },
+      end,
+    });
+
+    it("lands on the second Tuesday of each month", () => {
+      const s = series(onDay("2026-10-13"), onThe(2, "TU"));
+      expect(dates(s, span("2026-10-01", "2027-03-01", "UTC"))).toEqual(["2026-10-13", "2026-11-10", "2026-12-08", "2027-01-12", "2027-02-09"]);
+    });
+
+    it("lands on the last Friday, whether the month has four or five", () => {
+      const s = series(onDay("2026-10-30"), onThe(-1, "FR"));
+      expect(dates(s, span("2026-10-01", "2027-03-01", "UTC"))).toEqual(["2026-10-30", "2026-11-27", "2026-12-25", "2027-01-29", "2027-02-26"]);
+    });
+
+    it("finds the last weekday of February in a leap year and out of one", () => {
+      const s = series(onDay("2027-01-26"), onThe(-1, "TU"));
+      expect(dates(s, span("2027-02-01", "2027-03-01", "UTC"))).toEqual(["2027-02-23"]);
+      expect(dates(s, span("2028-02-01", "2028-03-01", "UTC"))).toEqual(["2028-02-29"]);
+    });
+
+    it("the fourth and the last part ways in a month with five", () => {
+      // January 2027 has five Fridays, February four.
+      expect(dates(series(onDay("2027-01-22"), onThe(4, "FR")), span("2027-01-01", "2027-03-01", "UTC"))).toEqual(["2027-01-22", "2027-02-26"]);
+      expect(dates(series(onDay("2027-01-29"), onThe(-1, "FR")), span("2027-01-01", "2027-03-01", "UTC"))).toEqual(["2027-01-29", "2027-02-26"]);
+    });
+
+    it("honours an interval, counted in months from the first", () => {
+      const s = series(onDay("2026-10-05"), onThe(1, "MO", 3));
+      expect(dates(s, span("2026-10-01", "2027-08-01", "UTC"))).toEqual(["2026-10-05", "2027-01-04", "2027-04-05", "2027-07-05"]);
+    });
+
+    it("does not land on a first date that is not that weekday, and counts from the first that is", () => {
+      // The 20th is the third Tuesday, not the second.
+      const s = series(onDay("2026-10-20"), onThe(2, "TU", 1, { kind: "count", count: 2 }));
+      expect(dates(s, span("2026-10-01", "2027-06-01", "UTC"))).toEqual(["2026-11-10", "2026-12-08"]);
+    });
+
+    it("stops at UNTIL, inclusive", () => {
+      const s = series(onDay("2026-10-13"), onThe(2, "TU", 1, { kind: "until", on: d("2026-12-08") }));
+      expect(dates(s, span("2026-10-01", "2027-06-01", "UTC"))).toEqual(["2026-10-13", "2026-11-10", "2026-12-08"]);
+    });
+
+    it("agrees with the calendar for every weekday and place over five years, read from far in", () => {
+      for (const day of WEEKDAYS) {
+        for (const nth of [1, 2, 3, 4, -1] as const) {
+          const s = series(onDay("2024-01-01"), onThe(nth, day));
+          const want: string[] = [];
+          for (let m = 0; m < 60; m++) want.push(nthWeekdayOn(2024 + Math.floor(m / 12), (m % 12) + 1, { nth, day }));
+          expect(dates(s, span("2024-01-01", "2029-01-01", "UTC"))).toEqual(want);
+          expect(dates(s, span("2028-02-01", "2028-04-01", "UTC"))).toEqual(want.slice(49, 51));
+        }
+      }
+    });
+
+    it.each(["America/New_York", "Europe/London", "Australia/Lord_Howe", "Pacific/Apia", "Asia/Kolkata"])(
+      "keeps the date and the wall clock through clock changes in %s",
+      (tz) => {
+        // Second Sunday of March and first Sunday of November are New York's changes; last Sunday of March and October are London's.
+        for (const [nth, day] of [[2, "SU"], [1, "SU"], [-1, "SU"], [1, "SA"]] as const) {
+          const first = nthWeekdayOn(2026, 1, { nth, day });
+          const s = series({ kind: "timed", start: instantAt(first, 9 * 60, tz), end: instantAt(first, 10 * 60, tz) }, onThe(nth, day));
+          const got = expandSeries(s, span("2026-01-01", "2027-01-01", tz), tz);
+          expect(got.map((o) => o.originalOn)).toEqual(Array.from({ length: 12 }, (_, m) => nthWeekdayOn(2026, m + 1, { nth, day })));
+          for (const o of got) {
+            if (o.schedule.kind !== "timed") throw new Error("expected a time");
+            expect(localMinutes(o.schedule.start, o.originalOn, tz)).toBe(9 * 60);
+            expect(localMinutes(o.schedule.end, o.originalOn, tz)).toBe(10 * 60);
+          }
+        }
+      },
+    );
+
+    it("moves a time the clocks skip on the second Sunday of March to the first they show", () => {
+      const tz = "America/New_York";
+      const s = series({ kind: "timed", start: instantAt(d("2026-02-08"), 150, tz), end: instantAt(d("2026-02-08"), 210, tz) }, onThe(2, "SU"));
+      const [march] = expandSeries(s, span("2026-03-01", "2026-04-01", tz), tz);
+      expect(march.originalOn).toBe("2026-03-08");
+      expect(march.schedule.kind === "timed" && localMinutes(march.schedule.start, march.originalOn, tz)).toBe(180);
+    });
   });
 
   it("lands on each named weekday across a week", () => {

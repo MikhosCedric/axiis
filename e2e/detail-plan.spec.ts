@@ -6,9 +6,13 @@ const WAITING_TASK = "/dev/detail?item=00000000-0000-4000-8000-000000000050";
 const TASK_WITH_SUBTASKS = "/dev/detail?item=00000000-0000-4000-8000-000000000001";
 const FRIDAYS_RUN = "/dev/detail?item=00000000-0000-4000-8000-000000000060~2026-10-09";
 
+const BOOK_CLUB = "/dev/detail?item=00000000-0000-4000-8000-000000000080";
+const BINS = "/dev/detail?item=00000000-0000-4000-8000-000000000081";
+const RETRO = "/dev/detail?item=00000000-0000-4000-8000-000000000082";
+
 const details = (page: Page) => page.getByRole("complementary", { name: "Details" });
 const row = (page: Page, label: string) => details(page).locator("dt", { hasText: label }).locator("+ dd");
-const status = (page: Page, text: string) => details(page).getByRole("status").filter({ hasText: text });
+const status = (page: Page, text: string | RegExp) => details(page).getByRole("status").filter({ hasText: text });
 
 test("detail: a waiting task is planned for today, timed, and taken off its day again", async ({ page }) => {
   await page.goto(WAITING_TASK);
@@ -159,6 +163,99 @@ test("detail: one occurrence moves on its own with This one, and All of them kee
   await expect(details(page).getByLabel("First day")).toHaveValue("2026-10-05");
 });
 
+const summary = (page: Page) => row(page, "Repeat").locator("span");
+
+test("detail: a captured rule the menu cannot name opens in the editor and is edited in place", async ({ page }) => {
+  await page.goto(BINS);
+  await hydrated(page);
+  await expect(details(page).getByLabel("Repeat", { exact: true })).toHaveValue("custom");
+  await expect(summary(page)).toHaveText("Every 3 weeks on Mon, Wed, Fri");
+  const every = details(page).getByLabel("Every", { exact: true });
+  await expect(every).toHaveValue("3");
+  await expect(details(page).getByLabel("Days, weeks, months or years")).toHaveValue("weekly");
+  const days = details(page).getByRole("group", { name: "On" });
+  await expect(days.getByRole("button", { pressed: true }).locator("span[aria-hidden]")).toHaveText(["Mon", "Wed", "Fri"]);
+
+  await days.getByRole("button", { name: "Wednesday" }).click();
+  await expect(summary(page)).toHaveText("Every 3 weeks on Monday and Friday");
+  // The toggles are plain buttons, so the keyboard reaches and presses them.
+  await days.getByRole("button", { name: "Thursday" }).focus();
+  await page.keyboard.press("Space");
+  await expect(summary(page)).toHaveText("Every 3 weeks on Mon, Thu, Fri");
+
+  await every.fill("2");
+  await every.press("Enter");
+  await expect(summary(page)).toHaveText("Every 2 weeks on Mon, Thu, Fri");
+  // A number that is no interval goes back to the saved one.
+  await every.fill("0");
+  await every.blur();
+  await expect(every).toHaveValue("2");
+
+  await details(page).getByLabel("Ends", { exact: true }).selectOption("count");
+  await expect(summary(page)).toHaveText("Every 2 weeks on Mon, Thu, Fri, 10 times");
+  await expect(details(page).getByLabel("First day")).toHaveValue("2026-10-05");
+
+  // Down to its own weekday it is the menu's "Every 2 weeks", but the editor stays open while it is being used.
+  await days.getByRole("button", { name: "Thursday" }).click();
+  await days.getByRole("button", { name: "Friday" }).click();
+  await expect(summary(page)).toHaveText("Every 2 weeks on Monday, 10 times");
+  await expect(days.getByRole("button", { name: "Monday" })).toHaveAttribute("aria-disabled", "true");
+  await days.getByRole("button", { name: "Monday" }).click({ force: true });
+  await expect(days.getByRole("button", { pressed: true }).locator("span[aria-hidden]")).toHaveText(["Mon"]);
+  await expect(details(page).getByLabel("Repeat", { exact: true })).toHaveValue("custom");
+});
+
+test("detail: Custom opens the editor on a monthly repeat, which can fall on a weekday by its place", async ({ page }) => {
+  await page.goto(BOOK_CLUB);
+  await hydrated(page);
+  const repeat = details(page).getByLabel("Repeat", { exact: true });
+  await expect(repeat).toHaveValue("monthly");
+  await expect(details(page).getByLabel("Every", { exact: true })).toHaveCount(0);
+
+  await repeat.selectOption("custom");
+  await expect(details(page).getByLabel("Every", { exact: true })).toHaveValue("1");
+  const on = details(page).getByLabel("On", { exact: true });
+  await expect(on.locator("option")).toHaveText(["On day 13", "On the second Tuesday"]);
+  await on.selectOption({ label: "On the second Tuesday" });
+  await expect(summary(page)).toHaveText("Every second Tuesday of the month");
+
+  await details(page).getByLabel("Every", { exact: true }).fill("3");
+  await details(page).getByLabel("Every", { exact: true }).press("Enter");
+  await expect(summary(page)).toHaveText("Every 3 months on the second Tuesday");
+  await expect(details(page).getByLabel("Days, weeks, months or years").locator("option")).toHaveText(["days", "weeks", "months", "years"]);
+
+  // Weeks start on its own weekday.
+  await details(page).getByLabel("Days, weeks, months or years").selectOption("weekly");
+  await expect(details(page).getByRole("group", { name: "On" }).getByRole("button", { pressed: true }).locator("span[aria-hidden]")).toHaveText(["Tue"]);
+  await expect(summary(page)).toHaveText("Every 3 weeks on Tuesday");
+
+  // A menu choice closes the editor again.
+  await repeat.selectOption("yearly");
+  await expect(summary(page)).toHaveText("Every year");
+  await expect(details(page).getByLabel("Every", { exact: true })).toHaveCount(0);
+});
+
+test("detail: a stored last Friday of the month reads back in the editor", async ({ page }) => {
+  await page.goto(RETRO);
+  await hydrated(page);
+  await expect(summary(page)).toHaveText("Every last Friday of the month");
+  const on = details(page).getByLabel("On", { exact: true });
+  await expect(on.locator("option")).toHaveText(["On day 30", "On the last Friday"]);
+  await expect(on).toHaveValue("-1FR");
+  await on.selectOption("day");
+  await expect(summary(page)).toHaveText("Every month. Months with no 30th are skipped.");
+});
+
+test("detail: Custom on a waiting task starts it repeating every week from today", async ({ page }) => {
+  await page.goto(WAITING_TASK);
+  await hydrated(page);
+  await details(page).getByRole("button", { name: "Repeat" }).click();
+  await details(page).getByLabel("Repeat", { exact: true }).selectOption("custom");
+  await expect(status(page, /^Repeats every week on \w+ from today\.$/)).toBeVisible();
+  await expect(details(page).getByRole("group", { name: "On" }).getByRole("button", { pressed: true })).toHaveCount(1);
+  await expect(details(page).getByLabel("Repeat", { exact: true })).toHaveValue("custom");
+});
+
 for (const variant of [
   { name: "light", colorScheme: "light", viewport: { width: 1280, height: 800 } },
   { name: "dark", colorScheme: "dark", viewport: { width: 1280, height: 800 } },
@@ -180,5 +277,22 @@ for (const variant of [
       expect(blocking).toEqual([]);
       expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(variant.viewport.width);
     });
+
+    for (const [name, path] of [
+      ["weekday toggles", BINS],
+      ["place in the month", RETRO],
+    ] as const) {
+      test(`detail: the repeat editor (${name}) has no serious or critical axe violations and does not scroll sideways`, async ({ page }) => {
+        await page.goto(path);
+        await hydrated(page);
+        await expect(details(page).getByLabel("Every", { exact: true })).toBeVisible();
+        const { violations } = await new AxeBuilder({ page }).analyze();
+        const blocking = violations
+          .filter((v) => v.impact === "serious" || v.impact === "critical")
+          .map((v) => ({ rule: v.id, targets: v.nodes.map((n) => n.target.join(" ")) }));
+        expect(blocking).toEqual([]);
+        expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(variant.viewport.width);
+      });
+    }
   });
 }

@@ -19,7 +19,7 @@ How repeating tasks, events and checklists work. The database form is in `supaba
 |---|---|
 | `FREQ` | `DAILY`, `WEEKLY`, `MONTHLY`, `YEARLY` |
 | `INTERVAL` | 1 to 99 |
-| `BYDAY` | weekly rules only, any of `MO`..`SU`, no ordinals |
+| `BYDAY` | weekly rules: any of `MO`..`SU`. Monthly rules: one weekday with a place, `1MO`..`4SU` or `-1FR` (migration 0013) |
 | `UNTIL` | a date, `YYYYMMDD`, inclusive |
 | `COUNT` | 1 to 1000 |
 

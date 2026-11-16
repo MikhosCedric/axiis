@@ -1,11 +1,12 @@
-import { MAX_INTERVAL, sortWeekdays, type Freq, type Weekday } from "@/domain/recurrence";
+import { MAX_INTERVAL, sortWeekdays, type Freq, type Nth, type NthWeekday, type Weekday } from "@/domain/recurrence";
 
 /**
  * How often a captured line repeats, as typed: the rule's cadence before it
  * is pinned to a first day. `byDay` names weekdays for a weekly repeat only;
- * empty, a weekly repeat falls on its first day's weekday.
+ * empty, a weekly repeat falls on its first day's weekday. `onThe` is set for
+ * a monthly repeat on a weekday by its place ("every first monday").
  */
-export type Cadence = { freq: Freq; interval: number; byDay: Weekday[] };
+export type Cadence = { freq: Freq; interval: number; byDay: Weekday[]; onThe?: NthWeekday };
 
 /** Sunday first, as `getUTCDay` and capture's own weekdays count. */
 const RULE_DAYS: readonly Weekday[] = ["SU", "MO", "TU", "WE", "TH", "FR", "SA"];
@@ -84,7 +85,36 @@ const ORDINALS = new Map<string, number>([
   ["4th", 4],
 ]);
 
+const PLACES = new Map<string, Nth>([
+  ["first", 1],
+  ["1st", 1],
+  ["second", 2],
+  ["2nd", 2],
+  ["third", 3],
+  ["3rd", 3],
+  ["fourth", 4],
+  ["4th", 4],
+  ["last", -1],
+]);
+const PLACE_WORDS: Record<Nth, string> = { 1: "first", 2: "second", 3: "third", 4: "fourth", [-1]: "last" };
+
+/**
+ * One weekday by its place in the month: "first monday", "last friday", "2nd
+ * tue of the month". A bare "2nd tue" or "third friday" stays every other
+ * Tuesday or every 3 weeks, as it always read; "of the month" says the month.
+ */
+function placeHit(rest: string): Cadence | null {
+  const m = /^([a-z0-9]+) ([a-z]+)( of (?:the|every|each) month)?$/.exec(rest);
+  const nth = m ? PLACES.get(m[1]) : undefined;
+  const day = m ? weekdayWord(m[2]) : null;
+  if (!m || nth === undefined || !day || day.plural) return null;
+  if (m[3] === undefined && nth !== 1 && nth !== -1) return null;
+  return { freq: "monthly", interval: 1, byDay: [], onThe: { nth, day: ruleDay(day.day) } };
+}
+
 function everyHit(rest: string): Cadence | null {
+  const place = placeHit(rest);
+  if (place) return place;
   const m = /^(?:(\d{1,2}|other|second|2nd|third|3rd|fourth|4th) )?(.+)$/.exec(rest)!;
   const interval = m[1] === undefined ? 1 : (ORDINALS.get(m[1]) ?? Number(m[1]));
   if (interval < 1 || interval > MAX_INTERVAL) return null;
@@ -181,6 +211,10 @@ export function cadenceWords(cadence: Cadence, firstWeekday: Weekday | null): st
   const { freq, interval } = cadence;
   const every = interval === 1 ? "every" : interval === 2 ? "every other" : `every ${interval}`;
   const unit = interval > 2 ? `${UNIT[freq]}s` : UNIT[freq];
+  if (freq === "monthly" && cadence.onThe) {
+    const which = `${PLACE_WORDS[cadence.onThe.nth]} ${weekdayNames([cadence.onThe.day])}`;
+    return interval === 1 ? `every ${which} of the month` : `${every} ${unit} on the ${which}`;
+  }
   if (freq !== "weekly") return `${every} ${unit}`;
   const days = cadence.byDay.length > 0 ? cadence.byDay : firstWeekday ? [firstWeekday] : [];
   const same = (set: readonly Weekday[]) => days.length === set.length && set.every((d) => days.includes(d));

@@ -4,7 +4,7 @@ import { occurrenceKey, type ItemKey } from "@/domain/item-key";
 import type { Rule, RuleEnd } from "@/domain/recurrence";
 import type { TagColors, TagName } from "@/domain/tag";
 import { addDays, localMinutes, toLocalDate } from "@/lib/dates";
-import { describeRule, presetOf, type RepeatChoice, type RepeatPreset } from "./repeat";
+import { customOf, describeRule, presetOf, type CustomRepeat, type RepeatChoice, type RepeatPreset } from "./repeat";
 import type { ActionResult } from "@/features/today/commands";
 import { formatDayHeading, formatDayIn } from "@/features/today/format";
 import { formatClock, parseClock, type Clock } from "@/lib/clock";
@@ -76,9 +76,11 @@ function skippedDate(seriesId: ItemId, on: LocalDate, today: LocalDate): Skipped
   return { key: occurrenceKey(seriesId, on), on: formatDayIn(on, today) };
 }
 
-/** A series' rule as the sheet edits it. `preset` is null for a rule the menu cannot make. */
+/** A series' rule as the sheet edits it. `preset` is null for a rule only the editor can make. */
 export type RuleView = {
   preset: RepeatPreset | null;
+  /** The rule as the editor's fields hold it, whether or not the menu names it. */
+  custom: CustomRepeat;
   end: RuleEnd;
   summary: string;
   /** The series' first date. */
@@ -90,6 +92,7 @@ export type RuleView = {
 function ruleView(rule: Rule, firstOn: LocalDate, shownOn: LocalDate, today: LocalDate): RuleView {
   return {
     preset: presetOf(rule),
+    custom: customOf(rule, firstOn),
     end: rule.end,
     summary: describeRule(rule, firstOn, today),
     firstOn,
