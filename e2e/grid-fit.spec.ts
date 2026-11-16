@@ -120,11 +120,11 @@ test.describe("on a phone", () => {
   test("the any-time row takes three rows and folds the rest under a + more button", async ({ page }) => {
     await open(page, "?at=10:30");
     const row = page.locator("[data-anytime] ul").first();
-    await expect(row.locator("li[data-item]")).toHaveCount(2);
+    await expect(row.locator("li[data-item]:visible")).toHaveCount(2);
     const more = row.locator("button[aria-expanded]");
     await expect(more).toHaveText(/^\+\d+ more$/);
     await more.click();
     await expect(more).toHaveText("Show fewer");
-    expect(await row.locator("li[data-item]").count()).toBeGreaterThan(2);
+    expect(await row.locator("li[data-item]:visible").count()).toBeGreaterThan(2);
   });
 });
