@@ -37,15 +37,11 @@ signedIn.describe("a busy day", () => {
     await expect(next.getByRole("listitem")).toHaveCount(3);
     await expect(next.getByRole("checkbox", { name: "Done: Focus block" })).not.toBeChecked();
 
-    // The printed key names the shapes, and a due date carries the same mark on the Score as in Next up.
-    await expect(page.getByRole("list", { name: "Kinds" }).getByRole("listitem")).toHaveText(["Task", "Event", "Checklist"]);
-    await expect(page.getByRole("button", { name: /^Send the invoice, Due today, any time, Work, planned/ })).toBeVisible();
+    // A due date carries the same mark on the grid as in Next up.
+    await expect(page.getByRole("button", { name: /^(?=.*Due today)Send the invoice.*any time.*Work, planned/ })).toBeVisible();
 
-    // Done in Any time folds into one line that opens in place.
-    const anyTime = page.getByRole("list", { name: "Any time today" });
-    await expect(anyTime.getByRole("button", { name: /^Water the plants/ })).toBeHidden();
-    await anyTime.getByText("Done (1)").click();
-    await expect(anyTime.getByRole("button", { name: /^Water the plants/ })).toBeVisible();
+    // Done in Any time stays in the row, faded and named done.
+    await expect(page.locator("[data-anytime] li").getByRole("button", { name: /^Water the plants.*done/ })).toBeVisible();
 
     await page.goto("/week");
     await expect(page.locator(".page-summary").first()).toHaveText(/^This week · (Last day|\d days left) · \d+ open .*· 4 in the Inbox$/);
@@ -70,21 +66,24 @@ signedIn.describe("a busy day", () => {
     await focus.click();
     await expect(focus).toHaveAttribute("aria-pressed", "true");
 
-    const score = page.getByRole("region", { name: "Score" });
-    await expect(score).toBeHidden();
-    const rest = page.locator("summary").filter({ hasText: "The whole day" });
-    await expect(rest).toContainText(/\d+ more planned · \d+ in the Inbox · 2 left over · 3 done/);
+    // Focus dims the grid to what is happening now, and leaves only Next up beside it.
+    const planned = page.locator('[data-calendar-grid] [data-state="planned"]').first();
+    const live = page.locator('[data-calendar-grid] [data-state="live"]').first();
+    const leftOver = page.locator("#leftover-h");
+    await expect(planned).toHaveCSS("opacity", "0.38");
+    await expect(live).toHaveCSS("opacity", "1");
+    await expect(leftOver).toBeHidden();
     await expect(page.getByRole("region", { name: "Next up" }).getByText("Send the invoice")).toBeVisible();
 
     await page.reload();
     await expect(page.getByRole("button", { name: "Focus", exact: true })).toHaveAttribute("aria-pressed", "true");
-    await rest.click();
-    await expect(score).toBeVisible();
+    await expect(planned).toHaveCSS("opacity", "0.38");
 
     await page.getByRole("button", { name: "Focus", exact: true }).click();
     await page.reload();
     await expect(page.getByRole("button", { name: "Focus", exact: true })).toHaveAttribute("aria-pressed", "false");
-    await expect(score).toBeVisible();
+    await expect(planned).toHaveCSS("opacity", "1");
+    await expect(leftOver).toBeVisible();
   });
 
   for (const { width, colorScheme } of [

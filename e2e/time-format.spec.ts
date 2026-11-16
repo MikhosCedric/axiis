@@ -16,7 +16,7 @@ async function choose(page: Page, name: "Auto" | "12-hour" | "24-hour") {
 signedIn.describe("time format", () => {
   signedIn.use({ timezoneId: "UTC", locale: "en-US" });
 
-  signedIn("12-hour writes the Score, Week, Month, detail panel and capture in AM and PM, and is kept on reload", async ({ page }) => {
+  signedIn("12-hour writes the Day, Week, Month, detail panel and capture in AM and PM, and is kept on reload", async ({ page }) => {
     await choose(page, "12-hour");
     await expect(page.getByText("Like 9:30 AM and 2:15 PM.")).toBeVisible();
 
@@ -28,15 +28,16 @@ signedIn.describe("time format", () => {
     await expect(page.locator("#capture-status")).toHaveText(/Planned for Tuesday 10 March, 9:30\sPM to 10:15\sPM\./);
 
     await page.goto("/day/2099-03-10");
-    const beam = page.getByRole("button", { name: new RegExp(`^${TITLE}, 9:30\\sPM, ends 10:15\\sPM, `) });
+    const beam = page.getByRole("button", { name: new RegExp(`^${TITLE}[ ,].*9:30\\sPM.*10:15\\sPM`) });
     await expect(beam).toBeVisible();
     const axis = page.locator("[data-hour]");
     await expect(axis.filter({ hasText: /^9\sPM$/ })).toHaveCount(1);
     await expect(axis.filter({ hasText: /^12\sPM$/ })).toHaveCount(1);
-    // The labels keep to the hour they mark: each is narrower than the 76px an hour takes.
-    for (const width of await axis.evaluateAll((spans) => spans.map((s) => s.scrollWidth))) expect(width).toBeLessThan(76);
+    // The labels keep to the hour they mark: each is narrower than the 56px gutter.
+    for (const width of await axis.evaluateAll((spans) => spans.map((s) => s.scrollWidth))) expect(width).toBeLessThan(56);
 
-    await beam.click();
+    await beam.focus();
+    await page.keyboard.press("Enter");
     const panel = page.getByRole("complementary");
     await expect(panel.getByText(/^Tuesday 10 March, 9:30\sPM to 10:15\sPM$/)).toBeVisible();
     await expect(panel.getByLabel("Starts at")).toHaveValue(/^9:30\sPM$/);
@@ -47,7 +48,7 @@ signedIn.describe("time format", () => {
     await expect(panel.getByText(/^Tuesday 10 March, 9:30\sPM to 11:00\sPM$/)).toBeVisible();
 
     await page.goto("/week/2099-03-10");
-    await expect(page.getByRole("button", { name: new RegExp(`^${TITLE}, `) })).toContainText(/9:30\sPM/);
+    await expect(page.getByRole("button", { name: new RegExp(`^${TITLE}[ ,]`) })).toContainText(/9:30\sPM/);
 
     await page.goto("/month/2099-03");
     const mark = page.getByRole("gridcell", { name: /^Tuesday 10 March/ }).getByRole("button", { name: new RegExp(`${TITLE}, `) });
@@ -60,7 +61,7 @@ signedIn.describe("time format", () => {
     await page.goto("/month/2099-03");
     await expect(mark).toContainText("21:30");
     await page.goto("/day/2099-03-10");
-    await expect(page.getByRole("button", { name: new RegExp(`^${TITLE}, 21:30, ends 23:00, `) })).toBeVisible();
+    await expect(page.getByRole("button", { name: new RegExp(`^${TITLE}[ ,].*21:30.*23:00`) })).toBeVisible();
   });
 
   signedIn("Auto follows the browser's language and region", async ({ page, context }) => {
