@@ -20,7 +20,7 @@ import { NO_FILTER, scopeWords, type ViewFilter } from "@/features/filter/model"
 import { GuideButton, type GuideTopic } from "@/features/palette/guide";
 import { placeAction } from "@/features/score/actions";
 import { captureAction, setDoneAction } from "@/features/today/actions";
-import { CaptureField } from "@/features/today/capture-field";
+import { CaptureField, type PasteActions } from "@/features/today/capture-field";
 import type { ActionResult } from "@/features/today/commands";
 import { formatDayHeading } from "@/features/today/format";
 import { buildToday } from "@/features/today/model";
@@ -44,6 +44,8 @@ import { WeekPulse } from "./week-pulse";
 
 /** The writes the day makes. Defaults to the server actions; a dev harness passes in-memory ones. */
 export type DayActions = CalendarActions & {
+  /** What a pasted block may become; the app's own when the capture is the app's own. */
+  paste?: PasteActions;
   /** Gives the whole series an occurrence belongs to this time of day. */
   timeSeries: (id: string, time: TimeOfDay) => Promise<ActionResult>;
 };
@@ -161,6 +163,7 @@ export function DayView({
           tour={tour}
           filter={filter}
           capture={actions.capture}
+          paste={actions.paste}
           controls={
             <>
               <Segmented
@@ -205,6 +208,7 @@ function DayPage({
   tour,
   filter,
   capture,
+  paste,
   controls,
 }: {
   ctx: CalendarContext;
@@ -220,6 +224,7 @@ function DayPage({
   tour: boolean;
   filter: ViewFilter;
   capture: DayActions["capture"];
+  paste: DayActions["paste"];
   controls: ReactNode;
 }) {
   const { date, timeZone, areas, isToday } = data;
@@ -298,7 +303,7 @@ function DayPage({
         controls={controls}
         controlsRow
         inline={!firstDay}
-        capture={<CaptureField inline={!firstDay} captureAction={capture} firstDay={firstDay} screenStatus={ctx.status} />}
+        capture={<CaptureField inline={!firstDay} captureAction={capture} pasteActions={paste} firstDay={firstDay} screenStatus={ctx.status} />}
       >
         <GlanceLine glance={glance} timeZone={timeZone} scope={scopeWords(filter)} />
         <FilterChips filter={filter} className="mt-2.5" />

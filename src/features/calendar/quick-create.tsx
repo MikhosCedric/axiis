@@ -4,7 +4,8 @@ import { useEffect, useRef, useState, useTransition, type FormEvent } from "reac
 import { Floating } from "@/components/floating";
 import { useWeekStart } from "@/components/shell/week-start-context";
 import type { LocalDate } from "@/domain/item";
-import { momentHere, parseCapture, previewWords, type Moment } from "@/features/today/capture-syntax";
+import { useAreas } from "@/components/shell/areas-context";
+import { momentHere, parseCapture, previewWords, type CaptureArea, type Moment } from "@/features/today/capture-syntax";
 import type { ActionResult, CaptureResult } from "@/features/today/commands";
 import { formatDayHeading } from "@/features/today/format";
 import { TITLE_MAX } from "@/features/today/model";
@@ -43,8 +44,9 @@ export function QuickCreate({
   const [moment, setMoment] = useState<Moment | undefined>(undefined);
   const [pending, startTransition] = useTransition();
   const weekStart = useWeekStart();
-  const said = parseCapture(value, { weekStart });
-  const preview = previewWords(said, clock, moment);
+  const areas = useAreas() as readonly CaptureArea[] | undefined;
+  const said = parseCapture(value, { weekStart, areas });
+  const preview = previewWords(said, clock, moment ?? { today });
   // Nothing typed yet: the line is only the slot's own words, which capture reads as a title with no plan.
   const untitled = said.untitled || !value.trim() || value.trim() === slotWords(slot, today, clock).trim();
 

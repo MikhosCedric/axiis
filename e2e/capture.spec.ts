@@ -49,7 +49,7 @@ test.describe("capture field", () => {
     await page.goto("/dev/day");
     await field(page).fill("Read chapter 9");
     await expect(page.locator("#capture-preview")).toHaveCount(0);
-    await field(page).fill("Groceries for Sunday");
+    await field(page).fill("Plan for Monday's meeting");
     await expect(page.locator("#capture-preview")).toHaveCount(0);
     await field(page).fill("Groceries by Sunday");
     await expect(page.locator("#capture-preview")).toHaveText("Understood: Sunday");
@@ -57,6 +57,52 @@ test.describe("capture field", () => {
     await expect(page.locator("#capture-preview")).toHaveCount(0);
     await field(page).press("Enter");
     await expect(page.locator("[data-captured]")).toContainText("call friday");
+  });
+
+  test("the preview says what a new phrase was understood as, and drops the preposition from the title", async ({ page }) => {
+    await page.goto("/dev/day");
+    const preview = page.locator("#capture-preview");
+    await field(page).fill("Groceries for Sunday");
+    await expect(preview).toHaveText("Understood: Sunday");
+    await field(page).fill("gym 7pm 1h");
+    await expect(preview).toHaveText("Understood: today, 19:00 to 20:00");
+    await field(page).fill("call Sam in 2 hours");
+    await expect(preview).toHaveText(/^Understood: (today|tomorrow), \d\d:\d\d$/);
+    await field(page).fill("write report due friday");
+    await expect(preview).toHaveText("Understood: due Friday");
+    await field(page).fill("file expenses @nowhere");
+    await expect(preview).toHaveText("Understood: No area named “nowhere”, so it stays in the title");
+    await field(page).fill("next week review");
+    await expect(preview).toHaveText(/^Understood: \w+ \d+ \w+( \d{4})?$/);
+  });
+
+  test("a pasted block offers items or a checklist and does not force either", async ({ page }) => {
+    await page.goto("/dev/day");
+    await hydrated(page);
+    const paste = (text: string) =>
+      field(page).evaluate((el, value) => {
+        const data = new DataTransfer();
+        data.setData("text", value);
+        el.dispatchEvent(new ClipboardEvent("paste", { clipboardData: data, bubbles: true, cancelable: true }));
+      }, text);
+    await field(page).focus();
+    await paste("Milk
+Eggs
+Bread");
+    const offer = page.getByRole("group", { name: "You pasted 3 lines." });
+    await expect(offer).toBeVisible();
+    await expect(offer.getByRole("button", { name: "Add 3 items" })).toBeVisible();
+    await expect(offer.getByRole("button", { name: "Add as a checklist named “Milk”" })).toBeVisible();
+    // Typing withdraws the offer; nothing was saved.
+    await field(page).press("x");
+    await expect(offer).toHaveCount(0);
+    await field(page).fill("");
+    await paste("Milk
+Eggs
+Bread");
+    await page.getByRole("button", { name: "Add 3 items" }).click();
+    await expect(field(page)).toHaveValue("");
+    await expect(page.getByText("Bread", { exact: true }).first()).toBeVisible();
   });
 
   test("the Guide explains the words, and Escape closes it back onto its button", async ({ page }) => {

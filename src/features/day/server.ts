@@ -19,6 +19,11 @@ export const getClock = cache(async () => (await getRequestClock()).clock);
 /** The first day of the week, as Settings chose it for this device, the way the root layout read it for the browser. */
 export const getWeekStart = cache(async () => readWeekStart((await cookies()).get(WEEK_START_COOKIE)?.value));
 
+/** The user's areas for a capture to match "@work" against, read only when the words hold an "@". */
+export async function areasNamedIn(words: string | readonly string[]) {
+  return [words].flat().some((w) => typeof w === "string" && w.includes("@")) ? getAreas() : [];
+}
+
 // One instant per request, so the shell and the page agree on which day is today.
 export const getNow = cache(() => new Date());
 

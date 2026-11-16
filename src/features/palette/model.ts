@@ -6,7 +6,7 @@ import { PLACES } from "@/components/shell/places";
 import { dayHref } from "@/features/day/nav";
 import { tagHref } from "@/features/tags/model";
 import type { SearchRow } from "@/features/notes/model";
-import { parseCapture, previewWords } from "@/features/today/capture-syntax";
+import { parseCapture, previewWords, type CaptureArea } from "@/features/today/capture-syntax";
 import { formatDayIn } from "@/features/today/format";
 import { formatMonthHeading, monthHref } from "@/features/month/model";
 import { completeDatePhrase, parseDatePhrase, parseMonthPhrase } from "./date-phrase";
@@ -79,6 +79,7 @@ export function paletteSections(
   selected: Target | null = null,
   recent: readonly Visit[] = [],
   weekStart?: WeekStart,
+  areas?: readonly { id: string; name: string }[],
 ): Section[] {
   const text = input.trim();
   const places = rank(DESTINATIONS, text, (p) => [p.label, ...p.also]);
@@ -124,8 +125,8 @@ export function paletteSections(
     target: { key: r.id, title: r.title, type: r.type, done: r.done, href: r.href },
   }));
 
-  const read = parseCapture(text, { weekStart });
-  const understood = previewWords(read, clock);
+  const read = parseCapture(text, { weekStart, areas: areas as readonly CaptureArea[] | undefined });
+  const understood = previewWords(read, clock, { today });
   const what = same.length ? "as a new task" : "as a task";
   const label = read.untitled
     ? `Capture “${text}” ${what}. ${understood}`

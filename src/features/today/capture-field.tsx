@@ -5,9 +5,21 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState, useTransition, type FormEvent, type ReactNode } from "react";
 import { useClock } from "@/components/shell/clock-context";
 import { useWeekStart } from "@/components/shell/week-start-context";
-import { captureAction as serverCapture } from "./actions";
+import { useAreas } from "@/components/shell/areas-context";
+import { captureAction as serverCapture, captureLinesAction, captureListAction } from "./actions";
+import { oneLine, pastedLines, shortName } from "./capture-paste";
 import type { ActionResult, CaptureResult } from "./commands";
-import { CAPTURE_EXAMPLES, CAPTURE_LEAD, capturedLine, firstCapturedLine, momentHere, parseCapture, previewWords, type Moment } from "./capture-syntax";
+import {
+  CAPTURE_EXAMPLES,
+  CAPTURE_LEAD,
+  capturedLine,
+  firstCapturedLine,
+  momentHere,
+  parseCapture,
+  previewWords,
+  type CaptureArea,
+  type Moment,
+} from "./capture-syntax";
 import { CAPTURE_PARAM, readPrefill } from "./capture-prefill";
 import { TITLE_MAX } from "./model";
 import { useQueueCapture } from "@/components/shell/outbox";
@@ -63,8 +75,20 @@ function useExample(on: boolean): string {
 
 type Status = { text: string; error: boolean; link?: { href: string; label: string } };
 
+/** What a pasted block of lines may become: one task a line, or a checklist named by the first line with the rest as its lines. */
+export type PasteActions = {
+  items: (lines: string[]) => Promise<CaptureResult | ActionResult>;
+  list: (lines: string[]) => Promise<CaptureResult | ActionResult>;
+};
+
+const serverPaste: PasteActions = { items: captureLinesAction, list: captureListAction };
+
+const OFFER_BUTTON =
+  "press rounded border border-rule px-2 py-0.5 font-medium text-ink hover:bg-hover active:bg-press pointer-coarse:px-3 pointer-coarse:py-2";
+
 export function CaptureField({
   captureAction = serverCapture,
+  pasteActions,
   label = "Capture anything",
   placeholder = "Capture anything, then place it later",
   plans = true,
@@ -74,6 +98,8 @@ export function CaptureField({
 }: {
   // Some screens still type their capture as a plain ActionResult; the server sends the full CaptureResult.
   captureAction?: (title: string) => Promise<CaptureResult | ActionResult>;
+  /** What a pasted block of lines is offered as. The app's own capture gets the app's own; a screen with another capture offers nothing unless it says. */
+  pasteActions?: PasteActions;
   label?: string;
   placeholder?: string;
   /** False where the capture takes its words as a name and plans nothing, so no preview shows. */
@@ -98,7 +124,11 @@ export function CaptureField({
   const weekStart = useWeekStart();
   // Read when a key is pressed, not while rendering: a repeat whose time today has passed says the day it starts.
   const [moment, setMoment] = useState<Moment | undefined>(undefined);
-  const preview = plans ? previewWords(parseCapture(value, { weekStart }), clock, moment) : null;
+  const areas = useAreas() as readonly CaptureArea[] | undefined;
+  const preview = plans ? previewWords(parseCapture(value, { weekStart, areas }), clock, moment) : null;
+  const paste = pasteActions ?? (captureAction === serverCapture ? serverPaste : undefined);
+  // The lines of a block just pasted, while the choice of what to make of them stands. Any typing withdraws it.
+  const [pasted, setPasted] = useState<string[] | null>(null);
   const example = useExample(firstDay);
   const pathname = usePathname();
   const queue = useQueueCapture();
@@ -124,6 +154,7 @@ export function CaptureField({
     // Clear at once so the next thought can start while this one saves.
     setValue("");
     setStatus(null);
+    setPasted(null);
     unmark.current();
     // The answer lands after a refresh that ends the first day, so remember whether this was it.
     const first = firstDay;
@@ -152,6 +183,28 @@ export function CaptureField({
     });
   }
 
+  /** Makes the pasted lines into items or a checklist. The field keeps the words until they have saved. */
+  function addPasted(make: PasteActions["items"], lines: string[]) {
+    const kept = value;
+    setPasted(null);
+    setValue("");
+    setStatus(null);
+    unmark.current();
+    startTransition(async () => {
+      const result = await reach(make(lines));
+      if (!result.ok) {
+        setValue((current) => current || kept);
+        setStatus({ text: result.error, error: true });
+        return;
+      }
+      if ("id" in result) {
+        setStatus({ text: capturedLine(result, "field", clock), error: false });
+        unmark.current = markWhenShown(result.id);
+      }
+      input.current?.focus();
+    });
+  }
+
   return (
     <form onSubmit={submit} autoComplete="off" className={`max-w-[440px] ${inline ? "@min-[64rem]/page:relative @min-[64rem]/page:max-w-none" : ""}`}>
       <label htmlFor="capture" className="sr-only">
@@ -171,12 +224,30 @@ export function CaptureField({
           onChange={(e) => {
             setValue(e.target.value);
             setMoment(momentHere());
+            setPasted(null);
           }}
-          onKeyDown={(e) => e.key === "Escape" && e.currentTarget.blur()}
+          onPaste={(e) => {
+            const text = e.clipboardData.getData("text");
+            const lines = plans && paste ? pastedLines(text) : null;
+            if (!lines) return;
+            // The block goes in as the one line a plain paste makes of it, and the choice is offered under the field.
+            e.preventDefault();
+            const { selectionStart, selectionEnd } = e.currentTarget;
+            const next = `${value.slice(0, selectionStart ?? value.length)}${oneLine(text)}${value.slice(selectionEnd ?? value.length)}`.slice(0, TITLE_MAX);
+            setValue(next);
+            setMoment(momentHere());
+            setPasted(lines);
+          }}
+          onKeyDown={(e) => {
+            if (e.key !== "Escape") return;
+            // The first Escape withdraws a paste's offer; the next leaves the field.
+            if (pasted) setPasted(null);
+            else e.currentTarget.blur();
+          }}
           maxLength={TITLE_MAX}
           placeholder={firstDay ? example : placeholder}
           aria-keyshortcuts="c"
-          aria-describedby={`${firstDay ? "capture-lead " : ""}capture-status capture-preview`}
+          aria-describedby={`${firstDay ? "capture-lead " : ""}capture-status capture-preview${pasted ? " capture-pasted" : ""}`}
           className="w-full rounded-lg border border-field bg-sheet py-2.5 pr-10 pl-3.5 text-ink"
         />
         <kbd
@@ -189,7 +260,7 @@ export function CaptureField({
       <div className={`mt-1.5 ${inline ? "@min-[64rem]/page:absolute @min-[64rem]/page:inset-x-0 @min-[64rem]/page:top-full @min-[64rem]/page:z-[1] @min-[64rem]/page:mt-0" : ""}`}>
         <div className="min-h-6 min-w-0 pt-0.5 text-[13px]">
           {/* While the line reads as a plan, the preview takes the status line's place; the status stays for screen readers. */}
-          <p id="capture-status" role="status" className={preview ? "sr-only" : status?.error ? "font-medium text-ink" : "text-ink-2"}>
+          <p id="capture-status" role="status" className={preview || pasted ? "sr-only" : status?.error ? "font-medium text-ink" : "text-ink-2"}>
             {pending ? "Saving" : status?.text}
             {!pending && status?.link && status.link.href !== pathname && (
               <>
@@ -201,7 +272,19 @@ export function CaptureField({
               </>
             )}
           </p>
-          {preview && (
+          {pasted && paste && (
+            <div role="group" aria-labelledby="capture-pasted" className="flex flex-wrap items-center gap-x-2 gap-y-1.5 pb-1 text-ink-2">
+              <p id="capture-pasted">You pasted {pasted.length} lines.</p>
+              <button type="button" className={OFFER_BUTTON} onClick={() => addPasted(paste.items, pasted)}>
+                Add {pasted.length} items
+              </button>
+              <button type="button" className={OFFER_BUTTON} onClick={() => addPasted(paste.list, pasted)}>
+                Add as a checklist named “{shortName(pasted[0])}”
+              </button>
+              <span>or press Enter to keep one line.</span>
+            </div>
+          )}
+          {preview && !pasted && (
             <p id="capture-preview" className="text-ink-2">
               <span className="sr-only">Understood: </span>
               <span className="rounded border border-rule px-1.5 py-px">{preview}</span>
