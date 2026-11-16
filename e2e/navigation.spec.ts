@@ -117,25 +117,27 @@ signedIn.describe("the palette as a way around", () => {
 signedIn.describe("the Week on a phone", () => {
   signedIn.use({ viewport: { width: 375, height: 812 } });
 
-  signedIn("opens at Monday with a link down to today", async ({ page }) => {
+  signedIn("opens at today with three days, and the arrows step three at a time", async ({ page }) => {
     await open(page, "/week");
-    const today = page.locator("h3", { hasText: "Today" });
-    const jump = page.getByRole("link", { name: /^Jump to today, \w+day$/ });
-    const monday = (await page.locator("h3").first().textContent())?.includes("Today");
-    if (monday) {
-      await expect(jump).toHaveCount(0);
-      return;
-    }
-    await expect(page.locator(".page-summary").first()).toBeInViewport();
-    await jump.click();
-    await expect(today).toBeInViewport();
+    await hydrated(page);
+    const cols = page.locator("[data-day-col]");
+    await expect(cols).toHaveCount(3);
+    const today = await page.evaluate(() => new Date().toLocaleDateString("en-CA"));
+    const plus = (day: string, n: number) => new Date(Date.parse(`${day}T00:00:00Z`) + n * 86_400_000).toISOString().slice(0, 10);
+    await expect(cols.first()).toHaveAttribute("data-day-col", today);
+    // Nothing to swipe between days: the arrows are the way on, and each moves a whole screen.
+    await page.getByRole("link", { name: /^Next three days, / }).click();
+    await expect(cols.first()).toHaveAttribute("data-day-col", plus(today, 3));
+    await expect(page).toHaveURL(new RegExp(`/week/${plus(today, 3)}$`));
+    await page.getByRole("link", { name: /^Previous three days, / }).click();
+    await expect(cols.first()).toHaveAttribute("data-day-col", today);
   });
 
   signedIn("Today, Previous and Next are named and a thumb wide, and there is no span switch in the bar", async ({ page }) => {
     await open(page, "/week");
     const steps = page.getByRole("navigation", { name: "Week" });
-    await expect(steps.getByRole("link", { name: /^Previous week, / })).toBeVisible();
-    await expect(steps.getByRole("link", { name: /^Next week, / })).toBeVisible();
+    await expect(steps.getByRole("link", { name: /^Previous three days, / })).toBeVisible();
+    await expect(steps.getByRole("link", { name: /^Next three days, / })).toBeVisible();
     for (const link of await steps.getByRole("link").all()) {
       const box = await link.boundingBox();
       expect(box!.width).toBeGreaterThanOrEqual(44);
@@ -144,7 +146,7 @@ signedIn.describe("the Week on a phone", () => {
     await expect(steps.getByRole("link", { name: "Today" })).toBeVisible();
     // The side panel (the bottom bar here) is the only switch between the day, the week and the month.
     await expect(page.getByRole("group", { name: "Day, week or month" })).toHaveCount(0);
-    const [todayBox, previousBox] = [await steps.getByRole("link", { name: "Today" }).boundingBox(), await steps.getByRole("link", { name: /^Previous week/ }).boundingBox()];
+    const [todayBox, previousBox] = [await steps.getByRole("link", { name: "Today" }).boundingBox(), await steps.getByRole("link", { name: /^Previous three days/ }).boundingBox()];
     expect(Math.abs(todayBox!.y - previousBox!.y)).toBeLessThan(2);
   });
 });

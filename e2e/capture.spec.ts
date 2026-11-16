@@ -1,6 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
-import { hydrated } from "./session";
+import { hydrated, signedIn } from "./session";
 
 const field = (page: Page) => page.locator("#capture");
 const status = (page: Page) => page.locator("#capture-status");
@@ -12,7 +12,7 @@ async function capture(page: Page, text: string) {
 
 test.describe("capture field", () => {
   test("Today: a plain capture says it is waiting below and rings the new chip", async ({ page }) => {
-    await page.goto("/dev/score");
+    await page.goto("/dev/day");
     await capture(page, "Water the ferns");
     await expect(field(page)).toHaveValue("");
     await expect(status(page)).toHaveText("Captured. It is in the Inbox, below.");
@@ -21,7 +21,7 @@ test.describe("capture field", () => {
   });
 
   test("Today: the words plan a timed slot, previewed first, then said back", async ({ page }) => {
-    await page.goto("/dev/score");
+    await page.goto("/dev/day");
     await field(page).fill("stretch today at 10:00 #health");
     await expect(page.locator("#capture-preview")).toHaveText("Understood: today, 10:00, #health");
     await field(page).press("Enter");
@@ -30,7 +30,7 @@ test.describe("capture field", () => {
   });
 
   test("Today: a repeating plan is previewed and saved as a series in one step", async ({ page }) => {
-    await page.goto("/dev/score");
+    await page.goto("/dev/day");
     await field(page).fill("every tuesday at 7:30am to 9am gym");
     // Once 07:30 has passed on a Tuesday, the series starts next week and the preview says so.
     await expect(page.locator("#capture-preview")).toHaveText(/^Understood: Every Tuesday( starting Tuesday \d+ \w+)?, 07:30 to 09:00$/);
@@ -39,14 +39,14 @@ test.describe("capture field", () => {
   });
 
   test("Today: a plan for tomorrow leaves today's screen and says where it went", async ({ page }) => {
-    await page.goto("/dev/score");
+    await page.goto("/dev/day");
     await capture(page, "dentist tomorrow 9:00");
     await expect(status(page)).toHaveText("Planned for tomorrow, 09:00.");
     await expect(page.getByText("dentist", { exact: true })).toHaveCount(0);
   });
 
   test("words that only look like a plan stay in the title", async ({ page }) => {
-    await page.goto("/dev/score");
+    await page.goto("/dev/day");
     await field(page).fill("Read chapter 9");
     await expect(page.locator("#capture-preview")).toHaveCount(0);
     await field(page).fill("Groceries for Sunday");
@@ -60,7 +60,7 @@ test.describe("capture field", () => {
   });
 
   test("the Guide explains the words, and Escape closes it back onto its button", async ({ page }) => {
-    await page.goto("/dev/score");
+    await page.goto("/dev/day");
     const button = page.getByRole("button", { name: "Guide" });
     await button.click();
     const guide = page.getByRole("dialog", { name: "Guide" });
@@ -69,13 +69,6 @@ test.describe("capture field", () => {
     await page.keyboard.press("Escape");
     await expect(guide).toBeHidden();
     await expect(button).toBeFocused();
-  });
-
-  test("Week: a capture rings its chip in the tray", async ({ page }) => {
-    await page.goto("/dev/week");
-    await capture(page, "Sort the receipts");
-    await expect(status(page)).toHaveText("Captured. It is in the Inbox, below.");
-    await expect(page.locator("[data-captured]")).toContainText("Sort the receipts");
   });
 
   test("Inbox: a capture rings its row", async ({ page }) => {
@@ -97,7 +90,7 @@ test.describe("capture field", () => {
   });
 
   test("a failed capture keeps the words and says so", async ({ page }) => {
-    await page.goto("/dev/score");
+    await page.goto("/dev/day");
     await page.getByLabel("Make saves fail").check();
     await capture(page, "Call the landlord tomorrow");
     await expect(field(page)).toHaveValue("Call the landlord tomorrow");
@@ -200,4 +193,12 @@ test.describe("palette actions", () => {
     const results = await new AxeBuilder({ page }).include("dialog").analyze();
     expect(results.violations.filter((v) => v.impact === "serious" || v.impact === "critical")).toEqual([]);
   });
+});
+
+signedIn("Week: a capture rings its chip in the tray", async ({ page }) => {
+  await page.goto("/week");
+  await hydrated(page);
+  await capture(page, "Sort the receipts");
+  await expect(status(page)).toHaveText("Captured. It is in the Inbox, below.");
+  await expect(page.locator("[data-captured]")).toContainText("Sort the receipts");
 });

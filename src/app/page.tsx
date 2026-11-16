@@ -61,7 +61,7 @@ const BUBBLES: Record<string, string>[] = [
 /** Everything here ships today, each in a few words. Nothing is promised that is not built. */
 const NOW = [
   "Capture in plain English",
-  "The Score and its line for now",
+  "A time grid for the day and the week, with a line for now",
   "Drag to plan, or use the keys",
   "List, Week and Month views",
   "An Inbox for what is unplanned",

@@ -99,8 +99,8 @@ export default function HelpPage() {
       <section aria-labelledby="views">
         <h2 id="views">Views</h2>
         <p>
-          One set of items, seen several ways. Today and any other day show the Score, the day drawn as a printed line, or a
-          plain list. Pick an area or a tag and every view narrows to it.
+          One set of items, seen several ways. Today and any other day show a time grid, with the hours down the page, or a
+          plain list. The Week is the same grid, seven days side by side. Pick an area or a tag and every view narrows to it.
         </p>
         <dl className={grid}>
           {PLACES.map((p) => (

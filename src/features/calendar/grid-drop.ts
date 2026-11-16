@@ -71,6 +71,9 @@ export function resizeTo(item: ShownItem, day: LocalDate, end: number, timeZone:
 /** Plan `item` for `day` with no time: a drop on the any-time row. */
 export const toAnyTime = (day: LocalDate): Placement => ({ schedule: { kind: "day", on: day } });
 
+/** Take `item`'s day away: a drop on the Inbox tray under the grid. */
+export const toInbox = (): Placement => ({ schedule: { kind: "unscheduled" } });
+
 /** A stretch of empty time picked for a new item. */
 export type Slot = { day: LocalDate; start: number; length: number };
 

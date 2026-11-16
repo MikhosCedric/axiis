@@ -67,15 +67,16 @@ signedIn.describe("large titles", () => {
     });
   }
 
-  signedIn("the Score's hour axis sticks under the bar, not behind it", async ({ page }) => {
+  signedIn("the grid's day heads stay at the top of the grid while its hours scroll", async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 700 });
     await page.goto("/today");
     await hydrated(page);
-    await page.evaluate((y) => window.scrollBy(0, y), 500);
-    await expect(page.locator(".title-bar")).toHaveAttribute("data-folded");
-    const bar = (await page.locator(".title-bar").boundingBox())!;
-    const axis = (await page.getByRole("region", { name: "Score", exact: true }).locator(".sticky").first().boundingBox())!;
-    expect(axis.y).toBeGreaterThanOrEqual(bar.y + bar.height - 1);
+    const frame = page.locator("[data-calendar-grid]");
+    const head = frame.locator("[data-head]");
+    await frame.evaluate((el) => el.scrollTo(0, el.scrollHeight));
+    await expect.poll(() => frame.evaluate((el) => el.scrollTop)).toBeGreaterThan(100);
+    const top = (await frame.boundingBox())!.y;
+    expect(Math.abs((await head.boundingBox())!.y - top)).toBeLessThan(2);
   });
 });
 
@@ -120,7 +121,7 @@ signedIn.describe("segmented controls", () => {
     await expect(page).toHaveURL("/month/2099-04");
   });
 
-  signedIn("Score and List slide their thumb, and nothing slides under reduced motion", async ({ page }) => {
+  signedIn("Grid and List slide their thumb, and nothing slides under reduced motion", async ({ page }) => {
     await page.goto("/today");
     await hydrated(page);
     const view = page.getByRole("group", { name: "View" });
@@ -132,10 +133,10 @@ signedIn.describe("segmented controls", () => {
 
     await page.emulateMedia({ reducedMotion: "reduce" });
     const slid = await slides(page);
-    await view.getByRole("button", { name: "Score" }).click();
-    await expect(view.getByRole("button", { name: "Score" })).toHaveAttribute("aria-pressed", "true");
+    await view.getByRole("button", { name: "Grid" }).click();
+    await expect(view.getByRole("button", { name: "Grid" })).toHaveAttribute("aria-pressed", "true");
     expect(await slides(page)).toBe(slid);
-    await expect(view.getByRole("button", { name: "Score" })).toHaveAttribute("aria-pressed", "true");
+    await expect(view.getByRole("button", { name: "Grid" })).toHaveAttribute("aria-pressed", "true");
   });
 });
 

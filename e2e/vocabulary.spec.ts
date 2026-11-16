@@ -1,15 +1,17 @@
 import { expect, test } from "@playwright/test";
 
-test("the Score prints a key to its line forms and the now line, the Week to its line forms", async ({ page }) => {
-  await page.goto("/dev/score");
-  await expect(page.getByRole("list", { name: "Key" }).getByRole("listitem")).toHaveText([
-    "Planned",
-    "Happening",
-    "Done",
-    "Now",
-  ]);
-  await page.goto("/dev/week");
-  await expect(page.getByRole("list", { name: "Key" }).getByRole("listitem")).toHaveText(["Planned", "Happening", "Done"]);
+test("the Guide names the line forms and the kinds the grid's blocks carry, on the Day", async ({ page }) => {
+  for (const path of ["/dev/day"]) {
+    await page.goto(path);
+    await page.getByRole("button", { name: "Guide" }).click();
+    const guide = page.getByRole("dialog", { name: "Guide" });
+    await expect(guide.getByRole("list", { name: "Line forms" }).getByRole("listitem")).toHaveText([
+      /^Planned\./,
+      /^Happening\./,
+      /^Done\./,
+    ]);
+    await expect(guide.getByRole("list", { name: "Kinds of item" }).getByRole("listitem")).toHaveCount(3);
+  }
 });
 
 test("a tag page's glyph ticks an item done and back, and a series or a note has no tick", async ({ page }) => {

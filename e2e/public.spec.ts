@@ -172,7 +172,7 @@ test("pages carry the security headers", async ({ request }) => {
   expect(headers["strict-transport-security"]).toBe("max-age=63072000; includeSubDomains");
 });
 
-for (const path of ["/dev/score", "/dev/week", "/dev/inbox", "/dev/detail", "/dev/notes", "/dev/settings"]) {
+for (const path of ["/dev/inbox", "/dev/detail", "/dev/notes", "/dev/settings"]) {
   test(`${path} is reachable in the browser-test build`, async ({ page }) => {
     const response = await page.goto(path);
     expect(response?.status()).toBe(200);

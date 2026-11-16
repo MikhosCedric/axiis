@@ -19,7 +19,9 @@ signedIn.beforeEach(async ({ page, request, baseURL }) => {
 
 /** Today's List; Next up above it can hold the same items, depending on the hour. */
 const list = (page: Page) => page.getByRole("region", { name: "List", exact: true });
-const score = (page: Page) => page.getByRole("region", { name: "Score", exact: true });
+/** The time grid, and a block or chip on it by its title. */
+const grid = (page: Page) => page.locator("[data-calendar-grid]");
+const blockOf = (page: Page, title: string) => grid(page).locator("[data-quick]").filter({ hasText: title }).first();
 const row = (page: Page, title: string) => list(page).locator("[data-quick]").filter({ has: page.getByRole("button", { name: title, exact: false }) }).first();
 const note = (page: Page) => page.getByRole("status").filter({ hasText: /\S/ }).last();
 
@@ -192,32 +194,35 @@ signedIn.describe("quick actions on a row", () => {
   });
 });
 
-signedIn.describe("quick actions on the Score", () => {
-  signedIn("a beam shows its actions beside its end, and still drags and answers its keys", async ({ page }) => {
-    await page.setViewportSize({ width: 1440, height: 900 });
+signedIn.describe("quick actions on the grid", () => {
+  signedIn("a block shows its actions in brief, and still drags and answers its keys", async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 1000 });
     await page.goto("/today");
     await hydrated(page);
-    const beam = page.locator("[data-quick][role=button]").filter({ hasText: "Call the plumber" }).first();
-    await beam.scrollIntoViewIfNeeded();
-    await beam.hover();
-    const cluster = score(page).getByRole("button", { name: "Rename Call the plumber" });
-    await expect(cluster).toBeVisible();
-    const b = (await beam.boundingBox())!;
-    const c = (await cluster.boundingBox())!;
-    expect(c.x).toBeGreaterThanOrEqual(b.x + b.width);
+    const block = blockOf(page, "Call the plumber");
+    await block.scrollIntoViewIfNeeded();
+    // A click shows the block in brief, with its actions beside it: done, Edit and Delete.
+    await block.click();
+    const peek = page.getByRole("dialog", { name: "Call the plumber" });
+    await expect(peek).toBeVisible();
+    await expect(peek.getByRole("button", { name: "Edit" })).toBeVisible();
+    await expect(peek.getByRole("button", { name: "Delete" })).toBeVisible();
+    await expect(peek.getByRole("checkbox", { name: "Done: Call the plumber" })).toBeAttached();
+    await page.keyboard.press("Escape");
+    await expect(peek).toBeHidden();
 
-    // Delete and Backspace keep their meaning on the Score: back to the Inbox.
-    const before = await beam.getAttribute("aria-label");
+    // The move keys keep their meaning on the grid: Alt with Down moves a block a quarter hour.
+    const before = await block.getAttribute("aria-label");
     // Focus and press again until the key takes, as a slow run can press before the row's key handler is live.
     await expect(async () => {
-      await beam.focus();
-      await page.keyboard.press("ArrowRight");
-      await expect(page.locator("[data-quick][role=button]").filter({ hasText: "Call the plumber" }).first()).not.toHaveAttribute("aria-label", before!, { timeout: 1500 });
+      await blockOf(page, "Call the plumber").focus();
+      await page.keyboard.press("Alt+ArrowDown");
+      await expect(blockOf(page, "Call the plumber")).not.toHaveAttribute("aria-label", before!, { timeout: 1500 });
     }).toPass();
 
-    const moved = page.locator("[data-quick][role=button]").filter({ hasText: "Call the plumber" }).first();
+    // Dragging the block moves it too. Press where it has come to rest, then drag toward the side with room.
+    const moved = blockOf(page, "Call the plumber");
     const label = await moved.getAttribute("aria-label");
-    // A move slides the beam to its new place; press where it has come to rest, not where it was.
     let box = (await moved.boundingBox())!;
     await expect(async () => {
       const again = (await moved.boundingBox())!;
@@ -225,27 +230,26 @@ signedIn.describe("quick actions on the Score", () => {
       box = again;
       expect(still).toBe(true);
     }).toPass({ intervals: [150, 150, 250, 500] });
-    // Drag toward the side with room: by the hour the page opens at, 18:15 can sit at the Score's right edge.
-    const edge = (await score(page).boundingBox())!;
-    const to = box.x + box.width / 3 + 76 < edge.x + edge.width - 24 ? 76 : -76;
-    await page.mouse.move(box.x + box.width / 3, box.y + box.height / 2);
+    const frame = (await grid(page).boundingBox())!;
+    const dy = box.y + box.height + 60 < frame.y + frame.height ? 52 : -52;
+    await page.mouse.move(box.x + box.width / 2, box.y + Math.min(box.height / 2, 10));
     await page.mouse.down();
-    await page.mouse.move(box.x + box.width / 3 + to, box.y + box.height / 2, { steps: 10 });
+    await page.mouse.move(box.x + box.width / 2, box.y + Math.min(box.height / 2, 10) + dy, { steps: 10 });
     await page.mouse.up();
-    await expect(page.locator("[data-quick][role=button]").filter({ hasText: "Call the plumber" }).first()).not.toHaveAttribute("aria-label", label!);
+    await expect(blockOf(page, "Call the plumber")).not.toHaveAttribute("aria-label", label!);
   });
 
-  signedIn("rename a beam in a popover", async ({ page }) => {
+  signedIn("rename a block in a popover", async ({ page }) => {
     await page.goto("/today");
     await hydrated(page);
-    const beam = page.locator("[data-quick][role=button]").filter({ hasText: "Call the plumber" }).first();
-    await beam.focus();
+    const block = blockOf(page, "Call the plumber");
+    await block.focus();
     await page.keyboard.press("e");
     const field = page.getByRole("dialog", { name: "Rename Call the plumber" }).getByRole("textbox");
     await expect(field).toBeFocused();
     await field.fill("Ring the plumber");
     await page.keyboard.press("Enter");
-    await expect(page.locator("[data-quick][role=button]").filter({ hasText: "Ring the plumber" })).toBeVisible();
+    await expect(blockOf(page, "Ring the plumber")).toBeVisible();
   });
 });
 

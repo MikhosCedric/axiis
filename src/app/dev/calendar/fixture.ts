@@ -1,12 +1,13 @@
 import type { AreaColor } from "@/domain/area-color";
-import { isStored, type Area, type Item, type ItemId, type LocalDate } from "@/domain/item";
+import type { Area, Item, ItemId, LocalDate } from "@/domain/item";
 import type { CalendarData } from "@/features/calendar/calendar-view";
+import { weekCalendar } from "@/features/calendar/load";
 import { makeItem } from "@/features/today/test-support";
 import { loadWeek } from "@/features/week/load";
 import { weekOf } from "@/features/week/model";
 import { instantAt } from "@/lib/dates";
 import type { ItemsRepo } from "@/lib/items/repo";
-import { seedWeek } from "../week/fixture";
+import { seedWeek } from "./week-fixture";
 
 const COLORS: Record<string, AreaColor> = { Work: "indigo", Home: "clay", Health: "sage" };
 
@@ -42,20 +43,8 @@ export function seedCalendar(shown: LocalDate, now: Date, timeZone: string): { i
   return { items, areas };
 }
 
-/** The grid's query for the harness: the week's own loader over the in-memory repo, plus subtask counts. */
+/** The grid's query for the harness: the week's own loader over the in-memory repo, as the Week page turns it into the grid's data. */
 export async function loadCalendar(repo: ItemsRepo, date: LocalDate, now: Date, timeZone: string): Promise<{ data: CalendarData; week: LocalDate[] }> {
   const week = await loadWeek(repo, date, now, timeZone);
-  const stored = week.scheduled.flatMap((i) => (isStored(i) ? [i.id] : []));
-  return {
-    week: week.days,
-    data: {
-      timeZone,
-      today: week.today,
-      nowIso: week.nowIso,
-      areas: week.areas,
-      items: week.scheduled,
-      childCounts: stored.length ? await repo.childCounts(stored) : {},
-      tags: week.tags,
-    },
-  };
+  return { week: week.days, data: await weekCalendar(repo, week) };
 }

@@ -205,7 +205,7 @@ test.describe("calendar grid", () => {
 
   test("the tick inside a block marks it done", async ({ page }) => {
     await page.getByRole("button", { name: "Done: Dentist", exact: true }).click();
-    const dentist = page.locator("[data-item]").filter({ hasText: "Dentist" });
+    const dentist = page.locator("[data-calendar-grid] [data-item]").filter({ hasText: "Dentist" });
     await expect(dentist).toHaveAttribute("data-state", "done");
     await expect(page.locator("[data-calendar-status]")).toHaveText("Dentist is done.");
   });

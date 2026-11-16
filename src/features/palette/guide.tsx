@@ -11,7 +11,7 @@ import { chordCaps, chordSpoken, HELP_KEY, SHORTCUTS, type Chord } from "./short
 import { useIsMac } from "./use-is-mac";
 
 /** A part of the Guide that explains one screen's own words and gestures. */
-export type GuideTopic = "capture" | "score" | "week" | "month";
+export type GuideTopic = "capture" | "grid" | "week" | "month";
 
 type GuideControls = {
   open: () => void;
@@ -95,24 +95,33 @@ function CaptureTopic({ id }: { id: string }) {
   );
 }
 
-function ScoreTopic({ id }: { id: string }) {
+function GridTopic({ id }: { id: string }) {
   return (
-    <Topic id={id} title="Moving beams">
+    <Topic id={id} title="The time grid">
       <p>
-        Drag a beam along its staff to move it, or its right end to change its length. Drag it down to the Inbox to clear
-        its day, or one from the Inbox up onto an area to give it a time.
+        Hours run down the page and each day is a column. Anything planned for a day with no hour sits in the Any time row at
+        the top. Each block is tinted with its area&rsquo;s colour, and the small mark at its start is its done tick.
       </p>
-      <p>On a touch screen, press and hold first, then drag. With a beam focused, the arrow keys do the same; see below.</p>
+      <p>
+        Click empty time to add something there, or drag over it to set the length first. Click a block to see it in brief, and
+        double-click it to open its details.
+      </p>
+      <p>
+        Drag a block to move it, or its bottom edge to change its length. Drag it up to Any time to take its hour away, or down
+        to the Inbox to clear its day. Drag one from the Inbox onto a day to plan it. Escape puts a held block back, and a move
+        can be undone from the note that follows it.
+      </p>
+      <p>On a touch screen, press and hold first, then drag. With a block focused, the keys below do the same.</p>
     </Topic>
   );
 }
 
 function WeekTopic({ id }: { id: string }) {
   return (
-    <Topic id={id} title="Moving between days">
+    <Topic id={id} title="A week at a time">
       <p>
-        Drag an item to another day, or down to the Inbox to clear its day. With an item focused, the arrow keys do the
-        same; see below.
+        Seven days side by side, with today&rsquo;s date marked. Drag a block across to another day to move it there. On a narrow
+        screen the Week shows three days, and the arrows step three at a time.
       </p>
     </Topic>
   );
@@ -178,7 +187,7 @@ function KeyTopic({ id, onClose }: { id: string; onClose: () => void }) {
           </span>
           <span>
             <span className="font-medium text-ink">A dot.</span> The area or tag it belongs to, in the colour you gave it in
-            Settings. Choose an area in the sidebar, or press A then its number, to see only that area.
+            Settings. On the Day and the Week a block is tinted with its area&rsquo;s colour. Untick an area in the side panel to hide it, or press A then its number to see only that area.
           </span>
         </li>
         <li className={row}>
@@ -207,7 +216,7 @@ function KeyTopic({ id, onClose }: { id: string; onClose: () => void }) {
 /** In the order the Guide shows them. */
 const TOPICS: Record<GuideTopic, (props: { id: string }) => ReactNode> = {
   capture: CaptureTopic,
-  score: ScoreTopic,
+  grid: GridTopic,
   week: WeekTopic,
   month: MonthTopic,
 };

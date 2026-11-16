@@ -1,9 +1,9 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
-import { hydrated } from "./session";
+import { hydrated, signedIn } from "./session";
 
-test("the Score and Week trays are the Inbox and link to it", async ({ page }) => {
-  for (const path of ["/dev/score", "/dev/week"]) {
+test("the Day and Week trays are the Inbox and link to it", async ({ page }) => {
+  for (const path of ["/dev/day", "/dev/calendar"]) {
     await page.goto(path);
     const tray = page.getByRole("region", { name: "Inbox", exact: true });
     await expect(tray).toContainText("No day yet.");
@@ -14,8 +14,8 @@ test("the Score and Week trays are the Inbox and link to it", async ({ page }) =
   await expect(page.getByText("Captured, with no day yet. Plan each one when you are ready.")).toBeVisible();
 });
 
-test("the date jump's typed date field shows the focus ring", async ({ page }) => {
-  await page.goto("/dev/week");
+signedIn("the date jump's typed date field shows the focus ring", async ({ page }) => {
+  await page.goto("/week");
   await hydrated(page);
   await page.getByRole("heading", { level: 1 }).getByRole("button").click();
   const picker = page.getByLabel("Go to date");
@@ -145,7 +145,7 @@ test.describe("shell on a phone", () => {
         expect(box!.height, await control.innerText()).toBeGreaterThanOrEqual(44);
       }
     };
-    await page.goto("/dev/score");
+    await page.goto("/dev/day");
     await atLeastThumb(page.getByRole("group", { name: "View" }).getByRole("button"));
     await page.goto("/");
     await atLeastThumb(page.getByRole("banner").getByRole("link", { name: "Sign in" }));

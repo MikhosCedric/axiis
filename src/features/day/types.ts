@@ -3,12 +3,12 @@ import type { TagColors, TagName } from "@/domain/tag";
 import type { ChildCount } from "@/lib/items/repo";
 import type { TodayView as DayEntries } from "@/features/today/model";
 
-/** URL query parameter that picks Score or List. Absent means Score. */
+/** URL query parameter that picks the grid or the List. Absent means the grid. */
 export const DAY_VIEW_PARAM = "view";
 /** URL query parameter that selects an item for the detail panel. */
 export const SELECTED_ITEM_PARAM = "item";
 
-export type DayViewMode = "score" | "list";
+export type DayViewMode = "grid" | "list";
 
 /** Everything the day screen needs, loaded on the server and serializable to the client. */
 export type DayData = {

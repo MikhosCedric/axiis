@@ -72,14 +72,14 @@ describe("resolveAuthRedirect", () => {
       vi.unstubAllEnvs();
     });
 
-    it.each(["/dev", "/dev/score"])("lets a signed-out visitor reach %s outside production", (pathname) => {
+    it.each(["/dev", "/dev/day"])("lets a signed-out visitor reach %s outside production", (pathname) => {
       vi.stubEnv("NODE_ENV", "development");
       expect(signedOut(pathname)).toBeNull();
     });
 
     it.each([
       ["/dev", "/login?next=%2Fdev"],
-      ["/dev/score", "/login?next=%2Fdev%2Fscore"],
+      ["/dev/day", "/login?next=%2Fdev%2Fday"],
     ])("sends a signed-out visitor on %s to sign in, in production", (pathname, expected) => {
       vi.stubEnv("NODE_ENV", "production");
       expect(signedOut(pathname)).toBe(expected);
@@ -88,7 +88,7 @@ describe("resolveAuthRedirect", () => {
     it("lets a signed-out visitor reach them in the browser-test build, which runs as production", () => {
       vi.stubEnv("NODE_ENV", "production");
       vi.stubEnv("AXIIS_E2E_BUILD", "1");
-      expect(signedOut("/dev/score")).toBeNull();
+      expect(signedOut("/dev/day")).toBeNull();
     });
 
     it("keeps the public pages public in production", () => {

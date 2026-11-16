@@ -10,77 +10,76 @@ async function dragTo(page: Page, from: Locator, to: { x: number; y: number }, {
   await page.mouse.up();
 }
 
-async function center(locator: Locator) {
-  const box = await locator.boundingBox();
-  if (!box) throw new Error("drop target is not on screen");
-  return { x: box.x + box.width / 2, y: box.y + box.height / 2, box };
-}
-
 const clockToMinutes = (clock: string) => Number(clock.slice(0, 2)) * 60 + Number(clock.slice(3));
 const minutesToClock = (m: number) => `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`;
 
-test.describe("score", () => {
-  // Tall enough that the tray and the staves are both on screen, so the drag needs no autoscroll.
+const grid = (page: Page) => page.locator("[data-calendar-grid]");
+const tray = (page: Page) => page.getByRole("region", { name: "Inbox", exact: true });
+
+/** A point inside the day's column, a good way down the grid as it is scrolled. */
+async function inColumn(page: Page, down = 250) {
+  const frame = (await grid(page).boundingBox())!;
+  const col = (await page.locator("[data-day-col]").first().boundingBox())!;
+  return { x: col.x + col.width / 2, y: frame.y + down };
+}
+
+test.describe("day grid", () => {
   test.use({ viewport: { width: 1280, height: 1200 } });
 
   test.beforeEach(async ({ page }) => {
-    await page.goto("/dev/score");
+    await page.goto("/dev/day");
     // Drags aim at measured positions; a webfont landing later would move them.
     await page.evaluate(() => document.fonts.ready);
+    // A short grid keeps the Inbox tray under it on screen, so a drag from the tray needs no autoscroll.
+    await page.addStyleTag({ content: "[data-calendar-grid]{max-height:520px !important}" });
   });
 
-  test("dragging a waiting item onto an area gives it a time there", async ({ page }) => {
-    const score = page.getByRole("region", { name: "Score" });
-    const chip = page.getByRole("region", { name: "Inbox", exact: true }).getByRole("button", { name: /^Book the dentist, in the Inbox/ });
-    // Next up and a live beam's extra row grow the page at some hours, which can push the tray below the window.
+  test("dragging a waiting item from the Inbox onto the grid gives it a time there", async ({ page }) => {
+    const chip = tray(page).getByRole("button", { name: /^Book the dentist, in the Inbox/ });
     await chip.scrollIntoViewIfNeeded();
-    const home = await center(score.getByText("Home", { exact: true }));
+    const to = await inColumn(page);
 
-    await dragTo(page, chip, { x: home.box.x + home.box.width + 160, y: home.y });
+    await dragTo(page, chip, to);
 
-    // The harness seeds from the real clock, so a drop that lands on the current half hour reads "happening now".
-    await expect(score.getByRole("button", { name: /^Book the dentist, \d\d:\d\d(?:, passed)?, ends \d\d:\d\d, Home(?:, planned|, happening now)?$/ })).toBeVisible();
+    await expect(grid(page).getByRole("button", { name: /^Book the dentist[ ,]+\d\d:\d\d.*Health/ })).toBeVisible();
     await expect(chip).toHaveCount(0);
   });
 
   test("Escape during a drag puts the item back and opens nothing", async ({ page }) => {
-    const score = page.getByRole("region", { name: "Score" });
-    const chip = page.getByRole("region", { name: "Inbox", exact: true }).getByRole("button", { name: /^Book the dentist, in the Inbox/ });
-    const home = await center(score.getByText("Home", { exact: true }));
+    const chip = tray(page).getByRole("button", { name: /^Book the dentist, in the Inbox/ });
+    await chip.scrollIntoViewIfNeeded();
+    const to = await inColumn(page);
 
-    await dragTo(page, chip, { x: home.box.x + home.box.width + 160, y: home.y }, { escape: true });
+    await dragTo(page, chip, to, { escape: true });
 
     await expect(chip).toBeVisible();
-    await expect(score.getByRole("button", { name: /^Book the dentist, \d\d:\d\d/ })).toHaveCount(0);
+    await expect(grid(page).getByRole("button", { name: /^Book the dentist[ ,]+\d\d:\d\d/ })).toHaveCount(0);
     await expect(page.locator("html")).not.toHaveAttribute("data-score-dragging");
     await expect(page.getByRole("complementary", { name: "Details" })).toHaveCount(0);
   });
 
-  test("arrow keys move a focused beam a quarter hour", async ({ page }) => {
-    const beam = page.getByRole("button", { name: /^Design sync, \d\d:\d\d–\d\d:\d\d(?:, passed)?, event, Work/ });
-    const [, start, end] = (await beam.getAttribute("aria-label"))!.match(/(\d\d:\d\d)–(\d\d:\d\d)/)!;
+  test("Alt with the arrow keys moves a focused block a quarter hour", async ({ page }) => {
+    const block = grid(page).getByRole("button", { name: /^Design sync[ ,]+\d\d:\d\d[ ,]+to \d\d:\d\d/ });
+    const [, start, end] = (await block.getAttribute("aria-label"))!.match(/(\d\d:\d\d)[ ,]+to (\d\d:\d\d)/)!;
     const later = (clock: string) => minutesToClock(clockToMinutes(clock) + 15);
 
-    await beam.focus();
-    await page.keyboard.press("ArrowRight");
+    await block.focus();
+    await page.keyboard.press("Alt+ArrowDown");
 
-    // The fixture fixes this event at 13:00, so when the suite runs near then the moved beam covers now.
-    const moved = page.getByRole("button", {
-      name: new RegExp(`^Design sync, ${later(start)}–${later(end)}(, passed)?, event, Work(, planned|, happening now)?$`),
-    });
+    const moved = grid(page).getByRole("button", { name: new RegExp(`^Design sync[ ,]+${later(start)}[ ,]+to ${later(end)}`) });
     await expect(moved).toBeVisible();
     await expect(moved).toBeFocused();
-    await expect(page.getByRole("status").filter({ hasText: /^Design sync, / })).toBeVisible();
+    await expect(page.getByRole("status").filter({ hasText: /^Design sync/ })).toBeVisible();
     await expect(page.getByRole("button", { name: /^Same time/ })).toHaveCount(0);
   });
 
   test("timing one day of a repeating item offers the same time every day", async ({ page }) => {
-    await page.getByRole("button", { name: "Take vitamins, any time, planned, repeats" }).focus();
-    await page.keyboard.press("ArrowDown");
+    await grid(page).getByRole("button", { name: /^Take vitamins, any time/ }).focus();
+    await page.keyboard.press("Alt+ArrowDown");
 
-    const status = page.getByRole("status").filter({ hasText: /^Take vitamins, \d\d:\d\d to \d\d:\d\d, No area\./ });
+    const status = page.getByRole("status").filter({ hasText: /^Take vitamins/ }).filter({ hasText: /\d\d:\d\d/ });
     await expect(status).toBeVisible();
-    const clock = (await status.textContent())!.match(/(\d\d:\d\d) to/)![1];
+    const clock = (await status.textContent())!.match(/(\d\d:\d\d)/)![1];
     await status.getByRole("button", { name: "Same time every day" }).click();
 
     await expect(page.getByRole("status").filter({ hasText: `Take vitamins is at ${clock} every day.` })).toBeVisible();
@@ -88,8 +87,8 @@ test.describe("score", () => {
   });
 
   test("when the same time for every day does not save, it says so", async ({ page }) => {
-    await page.getByRole("button", { name: "Take vitamins, any time, planned, repeats" }).focus();
-    await page.keyboard.press("ArrowDown");
+    await grid(page).getByRole("button", { name: /^Take vitamins, any time/ }).focus();
+    await page.keyboard.press("Alt+ArrowDown");
     const offer = page.getByRole("button", { name: "Same time every day" });
     await expect(offer).toBeVisible();
 
@@ -99,24 +98,23 @@ test.describe("score", () => {
     await expect(page.getByRole("status").filter({ hasText: "That change did not save. Try again." })).toBeVisible();
   });
 
-  test("dragging a repeating item from any time onto an area offers it too", async ({ page }) => {
-    // At 14:00 the drop crosses Work while it has two overlapping items, whose preview adds a row and pushes Home down.
-    await page.goto("/dev/score?at=14:00");
+  test("dragging a repeating item from Any time into the grid offers it too", async ({ page }) => {
+    await page.goto("/dev/day?at=14:00");
     await page.evaluate(() => document.fonts.ready);
-    const score = page.getByRole("region", { name: "Score" });
-    const chip = page.getByRole("button", { name: "Take vitamins, any time, planned, repeats" });
-    const home = await center(score.getByText("Home", { exact: true }));
+    await page.addStyleTag({ content: "[data-calendar-grid]{max-height:520px !important}" });
+    const chip = grid(page).getByRole("button", { name: /^Take vitamins, any time/ });
+    const to = await inColumn(page);
 
-    await dragTo(page, chip, { x: home.box.x + home.box.width + 160, y: home.y });
+    await dragTo(page, chip, to);
 
-    await expect(score.getByRole("button", { name: /^Take vitamins, \d\d:\d\d(?:, passed)?, ends \d\d:\d\d, Home(?:, planned|, happening now)?, repeats$/ })).toBeVisible();
+    await expect(grid(page).getByRole("button", { name: /^Take vitamins[ ,]+\d\d:\d\d.*repeats/ })).toBeVisible();
     await expect(page.getByRole("button", { name: "Same time every day" })).toBeVisible();
   });
 });
 
 for (const view of ["", "&view=list"]) {
-  test(`score${view}: an empty tray does not claim everything has a time while some are at any time`, async ({ page }) => {
-    await page.goto(`/dev/score?tray=empty${view}`);
+  test(`day${view}: an empty tray does not claim everything has a time while some are at any time`, async ({ page }) => {
+    await page.goto(`/dev/day?tray=empty${view}`);
     await expect(page.getByText(/Take vitamins/).first()).toBeVisible();
     await expect(page.getByText("The Inbox is empty. What you capture lands here first.")).toBeVisible();
     await expect(page.getByText(/Everything has a/)).toHaveCount(0);
@@ -242,40 +240,6 @@ test("detail: times are typed either way and shown on the 24-hour clock, and an 
   await expect(end).toHaveAttribute("aria-invalid", "true");
   await expect(page.getByText("That time could not be read. 24-hour clock, like 14:30 or 1430. 2:30pm works too.")).toBeVisible();
   await expect(when("Planned for")).toHaveText("Sunday 11 October, 09:30 to 15:00");
-});
-
-test("week: dragging an item to another day plans it there", async ({ page }) => {
-  await page.goto("/dev/week");
-  const days = page.getByRole("region", { name: "Days" }).getByRole("region");
-  await expect(days).toHaveCount(7);
-  const item = page.getByRole("button", { name: /^Stretch, / });
-  let from = -1;
-  for (let i = 0; i < 7; i++) if ((await days.nth(i).getByRole("button", { name: /^Stretch, / }).count()) > 0) from = i;
-  expect(from).toBeGreaterThanOrEqual(0);
-  const target = days.nth((from + 2) % 7);
-
-  await dragTo(page, item, (await center(target.getByRole("heading"))));
-
-  await expect(target.getByRole("button", { name: /^Stretch, / })).toBeVisible();
-  await expect(days.nth(from).getByRole("button", { name: /^Stretch, / })).toHaveCount(0);
-});
-
-test("week: Escape during a drag leaves the item on its day", async ({ page }) => {
-  await page.goto("/dev/week");
-  const days = page.getByRole("region", { name: "Days" }).getByRole("region");
-  await expect(days).toHaveCount(7);
-  const item = page.getByRole("button", { name: /^Stretch, / });
-  let from = -1;
-  for (let i = 0; i < 7; i++) if ((await days.nth(i).getByRole("button", { name: /^Stretch, / }).count()) > 0) from = i;
-  expect(from).toBeGreaterThanOrEqual(0);
-  const target = days.nth((from + 2) % 7);
-
-  await dragTo(page, item, await center(target.getByRole("heading")), { escape: true });
-
-  await expect(days.nth(from).getByRole("button", { name: /^Stretch, / })).toBeVisible();
-  await expect(target.getByRole("button", { name: /^Stretch, / })).toHaveCount(0);
-  await expect(page.locator("html")).not.toHaveAttribute("data-score-dragging");
-  await expect(page.getByRole("complementary", { name: "Details" })).toHaveCount(0);
 });
 
 test("detail: a new subtask can be renamed in place", async ({ page }) => {
@@ -659,17 +623,23 @@ test.describe("lists", () => {
 });
 
 const SWITCHES = [
-  { path: "/dev/score", from: "Book the dentist", to: "Take vitamins" },
-  { path: "/dev/week", from: "Renew passport", to: "Book the dentist" },
+  { path: "/dev/day", from: "Book the dentist", to: "Take vitamins", grid: true },
+  { path: "/dev/calendar", from: "Renew passport", to: "Book the dentist", grid: true },
   { path: "/dev/inbox", from: "Pack for the coast", to: "Return the library books" },
 ];
 
-for (const { path, from, to } of SWITCHES) {
+for (const { path, from, to, grid } of SWITCHES) {
   test(`${path}: while the next item opens, the one still showing cannot be used`, async ({ page }) => {
     await page.goto(path);
     const details = page.getByRole("complementary", { name: "Details" });
     const insideInert = () => details.locator("h2").evaluate((h) => h.closest("[inert]") !== null);
-    await page.getByRole("button", { name: new RegExp(`^${from},?`) }).first().click();
+    // A click on a grid block shows it in brief; a double-click opens the panel.
+    const open = async (title: string) => {
+      const target = page.getByRole("button", { name: new RegExp(`^${title}(?:[ ,]|$)`) }).first();
+      if (grid) await target.dblclick();
+      else await target.click();
+    };
+    await open(from);
     await expect(details.getByRole("heading", { name: from })).toBeVisible();
     await expect(details).toHaveAttribute("aria-busy", "false");
 
@@ -683,7 +653,7 @@ for (const { path, from, to } of SWITCHES) {
         await route.continue();
       },
     );
-    await page.getByRole("button", { name: new RegExp(`^${to},?`) }).first().click();
+    await open(to);
 
     await expect(details).toHaveAttribute("aria-busy", "true");
     await expect(details.getByRole("heading", { name: from })).toBeVisible();
@@ -716,54 +686,51 @@ test.describe("on a phone", () => {
     await expect(row).toBeInViewport();
   });
 
-  test("a beam opens its details in view with focus there", async ({ page }) => {
-    await page.goto("/dev/score");
-    await page.getByRole("button", { name: /^Design sync, / }).click();
+  test("a block opens its details in view with focus there", async ({ page }) => {
+    await page.goto("/dev/day");
+    await page.getByRole("button", { name: /^Design sync[ ,]/ }).dblclick();
     const details = page.getByRole("complementary", { name: "Details" });
     await expect(details.getByRole("heading", { name: "Design sync" })).toBeInViewport();
     await expect(details.first()).toBeFocused();
   });
 });
 
-test("with a mouse, the Score's help lives in the Guide and shows no press-and-hold hint", async ({ page }) => {
-  await page.goto("/dev/score");
-  // Only a description now: clipped to a pixel, so nothing prints beside the Score.
-  expect((await page.getByText(/^Drag a beam to move it/).boundingBox())!.width).toBeLessThanOrEqual(1);
-  await expect(page.getByRole("button", { name: /^Design sync, / })).toHaveAccessibleDescription(/Space marks it done/);
+test("with a mouse, the grid's help lives in the Guide and shows no press-and-hold hint", async ({ page }) => {
+  await page.goto("/dev/day");
+  // Only a description: clipped to a pixel, so nothing prints beside the grid.
+  expect((await page.getByText(/^Arrow keys move between items/).boundingBox())!.width).toBeLessThanOrEqual(1);
+  await expect(page.getByRole("button", { name: /^Design sync[ ,]/ })).toHaveAccessibleDescription(/D marks it done/);
   await page.keyboard.press("?");
   const guide = page.getByRole("dialog", { name: "Guide" });
-  await expect(guide.getByRole("heading", { name: "Moving beams" })).toBeVisible();
+  await expect(guide.getByRole("heading", { name: "The time grid" })).toBeVisible();
   await expect(guide.getByRole("heading", { name: "Keyboard shortcuts" })).toBeVisible();
   await page.keyboard.press("Escape");
   await expect(guide).toBeHidden();
-  await expect(page.getByText(/^Drag one onto an area/)).toBeVisible();
+  await expect(page.getByText(/^Drag one onto a day/)).toBeVisible();
   await expect(page.locator("kbd", { hasText: /^C$/ })).toBeVisible();
-  await expect(page.getByText(/Press and hold/)).toHaveCount(2);
+  await expect(page.getByText(/Press and hold/)).toHaveCount(1);
   for (const hint of await page.getByText(/Press and hold/).all()) await expect(hint).toBeHidden();
 });
 
 test.describe("on a touch phone", () => {
   test.use({ viewport: { width: 375, height: 812 }, hasTouch: true, isMobile: true });
 
-  test("the Score says to press and hold before dragging, and keeps the key help for screen readers", async ({
+  test("the grid says to press and hold before dragging, and keeps the key help for screen readers", async ({
     page,
   }) => {
-    await page.goto("/dev/score");
-    await expect(page.getByText(/^Press and hold a beam, then drag it/)).toBeVisible();
-    await expect(page.getByText(/^Press and hold one, then drag it onto an area/)).toBeVisible();
-    await expect(page.getByText(/^Drag one onto an area/)).toBeHidden();
+    await page.goto("/dev/day");
+    await expect(page.getByText(/^Press and hold one, then drag it onto a day/)).toBeVisible();
+    await expect(page.getByText(/^Drag one onto a day/)).toBeHidden();
     await expect(page.locator("kbd", { hasText: /^C$/ })).toBeHidden();
 
-    expect((await page.getByText(/^Drag a beam to move it/).boundingBox())!.width).toBeLessThanOrEqual(1);
-    await expect(page.getByRole("button", { name: /^Design sync, / })).toHaveAccessibleDescription(
-      /Space marks it done/,
-    );
+    expect((await page.getByText(/^Arrow keys move between items/).boundingBox())!.width).toBeLessThanOrEqual(1);
+    await expect(page.getByRole("button", { name: /^Design sync[ ,]/ })).toHaveAccessibleDescription(/D marks it done/);
     const button = page.getByRole("button", { name: "Guide" });
     const box = await button.boundingBox();
     expect(box!.height).toBeGreaterThanOrEqual(44);
     await button.tap();
     const guide = page.getByRole("dialog", { name: "Guide" });
-    await expect(guide.getByRole("heading", { name: "Moving beams" })).toBeInViewport();
+    await expect(guide.getByRole("heading", { name: "The time grid" })).toBeInViewport();
     const edges = await guide.evaluate((el) => {
       const r = el.getBoundingClientRect();
       return { left: r.left, right: r.right, width: window.innerWidth };

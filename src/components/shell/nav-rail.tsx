@@ -12,6 +12,7 @@ import { filterable } from "@/features/filter/href";
 import { useOpenPalette } from "@/features/palette/palette";
 import { CAPTURE_KEY } from "@/features/palette/shortcuts";
 import { useIsMac } from "@/features/palette/use-is-mac";
+import { daysHref } from "@/features/week/model";
 import { calendarView, keepSpans, spanHrefs, type CalendarView, type Span } from "@/features/week/span";
 import { MiniMonth } from "./mini-month";
 import { useWeekStart } from "./week-start-context";
@@ -85,17 +86,22 @@ type CalendarLinks = {
  * calendar view its three calendar places keep the date on screen, and its small month moves that
  * view to the day picked. The page's area or tag filter and the day's List view come along.
  */
-function useCalendarLinks(today: LocalDate): CalendarLinks {
+function useCalendarLinks(today: LocalDate, narrow = false): CalendarLinks {
   const pathname = usePathname();
   const params = useSearchParams();
   const startsOn = useWeekStart();
   const keep = useKeepFilter();
-  const view = calendarView(pathname, today, startsOn);
-  const mode = view.span === "day" && params.get(DAY_VIEW_PARAM) === "list" ? "list" : "score";
+  const view = calendarView(pathname, today, startsOn, narrow);
+  const hrefs = (date: LocalDate) => {
+    const spans = spanHrefs(date, today, mode, startsOn);
+    // The phone's Week is three days from an exact day, so its links name that day, not the start of its week.
+    return narrow ? { ...spans, week: daysHref(view.span === "week" && date === view.anchor && view.from ? view.from : date, today) } : spans;
+  };
+  const mode = view.span === "day" && params.get(DAY_VIEW_PARAM) === "list" ? "list" : "grid";
   return {
     view,
-    dayHref: (date) => keep(spanHrefs(date, today, mode, startsOn)[view.span ?? "day"]),
-    spans: view.span ? keepSpans(spanHrefs(view.anchor, today, mode, startsOn), keep) : null,
+    dayHref: (date) => keep(hrefs(date)[view.span ?? "day"]),
+    spans: view.span ? keepSpans(hrefs(view.anchor), keep) : null,
   };
 }
 
@@ -519,7 +525,7 @@ const sheetRow = "min-h-12 px-3 text-[15px]";
  */
 function PhoneBar({ pathname, today, areas, badges, shown }: { pathname: string; today: LocalDate; areas: NavArea[]; badges: NavBadges; shown: ShownAreas }) {
   const tabId = useId();
-  const calendar = useCalendarLinks(today);
+  const calendar = useCalendarLinks(today, true);
   const sheet = useRef<HTMLDialogElement>(null);
   const hrefOf = usePlaceHref();
   const button = useRef<HTMLButtonElement>(null);

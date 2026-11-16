@@ -5,7 +5,7 @@ import { RANGE_LIMIT } from "@/lib/items/repo";
 import { spanLine } from "@/features/day/glance";
 import { WEEK_LENGTH, WEEK_STARTS_ON, weekOf, type WeekStart } from "./week-of";
 
-export { WEEK_LENGTH, WEEK_STARTS_ON, weekOf, type WeekStart } from "./week-of";
+export { NARROW_DAYS, narrowDays, WEEK_LENGTH, WEEK_STARTS_ON, weekOf, type WeekStart } from "./week-of";
 
 
 /** Under a week whose read hit `RANGE_LIMIT`, so later planned items are not drawn. */
@@ -151,6 +151,14 @@ export function weekdayName(date: LocalDate, form: "short" | "long"): string {
 export function weekHref(date: LocalDate, today: LocalDate, startsOn: WeekStart = WEEK_STARTS_ON): string {
   const start = weekOf(date, startsOn)[0];
   return start === weekOf(today, startsOn)[0] ? "/week" : `/week/${start}`;
+}
+
+/**
+ * The Week from one exact day, as a narrow screen shows it: three days from `from`. `/week` is the three from today.
+ * A wide screen at the same address shows the whole week that holds the day.
+ */
+export function daysHref(from: LocalDate, today: LocalDate): string {
+  return from === today ? "/week" : `/week/${from}`;
 }
 
 export type WeekNavAction = "previous" | "next" | "today";

@@ -9,10 +9,11 @@ import type { DayViewMode } from "@/features/day/types";
 import { useKeepFilter } from "@/features/filter/keep-filter";
 import { addMonths, anchorOf, firstOf, formatMonthHeading, monthHref, monthNavTarget, monthOf } from "@/features/month/model";
 import { formatDayHeading } from "@/features/today/format";
-import { anchorDay, formatWeekHeading, weekHref, weekNavTarget, weekOf } from "@/features/week/model";
+import { anchorDay, daysHref, NARROW_DAYS, narrowDays, formatWeekHeading, weekHref, weekNavTarget, weekOf } from "@/features/week/model";
 import { keepSpans, spanHrefs, spanShortcut, type Span } from "@/features/week/span";
 import { addDays, FIRST_DATE, LAST_DATE, parseLocalDate } from "@/lib/dates";
 import { placeNear } from "@/lib/placement";
+import { useNarrow } from "@/lib/use-narrow";
 import { MiniMonth } from "./mini-month";
 import { useWeekStart } from "./week-start-context";
 
@@ -87,6 +88,24 @@ function spanOf(span: Span, date: LocalDate, today: LocalDate, mode: DayViewMode
   };
 }
 
+const THREE_DAYS = { nav: "Week", one: "three days", now: "today" };
+
+/** The Week on a narrow screen: three days from `from`, stepped three at a time. Its address names the first of them. */
+function threeDays(from: LocalDate, today: LocalDate): ReturnType<typeof spanOf> {
+  const days = narrowDays(from);
+  return {
+    title: formatWeekHeading(days),
+    atNow: from === today,
+    anchor: days.includes(today) ? today : from,
+    from,
+    to: days[days.length - 1],
+    step: (action: DayNavAction) => (action === "today" ? today : addDays(from, action === "next" ? NARROW_DAYS : -NARROW_DAYS)),
+    same: (to: LocalDate) => to === from,
+    href: (to: LocalDate) => daysHref(to, today),
+    name: (to: LocalDate) => formatWeekHeading([to, addDays(to, NARROW_DAYS - 1)]),
+  };
+}
+
 /**
  * The one bar at the top of the Day, the Week and the Month (ADR-0004): Today, the steps back and
  * on, and the range as the page's title. The title opens a small month to jump by, with a field
@@ -102,21 +121,26 @@ export function CalendarBar({
   span,
   date,
   today,
-  mode = "score",
+  mode = "grid",
+  from = null,
   titleId,
 }: {
   span: Span;
   date: LocalDate;
   today: LocalDate;
   mode?: DayViewMode;
+  /** On the Week, the day its address names: a narrow screen shows three days from it and steps by three. */
+  from?: LocalDate | null;
   /** The id the page's title carries, for the regions the view labels by it. */
   titleId: string;
 }) {
   const router = useRouter();
   const startsOn = useWeekStart();
   const keep = useKeepFilter();
-  const words = NAMES[span];
-  const now = spanOf(span, date, today, mode, startsOn);
+  // Three days of the week on a narrow screen (ADR-0004): the title, the steps and the keys all speak of those three.
+  const three = useNarrow() && span === "week" ? from : null;
+  const words = three ? THREE_DAYS : NAMES[span];
+  const now = three ? threeDays(three, today) : spanOf(span, date, today, mode, startsOn);
   const previous = now.step("previous");
   const next = now.step("next");
   const { anchor } = now;
@@ -135,7 +159,7 @@ export function CalendarBar({
         defaultPrevented: e.defaultPrevented,
         typing: target !== null && isTypingTarget(target),
       };
-      const here = spanOf(span, date, today, mode, startsOn);
+      const here = three ? threeDays(three, today) : spanOf(span, date, today, mode, startsOn);
       const action = shortcutAction(press);
       if (action) {
         const to = here.step(action);
@@ -152,7 +176,7 @@ export function CalendarBar({
     }
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
-  }, [router, span, date, today, mode, startsOn, keep]);
+  }, [router, span, date, today, mode, startsOn, keep, three]);
 
   const gap = now.title.indexOf(" ");
 

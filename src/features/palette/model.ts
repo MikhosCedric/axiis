@@ -107,7 +107,7 @@ export function paletteSections(
   const month = date ? null : parseMonthPhrase(text, today);
   const dates: Command[] =
     date && !coveredByToday
-      ? [{ kind: "date", id: `date-${date}`, label: dateLabel(date, today), href: dayHref(date, today, "score") }]
+      ? [{ kind: "date", id: `date-${date}`, label: dateLabel(date, today), href: dayHref(date, today, "grid") }]
       : month
         ? [{ kind: "date", id: `month-${month}`, label: `Go to ${formatMonthHeading(month)}`, href: monthHref(month, today) }]
         : [];

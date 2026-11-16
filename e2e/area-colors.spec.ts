@@ -8,8 +8,6 @@ import { hydrated, SESSION_COOKIE, sessionSecret, signedIn } from "./session";
 
 const DAY = "/day/2099-05-20";
 const BUDGET = "e2e00000-0000-4000-8000-000000000021";
-const CLAY = { light: "rgb(150, 75, 44)", dark: "rgb(213, 132, 100)" };
-const MOSS = { light: "rgb(72, 83, 32)", dark: "rgb(122, 135, 83)" };
 
 const reset = (request: APIRequestContext) =>
   request.post("/dev/e2e-session", { headers: { cookie: `${SESSION_COOKIE}=${sessionSecret()}; axiis-e2e-account=areas` } });
@@ -22,8 +20,9 @@ async function axe(page: Page) {
 }
 
 const dot = (scope: Locator) => scope.locator("[data-area-color]");
-const fill = (scope: Locator) => dot(scope).first().evaluate((el) => getComputedStyle(el).backgroundColor);
-const staffLabel = (page: Page, name: string) => page.locator("[data-staff-label]").filter({ hasText: name });
+/** A block or chip on the grid by its title; it carries its area's colour as an inline --tint. */
+const tile = (page: Page, title: string) => page.locator("[data-calendar-grid] [data-item], [data-drop=tray] [data-item]").filter({ hasText: title });
+const tintedAs = (scope: Locator, color: string) => expect(scope).toHaveAttribute("style", new RegExp(`--tint: ?var\\(--area-${color}\\)`));
 
 /** Opens an area's picker, once the page answers clicks. */
 async function openPicker(page: Page, area: string) {
@@ -64,11 +63,12 @@ signedIn.describe("area colours", () => {
 
   signedIn("start as None, so nothing is coloured until one is chosen", async ({ page }) => {
     await page.goto(DAY);
-    await expect(staffLabel(page, "Work")).toBeVisible();
+    await expect(tile(page, "Draft the budget")).toBeVisible();
+    await expect(page.locator("[data-calendar-grid] [style*='--tint']")).toHaveCount(0);
     await expect(dot(page.locator("body"))).toHaveCount(0);
   });
 
-  signedIn("are chosen in Settings, kept, and shown on the Score, Week, Month, detail panel and rail", async ({ page }) => {
+  signedIn("are chosen in Settings, kept, and shown on the Day, Week, Month, detail panel and rail", async ({ page }) => {
     await colourWorkAndHome(page);
     // The arrows sent one save per colour they passed and the button shows the last at once, so a reload can land
     // before the last save does; kept means it reads Moss once the saves are in.
@@ -80,26 +80,24 @@ signedIn.describe("area colours", () => {
     await expect(page.getByRole("button", { name: "Colour for Health: None" })).toBeVisible();
 
     await page.goto(DAY);
-    await expect(dot(staffLabel(page, "Work"))).toHaveAttribute("data-area-color", "clay");
-    await expect(dot(staffLabel(page, "Home"))).toHaveAttribute("data-area-color", "moss");
-    await expect(dot(staffLabel(page, "Health"))).toHaveCount(0);
-    expect(await fill(staffLabel(page, "Work"))).toBe(CLAY.light);
+    await tintedAs(tile(page, "Draft the budget"), "clay");
+    await tintedAs(tile(page, "Water the ferns"), "moss");
     const readout = page.getByRole("region", { name: "Areas" });
     await expect(dot(readout)).toHaveCount(2);
     await expect(readout.getByRole("listitem").filter({ hasText: "Work" }).locator("[data-area-color]")).toHaveAttribute("data-area-color", "clay");
     const budget = page.locator(`[data-item="${BUDGET}"]`);
-    await expect(dot(budget)).toHaveAttribute("data-area-color", "clay");
-    await expect(dot(page.getByRole("button", { name: /^Water the ferns, any time, Home/ }))).toHaveAttribute("data-area-color", "moss");
-    await expect(dot(page.getByRole("button", { name: /^Sort the receipts, in the Inbox, Work/ }))).toHaveAttribute("data-area-color", "clay");
+    await tintedAs(budget, "clay");
+    await tintedAs(tile(page, "Sort the receipts"), "clay");
 
-    await budget.click();
+    await budget.getByRole("button").first().focus();
+    await page.keyboard.press("Enter");
     const details = page.getByRole("complementary", { name: "Details" });
     await expect(details.getByLabel("Area")).toHaveValue(/.+/);
     await expect(dot(details)).toHaveAttribute("data-area-color", "clay");
 
     await page.goto("/week/2099-05-18");
-    await expect(dot(page.getByRole("button", { name: /^Draft the budget, 10:00, Work, ends 11:30/ }))).toHaveAttribute("data-area-color", "clay");
-    await expect(dot(page.getByRole("button", { name: /^Water the ferns, Any time, Home/ }))).toHaveAttribute("data-area-color", "moss");
+    await tintedAs(tile(page, "Draft the budget"), "clay");
+    await tintedAs(tile(page, "Water the ferns"), "moss");
 
     await page.goto("/month/2099-05");
     const wednesday = page.getByRole("gridcell", { name: /^Wednesday 20 May/ });
@@ -110,7 +108,9 @@ signedIn.describe("area colours", () => {
   signedIn("are a dot, never the only sign: each coloured mark sits beside its area's name or in a mark named for it", async ({ page }) => {
     await colourWorkAndHome(page);
     await page.goto(DAY);
-    for (const name of ["Work", "Home"]) await expect(staffLabel(page, name)).toContainText(name);
+    for (const [title, area] of [["Draft the budget", "Work"], ["Water the ferns", "Home"]]) {
+      await expect(page.locator("[data-calendar-grid]").getByRole("button", { name: new RegExp(`^${title}.*, ${area}, `) })).toBeVisible();
+    }
     await expect(page.locator("[data-area-color]:not([aria-hidden='true'])")).toHaveCount(0);
   });
 
@@ -118,12 +118,12 @@ signedIn.describe("area colours", () => {
     signedIn.describe(`in ${colorScheme}`, () => {
       signedIn.use({ colorScheme });
 
-      signedIn("take the theme's token and pass axe on Settings with the picker open and on the Score", async ({ page }) => {
+      signedIn("take the theme's token and pass axe on Settings with the picker open and on the Day", async ({ page }) => {
         await colourWorkAndHome(page);
         expect(await axe(page)).toEqual([]);
         await page.goto(DAY);
-        expect(await fill(staffLabel(page, "Work"))).toBe(CLAY[colorScheme]);
-        expect(await fill(staffLabel(page, "Home"))).toBe(MOSS[colorScheme]);
+        await tintedAs(tile(page, "Draft the budget"), "clay");
+        await tintedAs(tile(page, "Water the ferns"), "moss");
         expect(await axe(page)).toEqual([]);
       });
     });

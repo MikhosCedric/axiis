@@ -4,9 +4,8 @@ import { hydrated, SESSION_COOKIE, sessionSecret, signedIn } from "./session";
 
 const expect = defaultExpect.configure({ timeout: 30_000 });
 
-const HOUR_PX = 76;
 const LEAD = "Type one thing you have to do. Add a day or a time and it lands on its line.";
-const NOTE = "The faint beams are examples. They go once you add your first item.";
+const NOTE = "The faint blocks are examples. They go once you add your first item.";
 const FIRST_EXAMPLE = "dentist tomorrow 9:00 #health";
 
 const field = (page: Page) => page.locator("#capture");
@@ -18,32 +17,20 @@ async function capture(page: Page, text: string) {
   await field(page).press("Enter");
 }
 
-/** Each example's title and clock, the staff label beside it, and whether the page scrolls sideways. */
+/** Each example's words and whether it can be touched, the hours drawn, and whether the grid or the page scrolls sideways. */
 async function drawn(page: Page) {
   return page.evaluate(() => {
-    const labels = [...document.querySelectorAll<HTMLElement>("[data-staff-label]")];
-    const beams = [...document.querySelectorAll<HTMLElement>("[data-example]")].map((el) => {
-      const r = el.getBoundingClientRect();
-      const staff = labels.find((l) => {
-        const s = l.getBoundingClientRect();
-        return r.top >= s.top && r.bottom <= s.bottom;
-      });
-      return {
-        text: el.textContent,
-        staff: staff?.textContent ?? null,
-        hidden: el.getAttribute("aria-hidden"),
-        events: getComputedStyle(el).pointerEvents,
-      };
-    });
+    const beams = [...document.querySelectorAll<HTMLElement>("[data-example]")].map((el) => ({
+      text: el.textContent,
+      hidden: el.getAttribute("aria-hidden"),
+      events: getComputedStyle(el).pointerEvents,
+    }));
     const hours = [...document.querySelectorAll<HTMLElement>("[data-hour]")].map((t) => Number(t.dataset.hour));
-    const label = labels[0];
-    const scroller = label.closest<HTMLElement>(".overflow-x-auto")!;
+    const frame = document.querySelector<HTMLElement>("[data-calendar-grid]")!;
     return {
       beams,
       hourCount: hours.length,
-      bodyWidth: label.nextElementSibling!.getBoundingClientRect().width,
-      gap: scroller.getBoundingClientRect().right - label.nextElementSibling!.getBoundingClientRect().right,
-      axisScrolls: scroller.scrollWidth > scroller.clientWidth,
+      gridScrollsSideways: frame.scrollWidth > frame.clientWidth,
       pageScrolls: document.documentElement.scrollWidth > window.innerWidth,
     };
   });
@@ -61,32 +48,25 @@ for (const viewport of WIDTHS) {
       test.use({ viewport, colorScheme });
 
       test("draws one example per area, hides the empty furniture, and passes axe", async ({ page }) => {
-        await page.goto("/dev/score?firstday");
+        await page.goto("/dev/day?firstday");
         await expect(examples(page)).toHaveCount(3);
-        // The axis is fitted to the window after hydration; measuring before that reads the server's default.
-        await expect(page.locator("[data-axis-measured]")).toBeAttached();
         const d = await drawn(page);
+        // The three examples, one per area, faint and out of reach of the pointer and of a screen reader.
         expect(d.beams).toEqual([
-          { text: "Write the plan 10:00", staff: "Work", hidden: "true", events: "none" },
-          { text: "Groceries 18:00", staff: "Home", hidden: "true", events: "none" },
-          { text: "Walk 12:30", staff: "Health", hidden: "true", events: "none" },
+          { text: expect.stringMatching(/^Write the plan 10:00 to 11:00$/), hidden: "true", events: "none" },
+          { text: expect.stringMatching(/^Groceries 18:00 to 18:45$/), hidden: "true", events: "none" },
+          { text: expect.stringMatching(/^Walk 12:30 to 13:00$/), hidden: "true", events: "none" },
         ]);
+        // The whole day is on the hour axis, and nothing scrolls sideways: the one day's column fills the width.
+        expect(d.hourCount).toBeGreaterThanOrEqual(23);
+        expect(d.gridScrollsSideways).toBe(false);
         expect(d.pageScrolls).toBe(false);
-        // The axis spans the examples and now, so late in the day at 1280 it may need to scroll; what it must never do is leave a gap.
-        if (viewport.width >= 1920) expect(d.axisScrolls).toBe(false);
-        if (viewport.width >= 1280 && !d.axisScrolls) {
-          expect(d.bodyWidth).toBe(d.hourCount * HOUR_PX);
-          if (d.hourCount < 24) expect(d.gap).toBeLessThan(HOUR_PX);
-        }
 
         await expect(page.getByText(NOTE)).toBeVisible();
         await expect(page.getByText(LEAD)).toBeVisible();
-        await expect(page.getByRole("heading", { name: "Any time" })).toHaveCount(0);
         await expect(page.getByRole("heading", { name: "Inbox", exact: true })).toHaveCount(0);
         await expect(page.getByText(/^\d+ open$/)).toHaveCount(0);
-        await expect(page.locator("#score-keys")).toHaveCount(0);
         await expect(page.getByRole("button", { name: "Guide" })).toBeVisible();
-        await expect(page.getByRole("list", { name: "Key" })).toHaveCount(0);
 
         const { violations } = await new AxeBuilder({ page }).analyze();
         expect(violations.filter((v) => v.impact === "serious" || v.impact === "critical").map((v) => v.id)).toEqual([]);
@@ -97,7 +77,7 @@ for (const viewport of WIDTHS) {
 
 test.describe("first-day capture", () => {
   test("turns the placeholder through real examples under a lead line", async ({ page }) => {
-    await page.goto("/dev/score?firstday");
+    await page.goto("/dev/day?firstday");
     await expect(field(page)).toHaveAttribute("placeholder", FIRST_EXAMPLE);
     await expect(field(page)).toHaveAttribute("aria-describedby", /capture-lead/);
     await expect(field(page)).toHaveAttribute("placeholder", "call Sam friday 14:00 for 30m", { timeout: 6_000 });
@@ -105,7 +85,7 @@ test.describe("first-day capture", () => {
 
   test("keeps the first example still when motion is reduced", async ({ page }) => {
     await page.emulateMedia({ reducedMotion: "reduce" });
-    await page.goto("/dev/score?firstday");
+    await page.goto("/dev/day?firstday");
     await expect(field(page)).toHaveAttribute("placeholder", FIRST_EXAMPLE);
     // The harness has no loading boundary, so the provider marks the page in the same commit that starts the turning.
     await hydrated(page);
@@ -121,14 +101,14 @@ test.describe("first-day capture", () => {
   test("the first capture says what it understood and links to its day; the examples go; the next capture reads as usual", async ({
     page,
   }) => {
-    await page.goto("/dev/score?firstday");
+    await page.goto("/dev/day?firstday");
     await expect(examples(page)).toHaveCount(3);
     await capture(page, "dentist tomorrow 9:00 #health");
     await expect(status(page)).toHaveText("Dentist is tomorrow at 09:00, tagged #health. See tomorrow.");
     await expect(status(page).getByRole("link", { name: "See tomorrow" })).toHaveAttribute("href", /^\/day\/\d{4}-\d{2}-\d{2}$/);
     await expect(examples(page)).toHaveCount(0);
     await expect(page.getByText(LEAD)).toHaveCount(0);
-    await expect(page.getByRole("heading", { name: "Any time" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Inbox", exact: true })).toBeVisible();
     await expect(field(page)).toHaveAttribute("placeholder", "Capture anything, then place it later");
 
     await capture(page, "buy milk");
@@ -136,8 +116,8 @@ test.describe("first-day capture", () => {
   });
 
   test("an account with items shows no examples", async ({ page }) => {
-    await page.goto("/dev/score?tray=empty");
-    await expect(page.locator("[data-staff-label]").first()).toBeVisible();
+    await page.goto("/dev/day?tray=empty");
+    await expect(page.locator("[data-calendar-grid]")).toBeVisible();
     await expect(examples(page)).toHaveCount(0);
     await expect(page.getByText(LEAD)).toHaveCount(0);
   });
@@ -160,7 +140,7 @@ signedIn.describe("first day on the real route", () => {
     await page.goto("/today");
     await expect(examples(page)).toHaveCount(3);
     await expect(page.getByText(LEAD)).toBeVisible();
-    await expect(page.getByRole("heading", { name: "Any time" })).toHaveCount(0);
+    await expect(page.getByRole("heading", { name: "Inbox", exact: true })).toHaveCount(0);
 
     await capture(page, "buy milk");
     await expect(status(page)).toHaveText("Buy milk is in the Inbox, with no day yet. See the Inbox.");
@@ -170,7 +150,7 @@ signedIn.describe("first day on the real route", () => {
     await expect(page.getByRole("main").getByText("buy milk", { exact: true })).toBeVisible();
 
     await page.goto("/today");
-    await expect(page.getByRole("heading", { name: "Any time" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Inbox", exact: true })).toBeVisible();
     await expect(examples(page)).toHaveCount(0);
   });
 
@@ -185,7 +165,7 @@ signedIn.describe("first day on the real route", () => {
     await panel.getByRole("button", { name: "Yes" }).click();
     await expect(page.getByRole("button", { name: /^buy milk, in the Inbox/ })).toHaveCount(0);
     await page.reload();
-    await expect(page.locator("[data-staff-label]").first()).toBeVisible();
+    await expect(page.locator("[data-calendar-grid]")).toBeVisible();
     await expect(examples(page)).toHaveCount(0);
   });
 });

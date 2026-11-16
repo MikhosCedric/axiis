@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { cookies } from "next/headers";
 import { FOCUS_COOKIE, readFocus, readTour, TOUR_COOKIE } from "@/components/shell/cookies";
-import { DayNav } from "@/features/day/day-nav";
 import { DayView } from "@/features/day/day-view";
 import { readDayQuery } from "@/features/day/nav";
 import { weekPulse } from "@/features/day/pulse";
@@ -36,7 +35,6 @@ export default async function TodayPage({ searchParams }: PageProps<"/today">) {
         mode={mode}
         focus={readFocus(jar.get(FOCUS_COOKIE)?.value)}
         tour={readTour(jar.get(TOUR_COOKIE)?.value, data.firstDay)}
-        nav={<DayNav date={today} today={today} mode={mode} />}
         detail={<DetailPanel itemId={itemId} />}
       />
     </TagColorsProvider>

@@ -10,8 +10,8 @@ export const TOUR_STEPS: { title: string; body: string }[] = [
     body: "Type anything into the field above and press Enter. Add a day or a time, as in “dentist tomorrow 9:00”, and it is planned; without one it goes to the Inbox.",
   },
   {
-    title: "The Score is your day",
-    body: "Each area of your life is a staff, and time runs left to right. A beam is something with a time: dashed while planned, solid while it happens, hollow once done. The green line is now.",
+    title: "The grid is your day",
+    body: "Hours run down the page. A block is something with a time, tinted with its area’s colour. The small mark inside it is dashed while planned, solid while it happens and hollow once done. Click empty time to add something there. The green line is now.",
   },
   {
     title: "Inbox or Today",

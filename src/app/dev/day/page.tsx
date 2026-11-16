@@ -4,17 +4,17 @@ import { notFound } from "next/navigation";
 import { DAY_VIEW_PARAM } from "@/features/day/types";
 import { fakeRepo, tagByTitle } from "@/features/today/test-support";
 import { instantAt, resolveTimeZone, toLocalDate } from "@/lib/dates";
-import { loadDayData, SCORE_TAGS, seedFixture } from "./fixture";
-import { ScoreHarness } from "./harness";
+import { loadDayData, DAY_TAGS, seedFixture } from "./fixture";
+import { DayHarness } from "./harness";
 
-export const metadata: Metadata = { title: "Score harness" };
+export const metadata: Metadata = { title: "Day harness" };
 
 /**
- * Dev-only page that renders the day screen from fixture data, for checking the Score without a session.
+ * Dev-only page that renders the day screen from fixture data, for checking the Day without a session.
  * `?tray=empty` leaves nothing waiting; `?firstday` starts from an account that has never stored an item;
  * `?at=13:00` sets the time of day, so a test that depends on where now falls does not depend on when it runs.
  */
-export default async function ScoreHarnessPage({ searchParams }: PageProps<"/dev/score">) {
+export default async function DayHarnessPage({ searchParams }: PageProps<"/dev/day">) {
   if (!devHarnessEnabled()) notFound();
   const params = await searchParams;
   const one = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v);
@@ -28,13 +28,13 @@ export default async function ScoreHarnessPage({ searchParams }: PageProps<"/dev
       : params.tray === "empty"
         ? seeded.items.filter((i) => i.schedule.kind !== "unscheduled")
         : seeded.items;
-  const initial = await loadDayData(tagByTitle(fakeRepo(structuredClone(items), areas), SCORE_TAGS).repo, now, timeZone);
+  const initial = await loadDayData(tagByTitle(fakeRepo(structuredClone(items), areas), DAY_TAGS).repo, now, timeZone);
   return (
-    <ScoreHarness
+    <DayHarness
       items={items}
       areas={areas}
       initial={initial}
-      mode={one(params[DAY_VIEW_PARAM]) === "list" ? "list" : "score"}
+      mode={one(params[DAY_VIEW_PARAM]) === "list" ? "list" : "grid"}
     />
   );
 }

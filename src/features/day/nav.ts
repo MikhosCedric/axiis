@@ -30,7 +30,7 @@ export type DayQuery = { mode: DayViewMode; itemId: string | null };
 export function readDayQuery(query: Record<string, string | string[] | undefined>): DayQuery {
   const item = query[SELECTED_ITEM_PARAM];
   return {
-    mode: query[DAY_VIEW_PARAM] === "list" ? "list" : "score",
+    mode: query[DAY_VIEW_PARAM] === "list" ? "list" : "grid",
     itemId: parseItemKey(item) ? (item as string) : null,
   };
 }

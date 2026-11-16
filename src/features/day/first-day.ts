@@ -1,7 +1,10 @@
 import type { Area, AreaId } from "@/domain/item";
-import type { Span } from "@/features/score/layout";
+import type { GridExample } from "@/features/calendar/calendar-grid";
 
-/** An example beam drawn on an empty account's first Score. Never stored, never interactive. */
+/** Minutes from midnight. */
+type Span = { start: number; end: number };
+
+/** An example drawn on an empty account's first day. Never stored, never interactive. */
 export type ExampleBeam = { areaId: AreaId; title: string; span: Span };
 
 /** Each example suits the seeded area it is named for; any other area takes whichever is left, in order. */
@@ -11,7 +14,7 @@ const EXAMPLES = [
   { suits: "health", title: "Walk", span: { start: 12 * 60 + 30, end: 13 * 60 } },
 ] as const;
 
-/** One example beam for each of the first three areas by position. */
+/** One example for each of the first three areas by position. */
 export function exampleBeams(areas: readonly Area[]): ExampleBeam[] {
   const first = [...areas].sort((a, b) => a.position - b.position).slice(0, EXAMPLES.length);
   const left: (typeof EXAMPLES)[number][] = [...EXAMPLES];
@@ -26,5 +29,10 @@ export function exampleBeams(areas: readonly Area[]): ExampleBeam[] {
   });
 }
 
-/** Under the Score on the first day, where the key and help usually sit. */
-export const EXAMPLES_NOTE = "The faint beams are examples. They go once you add your first item.";
+/** The same examples as the grid draws them: faint blocks on today, each in its area's colour. */
+export function exampleBlocks(areas: readonly Area[]): GridExample[] {
+  return exampleBeams(areas).map((e) => ({ title: e.title, start: e.span.start, end: e.span.end, color: areas.find((a) => a.id === e.areaId)?.color ?? null }));
+}
+
+/** Under the grid on the first day. */
+export const EXAMPLES_NOTE = "The faint blocks are examples. They go once you add your first item.";

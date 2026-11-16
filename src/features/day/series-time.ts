@@ -1,7 +1,7 @@
 import type { LocalDate, ShownItem } from "@/domain/item";
 import type { TimeOfDay } from "@/features/detail/model";
 import type { Placement } from "@/features/score/drop";
-import { DAY_MINUTES } from "@/features/score/layout";
+import { DAY_MINUTES } from "@/features/calendar/grid-layout";
 import { localMinutes } from "@/lib/dates";
 
 /** After one occurrence gets a new time, the offer to give its whole series that time. */

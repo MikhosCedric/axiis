@@ -4,7 +4,7 @@ import type { CalendarMode } from "@/features/calendar/grid-layout";
 import { fakeRepo, tagByTitle } from "@/features/today/test-support";
 import { instantAt, parseLocalDate, resolveTimeZone, toLocalDate } from "@/lib/dates";
 import { devHarnessEnabled } from "@/lib/dev-harness";
-import { WEEK_TAGS } from "../week/fixture";
+import { WEEK_TAGS } from "./week-fixture";
 import { loadCalendar, seedCalendar } from "./fixture";
 import { CalendarHarness } from "./harness";
 

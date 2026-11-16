@@ -163,7 +163,7 @@ export function MonthView({
     setPreview,
   );
 
-  const openDay = (date: LocalDate) => router.push(keep(dayHref(date, today, "score")));
+  const openDay = (date: LocalDate) => router.push(keep(dayHref(date, today, "grid")));
 
   function moveFocus(to: LocalDate) {
     if (days.includes(to)) {
@@ -321,7 +321,7 @@ export function MonthView({
                     isToday={cell.date === today}
                     active={cell.date === active}
                     over={preview?.over === cell.date}
-                    href={keep(dayHref(cell.date, today, "score"))}
+                    href={keep(dayHref(cell.date, today, "grid"))}
                     onFocus={() => setActive(cell.date)}
                     onPointerDown={() => (pressedChosen.current = cell.date === active)}
                     onClick={() => cellClick(cell.date)}
@@ -354,7 +354,7 @@ export function MonthView({
               </ul>
             )}
             <Link
-              href={keep(dayHref(activeCell.date, today, "score"))}
+              href={keep(dayHref(activeCell.date, today, "grid"))}
               className="mt-2 inline-flex min-h-11 items-center rounded-md font-medium text-ink underline underline-offset-2 hover:bg-hover"
             >
               {activeCell.more > 0 ? `${activeCell.more} more. Open the day` : "Open the day"}

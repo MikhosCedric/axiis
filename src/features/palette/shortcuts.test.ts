@@ -1,13 +1,13 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import type { AreaId, LocalDate } from "@/domain/item";
+import type { LocalDate } from "@/domain/item";
 import { shortcutAction, type KeyPress } from "@/features/day/nav";
-import { keyPlacement, type DropContext } from "@/features/score/drop";
+import { keyPlacement, type KeyContext } from "@/features/calendar/grid-drop";
 import { makeItem } from "@/features/today/test-support";
 import { gridStep } from "@/features/month/grid-step";
 import { rowKey } from "@/features/inbox/model";
 import { menuStep, rowKeyAction } from "@/features/actions/model";
-import { keyDestination, weekOf } from "@/features/week/model";
+import { weekOf } from "@/features/week/model";
 import { spanShortcut } from "@/features/week/span";
 import { instantAt } from "@/lib/dates";
 import { areaShortcut, CAPTURE_KEY, chordCaps, chordSpoken, globalShortcut, goShortcut, GO_ALIASES, GO_PLACES, SHORTCUTS, type Chord, type Handler } from "./shortcuts";
@@ -30,12 +30,10 @@ const press = (chord: Chord, over: Partial<KeyPress> = {}): KeyPress => ({
 });
 
 const date = "2026-10-06" as LocalDate;
-const ctx: DropContext = { date, timeZone: "UTC", axis: { start: 420, end: 1200 }, now: null };
-const work = "00000000-0000-4000-9000-000000000001" as AreaId;
-const beam = makeItem({ schedule: { kind: "timed", start: instantAt(date, 600, "UTC"), end: instantAt(date, 630, "UTC") } });
-const waiting = makeItem();
 const days = weekOf(date);
-const planned = makeItem({ schedule: { kind: "day", on: "2026-10-07" as LocalDate } });
+const ctx: KeyContext = { days, timeZone: "UTC", now: null, today: date };
+const block = makeItem({ schedule: { kind: "timed", start: instantAt(days[1], 600, "UTC"), end: instantAt(days[1], 630, "UTC") } });
+const planned = makeItem({ schedule: { kind: "day", on: days[2] } });
 
 /** Asks the code behind each handler whether it answers the chord. Every handler must have one. */
 const answers: Record<Handler, (chord: Chord) => boolean> = {
@@ -47,17 +45,18 @@ const answers: Record<Handler, (chord: Chord) => boolean> = {
     shortcutAction(press(c)) !== null &&
     shortcutAction(press({ key: c.key.toUpperCase() })) !== null &&
     source("../components/shell/calendar-bar.tsx").includes("shortcutAction(") &&
-    ["day/day-nav.tsx", "week/week-nav.tsx", "month/month-nav.tsx"].every((file) => source(file).includes("<CalendarBar")),
+    ["day/day-view.tsx", "week/week-view.tsx", "month/month-nav.tsx"].every((file) => source(file).includes("<CalendarBar")),
   span: (c) => spanShortcut(press(c)) !== null && source("../components/shell/calendar-bar.tsx").includes("spanShortcut("),
   capture: (c) =>
     c.key === CAPTURE_KEY
       ? source("palette/palette.tsx").includes('document.getElementById("capture")')
       : names("today/capture-field.tsx", c.key),
-  "score-item": (c) =>
-    names("score/score-view.tsx", c.key) ||
-    [beam, waiting].some((item) => keyPlacement(ctx, item, [null, work], { key: c.key, shiftKey: !!c.shift }) !== null),
-  "week-item": (c) =>
-    names("week/week-view.tsx", c.key) || [planned, waiting].some((item) => keyDestination(item, days, date, "UTC", c.key) !== null),
+  // A plain key is named by the grid's own handler; a key with Alt or Shift must place a block or an any-time item somewhere new.
+  "grid-item": (c) =>
+    c.alt || c.shift
+      ? [block, planned].some((item) => keyPlacement(ctx, item, { key: c.key, shiftKey: !!c.shift, altKey: !!c.alt }) !== null)
+      : names("calendar/calendar-grid.tsx", c.key),
+  "grid-slot": (c) => names("calendar/calendar-grid.tsx", c.key) && source("calendar/calendar-grid.tsx").includes("function cursorKey("),
   "month-grid": (c) => gridStep(c.key, 3) !== null || names("month/month-view.tsx", c.key),
   inbox: (c) => rowKey(c.key, date) !== null && source("inbox/inbox-view.tsx").includes("rowKey(e.key"),
   row: (c) =>
@@ -81,7 +80,7 @@ describe("the shortcuts table", () => {
   });
 
   it("does not list a key twice for the same thing in one place", () => {
-    const seen = rows.map((r) => `${r.where}|${r.handler}|${r.chord.key}|${!!r.chord.mod}|${!!r.chord.shift}|${r.then?.key ?? ""}`);
+    const seen = rows.map((r) => `${r.where}|${r.handler}|${r.chord.key}|${!!r.chord.mod}|${!!r.chord.alt}|${!!r.chord.shift}|${r.then?.key ?? ""}`);
     expect(new Set(seen).size).toBe(seen.length);
   });
 });

@@ -55,3 +55,16 @@ describe("loadWeek", () => {
     expect(week.scheduled.map((i) => i.id)).toEqual([skipped.id, `${series.id}~2026-10-05`]);
   });
 });
+
+describe("loadWeek for a narrow screen", () => {
+  it("reads through the three days from the date when they run past the week's end", async () => {
+    // Saturday 10 October: a phone shows Saturday, Sunday and Monday the 12th, which is next week.
+    const nextMonday = makeItem({ title: "Next Monday", schedule: { kind: "day", on: d("2026-10-12") } });
+    const nextTuesday = makeItem({ title: "Next Tuesday", schedule: { kind: "day", on: d("2026-10-13") } });
+    const { repo } = fakeRepo([nextMonday, nextTuesday]);
+    const week = await loadWeek(repo, d("2026-10-10"), new Date("2026-10-07T20:00:00Z"), "UTC");
+    expect(week.days).toHaveLength(7);
+    expect(week.days[6]).toBe("2026-10-11");
+    expect(week.scheduled.map((i) => i.title)).toEqual(["Next Monday"]);
+  });
+});
