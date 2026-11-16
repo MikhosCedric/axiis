@@ -16,7 +16,7 @@ function fixtures(): Item[] {
   const checklist = (n: number, title: string, created: string, over: Partial<Item> = {}) =>
     makeItem({ id: id(n), type: "checklist", title, createdAt: at(created), updatedAt: at(created), ...over });
   const line = (n: number, parent: number, title: string, done = false) =>
-    makeItem({ id: id(n), parentId: id(parent), title, status: done ? "done" : "open", position: n });
+    makeItem({ id: id(n), parentId: id(parent), title, status: done ? "done" : "open" });
   return [
     checklist(1, "Pack for the coast", "10-04", { areaId: areaId(2) }),
     line(11, 1, "Sunscreen"),

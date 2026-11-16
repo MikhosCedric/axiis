@@ -5,14 +5,19 @@ import type { ActionResult } from "@/features/today/commands";
 import { TITLE_MAX } from "@/features/today/model";
 import { ConfirmDelete } from "./confirm-delete";
 import { GlyphCheckbox } from "./glyph-checkbox";
-import { LiftIcon } from "./icons";
+import { LiftIcon, MoveDownIcon, MoveUpIcon } from "./icons";
 import { InlineTitle } from "./inline-title";
 import { progressLine, type DetailActions, type DetailSubtask } from "./model";
 import { reach } from "@/lib/reach";
+import { ReorderHandle, ReorderHint, useReorder } from "@/components/reorder";
 
 /** A pending row has a client id until the server render brings the real one. */
 type Row = { id: string; title: string; done: boolean; pending?: true };
-type Change = { kind: "add"; row: Row } | { kind: "toggle"; id: string; done: boolean } | { kind: "remove"; id: string };
+type Change =
+  | { kind: "add"; row: Row }
+  | { kind: "toggle"; id: string; done: boolean }
+  | { kind: "remove"; id: string }
+  | { kind: "order"; ids: string[] };
 
 function apply(rows: Row[], change: Change): Row[] {
   switch (change.kind) {
@@ -22,6 +27,12 @@ function apply(rows: Row[], change: Change): Row[] {
       return rows.map((r) => (r.id === change.id ? { ...r, done: change.done } : r));
     case "remove":
       return rows.filter((r) => r.id !== change.id);
+    case "order": {
+      // Rows still on their way (no stored id yet) stay at the end, where a new subtask goes.
+      const at = new Map(change.ids.map((id, i) => [id, i]));
+      const stored = rows.filter((r) => at.has(r.id)).sort((a, b) => at.get(a.id)! - at.get(b.id)!);
+      return [...stored, ...rows.filter((r) => !at.has(r.id))];
+    }
   }
 }
 
@@ -49,6 +60,12 @@ export function Subtasks({
   const addField = useRef<HTMLInputElement>(null);
   const headingId = useId();
   const fieldId = useId();
+
+  const reorder = useReorder({
+    // A row still saving has no stored id yet, so it cannot be moved or moved past.
+    rows: rows.filter((r) => !r.pending),
+    onMove: (ids) => write({ kind: "order", ids }, () => actions.reorder(parentId, ids)),
+  });
 
   const progress = progressLine(rows);
   const showOffer = offer && !parentDone && rows.length > 0 && rows.every((r) => r.done);
@@ -107,11 +124,18 @@ export function Subtasks({
 
       {rows.length > 0 && (
         <ul>
-          {rows.map((row) => (
+          {rows.map((row) => {
+            const edge = reorder.edge(row.id);
+            return (
             <li
               key={row.id}
-              className="grid grid-cols-[48px_minmax(0,1fr)_auto] items-center gap-x-2 border-b border-rule-soft py-1.5"
+              {...(row.pending ? {} : reorder.row(row.id))}
+              onKeyDown={(e) => {
+                if (!row.pending) reorder.rowKeyDown(e, row.id);
+              }}
+              className="grid grid-cols-[24px_48px_minmax(0,1fr)_auto] items-center gap-x-2 border-b border-rule-soft py-1.5 pointer-coarse:grid-cols-[44px_48px_minmax(0,1fr)]"
             >
+              {row.pending ? <span aria-hidden="true" /> : <ReorderHandle {...reorder.handle({ id: row.id, title: row.title })} />}
               <GlyphCheckbox
                 type="task"
                 done={row.done}
@@ -132,7 +156,27 @@ export function Subtasks({
                 />
               )}
               {!row.pending && (
-                <span className="group/actions flex items-center">
+                <span className="group/actions flex items-center pointer-coarse:col-span-3 pointer-coarse:justify-end">
+                  <button
+                    type="button"
+                    aria-label={`Move ${row.title} up`}
+                    title="Move up"
+                    disabled={edge.first}
+                    onClick={() => reorder.move(row.id, -1)}
+                    className="hidden size-11 place-items-center rounded-md text-ink-3 pointer-coarse:grid group-has-[[role=group]]/actions:hidden hover:bg-hover active:bg-press hover:text-ink disabled:opacity-40"
+                  >
+                    <MoveUpIcon />
+                  </button>
+                  <button
+                    type="button"
+                    aria-label={`Move ${row.title} down`}
+                    title="Move down"
+                    disabled={edge.last}
+                    onClick={() => reorder.move(row.id, 1)}
+                    className="hidden size-11 place-items-center rounded-md text-ink-3 pointer-coarse:grid group-has-[[role=group]]/actions:hidden hover:bg-hover active:bg-press hover:text-ink disabled:opacity-40"
+                  >
+                    <MoveDownIcon />
+                  </button>
                   <button
                     type="button"
                     aria-label={`Make ${row.title} a task`}
@@ -146,9 +190,11 @@ export function Subtasks({
                 </span>
               )}
             </li>
-          ))}
+            );
+          })}
         </ul>
       )}
+      {rows.length > 1 && <ReorderHint id={reorder.hintId} said={reorder.said} />}
 
       <div aria-live="polite">
         {showOffer && (

@@ -185,6 +185,8 @@ export class SupabaseItemsRepo implements ItemsRepo {
       .neq("status", "dropped")
       // The status enum is declared open, done, dropped, so this puts open first.
       .order("status")
+      // Manual order first: a checklist nobody has moved sits at 0 and falls back to newest first.
+      .order("position")
       .order("created_at", { ascending: false })
       .limit(LISTS_LIMIT);
     return unwrap("listChecklists", result, itemList);

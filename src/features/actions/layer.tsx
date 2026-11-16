@@ -115,7 +115,13 @@ function ActionMenu({ quick, layer, onClosed }: PanelProps) {
           },
         ]
       : [];
-  const entries = [...first, ...rest, ...select];
+  // Where a view orders its rows by hand, the menu is a way to move one without dragging.
+  const moves = hooks.moves;
+  const move: Entry[] = [
+    ...(moves?.up ? [{ id: "move-up", label: "Move up", icon: "up" as const, run: () => { quick.close(true); moves.up?.(); } }] : []),
+    ...(moves?.down ? [{ id: "move-down", label: "Move down", icon: "down" as const, run: () => { quick.close(true); moves.down?.(); } }] : []),
+  ].map((e, i) => ({ ...e, rule: i === 0 }));
+  const entries = [...first, ...rest, ...move, ...select];
 
   function onKeyDown(e: KeyboardEvent<HTMLDivElement>) {
     if (e.key === "Tab") {

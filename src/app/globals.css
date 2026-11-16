@@ -763,3 +763,15 @@
     text-decoration: none;
   }
 }
+
+/* Manual order (components/reorder.tsx): the accent shows only while a row is being dragged. */
+[data-reorder-lifted] {
+  background: var(--hover);
+  border-radius: 8px;
+}
+[data-reorder-drop="before"] {
+  box-shadow: inset 0 2px 0 var(--accent);
+}
+[data-reorder-drop="after"] {
+  box-shadow: inset 0 -2px 0 var(--accent);
+}

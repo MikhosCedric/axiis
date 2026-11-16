@@ -153,6 +153,8 @@ export type DetailActions = {
   /** Moves the first date of the series the item belongs to. */
   setFirstDay: (id: string, on: LocalDate) => Promise<ActionResult>;
   addSubtask: (parentId: string, title: string) => Promise<ActionResult>;
+  /** Stores the subtasks or checklist lines of one parent in the order given. */
+  reorder: (parentId: string, ids: string[]) => Promise<ActionResult>;
   promote: (id: string) => Promise<ActionResult>;
   remove: (id: string, scope?: Scope) => Promise<ActionResult>;
   setRepeat: (id: string, choice: RepeatChoice) => Promise<ActionResult>;

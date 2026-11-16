@@ -70,5 +70,5 @@ Each needs its own captures and the reduced-motion check. None may add a hue, a 
 ## Left out, on purpose
 
 - **Hover cards that preview an item.** They would cover the Score, which the Guide's "Never beside content" rule keeps clear.
-- **Drag to reorder rows in the lists.** Order comes from time and the server's rules; a manual order is a data-model change.
+- ~~**Drag to reorder rows in the lists.**~~ Reversed 2026-11-17 (owner wants a complete professional app): subtasks, checklist lines and the lists on /lists have a manual order, by grip drag, Up/Down on the grip, Alt+Up/Down in a row, and Move up/down.
 - **Undo for every panel change.** The undo note covers changes that move something out of sight (a plan, a tick in the Inbox, a delete); a rename or an area change stays where it was made and can be changed back there.

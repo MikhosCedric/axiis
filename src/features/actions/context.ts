@@ -55,6 +55,8 @@ export type RowHooks = {
   deleteKeys?: boolean;
   /** A row of the lists, which swipes on a touch screen (never the Score, whose axis scrolls sideways). */
   swipe?: boolean;
+  /** Where the view lets a row move by hand: a function is offered as Move up or Move down in its menu. */
+  moves?: { up?: () => void; down?: () => void };
 };
 
 export type LayerKind = "more" | "context" | "plan" | "labels" | "delete" | "delete-all" | "rename";

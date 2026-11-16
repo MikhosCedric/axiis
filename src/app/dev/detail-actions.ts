@@ -16,6 +16,7 @@ import {
 import type { DetailActions } from "@/features/detail/model";
 import { planItem } from "@/features/inbox/commands";
 import { moveItem } from "@/features/week/commands";
+import { reorderChildren } from "@/features/order/commands";
 import { addTag, removeTag } from "@/features/tags/commands";
 import { setDone, type ActionResult } from "@/features/today/commands";
 import type { ItemsRepo } from "@/lib/items/repo";
@@ -43,6 +44,7 @@ export function harnessDetailActions(
     clearTime: (key, scope) => run(() => clearTime(repo, key, timeZone, scope)),
     setFirstDay: (key, on) => run(() => setFirstDay(repo, key, on, timeZone)),
     addSubtask: (parent, title) => run(() => addSubtask(repo, parent, title)),
+    reorder: (parent, ids) => run(() => reorderChildren(repo, parent, ids)),
     promote: (key) => run(() => promoteSubtask(repo, key)),
     remove: (key, scope) => run(() => deleteItem(repo, key, timeZone, scope)),
     setRepeat: (key, choice) => run(() => setRepeat(repo, key, choice, new Date(), timeZone)),

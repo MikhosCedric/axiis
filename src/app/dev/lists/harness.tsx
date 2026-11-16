@@ -15,6 +15,7 @@ import {
   type ActionResult,
   type CaptureResult,
 } from "@/features/today/commands";
+import { reorderChecklists } from "@/features/order/commands";
 import { harnessDetailActions } from "../detail-actions";
 import { settings, stores } from "./store";
 
@@ -78,6 +79,12 @@ export function ListsHarness({ empty, itemId }: { empty: boolean; itemId: string
     return saved(result);
   }
 
+  async function reorder(ids: string[]): Promise<ActionResult> {
+    await pause();
+    if (settings.failing) return { ok: false, error: FAILED };
+    return saved(await reorderChecklists(store.repo, ids));
+  }
+
   const current = loaded && loaded.key === itemId ? loaded : null;
   const detail = current ? (
     current.view ? (
@@ -103,7 +110,7 @@ export function ListsHarness({ empty, itemId }: { empty: boolean; itemId: string
           Make every save fail
         </label>
       </div>
-      {data && <ListsView data={data} detail={detail} capture={capture} setDone={setDone} />}
+      {data && <ListsView data={data} detail={detail} capture={capture} setDone={setDone} reorder={reorder} />}
     </>
   );
 }
