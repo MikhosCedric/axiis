@@ -86,9 +86,7 @@ test.describe("capture field", () => {
         el.dispatchEvent(new ClipboardEvent("paste", { clipboardData: data, bubbles: true, cancelable: true }));
       }, text);
     await field(page).focus();
-    await paste("Milk
-Eggs
-Bread");
+    await paste("Milk\nEggs\nBread");
     const offer = page.getByRole("group", { name: "You pasted 3 lines." });
     await expect(offer).toBeVisible();
     await expect(offer.getByRole("button", { name: "Add 3 items" })).toBeVisible();
@@ -97,9 +95,7 @@ Bread");
     await field(page).press("x");
     await expect(offer).toHaveCount(0);
     await field(page).fill("");
-    await paste("Milk
-Eggs
-Bread");
+    await paste("Milk\nEggs\nBread");
     await page.getByRole("button", { name: "Add 3 items" }).click();
     await expect(field(page)).toHaveValue("");
     await expect(page.getByText("Bread", { exact: true }).first()).toBeVisible();
