@@ -288,7 +288,7 @@ function DateJump({
 
   return (
     <>
-      <h1 id={titleId} className="headline min-w-0 @min-[64rem]/page:col-start-2 @min-[64rem]/page:row-start-1 @min-[64rem]/page:self-end @max-[56rem]/page:order-3 @max-[56rem]/page:basis-full @min-[56rem]/page:whitespace-nowrap max-rail:order-2! max-rail:flex-1 max-rail:basis-0! max-rail:text-[20px] max-rail:leading-[1.1]">
+      <h1 id={titleId} className="headline min-w-0 @min-[64rem]/page:text-[clamp(26px,2.3vw,34px)] @min-[64rem]/page:col-start-2 @min-[64rem]/page:row-start-1 @min-[64rem]/page:self-end @max-[56rem]/page:order-3 @max-[56rem]/page:basis-full @min-[56rem]/page:whitespace-nowrap max-rail:order-2! max-rail:flex-1 max-rail:basis-0! max-rail:text-[20px] max-rail:leading-[1.1]">
         <button
           ref={trigger}
           type="button"
