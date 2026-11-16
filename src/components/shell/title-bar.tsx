@@ -21,7 +21,7 @@ export function TitleBar({ heading, children }: { heading: string; children: Rea
     const watch = () => {
       observer?.disconnect();
       // The heading counts as gone once it is under the bar, wherever the bar sticks (below a phone's header).
-      const under = parseFloat(getComputedStyle(el).top) + el.offsetHeight;
+      const under = (parseFloat(getComputedStyle(el).top) || 0) + el.offsetHeight;
       observer = new IntersectionObserver(([entry]) => setFolded(!entry.isIntersecting), {
         rootMargin: `-${Math.round(under)}px 0px 0px 0px`,
       });

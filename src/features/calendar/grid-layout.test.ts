@@ -77,12 +77,30 @@ describe("packDay", () => {
     expect(blockBox(b.d).width).toBeCloseTo(2 / 3);
   });
 
-  it("draws a short item at the least height, and one starting inside that height beside it", () => {
-    const b = byTitle(packDay([seg("five", 540, 545), seg("next", 550, 610), seg("clear", 570, 600)]));
+  it("draws a short item at the least height without making it share width with a later item", () => {
+    const b = byTitle(packDay([seg("five", 540, 545), seg("next", 550, 610)]));
     expect(b.five.height).toBe(MIN_BLOCK_PX);
-    expect(b.next.column).toBe(1);
-    // Past the short block's drawn height its column is free again.
-    expect(b.clear.column).toBe(0);
+    expect(b.five.columns).toBe(1);
+    expect(b.next.column).toBe(0);
+    expect(b.next.columns).toBe(1);
+  });
+
+  it("keeps items that touch end to start at full width", () => {
+    const b = byTitle(packDay([seg("standup", 570, 585), seg("brief", 600, 660), seg("flush", 660, 720)]));
+    for (const t of ["standup", "brief", "flush"]) expect([b[t].column, b[t].columns]).toEqual([0, 1]);
+    // The tiny block ends where the next starts in real time, and is still drawn at its least height.
+    expect(b.standup.height).toBe(MIN_BLOCK_PX);
+    const b2 = byTitle(packDay([seg("a", 540, 600), seg("b", 600, 660)]));
+    expect([b2.a.columns, b2.b.columns]).toEqual([1, 1]);
+  });
+
+  it("puts truly overlapping items side by side, tiny ones included", () => {
+    const b = byTitle(packDay([seg("long", 540, 600), seg("tiny", 570, 575), seg("after", 600, 630)]));
+    expect(b.long.columns).toBe(2);
+    expect(b.tiny.column).toBe(1);
+    expect(b.after.columns).toBe(1);
+    const z = byTitle(packDay([seg("x", 600, 600), seg("y", 600, 630)]));
+    expect([z.y.column, z.x.column]).toEqual([0, 1]);
   });
 
   it("draws an item with no length", () => {
