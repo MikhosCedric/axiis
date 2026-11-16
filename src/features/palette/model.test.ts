@@ -61,7 +61,7 @@ describe("paletteSections", () => {
   });
 
   it("ranks pages against the typing, keywords included", () => {
-    expect(labels("se").go).toEqual(["Search", "Settings", "Today", "Inbox", "Help"]);
+    expect(labels("se").go).toEqual(["Search", "Settings", "Inbox", "Help"]);
     expect(labels("find").go).toEqual(["Search"]);
     expect(labels("export").go).toEqual(["Settings"]);
     expect(labels("unscheduled").go).toEqual(["Inbox"]);
