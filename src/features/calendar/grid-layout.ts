@@ -36,8 +36,6 @@ export const yAt = (minutes: number, scale: Scale = FULL_DAY) => (minutes - scal
 export const minutesAtY = (y: number, scale: Scale = FULL_DAY) => scale.from + y / scale.ppm;
 /** The drawn height of the whole range. */
 export const gridHeight = (scale: Scale) => (scale.to - scale.from) * scale.ppm;
-/** What a height is worth in minutes: two short blocks closer than this share the width instead of covering each other. */
-const minBlockMinutes = (scale: Scale) => Math.ceil(MIN_BLOCK_PX / scale.ppm);
 
 /**
  * The hours drawn by default: from an hour before the earliest planned thing, or 07:00 if that is earlier,
@@ -120,12 +118,11 @@ type Placed = Segment & { item: ShownItem; until: number; column: number };
 const drawn = (item: ShownItem) => item.type !== "note" && item.status !== "dropped";
 
 /**
- * Packs one day's segments side by side, as a calendar does: items that overlap (as drawn, so a short
- * one counts for its least height) form a group that shares the column width; each takes the first
+ * Packs one day's segments side by side, as a calendar does: items that overlap in time (by their real
+ * times: one that ends when the next starts does not overlap it, however short it is drawn) form a group that shares the column width; each takes the first
  * column free at its start, and widens over the columns to its right that nothing in its way uses.
  */
 export function packDay(segments: (Segment & { item: ShownItem })[], scale: Scale = FULL_DAY): Block[] {
-  const MIN_BLOCK_MINUTES = minBlockMinutes(scale);
   const sorted = [...segments].sort(
     (a, b) => a.start - b.start || b.end - a.end || a.item.title.localeCompare(b.item.title) || a.item.id.localeCompare(b.item.id),
   );
@@ -146,7 +143,7 @@ export function packDay(segments: (Segment & { item: ShownItem })[], scale: Scal
   };
 
   for (const seg of sorted) {
-    const until = Math.max(seg.end, seg.start + MIN_BLOCK_MINUTES);
+    const until = Math.max(seg.end, seg.start + 1);
     if (group.length && seg.start >= groupEnd) flush();
     const ends: number[] = [];
     for (const p of group) ends[p.column] = Math.max(ends[p.column] ?? 0, p.until);

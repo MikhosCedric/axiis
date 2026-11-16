@@ -91,6 +91,19 @@ test.describe("on a desktop window, 1440 by 900", () => {
     expect(Math.abs(row.today - row.capture)).toBeLessThan(24);
     expect(row.summaryTop).toBeGreaterThan(row.titleTop);
     expect(row.gridTop - row.headerBottom).toBeLessThan(40);
+    // The capture field has room for its whole placeholder.
+    const field = await page.evaluate(() => {
+      const input = document.querySelector<HTMLInputElement>("#capture")!;
+      const probe = document.createElement("span");
+      const css = getComputedStyle(input);
+      probe.style.cssText = `position:absolute;visibility:hidden;white-space:nowrap;font:${css.font}`;
+      probe.textContent = input.placeholder;
+      document.body.append(probe);
+      const need = probe.getBoundingClientRect().width;
+      probe.remove();
+      return { room: input.clientWidth - parseFloat(css.paddingLeft) - parseFloat(css.paddingRight), need };
+    });
+    expect(field.room).toBeGreaterThanOrEqual(field.need);
   });
 
   test("the grid draws 07:00 to 22:00 by default, with Earlier and Later hours to open the rest", async ({ page }) => {
@@ -162,15 +175,18 @@ test.describe("on a phone", () => {
     expect(isFilled(a)).toBe(true);
   });
 
-  test("the grid starts in the top 60% of the screen and the first hour row is within the first 700px", async ({ page }) => {
-    await open(page, "?at=10:30");
-    const top = await page.evaluate(() => {
-      const frame = document.querySelector<HTMLElement>("[data-calendar-grid]")!;
-      const hour = [...frame.querySelectorAll<HTMLElement>("[data-hour]")].find((h) => h.getBoundingClientRect().top > frame.getBoundingClientRect().top + 60);
-      return { frame: frame.getBoundingClientRect().top, hour: hour!.getBoundingClientRect().top };
-    });
-    expect(top.frame).toBeLessThan(812 * 0.6);
-    expect(top.hour).toBeLessThan(700);
+  test("the page opens scrolled so now, or the first item, is in view under the sticky head", async ({ page }) => {
+    await open(page, "?at=15:10");
+    const seen = () =>
+      page.evaluate(() => {
+        const head = document.querySelector<HTMLElement>("[data-head]")!.getBoundingClientRect();
+        const now = document.querySelector<HTMLElement>("[data-now]")!.getBoundingClientRect();
+        return { scrolled: window.scrollY, headBottom: head.bottom, now: now.top, height: window.innerHeight };
+      });
+    await expect.poll(async () => (await seen()).scrolled).toBeGreaterThan(100);
+    const a = await seen();
+    expect(a.now).toBeGreaterThan(a.headBottom);
+    expect(a.now).toBeLessThan(a.height - 60);
   });
 
   test("the page scrolls as one: the grid has no scroll of its own and its day head sticks", async ({ page }) => {

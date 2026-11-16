@@ -199,11 +199,28 @@ export function CalendarGrid({
   useLayoutEffect(() => {
     const el = scroller.current;
     if (!el) return;
-    if (opened.current.span !== span) opened.current = { span, top: 0, moved: false };
+    const fresh = opened.current.span !== span;
+    if (fresh) opened.current = { span, top: 0, moved: false };
     if (opened.current.moved) return;
     const minute = openMinute(nowMinutes === null ? null : { day: 0, minutes: nowMinutes, top: 0 }, hoursShown.from);
     // On the top of the range the Earlier hours row stays in view; below it, the row is scrolled past.
     const top = minute <= hoursShown.from ? 0 : Math.max(0, Math.round(yAt(minute, scale) + (showEarlier ? EXPANDER_PX : 0)));
+    if (window.matchMedia("(max-width: 759.98px)").matches) {
+      // A phone: the page scrolls, not the grid. Once per set of days, put that minute just under the sticky head.
+      if (!fresh) return;
+      const stuck = parseFloat(getComputedStyle(el.querySelector("[data-head]")!).top) || 0;
+      let set = -1;
+      const put = () => {
+        // The page above can still be settling (streamed cards, fonts): measure again, until the reader scrolls themselves.
+        if (set >= 0 && Math.abs(window.scrollY - set) > 2) return;
+        const to = Math.max(0, Math.round(el.getBoundingClientRect().top + window.scrollY + top - stuck - (top > 0 ? 8 : 0)));
+        window.scrollTo(0, to);
+        set = window.scrollY;
+      };
+      put();
+      const timers = [150, 450, 1000].map((ms) => window.setTimeout(put, ms));
+      return () => timers.forEach(window.clearTimeout);
+    }
     el.scrollTop = top;
     opened.current.top = el.scrollTop;
     // Not on every tick of now: later renders keep wherever the reader scrolled to.
