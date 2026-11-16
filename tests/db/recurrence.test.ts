@@ -25,6 +25,37 @@ const series = (fields: Record<string, unknown> = {}) =>
   newItem({ type: "task", scheduled_on: "2026-10-06", rrule: "FREQ=DAILY", ...fields });
 const UUID = /^[0-9a-f-]{36}$/;
 
+describe("monthly rules on a weekday by its place (0013)", () => {
+  it.each([
+    "FREQ=MONTHLY;BYDAY=1MO",
+    "FREQ=MONTHLY;BYDAY=-1FR",
+    "FREQ=MONTHLY;INTERVAL=3;BYDAY=4SU;COUNT=8",
+    "FREQ=MONTHLY;INTERVAL=99;BYDAY=2TU;UNTIL=20271231",
+    // What 0004 allowed still passes.
+    "FREQ=MONTHLY",
+    "FREQ=WEEKLY;INTERVAL=2;BYDAY=MO,WE;UNTIL=20261231",
+  ])("accepts %s", async (rrule) => {
+    await expect(newItem({ type: "task", scheduled_on: "2026-10-06", rrule })).resolves.toMatch(UUID);
+  });
+
+  it.each([
+    "FREQ=MONTHLY;BYDAY=5MO",
+    "FREQ=MONTHLY;BYDAY=-2MO",
+    "FREQ=MONTHLY;BYDAY=0MO",
+    "FREQ=MONTHLY;BYDAY=+1MO",
+    "FREQ=MONTHLY;BYDAY=1MO,3MO",
+    "FREQ=MONTHLY;BYDAY=1MO,TU",
+    "FREQ=WEEKLY;BYDAY=1MO",
+    "FREQ=YEARLY;BYDAY=-1FR",
+    "FREQ=DAILY;BYDAY=2TU",
+    "FREQ=MONTHLY;BYDAY=2TU;INTERVAL=2",
+    "FREQ=MONTHLY;BYDAY=2TU;UNTIL=20271231;COUNT=3",
+    "FREQ=MONTHLY;BYDAY=2TU;BYSETPOS=1",
+  ])("refuses %s", async (rrule) => {
+    await expect(newItem({ type: "task", scheduled_on: "2026-10-06", rrule })).rejects.toThrow("items_rrule_allowlist");
+  });
+});
+
 describe("recurrence check constraints", () => {
   const cases: { name: string; constraint: string; bad: () => Promise<Record<string, unknown>>; good: () => Promise<Record<string, unknown>> }[] = [
     {

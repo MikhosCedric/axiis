@@ -207,7 +207,7 @@ test("detail: a skipped day is listed on the series and can be restored", async 
   await expect(page.getByRole("button", { name: "Skip this one" })).toBeVisible();
 
   await page.getByRole("link", { name: "Repeating: the run series itself" }).click();
-  await expect(page.getByText("Every week on Monday, Wednesday and Friday")).toBeVisible();
+  await expect(page.getByText("Every week on Mon, Wed, Fri")).toBeVisible();
   await expect(skipped).toHaveCount(0);
 });
 

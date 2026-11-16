@@ -1,5 +1,5 @@
 import type { Area, LocalDate } from "@/domain/item";
-import { MAX_COUNT, type Rule, type RuleEnd } from "@/domain/recurrence";
+import { MAX_COUNT, nextNthWeekday, type Rule, type RuleEnd } from "@/domain/recurrence";
 import { parseTagName, tagKey, type TagName } from "@/domain/tag";
 import { WEEK_LENGTH, WEEK_STARTS_ON, weekOf, type WeekStart } from "@/features/week/week-of";
 import { addDays, instantAt, parseLocalDate, toLocalDate, wallMinutes } from "@/lib/dates";
@@ -720,11 +720,14 @@ export function passesToday(c: CaptureText, moment: Moment): boolean {
  */
 export function seriesFor(repeat: RepeatWords, from: LocalDate, today: LocalDate, passToday = false, weekStart: WeekStart = WEEK_STARTS_ON): CaptureSeries | null {
   const byDay = repeat.freq === "weekly" ? repeat.byDay : [];
-  const falls = (day: LocalDate) => byDay.length === 0 || byDay.includes(ruleDay(weekdayOf(day)));
+  // "Every first monday": a weekday by its place in the month, found a day at a time like a weekly repeat's.
+  const onThe = repeat.freq === "monthly" ? repeat.onThe : undefined;
+  const falls = (day: LocalDate) =>
+    onThe ? nextNthWeekday(onThe, day) === day : byDay.length === 0 || byDay.includes(ruleDay(weekdayOf(day)));
   let first = from;
   while (!falls(first)) first = addDays(first, 1);
   if (passToday && first === today) {
-    if (repeat.freq === "monthly") first = addMonths(today, 1);
+    if (repeat.freq === "monthly" && !onThe) first = addMonths(today, 1);
     else if (repeat.freq === "yearly") first = addMonths(today, 12);
     else first = addDays(today, repeat.freq === "weekly" && byDay.length === 0 ? WEEK_LENGTH : 1);
     while (!falls(first)) first = addDays(first, 1);
@@ -735,7 +738,9 @@ export function seriesFor(repeat: RepeatWords, from: LocalDate, today: LocalDate
   const rule: Rule =
     repeat.freq === "weekly"
       ? { freq: "weekly", interval, byDay: byDay.length === 1 ? [] : [...byDay], end }
-      : { freq: repeat.freq, interval, end };
+      : onThe
+        ? { freq: "monthly", interval, onThe, end }
+        : { freq: repeat.freq, interval, end };
   return { first, rule };
 }
 
@@ -744,7 +749,8 @@ const timesWords = (count: number) => (count === 1 ? "once" : `${count} times`);
 
 /** How a series repeats, mid-sentence: "every Tuesday", "every weekday, 10 times", "every day, until Sunday 20 December". */
 export function seriesWords(rule: Rule, first: LocalDate, today: LocalDate): string {
-  const cadence = cadenceWords({ freq: rule.freq, interval: rule.interval, byDay: rule.freq === "weekly" ? rule.byDay : [] }, ruleDay(weekdayOf(first)));
+  const onThe = rule.freq === "monthly" ? rule.onThe : undefined;
+  const cadence = cadenceWords({ freq: rule.freq, interval: rule.interval, byDay: rule.freq === "weekly" ? rule.byDay : [], onThe }, ruleDay(weekdayOf(first)));
   const end = rule.end.kind === "count" ? timesWords(rule.end.count) : rule.end.kind === "until" ? `until ${formatDayIn(rule.end.on, today)}` : null;
   return end ? `${cadence}, ${end}` : cadence;
 }

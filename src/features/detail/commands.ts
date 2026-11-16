@@ -10,7 +10,7 @@ import type { ActionResult } from "@/features/today/commands";
 import { TITLE_MAX } from "@/features/today/model";
 import { DAY_MINUTES } from "@/features/calendar/grid-layout";
 import { buildDetail, firstDay, retypable, subtaskPolicy, takesDue, TYPE_CHOICES, type DetailView, type Scope, type TimeOfDay } from "./model";
-import { firstOccurrence, repeatSchema, ruleFor } from "./repeat";
+import { firstOccurrence, repeatSchema, ruleOf, settledRule } from "./repeat";
 import { byName, tagColors } from "@/domain/tag";
 import { byUse } from "@/features/tags/model";
 import { saveFailure } from "@/lib/quota";
@@ -418,12 +418,17 @@ export async function setRepeat(
     const until = (rawChoice as { end?: { on?: unknown } } | null)?.end?.on;
     return { ok: false, error: outOfRange(until) ? DATE_RANGE_ERROR : "That repeat setting is not one Axiis knows." };
   }
-  const { preset, end } = choice.data;
+  const { end } = choice.data;
+  const asked = ruleOf(choice.data);
+  // A weekly rule has to fall on some weekday; the editor never sends one with none.
+  if (asked?.freq === "weekly" && choice.data.preset === "custom" && asked.byDay.length === 0) {
+    return { ok: false, error: "Pick at least one weekday for it to repeat on." };
+  }
   return attempt(async () => {
     const [item] = await targets(repo, key, "all", timeZone);
     if (!item) return { ok: false, error: MISSING };
 
-    if (preset === "none") {
+    if (!asked) {
       if (item.recurrence.kind !== "series") return;
       for (const o of await repo.listOverrides("0001-01-01" as LocalDate, "9999-12-31" as LocalDate, item.id)) {
         await repo.update(o.id, { recurrence: { kind: "none" } });
@@ -436,13 +441,12 @@ export async function setRepeat(
     if (item.type === "note" || item.parentId !== null || (await repo.listChildren(item.id)).length > 0) {
       return { ok: false, error: NOT_REPEATABLE };
     }
-    const rule = ruleFor(preset, end);
     const schedule = item.schedule.kind === "unscheduled" ? { kind: "day" as const, on: toLocalDate(now, timeZone) } : item.schedule;
     const ownDay = firstDay(schedule, timeZone)!;
-    const firstOn = firstOccurrence(rule, ownDay);
+    const firstOn = firstOccurrence(asked, ownDay);
     if (end.kind === "until" && end.on < firstOn) return { ok: false, error: AFTER_END };
     await repo.update(item.id, {
-      recurrence: { kind: "series", rule },
+      recurrence: { kind: "series", rule: settledRule(asked, firstOn) },
       ...(firstOn !== ownDay || item.schedule.kind === "unscheduled" ? { schedule: movedTo(schedule, firstOn, timeZone) } : {}),
     });
   });

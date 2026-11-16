@@ -224,6 +224,87 @@ describe("setRepeat", () => {
     ]);
   });
 
+  describe("a hand-built repeat", () => {
+    // 6 October 2026 is the first Tuesday of the month.
+    const custom = (c: Record<string, unknown>, end?: unknown) => ({
+      preset: "custom",
+      custom: { freq: "weekly", interval: 1, byDay: ["TU"], onThe: null, ...c },
+      ...(end ? { end } : {}),
+    });
+
+    it("stores every N weeks on the named weekdays, and edits the rule in place", async () => {
+      const item = eligible();
+      const { repo } = fakeRepo([item]);
+      expect(await setRepeat(repo, item.id, custom({ interval: 3, byDay: ["FR", "TU", "WE"] }), NOW, TZ)).toEqual({ ok: true });
+      expect(item.recurrence).toEqual({ kind: "series", rule: { freq: "weekly", interval: 3, byDay: ["TU", "WE", "FR"], end: { kind: "never" } } });
+      expect(item.schedule).toEqual({ kind: "day", on: "2026-10-06" });
+      expect(await setRepeat(repo, item.id, custom({ interval: 2, byDay: ["TU", "WE"] }, { kind: "count", count: 5 }), NOW, TZ)).toEqual({ ok: true });
+      expect(item.recurrence).toEqual({ kind: "series", rule: { freq: "weekly", interval: 2, byDay: ["TU", "WE"], end: { kind: "count", count: 5 } } });
+    });
+
+    it("stores one weekday that is its own as a plain weekly rule, the menu's form", async () => {
+      const item = eligible();
+      const { repo } = fakeRepo([item]);
+      await setRepeat(repo, item.id, custom({ interval: 2 }), NOW, TZ);
+      expect(item.recurrence).toEqual({ kind: "series", rule: { freq: "weekly", interval: 2, byDay: [], end: { kind: "never" } } });
+    });
+
+    it("moves to the first of its weekdays when its own is taken away", async () => {
+      const item = eligible();
+      const { repo } = fakeRepo([item]);
+      await setRepeat(repo, item.id, custom({ byDay: ["TH", "SA"] }), NOW, TZ);
+      expect(item.schedule).toEqual({ kind: "day", on: "2026-10-08" });
+      expect(item.recurrence).toMatchObject({ rule: { byDay: ["TH", "SA"] } });
+    });
+
+    it("stores a weekday by its place in the month, and moves to the next one when its own day is not it", async () => {
+      const item = eligible();
+      const { repo } = fakeRepo([item]);
+      expect(await setRepeat(repo, item.id, custom({ freq: "monthly", onThe: { nth: 1, day: "TU" } }), NOW, TZ)).toEqual({ ok: true });
+      expect(item.recurrence).toEqual({ kind: "series", rule: { freq: "monthly", interval: 1, onThe: { nth: 1, day: "TU" }, end: { kind: "never" } } });
+      expect(item.schedule).toEqual({ kind: "day", on: "2026-10-06" });
+      await setRepeat(repo, item.id, custom({ freq: "monthly", interval: 2, onThe: { nth: -1, day: "FR" } }), NOW, TZ);
+      expect(item.schedule).toEqual({ kind: "day", on: "2026-10-30" });
+      const span = { from: new Date(0), to: new Date(0), fromDate: d("2026-10-01"), toDate: d("2027-03-01") };
+      expect((await loadOccurrences(repo, span, TZ)).occurrences.map((o) => o.recurrence.kind === "occurrence" && o.recurrence.originalOn)).toEqual([
+        "2026-10-30",
+        "2026-12-25",
+        "2027-02-26",
+      ]);
+    });
+
+    it("drops a place when it goes back to the day of the month, and ignores one on another kind", async () => {
+      const item = eligible();
+      const { repo } = fakeRepo([item]);
+      await setRepeat(repo, item.id, custom({ freq: "monthly", onThe: null }), NOW, TZ);
+      expect(item.recurrence).toEqual({ kind: "series", rule: { freq: "monthly", interval: 1, end: { kind: "never" } } });
+      await setRepeat(repo, item.id, custom({ freq: "yearly", interval: 2, onThe: { nth: 1, day: "TU" } }), NOW, TZ);
+      expect(item.recurrence).toEqual({ kind: "series", rule: { freq: "yearly", interval: 2, end: { kind: "never" } } });
+    });
+
+    it("the panel reads it back as the editor's fields and a plain sentence", async () => {
+      const item = eligible();
+      const { repo } = fakeRepo([item]);
+      await setRepeat(repo, item.id, custom({ freq: "monthly", onThe: { nth: 1, day: "TU" } }), NOW, TZ);
+      const view = await loadDetail(repo, { kind: "item", id: item.id }, NOW, TZ, "24");
+      expect(view?.repeat).toMatchObject({
+        kind: "series",
+        preset: null,
+        custom: { freq: "monthly", interval: 1, onThe: { nth: 1, day: "TU" } },
+        summary: "Every first Tuesday of the month",
+      });
+    });
+
+    it("refuses a weekly one on no weekday and anything misshapen, and writes nothing", async () => {
+      const item = eligible();
+      const { repo, calls } = fakeRepo([item]);
+      for (const bad of [custom({ byDay: [] }), custom({ interval: 0 }), custom({ onThe: { nth: 5, day: "MO" } }), { preset: "custom" }]) {
+        expect((await setRepeat(repo, item.id, bad, NOW, TZ)).ok).toBe(false);
+      }
+      expect(calls.update).toEqual([]);
+    });
+  });
+
   it("starts an unscheduled item repeating from today", async () => {
     const item = makeItem();
     const { repo } = fakeRepo([item]);
