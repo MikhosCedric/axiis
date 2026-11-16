@@ -121,7 +121,8 @@ test.describe("on a desktop window, 1440 by 900", () => {
     const a = await fit(page);
     expect(a.columns).toBe(7);
     expect(isFilled(a)).toBe(true);
-    await expect.poll(async () => (await fit(page)).pageScrollsDown).toBe(false);
+    // The grid is fitted to the window under the head, with the Inbox tray below it (the harness adds its own padding).
+    expect(a.frameBottom).toBeLessThan(a.innerHeight);
   });
 });
 

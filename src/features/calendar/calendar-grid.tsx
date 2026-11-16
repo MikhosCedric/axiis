@@ -1,7 +1,7 @@
 "use client";
 
 import { createPortal } from "react-dom";
-import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent as ReactPointerEvent } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
 import { AreaLabel } from "@/components/area-mark";
 import { Floating } from "@/components/floating";
 import type { AreaColor } from "@/domain/area-color";
@@ -202,7 +202,8 @@ export function CalendarGrid({
     if (opened.current.span !== span) opened.current = { span, top: 0, moved: false };
     if (opened.current.moved) return;
     const minute = openMinute(nowMinutes === null ? null : { day: 0, minutes: nowMinutes, top: 0 }, hoursShown.from);
-    const top = Math.max(0, Math.round(yAt(minute, scale) + (showEarlier ? EXPANDER_PX : 0)));
+    // On the top of the range the Earlier hours row stays in view; below it, the row is scrolled past.
+    const top = minute <= hoursShown.from ? 0 : Math.max(0, Math.round(yAt(minute, scale) + (showEarlier ? EXPANDER_PX : 0)));
     el.scrollTop = top;
     opened.current.top = el.scrollTop;
     // Not on every tick of now: later renders keep wherever the reader scrolled to.
@@ -561,9 +562,9 @@ export function CalendarGrid({
   const trayNode =
     tray && examples.length === 0 ? (
       <section data-drop="tray" aria-labelledby="calendar-tray-h" className={`${styles.tray} ${trayHost ? styles.trayRail : ""} ${overTray ? styles.over : ""}`}>
-        <h3 id="calendar-tray-h" className="font-display text-lg leading-tight font-medium">
+        <TrayHeading as={trayHost ? "h2" : "h3"}>
           {INBOX}
-        </h3>
+        </TrayHeading>
         <p className="mt-1 mb-3 text-[13px] text-ink-3">
           No day yet. <span className="pointer-coarse:hidden">Drag one onto the grid to plan it for that time{trayHost ? ", or click it to plan it for today. " : ". Drag a block back here to clear its day. "}</span>
           <span className="hidden pointer-coarse:inline">Press and hold one, then drag it onto a day to plan it for that time. </span>
@@ -584,6 +585,7 @@ export function CalendarGrid({
       <div
         ref={scroller}
         data-calendar-grid={mode}
+        data-from={hoursShown.from}
         className={`${styles.frame} ${mode === "week" ? styles.week : ""} ${dim ? styles.dim : ""} ${fit ? styles.fit : ""}`}
         onScroll={(e) => {
           if (Math.abs(e.currentTarget.scrollTop - opened.current.top) > 3) opened.current.moved = true;
@@ -778,6 +780,15 @@ export function CalendarGrid({
         />
       )}
     </section>
+  );
+}
+
+/** The Inbox heading: a section heading of its own in the Day's side column (it comes before the grid in the page), one level under the grid's otherwise. */
+function TrayHeading({ as: Tag, children }: { as: "h2" | "h3"; children: ReactNode }) {
+  return (
+    <Tag id="calendar-tray-h" className="font-display text-lg leading-tight font-medium">
+      {children}
+    </Tag>
   );
 }
 

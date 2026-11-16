@@ -706,7 +706,7 @@ test("with a mouse, the grid's help lives in the Guide and shows no press-and-ho
   await expect(guide.getByRole("heading", { name: "Keyboard shortcuts" })).toBeVisible();
   await page.keyboard.press("Escape");
   await expect(guide).toBeHidden();
-  await expect(page.getByText(/^Drag one onto a day/)).toBeVisible();
+  await expect(page.getByText(/^Drag one onto the grid/)).toBeVisible();
   await expect(page.locator("kbd", { hasText: /^C$/ })).toBeVisible();
   await expect(page.getByText(/Press and hold/)).toHaveCount(1);
   for (const hint of await page.getByText(/Press and hold/).all()) await expect(hint).toBeHidden();
@@ -720,7 +720,7 @@ test.describe("on a touch phone", () => {
   }) => {
     await page.goto("/dev/day");
     await expect(page.getByText(/^Press and hold one, then drag it onto a day/)).toBeVisible();
-    await expect(page.getByText(/^Drag one onto a day/)).toBeHidden();
+    await expect(page.getByText(/^Drag one onto the grid/)).toBeHidden();
     await expect(page.locator("kbd", { hasText: /^C$/ })).toBeHidden();
 
     expect((await page.getByText(/^Arrow keys move between items/).boundingBox())!.width).toBeLessThanOrEqual(1);
