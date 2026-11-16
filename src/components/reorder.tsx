@@ -94,16 +94,7 @@ export function useReorder({
     const d = dragging.current;
     dragging.current = null;
     setDrag(null);
-    window.removeEventListener("keydown", onEscape, true);
     if (d && commit) moveTo(d.id, d.to);
-  }
-
-  /** Escape drops the row where it was. It is kept from closing a panel behind the drag. */
-  function onEscape(e: globalThis.KeyboardEvent) {
-    if (e.key !== "Escape" || !dragging.current) return;
-    e.preventDefault();
-    e.stopPropagation();
-    end(false);
   }
 
   function row(id: string) {
@@ -158,7 +149,6 @@ export function useReorder({
         const to = peerRows.findIndex((el) => el.dataset.reorderRow === r.id);
         dragging.current = { id: r.id, pointerId: e.pointerId, to, rows: peerRows };
         setDrag({ id: r.id, to });
-        window.addEventListener("keydown", onEscape, true);
       },
       onPointerMove: (e: ReactPointerEvent<HTMLElement>) => {
         const d = dragging.current;
@@ -177,7 +167,23 @@ export function useReorder({
     };
   }
 
-  useEffect(() => () => window.removeEventListener("keydown", onEscape, true));
+  // Escape drops the row where it was, and is kept from closing a panel behind the drag. Listening only while a drag lasts.
+  const stop = useRef(end);
+  useEffect(() => {
+    stop.current = end;
+  });
+  const lifted = drag !== null;
+  useEffect(() => {
+    if (!lifted) return;
+    const onEscape = (e: globalThis.KeyboardEvent) => {
+      if (e.key !== "Escape" || !dragging.current) return;
+      e.preventDefault();
+      e.stopPropagation();
+      stop.current(false);
+    };
+    window.addEventListener("keydown", onEscape, true);
+    return () => window.removeEventListener("keydown", onEscape, true);
+  }, [lifted]);
 
   return { row, rowKeyDown, handle, edge, move, said, hintId, dragging: drag !== null };
 }
@@ -193,7 +199,7 @@ export function ReorderHandle({ title, hintId, lifted, className = "", ...events
       aria-label={`Move ${title}`}
       aria-describedby={hintId}
       title="Drag to move, or Alt with Up or Down"
-      className={`grid h-8 w-6 flex-none cursor-grab touch-none place-items-center rounded-md text-ink-3 select-none hover:bg-hover hover:text-ink active:cursor-grabbing pointer-coarse:h-11 ${lifted ? "bg-press text-ink" : ""} ${className}`}
+      className={`grid h-8 w-6 flex-none cursor-grab touch-none pointer-coarse:w-11 place-items-center rounded-md text-ink-3 select-none hover:bg-hover hover:text-ink active:cursor-grabbing pointer-coarse:h-11 ${lifted ? "bg-press text-ink" : ""} ${className}`}
       {...events}
     >
       <svg viewBox="0 0 10 16" width={10} height={16} aria-hidden="true" fill="currentColor">

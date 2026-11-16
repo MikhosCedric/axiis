@@ -133,7 +133,7 @@ export function Subtasks({
               onKeyDown={(e) => {
                 if (!row.pending) reorder.rowKeyDown(e, row.id);
               }}
-              className="grid grid-cols-[24px_48px_minmax(0,1fr)_auto] items-center gap-x-2 border-b border-rule-soft py-1.5 pointer-coarse:grid-cols-[24px_48px_minmax(0,1fr)]"
+              className="grid grid-cols-[24px_48px_minmax(0,1fr)_auto] items-center gap-x-2 border-b border-rule-soft py-1.5 pointer-coarse:grid-cols-[44px_48px_minmax(0,1fr)]"
             >
               {row.pending ? <span aria-hidden="true" /> : <ReorderHandle {...reorder.handle({ id: row.id, title: row.title })} />}
               <GlyphCheckbox

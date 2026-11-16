@@ -565,14 +565,14 @@ test.describe("lists", () => {
     await page.goto("/dev/lists");
     await expect(page.getByRole("heading", { level: 1, name: "Lists" })).toBeVisible();
     await expect(page.getByText("4 open, 1 done.")).toBeVisible();
-    await expect(page.getByRole("list").first().getByRole("button")).toHaveText([
+    await expect(page.getByRole("list").first().getByRole("button").filter({ hasNot: page.locator("[data-reorder-handle]") })).toHaveText([
       "Ideas for the garden",
       "Pack for the coast",
       "Launch day",
       /^Weekly reset\s*, repeats$/,
       "Move the flat, done",
     ]);
-    await expect(page.getByRole("button", { name: "Pack for the coast" })).toHaveAccessibleDescription("1 of 3 done Home");
+    await expect(page.getByRole("button", { name: "Pack for the coast", exact: true })).toHaveAccessibleDescription("1 of 3 done Home");
     await expect(page.getByRole("button", { name: /^Weekly reset/ })).toHaveAccessibleDescription(
       "Repeats every week on Sunday",
     );
@@ -581,7 +581,7 @@ test.describe("lists", () => {
 
   test("a row opens the checklist beside the list, and ticking a line there moves its progress", async ({ page }) => {
     await page.goto("/dev/lists");
-    const row = page.getByRole("button", { name: "Pack for the coast" });
+    const row = page.getByRole("button", { name: "Pack for the coast", exact: true });
     await row.click();
     await expect(page).toHaveURL(/\?item=f3000000-0000-4000-8000-000000000001$/);
     const details = page.getByRole("complementary", { name: "Details" });
@@ -671,7 +671,7 @@ test.describe("on a phone", () => {
 
   test("a row opens its details in view with focus there, and Close returns focus to the row", async ({ page }) => {
     await page.goto("/dev/lists");
-    const row = page.getByRole("button", { name: "Launch day" });
+    const row = page.getByRole("button", { name: "Launch day", exact: true });
     await row.click();
     const details = page.getByRole("complementary", { name: "Details" });
     await expect(details.getByRole("textbox", { name: "Title" })).toHaveValue("Launch day");

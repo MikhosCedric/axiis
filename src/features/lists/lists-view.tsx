@@ -172,9 +172,9 @@ function ListRowView({
         if (order?.rowKeyDown(e, row.id)) return;
         rowProps(quick, qi, hooks).onKeyDown?.(e);
       }}
-      className={`group/row relative grid items-start gap-x-3 border-b border-rule-soft py-(--row-y) ${order ? "grid-cols-[20px_48px_minmax(0,1fr)] pointer-coarse:grid-cols-[20px_48px_minmax(0,1fr)_auto]" : "grid-cols-[48px_minmax(0,1fr)] pointer-coarse:grid-cols-[48px_minmax(0,1fr)_auto]"} ${selected ? "row-selected" : ""}`}
+      className={`group/row relative grid items-start gap-x-3 border-b border-rule-soft py-(--row-y) ${order ? "grid-cols-[20px_48px_minmax(0,1fr)] pointer-coarse:grid-cols-[44px_48px_minmax(0,1fr)_auto]" : "grid-cols-[48px_minmax(0,1fr)] pointer-coarse:grid-cols-[48px_minmax(0,1fr)_auto]"} ${selected ? "row-selected" : ""}`}
     >
-      {order && <ReorderHandle {...order.handle({ id: row.id, title })} className="-ml-1 !w-5" />}
+      {order && <ReorderHandle {...order.handle({ id: row.id, title })} className="-ml-1 !w-5 pointer-coarse:!w-11" />}
       {/* A repeating checklist is ticked one day at a time, on that day. */}
       {row.repeats ? (
         <span className="grid h-6 place-items-center">
