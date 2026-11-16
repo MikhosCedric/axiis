@@ -8,7 +8,7 @@ A solo productivity web app. One connected set of items, shown through many view
 
 **Type**: what kind of item it is. `task`, `event`, `note`, `checklist`. A type changes how an item is drawn and what it may do (a note has no schedule), not which table it lives in.
 
-**Area**: one of the user's parts of life, such as Work, Home or Health. Shown as a staff on the Score. Never "category", "project" or "list". An area may have a **Colour** from a fixed palette, or None; it is shown as a dot beside the area's name, never as a category colour.
+**Area**: one of the user's parts of life, such as Work, Home or Health. Never "category", "project" or "list". An area may have a **Colour** from a fixed palette, or None; it tints the area's blocks on the grid and is a dot beside the area's name everywhere else. The side panel lists the areas with a tick each to show or hide them.
 
 **Schedule**: where an item sits in time. Exactly one of *unscheduled*, *day* (planned for a date, no time) or *timed* (a start and an end). Distinct from the **due date**, which is a deadline and independent of the plan.
 
@@ -26,7 +26,7 @@ A solo productivity web app. One connected set of items, shown through many view
 
 **Link**: a typed edge between two items, such as a note referencing a task. Backlinks are links read in reverse.
 
-**View**: a query over items, never its own data. Score, List, Week, Month and Today are views.
+**View**: a query over items, never its own data. The Day (as the grid or the List), the Week and the Month are views.
 
 **Month**: the view of one calendar month as whole weeks. Each day shows what is planned on it (a timed item on every day it covers), what falls due on it, and how many more there are. Items with no day never appear on it. Capture there lands on the day in focus.
 
@@ -38,13 +38,13 @@ A solo productivity web app. One connected set of items, shown through many view
 
 **Today**: the view of one local day: timed items in that day's range, day-only items on that date, and everything unscheduled.
 
-**Score**: the Today view drawn as parallel staves, one per area, sharing one hour axis. The signature view of Axiis.
+**Grid**: the time grid the Day and the Week are drawn on (ADR-0004): hours down the page, days as columns, Any time as a row above the hours. **Block**: an item with a time, drawn on the grid as a rectangle tinted with its area's colour; the small mark inside it is its line form and its done tick. **List**: the Day as a plain agenda, the other choice of its one view switch. **Score**: the earlier Day, drawn as parallel staves, one per area, on one hour axis. Retired from the app; the public landing page still draws one.
 
-**Inbox**: the one name for the pile of open items with no day, as a page (`/inbox`) and as the tray under the Score, the Week and the List. Captured, safe, and never late. Never "Waiting", "unplanned" or "unscheduled" on screen (`unscheduled` is the code's word for the schedule). Dragging an item from the tray onto a staff schedules it.
+**Inbox**: the one name for the pile of open items with no day, as a page (`/inbox`) and as the tray under the grid of the Day and the Week, and under the List. Captured, safe, and never late. Never "Waiting", "unplanned" or "unscheduled" on screen (`unscheduled` is the code's word for the schedule). Dragging an item from the tray onto a day plans it for that time.
 
 **Any time**: on a day, at no particular hour (a *day* schedule). Distinct from the Inbox, which has no day at all.
 
-**Passed**: an open timed item whose end is before now. Said in words ("passed") on the Score and counted, never coloured or counted as late.
+**Passed**: an open timed item whose end is before now. Counted in the at-a-glance line, never coloured or counted as late.
 
 **At a glance**: the line under a day's, week's or month's title that says where it sits from today and how it stands: "Today · 3 of 10 done · now: Focus block · next: Design sync at 16:00 · 1 due", "This week · 3 days left · 15 open · 2 due · 4 in the Inbox".
 
@@ -54,9 +54,9 @@ A solo productivity web app. One connected set of items, shown through many view
 
 **Due mark**: the one quiet sign of a due date wherever an item is drawn: a small flag and words ("Due today", "Past due", "Due Tue"). The flag is filled once the date has come.
 
-**Tour**: four skippable steps on a new account's Today (capture, the Score, Inbox or Today, the Guide), remembered in the cookie `tour` and replayable from the Guide.
+**Tour**: four skippable steps on a new account's Today (capture, the grid, Inbox or Today, the Guide), remembered in the cookie `tour` and replayable from the Guide.
 
-**Span**: which of the three calendar views a page is, Day, Week or Month, chosen with one switch that keeps the date in focus. Never "zoom" or "mode" on screen (`mode` is the code's word for Score or List).
+**Span**: which of the three calendar views a page is, Day, Week or Month, chosen with one switch that keeps the date in focus. Never "zoom" or "mode" on screen (`mode` is the code's word for the Day's grid or List). On a narrow screen the Week shows three days from the day its address names.
 
 **Undo note**: the one floating note that says what a change just did and offers Undo for six seconds (Ctrl Z or ⌘Z too). Never "toast" or "snackbar" on screen.
 

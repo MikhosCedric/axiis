@@ -16,7 +16,6 @@ import { dayCalendar } from "@/features/calendar/load";
 import { setTimeAction } from "@/features/detail/actions";
 import type { TimeOfDay } from "@/features/detail/model";
 import { FilterChips } from "@/features/filter/filter-chip";
-import { HiddenAreasNote } from "@/features/filter/hidden-note";
 import { NO_FILTER, scopeWords, type ViewFilter } from "@/features/filter/model";
 import { GuideButton, type GuideTopic } from "@/features/palette/guide";
 import { placeAction } from "@/features/score/actions";
@@ -276,7 +275,6 @@ function DayPage({
       >
         <GlanceLine glance={glance} timeZone={timeZone} scope={scopeWords(filter)} />
         <FilterChips filter={filter} className="mt-2.5" />
-        <HiddenAreasNote filter={filter} className="mt-2.5" />
       </PageHeader>
 
       {isToday && tour && <Tour />}

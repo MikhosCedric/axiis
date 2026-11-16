@@ -7,7 +7,6 @@ import { TitleBar } from "@/components/shell/title-bar";
 import type { LocalDate } from "@/domain/item";
 import { CalendarView, type CalendarActions, type CalendarContext, type CalendarData } from "@/features/calendar/calendar-view";
 import { FilterChips } from "@/features/filter/filter-chip";
-import { HiddenAreasNote } from "@/features/filter/hidden-note";
 import { NO_FILTER, scopeWords, type ViewFilter } from "@/features/filter/model";
 import { GuideButton, type GuideTopic } from "@/features/palette/guide";
 import { CaptureField } from "@/features/today/capture-field";
@@ -102,7 +101,6 @@ function WeekPage({
       >
         <p className="page-summary">{summary}</p>
         <FilterChips filter={filter} className="mt-2.5" />
-        <HiddenAreasNote filter={filter} className="mt-2.5" />
       </PageHeader>
       {grid}
       {weekFull && <p className="mt-2 text-[13px] text-ink-3">{WEEK_FULL}</p>}

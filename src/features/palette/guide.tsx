@@ -187,7 +187,7 @@ function KeyTopic({ id, onClose }: { id: string; onClose: () => void }) {
           </span>
           <span>
             <span className="font-medium text-ink">A dot.</span> The area or tag it belongs to, in the colour you gave it in
-            Settings. Choose an area in the sidebar, or press A then its number, to see only that area.
+            Settings. On the Day and the Week a block is tinted with its area&rsquo;s colour. Untick an area in the side panel to hide it, or press A then its number to see only that area.
           </span>
         </li>
         <li className={row}>

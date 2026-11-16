@@ -14,7 +14,7 @@ export default function manifest(): MetadataRoute.Manifest {
     theme_color: PAPER_LIGHT,
     shortcuts: [
       { name: "Capture", url: "/capture", description: "Write something down" },
-      { name: "Today", url: "/today", description: "Your day on the Score" },
+      { name: "Today", url: "/today", description: "Your day, hour by hour" },
       { name: "Inbox", url: "/inbox", description: "Captured, with no day yet" },
     ],
     // Sharing text or a link to Axiis opens the capture field with it filled in. It is never saved until Enter.

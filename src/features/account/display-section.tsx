@@ -164,8 +164,8 @@ export function DisplaySection({
 
       <h3 className="mt-6 font-medium text-ink">Density</h3>
       <p className="mt-1 max-w-[60ch] text-ink-2">
-        How close the rows of a list sit. Compact tightens list rows only; the Score&rsquo;s staves and the Week stay as
-        they are.
+        How close the rows of a list sit. Compact tightens list rows only; the time grid of the Day and the Week stays as
+        it is.
       </p>
       <Choice
         label="Density"

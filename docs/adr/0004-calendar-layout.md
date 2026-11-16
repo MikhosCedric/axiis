@@ -37,9 +37,19 @@ Match Google Calendar unless `PRODUCT.md` forbids it.
 - **The top bar** (`calendar-bar.tsx`) is one component for the three views. Its title is the page's `h1` and opens the same small month in a popover, with a typed date field under it. Every signed-in page shares one header structure (`page-header.tsx`): the title row with the page's controls at its trailing end and the Guide last, then the summary and filter, then capture on its own row.
 - **Search and the account menu stay in the side panel** (the search field under Create, the account row at its foot) rather than moving into the top bar, so they are in one place on every page, including those with no calendar bar. The Guide is at the trailing end of every page's title row.
 
+## How the wiring stage put the grid on the Day and the Week
+
+- **One view, two pages.** `CalendarView` (`src/features/calendar/`) owns the items as they stand, the saves and the status line, and hands a page the grid as a node. The Day (`day-view.tsx`) and the Week (`week-view.tsx`) lay themselves out around it: the calendar bar, the at-a-glance line, capture, then the grid. Each page still does the one bounded read it did (`loadDay`, `loadWeek`), turned into the grid's data by `src/features/calendar/load.ts`; the Week adds one read for subtask counts.
+- **The Inbox is a tray under the grid** on both pages, outside what scrolls. An item dragged from it onto a day gets that time, onto Any time that day; a block dragged back loses its day.
+- **Three days on a narrow screen.** Below 760px the Week draws three days from the day its address names (`/week` is from today), and the bar's arrows and `[` `]` step three days. The same address on a wide screen shows the whole week holding that day, so a link works on both. There is no three-day place of its own: a span is a route and a place in the panel (`spanHrefs`, `PLACES`), and a fourth would be a second way to see what the Week on a phone already shows.
+- **Grid or List.** The Day keeps one switch, Grid and List (`?view=list`). The List is the day as a plain agenda: it reads better than a grid on a day of mostly any-time tasks, and it carries inline rename, the swipes and the Done fold. The Week has no list form.
+- **What stayed Axiis.** Next up, Focus (it dims the grid to what is happening now and leaves only Next up beside it), the at-a-glance line, what is left over from earlier days (a quiet strip beside today, never a count in colour), and the week's pulse.
+- **Hidden areas say so.** Every page that can be narrowed shows "2 areas hidden" with Show all under its summary (`HiddenAreasNote`).
+- **Retired.** The horizontal Score and the week's seven lists, with their drag hooks, styles and harness pages. The landing page and its film still draw a Score of their own (`src/features/landing/`); redoing them is a later task. The placement command and its snapping helpers still live in `src/features/score/`.
+
 ## Consequences
 
 - `SpanSwitch` and the Month's "Jump to month" picker are gone; the small month and its typed date replace both date pickers and the month picker.
 - The panel is taller than the rail was. It scrolls between its top and the account row, which stays in view.
-- Hiding an area hides its items everywhere on that device, with no words on the page saying so beyond the unticked box. If that proves easy to forget, a quiet line under the title is the next step.
-- Until the grid is wired in, Day and Week still draw the Score and the seven lists under the new bar.
+- Hiding an area hides its items everywhere on that device. A quiet line under each page's summary says how many are hidden and offers to show them all.
+- A hard load of the Week on a phone draws seven columns until the page wakes, then three: the server cannot know the width. A page reached from inside the app is right from the start.

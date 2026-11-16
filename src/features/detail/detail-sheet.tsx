@@ -259,7 +259,7 @@ export function DetailSheet({
       {isSeries && (
         <p className="-mt-2 flex items-center gap-2 text-[13px] text-ink-2">
           <RepeatMark className="text-ink-3" />
-          Repeats. Each time is ticked done on its own day, on the Score or the week.
+          Repeats. Each time is ticked done on its own day, on the Day or the Week.
         </p>
       )}
 

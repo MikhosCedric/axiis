@@ -5,6 +5,7 @@ import { usePathname, useSearchParams } from "next/navigation";
 import { AreaMark } from "@/components/area-mark";
 import type { AreaColor } from "@/domain/area-color";
 import { useTagColor } from "@/features/tags/tag-colors";
+import { HiddenAreasNote } from "./hidden-note";
 import { AREA_PARAM, TAG_PARAM } from "./href";
 import type { ViewFilter } from "./model";
 
@@ -46,9 +47,19 @@ function Chip({ label, color, href }: { label: string; color: AreaColor | null; 
 
 /**
  * "Showing: ● Work ×" at the top of a filtered page: what the view is narrowed to, each part
- * with its own way out. Nothing when the view is whole.
+ * with its own way out. Nothing when the view is whole. Under it, on every page, the quiet note that
+ * says areas are hidden in the side panel, with the way to show them all again.
  */
 export function FilterChips({ filter, className = "" }: { filter: ViewFilter; className?: string }) {
+  return (
+    <>
+      <Chips filter={filter} className={className} />
+      <HiddenAreasNote filter={filter} className={className} />
+    </>
+  );
+}
+
+function Chips({ filter, className }: { filter: ViewFilter; className: string }) {
   const withoutArea = useWithout("area");
   const withoutTag = useWithout("tag");
   const tagColor = useTagColor();

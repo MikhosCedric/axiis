@@ -99,7 +99,7 @@ export function AreasSection({ areas, actions, colorHint = false }: { areas: Are
         Areas
       </h2>
       <p className="mt-1.5 max-w-[60ch] text-ink-2">
-        Each area is a staff on the Score. Removing one keeps its items; they show under No area.
+        Each area tints its blocks on the Day and the Week, and has a tick in the side panel to show or hide it. Removing one keeps its items; they show under No area.
       </p>
       {hint && wantsColorNudge(shown) && (
         <p data-color-hint className="mt-3 flex max-w-[60ch] flex-wrap items-center gap-x-3 gap-y-1 rounded-lg border border-rule-soft bg-sheet px-3 py-2 text-[13px] text-ink-2 [--ground:var(--sheet)]">

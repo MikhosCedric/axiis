@@ -25,13 +25,13 @@ export const KINDS: { type: ItemType; term: string; says: string }[] = [
 export const STATES: { state: BeamState; term: string; says: string }[] = [
   { state: "planned", term: "Planned", says: "Dashed: still to come, or with no time yet." },
   { state: "live", term: "Happening", says: "Solid green: its time is now." },
-  { state: "done", term: "Done", says: "Hollow. Done items fold into one Done line." },
+  { state: "done", term: "Done", says: "Hollow. A done block fades and its title is struck; in the List, done items fold into one Done line." },
 ];
 
 export const WORDS: [string, string][] = [
   ["Inbox", "What you captured with no day yet. Nothing there is late."],
-  ["Any time", "On a day, at no particular hour."],
+  ["Any time", "On a day, at no particular hour: the row above the hours."],
   ["Passed", "Its time is over and it was never ticked."],
   ["Due", "A deadline, apart from when you planned it. The flag fills once the day has come."],
-  ["Left over", "Planned for an earlier day and still open, shown below Today's plan."],
+  ["Left over", "Planned for an earlier day and still open, shown with Today's plan."],
 ];
