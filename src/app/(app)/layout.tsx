@@ -15,6 +15,7 @@ import { getHiddenAreas } from "@/features/filter/server";
 import { QuickIconSprite } from "@/features/actions/icon-sprite";
 import { QuickActionsProvider } from "@/features/actions/provider";
 import { PaletteProvider } from "@/features/palette/palette";
+import { AreasProvider } from "@/components/shell/areas-context";
 import { getOutboxOwner } from "@/lib/account";
 
 export default async function AppLayout({ children }: { children: ReactNode }) {
@@ -37,6 +38,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
 
   return (
     <OutboxProvider owner={owner}>
+    <AreasProvider areas={areas}>
     <PaletteProvider today={today} areas={areas}>
       <QuickActionsProvider today={today} areas={areas}>
       <div
@@ -64,6 +66,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
       </div>
       </QuickActionsProvider>
     </PaletteProvider>
+    </AreasProvider>
     </OutboxProvider>
   );
 }

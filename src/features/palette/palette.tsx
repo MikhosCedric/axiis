@@ -363,7 +363,7 @@ function PaletteBody({
 
   const sections = target
     ? actSections(input, target)
-    : withAreas(paletteSections(input, today, clock, find, selected, recent, weekStart), areaSection(input, areas, { pathname, query }));
+    : withAreas(paletteSections(input, today, clock, find, selected, recent, weekStart, areas), areaSection(input, areas, { pathname, query }));
   const commands = sections.flatMap((s) => s.commands);
   const current = commands.length ? Math.min(active, commands.length - 1) : -1;
   const optionId = (c: Command) => `${id}-${c.id}`;

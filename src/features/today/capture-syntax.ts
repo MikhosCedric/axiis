@@ -1,8 +1,8 @@
-import type { LocalDate } from "@/domain/item";
+import type { Area, LocalDate } from "@/domain/item";
 import { MAX_COUNT, type Rule, type RuleEnd } from "@/domain/recurrence";
 import { parseTagName, tagKey, type TagName } from "@/domain/tag";
 import { WEEK_LENGTH, WEEK_STARTS_ON, weekOf, type WeekStart } from "@/features/week/week-of";
-import { addDays, instantAt, parseLocalDate, toLocalDate } from "@/lib/dates";
+import { addDays, instantAt, parseLocalDate, toLocalDate, wallMinutes } from "@/lib/dates";
 import type { CaptureResult, Landed } from "./commands";
 import { formatMinutes, type Clock } from "@/lib/clock";
 import { cadenceHit, cadenceWords, dateWords, monthName, monthWord, ruleDay, type Cadence } from "./capture-repeat";
@@ -13,8 +13,24 @@ export type DayWord =
   | { kind: "in"; days: number }
   | { kind: "weekday"; weekday: number; next: boolean }
   | { kind: "on"; date: LocalDate }
-  /** A day and month with no year ("20 dec"): the next one from the day it is counted from. Read only after "until" or "starting". */
-  | { kind: "date"; month: number; day: number };
+  /** A day and month with no year ("20 dec", "20/12"): the next one from the day it is counted from, so one already past this year is next year's. */
+  | { kind: "date"; month: number; day: number }
+  /** "next week": the first day of next week, by the week start. */
+  | { kind: "nextWeek" }
+  /** "this weekend" is the coming Saturday (today on a Saturday or a Sunday); "next weekend" is the Saturday a week after that one. */
+  | { kind: "weekend"; next: boolean }
+  /** "in 2 months": this day of that month, or its last day when it is shorter. */
+  | { kind: "months"; months: number }
+  /** "next month": its first day. */
+  | { kind: "nextMonth" }
+  /** "end of month": this month's last day. */
+  | { kind: "monthEnd" };
+
+/** An area a line names with "@": the stored one it matched. */
+export type CaptureArea = Pick<Area, "id" | "name">;
+
+/** "in 2 hours": minutes from the moment the line is read, and the length only when one was typed. */
+export type CaptureSoon = { after: number; length: number | null };
 
 /** A start in minutes past local midnight, and the length only when one was typed. */
 export type CaptureTime = { start: number; length: number | null };
@@ -41,6 +57,14 @@ export type CaptureText = {
   day: DayWord | null;
   time: CaptureTime | null;
   tags: TagName[];
+  /** "in 2 hours", "in 30 min": a start counted from now, in place of a day and a time. */
+  soon?: CaptureSoon;
+  /** "due friday": the deadline, apart from the day it is planned for. Never beside a repeat, which takes none. */
+  due?: DayWord;
+  /** "@work": the area it matched, in any case. */
+  area?: CaptureArea;
+  /** An "@name" at the title's edge that is no area: it stays in the title and the preview says so. */
+  noArea?: string;
   repeat?: RepeatWords;
   /** Set when a lone "weekly" or "daily" opening the line was read as the repeat and nothing else was: the words that, in quotes, would stay a title ("weekly review"). */
   quoteToKeep?: string;
@@ -54,9 +78,11 @@ const WEEKDAYS = ["sunday", "monday", "tuesday", "wednesday", "thursday", "frida
 const CONNECTORS = new Set(["on", "next", "in", "at", "for", "by"]);
 /**
  * Words that tie what follows them into the title. A phrase is never read
- * right after one, so "Groceries for Sunday" keeps its Sunday. Phrases that
- * start with one of them ("on friday", "by tomorrow", "at 9", "in 3 days",
- * "next friday", "for 45m", "until 20 dec") are read whole, preposition included.
+ * right after one, so "Party until friday" keeps its Friday. Phrases that
+ * start with one of them ("on friday", "by tomorrow", "for sunday", "at 9",
+ * "in 3 days", "next friday", "for 45m", "until 20 dec", "due friday") are read
+ * whole, preposition included, and only at the line's edge: "Plan for Monday's
+ * meeting" and "Gift for Sunday school" keep every word.
  * "every" and "each" are here too, so "Groceries for every tuesday" keeps its Tuesday.
  */
 const PREPOSITIONS = new Set([
@@ -73,6 +99,7 @@ const PREPOSITIONS = new Set([
   "with",
   "every",
   "each",
+  "due",
 ]);
 const DAY_MINUTES = 24 * 60;
 /** The most words one phrase spans: "every 2 weeks on mon, wed and fri", "until the end of june". */
@@ -82,39 +109,88 @@ type Hit =
   | { slot: "day"; day: DayWord; starting: boolean }
   | { slot: "time"; start: number; length: number | null; bare: boolean }
   | { slot: "length"; minutes: number }
+  | { slot: "soon"; after: number }
+  | { slot: "due"; day: DayWord }
+  | { slot: "area"; area: CaptureArea }
   | { slot: "tag"; name: TagName }
   | { slot: "repeat"; cadence: Cadence; adverb: boolean }
   | { slot: "end"; end: RepeatEnd };
 
 type Token = { text: string; low: string; from: number; to: number };
 
+const countWord = (w: string) => (/^\d/.test(w) ? Number(w) : 1);
+
+/**
+ * A date in figures, day first as dates are shown here: "20/12" and "20/12/2027" are 20 December.
+ * Only when the second figure cannot be a month is it read month first, so "12/20" is 20 December too.
+ */
+function figuresHit(p: string): DayWord | null {
+  const m = /^(\d{1,2})\/(\d{1,2})(?:\/(\d{4}))?$/.exec(p);
+  if (!m) return null;
+  const [a, b] = [Number(m[1]), Number(m[2])];
+  const [day, month] = b > 12 && a <= 12 ? [b, a] : [a, b];
+  if (month < 1 || month > 12 || day < 1 || day > MONTH_LENGTHS[month - 1]) return null;
+  if (m[3] === undefined) return { kind: "date", month, day };
+  const on = parseLocalDate(`${m[3]}-${pad(month)}-${pad(day)}`);
+  return on ? { kind: "on", date: on } : null;
+}
+
+const MONTH_LENGTHS = [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+
+/**
+ * A day: "today", "tonight", "tomorrow", a weekday, "next friday", "next week",
+ * "this weekend", "next month", "end of month", "in 3 days", "in 2 months", and
+ * a calendar date ("2026-12-24", "20 dec", "dec 20", "20 december 2027",
+ * "20/12"). "on", "by" or "for" may open any of them but the "in" ones.
+ * "tonight" is today with no time: Axiis has no evening to put it in.
+ */
 function dayHit(p: string): DayWord | null {
-  if (/^(?:by )?today$/.test(p)) return { kind: "in", days: 0 };
-  if (/^(?:by )?tomorrow$/.test(p)) return { kind: "in", days: 1 };
-  let m = /^(?:on |by )?(next )?([a-z]+)$/.exec(p);
+  let m = /^in (\d{1,3}|an?|one) (days?|weeks?|months?)$/.exec(p);
+  if (m) {
+    const n = countWord(m[1]);
+    if (m[2].startsWith("month")) return n >= 1 && n <= 120 ? { kind: "months", months: n } : null;
+    return { kind: "in", days: m[2].startsWith("week") ? n * WEEK_LENGTH : n };
+  }
+  const w = p.replace(/^(?:on|by|for) /, "");
+  if (w === "today" || w === "tonight") return { kind: "in", days: 0 };
+  if (w === "tomorrow") return { kind: "in", days: 1 };
+  m = /^(next )?([a-z]+)$/.exec(w);
   if (m && WEEKDAYS.includes(m[2])) return { kind: "weekday", weekday: WEEKDAYS.indexOf(m[2]), next: m[1] !== undefined };
-  m = /^(?:on |by )?(\d{4}-\d{2}-\d{2})$/.exec(p);
+  if (w === "next week") return { kind: "nextWeek" };
+  if (w === "next month") return { kind: "nextMonth" };
+  m = /^(this|the|next) weekend$/.exec(w);
+  if (m) return { kind: "weekend", next: m[1] === "next" };
+  if (/^(?:the )?end of (?:the |this )?month$/.test(w)) return { kind: "monthEnd" };
+  m = /^(\d{4}-\d{2}-\d{2})$/.exec(w);
   if (m) {
     const date = parseLocalDate(m[1]);
     return date ? { kind: "on", date } : null;
   }
-  m = /^in (\d{1,3}|a|one) (days?|weeks?)$/.exec(p);
-  if (m) {
-    const n = /\d/.test(m[1]) ? Number(m[1]) : 1;
-    return { kind: "in", days: m[2].startsWith("week") ? n * WEEK_LENGTH : n };
-  }
-  return null;
-}
-
-/** A day word, or a date by day and month ("20 dec", "december 20th 2027"), as "until" and "starting" take them. */
-function dateHit(p: string): DayWord | null {
-  const word = dayHit(p);
-  if (word) return word;
-  const date = dateWords(p.replace(/^on /, ""));
+  const figures = figuresHit(w);
+  if (figures) return figures;
+  const date = dateWords(w);
   if (!date) return null;
   if (date.year === null) return { kind: "date", month: date.month, day: date.day };
   const on = parseLocalDate(`${date.year}-${pad(date.month)}-${pad(date.day)}`);
   return on ? { kind: "on", date: on } : null;
+}
+
+/** A day as "until", "starting" and "due" take it. */
+const dateHit = dayHit;
+
+/** "in 2 hours", "in 30 min", "in an hour", "in half an hour": minutes from now, up to two days. */
+function soonHit(p: string): number | null {
+  const m = /^in (\d{1,4}|an?|one|half an) ?(h|hr|hrs|hours?|m|min|mins|minutes?)$/.exec(p);
+  if (!m) return null;
+  const hours = m[2].startsWith("h");
+  const after = m[1] === "half an" ? (hours ? 30 : 0) : countWord(m[1]) * (hours ? 60 : 1);
+  return after >= 1 && after <= 2 * DAY_MINUTES ? after : null;
+}
+
+/** "due friday", "due 20 dec", "due by tomorrow": a deadline. */
+function dueHit(p: string): DayWord | null {
+  const m = /^due (.+)$/.exec(p);
+  return m ? dayHit(m[1]) : null;
 }
 
 const pad = (n: number) => String(n).padStart(2, "0");
@@ -180,10 +256,22 @@ function timeHit(p: string): { start: number; length: number | null; bare: boole
   return one && { start: one.minutes, length: null, bare: one.bare && !at };
 }
 
+/** A bare length in minutes written with one letter is read up to this, so "swim 400m 7am" keeps its metres. */
+const BARE_M_MAX = 180;
+
+/**
+ * A length: "for 45m", "for 1h 30m", and without "for" when the unit is
+ * joined to its figure or spelled out: "1h", "15m", "90min", "1.5h", "2 hours".
+ */
 function lengthHit(p: string): number | null {
-  const m = /^for (?:(\d{1,2}) ?(?:h|hr|hrs|hour|hours))? ?(?:(\d{1,4}) ?(?:m|min|mins|minute|minutes))?$/.exec(p);
-  if (!m || (m[1] === undefined && m[2] === undefined)) return null;
-  const minutes = Number(m[1] ?? 0) * 60 + Number(m[2] ?? 0);
+  const m = /^(for )?(?:(\d{1,2}(?:\.5)?)( ?)(h|hr|hrs|hour|hours))? ?(?:(\d{1,4})( ?)(m|min|mins|minute|minutes))?$/.exec(p);
+  if (!m || (m[2] === undefined && m[5] === undefined)) return null;
+  if (m[1] === undefined) {
+    // "buy rope 2 m" is not two minutes.
+    if ((m[3] === " " && m[4] === "h") || (m[6] === " " && m[7] === "m")) return null;
+    if (m[2] === undefined && m[7] === "m" && Number(m[5]) > BARE_M_MAX) return null;
+  }
+  const minutes = Number(m[2] ?? 0) * 60 + Number(m[5] ?? 0);
   return minutes > 0 && minutes <= DAY_MINUTES ? minutes : null;
 }
 
@@ -224,19 +312,27 @@ function startingHit(p: string): DayWord | null {
   return m ? dateHit(m[1]) : null;
 }
 
-function hitAt(tokens: readonly Token[], from: number, to: number): Hit | null {
+function hitAt(tokens: readonly Token[], from: number, to: number, areas: readonly CaptureArea[] = []): Hit | null {
   const words = tokens.slice(from, to);
   if (words.length === 1 && /^#[^#\s]/.test(words[0].text)) {
     const name = parseTagName(words[0].text);
     return name ? { slot: "tag", name } : null;
   }
   const p = words.map((w) => w.low).join(" ");
+  if (p.startsWith("@")) {
+    const area = areas.find((a) => areaKey(a.name) === p.slice(1));
+    return area ? { slot: "area", area: { id: area.id, name: area.name } } : null;
+  }
   const day = dayHit(p);
   if (day) return { slot: "day", day, starting: false };
   const time = timeHit(p);
   if (time) return { slot: "time", ...time };
   const length = lengthHit(p);
   if (length !== null) return { slot: "length", minutes: length };
+  const soon = soonHit(p);
+  if (soon !== null) return { slot: "soon", after: soon };
+  const due = dueHit(p);
+  if (due) return { slot: "due", day: due };
   const repeat = cadenceHit(p);
   if (repeat) {
     const { adverb, ...cadence } = repeat;
@@ -248,8 +344,15 @@ function hitAt(tokens: readonly Token[], from: number, to: number): Hit | null {
   return starting && { slot: "day", day: starting, starting: true };
 }
 
-/** True when the word before `at` is a preposition, so a phrase starting at `at` belongs to the title. */
-const dangles = (tokens: readonly Token[], at: number) => at > 0 && PREPOSITIONS.has(tokens[at - 1].low);
+/** An area's name as "@" matches it: any case, single spaces. */
+const areaKey = (name: string) => name.trim().toLowerCase().replace(/\s+/g, " ");
+
+/**
+ * True when the word before `at` is a preposition, so a phrase starting at `at` belongs to the title.
+ * So does "the" after one: "Party until the end of the month".
+ */
+const dangles = (tokens: readonly Token[], at: number) =>
+  at > 0 && (PREPOSITIONS.has(tokens[at - 1].low) || (at > 1 && tokens[at - 1].low === "the" && PREPOSITIONS.has(tokens[at - 2].low)));
 
 /** A day or a repeat: a bare hour right after one reads as a time. */
 const opensTime = (hit: Hit | null) => hit?.slot === "day" || hit?.slot === "repeat";
@@ -263,15 +366,18 @@ function dayEndsAt(tokens: readonly Token[], lo: number, end: number): boolean {
 }
 
 type Scan = { lo: number; hi: number; found: { hit: Hit; at: number }[] };
-/** `length`: a length may be read. `repeatOnly`: an end or a "starting" day, which mean something only beside a repeat. */
-type Allow = { length: boolean; repeatOnly: boolean };
+/**
+ * `length`: a length may be read. `repeatOnly`: an end or a "starting" day, which mean something only beside a repeat.
+ * `oneOff`: a start counted from now ("in 2 hours") or a due date, which a repeat cannot take.
+ */
+type Allow = { length: boolean; repeatOnly: boolean; oneOff: boolean };
 
 /**
  * Peels recognised phrases off the end of the line, then off its start, and
  * stops at the first word on each side that is not one. Each of day, time,
  * length, repeat and end is taken once.
  */
-function scan(tokens: readonly Token[], allow: Allow): Scan {
+function scan(tokens: readonly Token[], allow: Allow, areas: readonly CaptureArea[]): Scan {
   let lo = 0;
   let hi = tokens.length;
   const found: Scan["found"] = [];
@@ -282,6 +388,13 @@ function scan(tokens: readonly Token[], allow: Allow): Scan {
     switch (hit.slot) {
       case "length":
         return allow.length;
+      case "soon":
+        // It is a day and a time at once, so it is read only when neither was.
+        return allow.oneOff && !taken.has("day") && !taken.has("time");
+      case "due":
+        return allow.oneOff;
+      case "area":
+        return true;
       case "end":
         return allow.repeatOnly;
       case "day":
@@ -296,11 +409,13 @@ function scan(tokens: readonly Token[], allow: Allow): Scan {
     found.push({ hit, at });
     taken.add(hit.slot);
     if (hit.slot === "time" && hit.length !== null) taken.add("length");
+    if (hit.slot === "soon") ["day", "time"].forEach((slot) => taken.add(slot));
   };
+  const at = (from: number, to: number) => hitAt(tokens, from, to, areas);
 
   fromEnd: while (hi > lo) {
     for (let n = Math.min(MAX_WORDS, hi - lo); n >= 1; n--) {
-      const hit = hitAt(tokens, hi - n, hi);
+      const hit = at(hi - n, hi);
       if (hit && !dangles(tokens, hi - n) && fits(hit, dayEndsAt(tokens, lo, hi - n))) {
         take(hit, hi - n);
         hi -= n;
@@ -313,7 +428,7 @@ function scan(tokens: readonly Token[], allow: Allow): Scan {
   let afterDay = false;
   fromStart: while (lo < hi) {
     for (let n = Math.min(MAX_WORDS, hi - lo); n >= 1; n--) {
-      const hit = hitAt(tokens, lo, lo + n);
+      const hit = at(lo, lo + n);
       // "every 2nd tuesday of the month" is not every other Tuesday, and Axiis has no rule for it, so it stays in the title.
       const ofMonth = hit?.slot === "repeat" && tokens[lo + n]?.low === "of";
       if (hit && !ofMonth && fits(hit, afterDay)) {
@@ -349,12 +464,12 @@ function unescape(title: string): string {
  * or a word after a backslash, stays as typed. A line that would leave no
  * title is all title.
  */
-export function parseCapture(text: string, options: { weekStart?: WeekStart } = {}): CaptureText {
-  const read = readCapture(text);
+export function parseCapture(text: string, options: { weekStart?: WeekStart; areas?: readonly CaptureArea[] } = {}): CaptureText {
+  const read = readCapture(text, options.areas);
   return options.weekStart !== undefined && options.weekStart !== WEEK_STARTS_ON ? { ...read, weekStart: options.weekStart } : read;
 }
 
-function readCapture(text: string): CaptureText {
+function readCapture(text: string, areas?: readonly CaptureArea[]): CaptureText {
   const line = text.trim();
   const literal: CaptureText = { title: line, day: null, time: null, tags: [] };
   const quoted = /^["“]([\s\S]*)["”]$/.exec(line);
@@ -366,17 +481,19 @@ function readCapture(text: string): CaptureText {
     from: m.index,
     to: m.index + m[0].length,
   }));
-  const allow: Allow = { length: true, repeatOnly: true };
-  let read = scan(tokens, allow);
+  const allow: Allow = { length: true, repeatOnly: true, oneOff: true };
+  let read = scan(tokens, allow, areas ?? []);
   for (;;) {
     const has = (slot: Hit["slot"]) => read.found.some((f) => f.hit.slot === slot);
-    const lengthAlone = allow.length && has("length") && !has("time");
+    const lengthAlone = allow.length && has("length") && !has("time") && !has("soon");
+    const oneOffRepeats = allow.oneOff && has("repeat") && (has("soon") || has("due"));
     const repeatOnlyAlone =
       allow.repeatOnly && !has("repeat") && read.found.some((f) => f.hit.slot === "end" || (f.hit.slot === "day" && f.hit.starting));
-    if (!lengthAlone && !repeatOnlyAlone) break;
+    if (!lengthAlone && !repeatOnlyAlone && !oneOffRepeats) break;
     if (lengthAlone) allow.length = false;
     if (repeatOnlyAlone) allow.repeatOnly = false;
-    read = scan(tokens, allow);
+    if (oneOffRepeats) allow.oneOff = false;
+    read = scan(tokens, allow, areas ?? []);
   }
   if (read.lo >= read.hi) {
     const untitled = read.found.some((f) => f.hit.slot === "repeat");
@@ -387,6 +504,9 @@ function readCapture(text: string): CaptureText {
   const hits = sorted.map((f) => f.hit);
   const pick = <S extends Hit["slot"]>(slot: S) => hits.find((h): h is Extract<Hit, { slot: S }> => h.slot === slot);
   const [repeat, end, time, length] = [pick("repeat"), pick("end"), pick("time"), pick("length")];
+  const [soon, due, area] = [pick("soon"), pick("due"), pick("area")];
+  // An "@name" left at the title's edge was meant as an area and matched none.
+  const edge = areas ? [tokens[read.hi - 1], tokens[read.lo]].find((t) => /^@[^@\s]/.test(t.text)) : undefined;
   let day = pick("day")?.day ?? null;
   let cadence = repeat?.cadence;
   // "weekly review friday 4pm": a weekly repeat on no weekday and a plain weekday is that weekday every week.
@@ -403,6 +523,10 @@ function readCapture(text: string): CaptureText {
     day,
     time: time ? { start: time.start, length: time.length ?? length?.minutes ?? null } : null,
     tags: firstSpellings(hits.flatMap((h) => (h.slot === "tag" ? [h.name] : []))),
+    ...(soon && { soon: { after: soon.after, length: length?.minutes ?? null } }),
+    ...(due && { due: due.day }),
+    ...(area && { area: area.area }),
+    ...(edge && { noArea: edge.text.slice(1) }),
     ...(cadence && { repeat: { ...cadence, end: end?.end ?? { kind: "never" } } }),
     ...(onlyLead && { quoteToKeep: line.slice(tokens[lead.at].from, tokens[read.hi - 1].to) }),
   };
@@ -444,10 +568,32 @@ export function dayOf(word: DayWord, today: LocalDate, weekStart: WeekStart = WE
     }
     case "date":
       return nextDate(word.month, word.day, today);
+    case "nextWeek":
+      return addDays(weekOf(today, weekStart)[0], WEEK_LENGTH);
+    case "weekend": {
+      // On a Sunday the weekend is under way, so "this weekend" is today and "next" is the coming Saturday.
+      const saturday = addDays(today, weekdayOf(today) === 0 ? -1 : (6 - weekdayOf(today)) % WEEK_LENGTH);
+      if (word.next) return addDays(saturday, WEEK_LENGTH);
+      return saturday < today ? today : saturday;
+    }
+    case "months":
+      return addMonths(today, word.months);
+    case "nextMonth":
+      return addMonths(`${today.slice(0, 8)}01` as LocalDate, 1);
+    case "monthEnd":
+      return addDays(addMonths(`${today.slice(0, 8)}01` as LocalDate, 1), -1);
   }
 }
 
-export function dayWordText(word: DayWord): string {
+/**
+ * A typed day in words, before it is pinned to a date. Given `today` it names the date instead for the days that
+ * need a calendar to place ("next week", "20/12", "end of month"), with the month spelled out and the year when it is not this one.
+ */
+export function dayWordText(word: DayWord, weekStart: WeekStart = WEEK_STARTS_ON, today?: LocalDate): string {
+  if (today && word.kind !== "in" && word.kind !== "weekday" && word.kind !== "on") {
+    const on = dayOf(word, today, weekStart);
+    return on === today ? "today" : on === addDays(today, 1) ? "tomorrow" : formatDayIn(on, today);
+  }
   switch (word.kind) {
     case "in":
       return word.days === 0 ? "today" : word.days === 1 ? "tomorrow" : `in ${word.days} days`;
@@ -459,6 +605,16 @@ export function dayWordText(word: DayWord): string {
     }
     case "date":
       return `${word.day} ${monthName(word.month)}`;
+    case "nextWeek":
+      return `${capitalise(WEEKDAYS[weekStart])} next week`;
+    case "weekend":
+      return word.next ? "next weekend" : "this weekend";
+    case "months":
+      return word.months === 1 ? "in 1 month" : `in ${word.months} months`;
+    case "nextMonth":
+      return "the 1st of next month";
+    case "monthEnd":
+      return "the end of the month";
   }
 }
 
@@ -501,7 +657,29 @@ function ruleEnd(end: RepeatEnd, first: LocalDate, today: LocalDate, weekStart: 
 export type CaptureSeries = { first: LocalDate; rule: Rule };
 
 /** The moment a line is read: today's date, and whether a time of day today has already come. */
-export type Moment = { today: LocalDate; begun: (minutes: number) => boolean };
+export type Moment = {
+  today: LocalDate;
+  begun: (minutes: number) => boolean;
+  /** Where "in 2 hours" lands, see `soonAt`. */
+  soon?: (after: number) => { on: LocalDate; start: number };
+};
+
+/** How finely a start counted from now is placed: the Score's quarter hour. */
+const SOON_SNAP = 15;
+
+/**
+ * Where a start `after` minutes from `now` lands: the wall clock of that
+ * instant in `timeZone`, moved up to the quarter hour so it is never sooner
+ * than asked, on the day that instant falls on (tomorrow, past midnight). The
+ * minutes are counted in real time, so across a clock change "in 2 hours" is
+ * still two hours away.
+ */
+export function soonAt(after: number, now: Date, timeZone: string): { on: LocalDate; start: number } {
+  const at = new Date(now.getTime() + after * 60_000);
+  const on = toLocalDate(at, timeZone);
+  const start = Math.ceil(wallMinutes(at, timeZone) / SOON_SNAP) * SOON_SNAP;
+  return start >= DAY_MINUTES ? { on: addDays(on, 1), start: 0 } : { on, start };
+}
 
 /**
  * The moment `now` is in `timeZone`. A time has come once its instant today is
@@ -510,7 +688,11 @@ export type Moment = { today: LocalDate; begun: (minutes: number) => boolean };
  */
 export function momentAt(now: Date, timeZone: string): Moment {
   const today = toLocalDate(now, timeZone);
-  return { today, begun: (minutes) => instantAt(today, minutes, timeZone).getTime() <= now.getTime() };
+  return {
+    today,
+    begun: (minutes) => instantAt(today, minutes, timeZone).getTime() <= now.getTime(),
+    soon: (after) => soonAt(after, now, timeZone),
+  };
 }
 
 /** The moment on this device, for a preview as the line is typed; the server reads its own when the line is sent. */
@@ -591,7 +773,7 @@ function endWords(end: RepeatEnd, monthEndDay: string | null): string | null {
  */
 function repeatPreview(c: CaptureText & { repeat: RepeatWords }, moment: Moment | undefined): string {
   const typedDay = c.day?.kind === "weekday" ? ruleDay(c.day.weekday) : null;
-  if (!moment) return `${capitalise(cadenceWords(c.repeat, typedDay))}${c.day ? ` starting ${dayWordText(c.day)}` : ""}`;
+  if (!moment) return `${capitalise(cadenceWords(c.repeat, typedDay))}${c.day ? ` starting ${dayWordText(c.day, c.weekStart)}` : ""}`;
   const { today } = moment;
   const from = c.day ? dayOf(c.day, today, c.weekStart) : today;
   const passed = passesToday(c, moment);
@@ -600,7 +782,7 @@ function repeatPreview(c: CaptureText & { repeat: RepeatWords }, moment: Moment 
   const cadence = capitalise(cadenceWords(c.repeat, typedDay ?? ruleDay(weekdayOf(first))));
   const movedOff = passed && seriesFor(c.repeat, from, today, false, c.weekStart)?.first === today && first !== today;
   if (movedOff) return `${cadence} starting ${first === addDays(today, 1) ? "tomorrow" : formatDayIn(first, today)}`;
-  if (c.day) return `${cadence} starting ${dayWordText(c.day)}`;
+  if (c.day) return `${cadence} starting ${dayWordText(c.day, c.weekStart, today)}`;
   // "Every other Friday" could be either of two, so it says which it starts on.
   return c.repeat.interval > 1 ? `${cadence}, from ${shortDay(first, today)}` : cadence;
 }
@@ -635,12 +817,15 @@ function monthEndOn(c: CaptureText & { repeat: RepeatWords }, month: number | nu
  * null when it is all title. Given the `moment` it is read at, a repeat whose
  * time today has passed says the later day it starts on.
  */
-export function previewWords(c: CaptureText, clock: Clock, moment?: Moment): string | null {
+export function previewWords(c: CaptureText, clock: Clock, moment?: Moment | { today: LocalDate }): string | null {
   if (c.untitled) return `Add what to do: “${c.title}” alone has no title`;
+  const full = moment && "begun" in moment ? moment : undefined;
+  const today = moment?.today;
+  const soon = c.soon ? soonWords(c.soon, clock, full) : null;
   const day = c.repeat
-    ? repeatPreview({ ...c, repeat: c.repeat }, moment)
+    ? repeatPreview({ ...c, repeat: c.repeat }, full)
     : c.day
-      ? dayWordText(c.day)
+      ? dayWordText(c.day, c.weekStart, today)
       : c.time
         ? "today"
         : null;
@@ -650,12 +835,30 @@ export function previewWords(c: CaptureText, clock: Clock, moment?: Moment): str
       : `${formatMinutes(c.time.start, clock)} to ${formatMinutes(c.time.start + c.time.length, clock)}`
     : null;
   const repeat = c.repeat;
-  const lastOn = repeat?.end.kind === "monthEnd" ? monthEndOn({ ...c, repeat }, repeat.end.month, moment) : null;
-  const end = repeat ? endWords(repeat.end, lastOn && dayMonth(lastOn, moment?.today ?? null)) : null;
-  const parts = [day, time, end, ...c.tags.map((t) => `#${t}`)].filter((p) => p !== null);
+  const lastOn = repeat?.end.kind === "monthEnd" ? monthEndOn({ ...c, repeat }, repeat.end.month, full) : null;
+  const end = repeat ? endWords(repeat.end, lastOn && dayMonth(lastOn, full?.today ?? null)) : null;
+  const due = c.due ? `due ${dayWordText(c.due, c.weekStart, today)}` : null;
+  const area = c.area ? `@${c.area.name}` : null;
+  // An "@name" that matched nothing is said last, so it is never taken for something read.
+  const noArea = c.noArea === undefined ? null : `no area named “${c.noArea}”, so it stays in the title`;
+  const parts = [soon, day, time, end, due, area, ...c.tags.map((t) => `#${t}`), noArea].filter((p) => p !== null);
   if (!parts.length) return null;
-  const said = parts.join(", ");
+  const said = parts.length === 1 && noArea ? capitalise(noArea) : parts.join(", ");
   return c.quoteToKeep ? `${said} (in quotes, “${c.quoteToKeep}” stays a title)` : said;
+}
+
+const plural = (n: number, unit: string) => `${n} ${unit}${n === 1 ? "" : "s"}`;
+
+/** "today, 14:15 to 14:45" once the moment is known; before that, "in 2 hours". */
+function soonWords(soon: CaptureSoon, clock: Clock, moment: Moment | undefined): string {
+  const at = moment?.soon?.(soon.after);
+  if (!moment || !at) {
+    const after = soon.after % 60 === 0 ? plural(soon.after / 60, "hour") : plural(soon.after, "minute");
+    return `in ${after}${soon.length === null ? "" : ` for ${plural(soon.length, "minute")}`}`;
+  }
+  const day = at.on === moment.today ? "today" : at.on === addDays(moment.today, 1) ? "tomorrow" : formatDayIn(at.on, moment.today);
+  const end = soon.length === null ? "" : ` to ${formatMinutes(at.start + soon.length, clock)}`;
+  return `${day}, ${formatMinutes(at.start, clock)}${end}`;
 }
 
 /** "#a", "#a and #b", "#a, #b and #c". */
@@ -670,7 +873,7 @@ type Captured = Extract<CaptureResult, { ok: true }>;
 export const CAPTURE_EXAMPLES = ["dentist tomorrow 9:00 #health", "call Sam friday 14:00 for 30m", "buy milk", "gym every tuesday 7:30 to 9"] as const;
 
 /** Above the capture field on an account's first day. */
-export const CAPTURE_LEAD = "Type one thing you have to do. Add a day or a time and it lands on its line.";
+export const CAPTURE_LEAD = "Type one thing you have to do. Add a day or a time and it goes on that day, at that time.";
 
 /**
  * What a status line says once a capture has saved: in the capture field,
@@ -687,7 +890,12 @@ export function capturedLine(result: Captured, where: "field" | "palette", clock
     ? `${where === "palette" ? `${what}. ` : ""}${landed.repeats ? "Starts" : "Planned for"} ${plan}${tags ? `,${tags}` : ""}.`
     : `${what}${tags}. It is in the Inbox${where === "palette" ? "" : ", below"}.`;
   const repeats = landed?.repeats ? ` Repeats ${landed.repeats}.` : "";
-  return line + repeats + missedLine(result);
+  return line + repeats + filedLine(result) + missedLine(result);
+}
+
+/** The due date and the area a capture took, each as its own short sentence. */
+function filedLine({ due, area }: Captured): string {
+  return `${due ? ` Due ${due}.` : ""}${area ? ` In ${area}.` : ""}`;
 }
 
 function landedTime(time: NonNullable<Landed["time"]>, clock: Clock): { start: string; end: string | null } {
@@ -707,13 +915,13 @@ export function firstCapturedLine(result: Captured, clock: Clock): { text: strin
   const { landed } = result;
   const title = capitalise(result.title);
   const tags = result.tags.length ? `, tagged ${tagList(result.tags)}` : "";
-  if (!landed) return { text: `${title} is in the Inbox, with no day yet${tags}.${missedLine(result)}`, link: { href: "/inbox", label: "See the Inbox" } };
+  if (!landed) return { text: `${title} is in the Inbox, with no day yet${tags}.${filedLine(result)}${missedLine(result)}`, link: { href: "/inbox", label: "See the Inbox" } };
   const day = landed.day === "today" || landed.day === "tomorrow" ? landed.day : `on ${landed.day}`;
   const at = landed.time && landedTime(landed.time, clock);
   const time = !at ? ", at any time" : at.end ? ` from ${at.start} to ${at.end}` : ` at ${at.start}`;
   const repeats = landed.repeats ? `, and repeats ${landed.repeats}` : "";
   return {
-    text: `${title} is ${day}${time}${repeats}${tags}.${missedLine(result)}`,
+    text: `${title} is ${day}${time}${repeats}${tags}.${filedLine(result)}${missedLine(result)}`,
     link: { href: landed.day === "today" ? "/today" : `/day/${landed.on}`, label: `See ${landed.day}` },
   };
 }

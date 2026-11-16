@@ -92,7 +92,6 @@ describe("parseCapture", () => {
   });
 
   it.each([
-    "Groceries for Sunday",
     "Party until friday",
     "Leave before tomorrow",
     "Ask about today",
@@ -106,8 +105,8 @@ describe("parseCapture", () => {
   });
 
   it("reads what follows a dangling-preposition phrase, and no bare hour after it", () => {
-    expect(parseCapture("Groceries for Sunday #home")).toEqual({ ...plain("Groceries for Sunday"), tags: ["home" as TagName] });
-    expect(parseCapture("Groceries for Sunday 9")).toEqual(plain("Groceries for Sunday 9"));
+    expect(parseCapture("Groceries for every Tuesday #home")).toEqual({ ...plain("Groceries for every Tuesday"), tags: ["home" as TagName] });
+    expect(parseCapture("Party until friday 9")).toEqual(plain("Party until friday 9"));
     expect(parseCapture("Groceries for Sunday tomorrow")).toEqual({ ...plain("Groceries for Sunday"), day: tomorrow });
   });
 

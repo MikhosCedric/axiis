@@ -4,7 +4,7 @@ import { hydrated, SESSION_COOKIE, sessionSecret, signedIn } from "./session";
 
 const expect = defaultExpect.configure({ timeout: 30_000 });
 
-const LEAD = "Type one thing you have to do. Add a day or a time and it lands on its line.";
+const LEAD = "Type one thing you have to do. Add a day or a time and it goes on that day, at that time.";
 const NOTE = "The faint blocks are examples. They go once you add your first item.";
 const FIRST_EXAMPLE = "dentist tomorrow 9:00 #health";
 

@@ -730,6 +730,8 @@ test.describe("on a touch phone", () => {
     expect(box!.height).toBeGreaterThanOrEqual(44);
     await button.tap();
     const guide = page.getByRole("dialog", { name: "Guide" });
+    // The capture words above it are long; the dialog scrolls, so the grid topic is reached by scrolling.
+    await guide.getByRole("heading", { name: "The time grid" }).scrollIntoViewIfNeeded();
     await expect(guide.getByRole("heading", { name: "The time grid" })).toBeInViewport();
     const edges = await guide.evaluate((el) => {
       const r = el.getBoundingClientRect();

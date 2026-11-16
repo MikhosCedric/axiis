@@ -7,13 +7,24 @@ import type { BeamState } from "@/features/today/model";
  */
 
 export const CAPTURE_WORDS: [string, string][] = [
-  ["Days", "today, tomorrow, a weekday, on friday, by friday, next friday, in 3 days, 2026-12-24"],
-  ["Times", "9:00, 14:30, 9am, 2:30pm, at 9, or 9 and 0930 right after a day"],
-  ["Length", "after a time, for 45m or for 1h 30m; otherwise 30 minutes"],
+  [
+    "Days",
+    "today, tomorrow, tonight, a weekday, next friday, next week, this weekend, next month, end of month, in 3 days, in 2 months, 20 dec, dec 20, 20/12 (day first), 2026-12-24",
+  ],
+  [
+    "After a word",
+    "for, on or by before a day plans that day (“call mum on friday”, “groceries for sunday”), at the end of the line only, so “plan for monday’s meeting” stays as typed",
+  ],
+  ["Times", "9:00, 14:30, 9am, 2:30pm, noon, midnight, at 9, or 9 and 0930 right after a day; a range as 2-3pm or from 2 to 3:30pm"],
+  ["Soon", "in 2 hours or in 30 min: today at that time, to the next quarter hour, or tomorrow past midnight"],
+  ["Length", "after a time, 1h, 15m, 90min or for 45m; otherwise 30 minutes"],
+  ["Due", "due friday or due 20 dec sets the deadline, apart from the day it is planned"],
+  ["Areas and tags", "@work files it under that area (any case, an area you have); #health tags it"],
   [
     "Kept as typed",
-    "everything else, a day after a word like for or until (“groceries for sunday”), a word after a backslash (\\friday), and a whole line in quotes",
+    "everything else, a word after a backslash (\\friday), and a whole line in quotes. The line under the field says what was understood, and an @name that matches no area",
   ],
+  ["Pasting lines", "paste several lines and the field offers one item per line or a checklist named by the first line; Enter keeps them as one line"],
 ];
 
 export const KINDS: { type: ItemType; term: string; says: string }[] = [

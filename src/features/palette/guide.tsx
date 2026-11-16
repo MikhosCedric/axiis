@@ -80,7 +80,7 @@ function CaptureTopic({ id }: { id: string }) {
   return (
     <Topic id={id} title="Capture words">
       <p>
-        Put a day, a time or tags at the start or end of a capture, as in{" "}
+        Put a day, a time, a length, a due date, an area or tags at the start or end of a capture, as in{" "}
         <span className="rounded border border-rule bg-paper px-1.5 py-px whitespace-nowrap text-ink">dentist tomorrow 9:00 #health</span>.
       </p>
       <dl className="grid gap-x-4 gap-y-1.5 pt-1 min-[480px]:grid-cols-[7.5rem_minmax(0,1fr)]">

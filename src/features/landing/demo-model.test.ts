@@ -49,7 +49,7 @@ describe("placeCapture", () => {
   it("puts a day with no time in Any time, and a bare line in the Inbox", () => {
     expect(placeCapture("call Sam next friday")).toEqual({ kind: "anytime", title: "call Sam", day: "next Friday", tags: [], repeats: null });
     expect(placeCapture(CAPTURE_EXAMPLES[2])).toEqual({ kind: "inbox", title: "buy milk", tags: [] });
-    expect(placeCapture("Groceries for Sunday")).toEqual({ kind: "inbox", title: "Groceries for Sunday", tags: [] });
+    expect(placeCapture("Plan for Monday's meeting")).toEqual({ kind: "inbox", title: "Plan for Monday's meeting", tags: [] });
   });
 
   it("plans a repeat on the days it falls on, in the parser's words, with the sample week it marks", () => {

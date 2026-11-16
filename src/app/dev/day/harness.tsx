@@ -1,5 +1,6 @@
 "use client";
 
+import { AreasProvider } from "@/components/shell/areas-context";
 import { PaletteProvider } from "@/features/palette/palette";
 import { useSearchParams } from "next/navigation";
 import { startTransition, useRef, useState } from "react";
@@ -9,7 +10,7 @@ import { DayView, type DayActions } from "@/features/day/day-view";
 import { SELECTED_ITEM_PARAM, type DayData, type DayViewMode } from "@/features/day/types";
 import { setTime } from "@/features/detail/commands";
 import { placeItem } from "@/features/score/commands";
-import { captureTask, setDone, type ActionResult } from "@/features/today/commands";
+import { captureLines, captureList, captureTask, setDone, type ActionResult } from "@/features/today/commands";
 import { fakeRepo, tagByTitle } from "@/features/today/test-support";
 import type { ItemsRepo } from "@/lib/items/repo";
 import { loadDayData, DAY_TAGS } from "./fixture";
@@ -51,7 +52,11 @@ export function DayHarness({
   const actions: DayActions = {
     place: (id, placement) => run((repo) => placeItem(repo, id, placement, data.timeZone)),
     setDone: (id, done) => run((repo) => setDone(repo, id, done, data.timeZone)),
-    capture: (title) => run((repo) => captureTask(repo, title, new Date(data.nowIso), data.timeZone)),
+    capture: (title) => run((repo) => captureTask(repo, title, new Date(data.nowIso), data.timeZone, null, undefined, undefined, areas)),
+    paste: {
+      items: (lines) => run((repo) => captureLines(repo, lines, new Date(data.nowIso), data.timeZone, null, undefined, areas)),
+      list: (lines) => run((repo) => captureList(repo, lines)),
+    },
     timeSeries: (id, time) => run((repo) => setTime(repo, id, time, data.timeZone, "all")),
   };
 
@@ -60,6 +65,7 @@ export function DayHarness({
 
   return (
     // The provider gives the Guide button its dialog, as the app layout does.
+    <AreasProvider areas={areas}>
     <PaletteProvider today={data.date}>
       <div className="flex flex-wrap items-center gap-4 border-b border-rule bg-paper-2 px-4 py-2 text-[13px] text-ink-2">
         <span>Day harness with fixture data. Saves stay in this tab.</span>
@@ -88,5 +94,6 @@ export function DayHarness({
         }
       />
     </PaletteProvider>
+    </AreasProvider>
   );
 }

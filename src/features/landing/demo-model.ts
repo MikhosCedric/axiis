@@ -71,7 +71,8 @@ export function placeCapture(text: string): Placement {
     const end = read.time.start + (read.time.length ?? LANDING_DEFAULT_MINUTES);
     return { kind: "timed", title: read.title, day, start: read.time.start, end, tags: read.tags, repeats };
   }
-  if (read.day || repeats) return { kind: "anytime", title: read.title, day, tags: read.tags, repeats };
+  // "in 2 hours" needs the clock the demo has not got: it lands on today, with no time.
+  if (read.day || repeats || read.soon) return { kind: "anytime", title: read.title, day, tags: read.tags, repeats };
   return { kind: "inbox", title: read.title, tags: read.tags };
 }
 
