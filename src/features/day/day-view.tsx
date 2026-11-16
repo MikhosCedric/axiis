@@ -271,6 +271,7 @@ function DayPage({
       <PageHeader
         heading={<CalendarBar span="day" date={date} today={today} mode={mode} titleId="day-title" />}
         controls={controls}
+        controlsRow
         capture={<CaptureField captureAction={capture} firstDay={firstDay} screenStatus={ctx.status} />}
       >
         <GlanceLine glance={glance} timeZone={timeZone} scope={scopeWords(filter)} />

@@ -94,7 +94,8 @@ signedIn.describe("a busy day", () => {
       await page.setViewportSize({ width, height: 812 });
       await page.emulateMedia({ colorScheme });
       await page.goto("/today");
-      const box = await page.getByRole("heading", { name: "Next up" }).boundingBox();
+      // On a phone Next up is one line that opens the card; wide, it is the card.
+      const box = await (width < 760 ? page.getByRole("button", { name: /^Next up: / }) : page.getByRole("heading", { name: "Next up" })).boundingBox();
       expect(box!.y).toBeLessThan(812);
       const { violations } = await new AxeBuilder({ page }).analyze();
       expect(violations).toEqual([]);

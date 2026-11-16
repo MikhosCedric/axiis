@@ -91,4 +91,40 @@ test.describe("on a phone", () => {
     expect(a.step).toBe(HOUR_PX);
     expectFilled(a);
   });
+
+  test("the grid starts in the top 60% of the screen and the first hour row is within the first 700px", async ({ page }) => {
+    await open(page, "?at=10:30");
+    const top = await page.evaluate(() => {
+      const frame = document.querySelector<HTMLElement>("[data-calendar-grid]")!;
+      const hour = [...frame.querySelectorAll<HTMLElement>("[data-hour]")].find((h) => h.getBoundingClientRect().top > frame.getBoundingClientRect().top + 60);
+      return { frame: frame.getBoundingClientRect().top, hour: hour!.getBoundingClientRect().top };
+    });
+    expect(top.frame).toBeLessThan(812 * 0.6);
+    expect(top.hour).toBeLessThan(700);
+  });
+
+  test("Next up is one line that opens the card, and the grid opens on now", async ({ page }) => {
+    await open(page, "?at=10:30");
+    const strip = page.getByRole("button", { name: /^Next up: Now: / });
+    await expect(strip).toHaveAttribute("aria-expanded", "false");
+    await expect(page.getByRole("heading", { name: "Next up" })).toBeHidden();
+    await strip.focus();
+    await page.keyboard.press("Enter");
+    await expect(strip).toHaveAttribute("aria-expanded", "true");
+    await expect(page.getByRole("heading", { name: "Next up" })).toBeVisible();
+    // The hour of now is in view, not midnight.
+    const scrolled = await page.evaluate(() => document.querySelector<HTMLElement>("[data-calendar-grid]")!.scrollTop);
+    expect(scrolled).toBeGreaterThan(200);
+  });
+
+  test("the any-time row takes three rows and folds the rest under a + more button", async ({ page }) => {
+    await open(page, "?at=10:30");
+    const row = page.locator("[data-anytime] ul").first();
+    await expect(row.locator("li[data-item]")).toHaveCount(2);
+    const more = row.getByRole("button", { name: /^\+\d+ more$/ });
+    await expect(more).toBeVisible();
+    await more.click();
+    await expect(more).toHaveText("Show fewer");
+    expect(await row.locator("li[data-item]").count()).toBeGreaterThan(2);
+  });
 });

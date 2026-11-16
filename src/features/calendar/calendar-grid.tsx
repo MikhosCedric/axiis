@@ -73,6 +73,8 @@ const KEYS_ID = "calendar-keys";
 const MODE_NAME: Record<CalendarMode, string> = { day: "Day", "3day": "Three days", week: "Week" };
 const weekday = new Intl.DateTimeFormat("en-GB", { weekday: "short", timeZone: "UTC" });
 const NO_AREA = "No area";
+/** The rows the any-time strip takes before it folds the rest under a "+N more" button. */
+const ANY_ROWS = 3;
 
 type Peek = { id: string; at: Box };
 type Creating = { slot: Slot; at: Box };
@@ -127,6 +129,8 @@ export function CalendarGrid({
   const [creating, setCreating] = useState<Creating | null>(null);
   /** Where the keyboard's slot sits, the same on every day. */
   const [cursor, setCursor] = useState(9 * 60);
+  /** The days whose any-time row is opened out past three rows. */
+  const [anyOpen, setAnyOpen] = useState<Set<LocalDate>>(new Set());
 
   const layout = useMemo(() => layoutGrid({ days, items, timeZone, now }), [days, items, timeZone, now]);
   const nowAt = layout.now;
@@ -360,6 +364,11 @@ export function CalendarGrid({
     return color ? ({ "--tint": `var(--area-${color})` } as CSSProperties) : undefined;
   };
   const hidden = (item: ShownItem) => quick?.patched(item.id)?.hidden;
+  /** The any-time chips a day shows: all of them up to three rows, else all but the last row's worth and a "+N more" button. */
+  const anyShown = (list: ShownItem[], day: LocalDate) => {
+    const shown = list.filter((i) => !hidden(i));
+    return shown.length <= ANY_ROWS || anyOpen.has(day) ? shown : shown.slice(0, ANY_ROWS - 1);
+  };
   const lifted = (item: ShownItem) => preview?.kind === "move" && preview.item.id === item.id;
 
   const block = (b: Block, day: LocalDate) => {
@@ -507,9 +516,8 @@ export function CalendarGrid({
           {layout.columns.map((col) => (
             <div key={col.date} data-anytime={col.date} className={`${styles.anyCell} ${overAny(col.date) ? styles.over : ""}`}>
               {col.anyTime.length > 0 && (
-                <ul aria-label={`Any time, ${formatDayHeading(col.date)}`}>
-                  {col.anyTime.map((item) => {
-                    if (hidden(item)) return null;
+                <ul aria-label={`Any time, ${formatDayHeading(col.date)}`} className={anyOpen.has(col.date) ? styles.anyOpen : undefined}>
+                  {anyShown(col.anyTime, col.date).map((item) => {
                     const state = stateOf(item, now);
                     return (
                       <li
@@ -523,6 +531,23 @@ export function CalendarGrid({
                       </li>
                     );
                   })}
+                  {(() => {
+                    const total = col.anyTime.filter((i) => !hidden(i)).length;
+                    if (total <= ANY_ROWS) return null;
+                    const open = anyOpen.has(col.date);
+                    return (
+                      <li className={styles.anyMoreRow}>
+                        <button
+                          type="button"
+                          aria-expanded={open}
+                          onClick={() => setAnyOpen((s) => { const n = new Set(s); if (open) n.delete(col.date); else n.add(col.date); return n; })}
+                          className={styles.anyMore}
+                        >
+                          {open ? "Show fewer" : `+${total - (ANY_ROWS - 1)} more`}
+                        </button>
+                      </li>
+                    );
+                  })()}
                 </ul>
               )}
             </div>
