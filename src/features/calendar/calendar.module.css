@@ -467,3 +467,47 @@
     height: 44px;
   }
 }
+
+/* More any-time chips than the strip's three rows, on a phone only: the rest wait behind a button; opened out, the strip scrolls. Wider screens show every chip. */
+.anyMoreRow {
+  display: none;
+  list-style: none;
+}
+
+@media (max-width: 759.98px) {
+  .anyFolded {
+    display: none;
+  }
+
+  .anyMoreRow {
+    display: list-item;
+  }
+
+  .anyOpen {
+    max-height: 7.5rem;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+}
+
+.anyMore {
+  display: block;
+  width: 100%;
+  height: 24px;
+  padding: 0 6px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  text-align: left;
+  color: var(--ink-2);
+}
+
+.anyMore:hover {
+  background: var(--hover);
+}
+
+@media (pointer: coarse) {
+  .anyMore {
+    height: 32px;
+  }
+}

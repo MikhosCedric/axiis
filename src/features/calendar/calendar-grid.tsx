@@ -73,6 +73,8 @@ const KEYS_ID = "calendar-keys";
 const MODE_NAME: Record<CalendarMode, string> = { day: "Day", "3day": "Three days", week: "Week" };
 const weekday = new Intl.DateTimeFormat("en-GB", { weekday: "short", timeZone: "UTC" });
 const NO_AREA = "No area";
+/** The rows the any-time strip takes before it folds the rest under a "+N more" button. */
+const ANY_ROWS = 3;
 
 type Peek = { id: string; at: Box };
 type Creating = { slot: Slot; at: Box };
@@ -127,6 +129,8 @@ export function CalendarGrid({
   const [creating, setCreating] = useState<Creating | null>(null);
   /** Where the keyboard's slot sits, the same on every day. */
   const [cursor, setCursor] = useState(9 * 60);
+  /** The days whose any-time row is opened out past three rows. */
+  const [anyOpen, setAnyOpen] = useState<Set<LocalDate>>(new Set());
 
   const layout = useMemo(() => layoutGrid({ days, items, timeZone, now }), [days, items, timeZone, now]);
   const nowAt = layout.now;
@@ -507,22 +511,39 @@ export function CalendarGrid({
           {layout.columns.map((col) => (
             <div key={col.date} data-anytime={col.date} className={`${styles.anyCell} ${overAny(col.date) ? styles.over : ""}`}>
               {col.anyTime.length > 0 && (
-                <ul aria-label={`Any time, ${formatDayHeading(col.date)}`}>
-                  {col.anyTime.map((item) => {
-                    if (hidden(item)) return null;
+                <ul aria-label={`Any time, ${formatDayHeading(col.date)}`} className={anyOpen.has(col.date) ? styles.anyOpen : undefined}>
+                  {col.anyTime.filter((i) => !hidden(i)).map((item, at, all) => {
                     const state = stateOf(item, now);
+                    const folded = all.length > ANY_ROWS && at >= ANY_ROWS - 1 && !anyOpen.has(col.date);
                     return (
                       <li
                         key={item.id}
                         data-item={item.id}
                         data-state={state}
-                        className={`${styles.chip} ${styles[state]} ${areaOf(item)?.color ? "" : styles.plain} ${selectedId === item.id ? styles.selected : ""} ${lifted(item) ? styles.lifted : ""}`}
+                        className={`${styles.chip} ${folded ? styles.anyFolded : ""} ${styles[state]}${areaOf(item)?.color ? "" : styles.plain} ${selectedId === item.id ? styles.selected : ""} ${lifted(item) ? styles.lifted : ""}`}
                         style={tint(item)}
                       >
                         {face({ item, state, day: col.date, startAt: -1, roomy: false, stack: false, onPointerDown: (e) => start(e, "move", col.date, item) })}
                       </li>
                     );
                   })}
+                  {(() => {
+                    const total = col.anyTime.filter((i) => !hidden(i)).length;
+                    if (total <= ANY_ROWS) return null;
+                    const open = anyOpen.has(col.date);
+                    return (
+                      <li className={styles.anyMoreRow}>
+                        <button
+                          type="button"
+                          aria-expanded={open}
+                          onClick={() => setAnyOpen((s) => { const n = new Set(s); if (open) n.delete(col.date); else n.add(col.date); return n; })}
+                          className={styles.anyMore}
+                        >
+                          {open ? "Show fewer" : `+${total - (ANY_ROWS - 1)} more`}
+                        </button>
+                      </li>
+                    );
+                  })()}
                 </ul>
               )}
             </div>

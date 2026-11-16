@@ -99,7 +99,9 @@ function WeekPage({
         controls={<GuideButton topics={WEEK_GUIDE} />}
         capture={<CaptureField captureAction={capture} screenStatus={ctx.status} />}
       >
-        <p className="page-summary">{summary}</p>
+        <p className="page-summary max-rail:mt-2 max-rail:line-clamp-2 max-rail:text-sm" title={summary}>
+          {summary}
+        </p>
         <FilterChips filter={filter} className="mt-2.5" />
       </PageHeader>
       {grid}

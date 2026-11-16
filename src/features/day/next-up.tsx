@@ -1,5 +1,6 @@
 "use client";
 
+import { useId, useState } from "react";
 import { MotionList } from "@/components/motion-list";
 import { quickItem } from "@/features/actions/quick-item";
 import { renameKey, useQuick } from "@/features/actions/context";
@@ -20,7 +21,7 @@ export function GlanceLine({ glance, timeZone, scope }: { glance: DayGlance; tim
   const share = glance.total ? glance.done / glance.total : 0;
   return (
     <>
-      <p className="page-summary" data-glance>
+      <p className="page-summary max-rail:mt-2 max-rail:line-clamp-2 max-rail:text-sm" data-glance>
         {glanceLine(glance, (d) => formatClock(d, timeZone, clock), scope)}
       </p>
       {glance.total > 0 && <ProgressLine share={share} className="mt-2.5 w-40 text-ink-2" />}
@@ -36,6 +37,17 @@ function whenWords(entry: TodayEntry, timeZone: string, clock: ReturnType<typeof
   const to = formatClock(s.end, timeZone, clock);
   if (entry.state === "live") return `Now, until ${to}`;
   return entry.item.type === "event" ? `${from} to ${to}` : `At ${from}`;
+}
+
+/** The one line the strip says on a phone: "Now: Inbox · next: Call the landlord 12:00". */
+function stripWords(entries: TodayEntry[], timeZone: string, clock: ReturnType<typeof useClock>, titleOf: (e: TodayEntry) => string) {
+  const live = entries.filter((e) => e.state === "live");
+  const later = entries.filter((e) => e.state !== "live" && e.state !== "done");
+  const at = (e: TodayEntry) => (e.item.schedule.kind === "timed" ? ` ${formatClock(e.item.schedule.start, timeZone, clock)}` : "");
+  const parts: string[] = [];
+  if (live.length > 0) parts.push(`Now: ${titleOf(live[0])}${live.length > 1 ? ` and ${live.length - 1} more` : ""}`);
+  if (later.length > 0) parts.push(`${parts.length ? "next" : "Next"}: ${titleOf(later[0])}${at(later[0])}`);
+  return parts.length > 0 ? parts.join(" · ") : "Next up";
 }
 
 /**
@@ -61,10 +73,28 @@ export function NextUp({
 }) {
   const clock = useClock();
   const quick = useQuick();
+  const [open, setOpen] = useState(false);
+  const bodyId = useId();
   if (entries.length === 0) return null;
+  const titleOf = (e: TodayEntry) => quick?.patched(e.item.id)?.title ?? e.item.title;
   return (
-    <section aria-labelledby="next-up-h" className="side-part mb-7 max-w-[720px] @min-[66rem]/page:px-4 @min-[66rem]/page:py-3.5">
-      <h2 id="next-up-h" className="font-display text-lg leading-tight font-medium">
+    <section aria-labelledby="next-up-h" className="side-part mb-4 max-w-[720px] rail:mb-7 @min-[66rem]/page:px-4 @min-[66rem]/page:py-3.5">
+      {/* A phone: one line that opens the card, so the grid starts high on the screen. */}
+      <button
+        type="button"
+        aria-expanded={open}
+        aria-controls={bodyId}
+        onClick={() => setOpen((o) => !o)}
+        className="press flex min-h-11 w-full items-center gap-2 rounded-lg border border-rule bg-sheet px-3 text-left text-[13px] font-medium text-ink hover:bg-hover active:bg-press rail:hidden"
+      >
+        <span className="sr-only">Next up: </span>
+        <span className="min-w-0 flex-1 truncate">{stripWords(entries, timeZone, clock, titleOf)}</span>
+        <svg viewBox="0 0 18 18" width={16} height={16} aria-hidden="true" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" className={`flex-none text-ink-3 ${open ? "rotate-180" : ""}`}>
+          <path d="M4 7l5 5 5-5" />
+        </svg>
+      </button>
+      <div id={bodyId} className={open ? "" : "max-rail:hidden"}>
+      <h2 id="next-up-h" className="font-display text-lg leading-tight font-medium max-rail:mt-3">
         Next up
       </h2>
       <MotionList className="surface side-part overflow-hidden px-3 py-1.5 [&_li:last-child]:border-b-0 mt-2.5 @min-[66rem]/page:px-0 @min-[66rem]/page:py-0">
@@ -110,6 +140,7 @@ export function NextUp({
           );
         })}
       </MotionList>
+      </div>
     </section>
   );
 }
