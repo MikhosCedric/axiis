@@ -364,11 +364,6 @@ export function CalendarGrid({
     return color ? ({ "--tint": `var(--area-${color})` } as CSSProperties) : undefined;
   };
   const hidden = (item: ShownItem) => quick?.patched(item.id)?.hidden;
-  /** The any-time chips a day shows: all of them up to three rows, else all but the last row's worth and a "+N more" button. */
-  const anyShown = (list: ShownItem[], day: LocalDate) => {
-    const shown = list.filter((i) => !hidden(i));
-    return shown.length <= ANY_ROWS || anyOpen.has(day) ? shown : shown.slice(0, ANY_ROWS - 1);
-  };
   const lifted = (item: ShownItem) => preview?.kind === "move" && preview.item.id === item.id;
 
   const block = (b: Block, day: LocalDate) => {
@@ -517,14 +512,15 @@ export function CalendarGrid({
             <div key={col.date} data-anytime={col.date} className={`${styles.anyCell} ${overAny(col.date) ? styles.over : ""}`}>
               {col.anyTime.length > 0 && (
                 <ul aria-label={`Any time, ${formatDayHeading(col.date)}`} className={anyOpen.has(col.date) ? styles.anyOpen : undefined}>
-                  {anyShown(col.anyTime, col.date).map((item) => {
+                  {col.anyTime.filter((i) => !hidden(i)).map((item, at, all) => {
                     const state = stateOf(item, now);
+                    const folded = all.length > ANY_ROWS && at >= ANY_ROWS - 1 && !anyOpen.has(col.date);
                     return (
                       <li
                         key={item.id}
                         data-item={item.id}
                         data-state={state}
-                        className={`${styles.chip} ${styles[state]} ${areaOf(item)?.color ? "" : styles.plain} ${selectedId === item.id ? styles.selected : ""} ${lifted(item) ? styles.lifted : ""}`}
+                        className={`${styles.chip} ${folded ? styles.anyFolded : ""} ${styles[state]}${areaOf(item)?.color ? "" : styles.plain} ${selectedId === item.id ? styles.selected : ""} ${lifted(item) ? styles.lifted : ""}`}
                         style={tint(item)}
                       >
                         {face({ item, state, day: col.date, startAt: -1, roomy: false, stack: false, onPointerDown: (e) => start(e, "move", col.date, item) })}

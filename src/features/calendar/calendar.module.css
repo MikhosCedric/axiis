@@ -468,15 +468,26 @@
   }
 }
 
-/* More any-time chips than the strip's three rows: the rest wait behind a button; opened out, the strip scrolls. */
-.anyOpen {
-  max-height: 7.5rem;
-  overflow-y: auto;
-  overscroll-behavior: contain;
+/* More any-time chips than the strip's three rows, on a phone only: the rest wait behind a button; opened out, the strip scrolls. Wider screens show every chip. */
+.anyMoreRow {
+  display: none;
+  list-style: none;
 }
 
-.anyMoreRow {
-  list-style: none;
+@media (max-width: 759.98px) {
+  .anyFolded {
+    display: none;
+  }
+
+  .anyMoreRow {
+    display: list-item;
+  }
+
+  .anyOpen {
+    max-height: 7.5rem;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
 }
 
 .anyMore {
