@@ -57,8 +57,8 @@ for (const viewport of WIDTHS) {
           { text: expect.stringMatching(/^Groceries 18:00 to 18:45$/), hidden: "true", events: "none" },
           { text: expect.stringMatching(/^Walk 12:30 to 13:00$/), hidden: "true", events: "none" },
         ]);
-        // The whole day is on the hour axis, and nothing scrolls sideways: the one day's column fills the width.
-        expect(d.hourCount).toBeGreaterThanOrEqual(23);
+        // The default hours (07:00 to 22:00) are on the hour axis, and nothing scrolls sideways.
+        expect(d.hourCount).toBeGreaterThanOrEqual(13);
         expect(d.gridScrollsSideways).toBe(false);
         expect(d.pageScrolls).toBe(false);
 
