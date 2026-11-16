@@ -36,8 +36,6 @@ export const yAt = (minutes: number, scale: Scale = FULL_DAY) => (minutes - scal
 export const minutesAtY = (y: number, scale: Scale = FULL_DAY) => scale.from + y / scale.ppm;
 /** The drawn height of the whole range. */
 export const gridHeight = (scale: Scale) => (scale.to - scale.from) * scale.ppm;
-/** What a height is worth in minutes: two short blocks closer than this share the width instead of covering each other. */
-const minBlockMinutes = (scale: Scale) => Math.ceil(MIN_BLOCK_PX / scale.ppm);
 
 /**
  * The hours drawn by default: from an hour before the earliest planned thing, or 07:00 if that is earlier,
