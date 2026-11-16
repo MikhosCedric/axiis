@@ -24,7 +24,7 @@ export function GlanceLine({ glance, timeZone, scope }: { glance: DayGlance; tim
       <p className="page-summary max-rail:mt-2 max-rail:line-clamp-2 max-rail:text-sm" data-glance>
         {glanceLine(glance, (d) => formatClock(d, timeZone, clock), scope)}
       </p>
-      {glance.total > 0 && <ProgressLine share={share} className="mt-2.5 w-40 text-ink-2" />}
+      {glance.total > 0 && <ProgressLine share={share} className="mt-2.5 w-40 text-ink-2 @min-[66rem]/page:hidden" />}
     </>
   );
 }

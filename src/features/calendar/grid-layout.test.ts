@@ -2,7 +2,26 @@ import { describe, expect, it } from "vitest";
 import type { Item, LocalDate } from "@/domain/item";
 import { makeItem } from "@/features/today/test-support";
 import { instantAt } from "@/lib/dates";
-import { blockBox, GRID_PX, HOUR_PX, layoutGrid, MIN_BLOCK_PX, nowLine, openMinute, packDay, segmentOn, yAt } from "./grid-layout";
+import {
+  blockBox,
+  fitHourPx,
+  GRID_PX,
+  gridHeight,
+  HOUR_PX,
+  layoutGrid,
+  MAX_HOUR_PX,
+  MIN_BLOCK_PX,
+  MIN_HOUR_PX,
+  minutesAtY,
+  nowLine,
+  openMinute,
+  packDay,
+  rangeSpans,
+  scaleOf,
+  segmentOn,
+  visibleRange,
+  yAt,
+} from "./grid-layout";
 
 const d = (s: string) => s as LocalDate;
 const TZ = "Europe/London";
@@ -170,5 +189,76 @@ describe("the now line", () => {
     expect(openMinute({ day: 0, minutes: 13 * 60 + 20, top: 0 })).toBe(11 * 60);
     expect(openMinute({ day: 0, minutes: 40, top: 0 })).toBe(0);
     expect(openMinute(null)).toBe(7 * 60);
+  });
+});
+
+describe("visibleRange", () => {
+  it("is 07:00 to 22:00 when nothing is planned outside it", () => {
+    expect(visibleRange([], null)).toEqual({ from: 7 * 60, to: 22 * 60 });
+    expect(visibleRange([{ start: 9 * 60, end: 10 * 60 }], null)).toEqual({ from: 7 * 60, to: 22 * 60 });
+  });
+
+  it("reaches an hour before the earliest and an hour after the latest, on whole hours", () => {
+    expect(visibleRange([{ start: 5 * 60 + 30, end: 6 * 60 }, { start: 21 * 60, end: 22 * 60 + 15 }], null)).toEqual({ from: 4 * 60, to: 24 * 60 });
+    expect(visibleRange([{ start: 6 * 60 + 20, end: 8 * 60 }], null).from).toBe(5 * 60);
+  });
+
+  it("holds an item that runs to midnight, and one that began the day before", () => {
+    expect(visibleRange([{ start: 0, end: 90 }], null)).toEqual({ from: 0, to: 22 * 60 });
+    expect(visibleRange([{ start: 23 * 60, end: 1440 }], null).to).toBe(1440);
+  });
+
+  it("counts now as planned, so the line is never off the page", () => {
+    expect(visibleRange([], 23 * 60).to).toBe(1440);
+    expect(visibleRange([], 3 * 60)).toEqual({ from: 2 * 60, to: 22 * 60 });
+  });
+
+  it("opens out to midnight at either end on request", () => {
+    expect(visibleRange([], null, { earlier: true })).toEqual({ from: 0, to: 22 * 60 });
+    expect(visibleRange([], null, { later: true })).toEqual({ from: 7 * 60, to: 1440 });
+  });
+});
+
+describe("rangeSpans", () => {
+  it("reads the days shown only", () => {
+    const items = [timed("Mon", MON, 6 * 60, 7 * 60), timed("Wed", WEEK[2], 23 * 60, 1440)];
+    expect(rangeSpans([MON], items, TZ).map((s) => [s.start, s.end])).toEqual([[360, 420]]);
+    expect(rangeSpans(WEEK, items, TZ)).toHaveLength(2);
+  });
+});
+
+describe("fitHourPx", () => {
+  it("gives the range the height it has, within bounds", () => {
+    expect(fitHourPx(15, 750)).toBe(50);
+    expect(fitHourPx(15, 5000)).toBe(MAX_HOUR_PX);
+  });
+
+  it("never draws an hour under the minimum: the grid scrolls instead", () => {
+    expect(fitHourPx(24, 600)).toBe(MIN_HOUR_PX);
+  });
+
+  it("uses the usual hour before the window is measured", () => {
+    expect(fitHourPx(15, null)).toBe(HOUR_PX);
+  });
+});
+
+describe("a visible range scale", () => {
+  const scale = scaleOf(7 * 60, 22 * 60, 48);
+  it("puts the range's first minute at the top", () => {
+    expect(yAt(7 * 60, scale)).toBe(0);
+    expect(yAt(9 * 60, scale)).toBe(96);
+    expect(gridHeight(scale)).toBe(15 * 48);
+    expect(minutesAtY(96, scale)).toBe(9 * 60);
+  });
+
+  it("positions blocks and the now line from the range's top", () => {
+    const [b] = packDay([seg("a", 9 * 60, 10 * 60)], scale);
+    expect(b).toMatchObject({ top: 96, height: 48 });
+    expect(nowLine(WEEK, instantAt(WEEK[0], 8 * 60, TZ), TZ, scale)?.top).toBe(48);
+  });
+
+  it("opens on the top of the range for another day, and not above it for today", () => {
+    expect(openMinute(null, 5 * 60)).toBe(5 * 60);
+    expect(openMinute({ day: 0, minutes: 8 * 60, top: 0 }, 7 * 60)).toBe(7 * 60);
   });
 });

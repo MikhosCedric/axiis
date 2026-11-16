@@ -5,7 +5,7 @@ import { dayOf, parseCapture } from "@/features/today/capture-syntax";
 import { fakeRepo, makeItem } from "@/features/today/test-support";
 import { instantAt, localMinutes, toLocalDate } from "@/lib/dates";
 import { keyPlacement, lengthOf, minutesAt, moveTo, resizeTo, slotFor, slotWords, toAnyTime, type KeyContext } from "./grid-drop";
-import { GRID_PX, HOUR_PX } from "./grid-layout";
+import { GRID_PX, gridHeight, HOUR_PX, scaleOf } from "./grid-layout";
 
 const d = (s: string) => s as LocalDate;
 const TZ = "Europe/London";
@@ -200,5 +200,22 @@ describe("keyPlacement", () => {
   it("leaves plain arrows and unplanned items alone", () => {
     expect(keyPlacement(ctx, timed(TUE, 540, 600), press("ArrowDown", ""))).toBeNull();
     expect(keyPlacement(ctx, makeItem(), press("ArrowDown"))).toBeNull();
+  });
+});
+
+describe("pointer to time in a visible range", () => {
+  const scale = scaleOf(7 * 60, 22 * 60, 48);
+  it("counts from the range's first hour, not midnight", () => {
+    expect(minutesAt(0, scale)).toBe(7 * 60);
+    expect(minutesAt(96, scale)).toBe(9 * 60);
+    expect(minutesAt(gridHeight(scale) + 4000, scale)).toBe(1440);
+  });
+
+  it("places a slot and a move from where the range starts", () => {
+    const item = timed(MON, 9 * 60, 10 * 60);
+    const slot = slotFor(MON, minutesAt(24, scale), minutesAt(24, scale));
+    expect(slot.start).toBe(7 * 60 + 30);
+    const p = moveTo(item, TUE, minutesAt(144, scale), TZ);
+    expect(wall(p.schedule)).toEqual({ day: TUE, start: 10 * 60, end: 11 * 60 });
   });
 });

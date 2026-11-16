@@ -4,7 +4,8 @@ import { FOCUS_COOKIE, readFocus, readTour, TOUR_COOKIE } from "@/components/she
 import { DayView } from "@/features/day/day-view";
 import { readDayQuery } from "@/features/day/nav";
 import { weekPulse } from "@/features/day/pulse";
-import { getDay, getTimeZone, getTodayDate } from "@/features/day/server";
+import { getDay, getNow, getTimeZone, getTodayDate } from "@/features/day/server";
+import { loadDueSoon } from "@/features/day/due-soon";
 import { getWeek } from "@/features/week/server";
 import { DetailPanel } from "@/features/detail/detail-panel";
 import { loadLeftover } from "@/features/day/leftover";
@@ -19,11 +20,12 @@ export default async function TodayPage({ searchParams }: PageProps<"/today">) {
   const today = await getTodayDate();
   const { mode, itemId } = readDayQuery(await searchParams);
   const filter = await getFilter(searchParams, true);
-  const [data, leftover, jar, week] = await Promise.all([
+  const [data, leftover, jar, week, due] = await Promise.all([
     getDay(today),
     getItemsRepo().then(async (repo) => loadLeftover(repo, today, await getTimeZone(), filter)),
     cookies(),
     getWeek(today),
+    getItemsRepo().then((repo) => loadDueSoon(repo, today, getNow(), filter)),
   ]);
   return (
     <TagColorsProvider value={data.tagColors}>
@@ -32,6 +34,7 @@ export default async function TodayPage({ searchParams }: PageProps<"/today">) {
         filter={filter}
         leftover={leftover}
         pulse={weekPulse(week)}
+        dueSoon={due}
         mode={mode}
         focus={readFocus(jar.get(FOCUS_COOKIE)?.value)}
         tour={readTour(jar.get(TOUR_COOKIE)?.value, data.firstDay)}

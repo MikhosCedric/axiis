@@ -70,6 +70,7 @@ export function CaptureField({
   plans = true,
   firstDay = false,
   screenStatus,
+  inline = false,
 }: {
   // Some screens still type their capture as a plain ActionResult; the server sends the full CaptureResult.
   captureAction?: (title: string) => Promise<CaptureResult | ActionResult>;
@@ -84,6 +85,8 @@ export function CaptureField({
    * page reserves one line of room for news under the field, not two.
    */
   screenStatus?: ReactNode;
+  /** In a calendar view's one-row head (wide): fill the room, and lay the status under the field without taking row height. */
+  inline?: boolean;
 }) {
   const input = useRef<HTMLInputElement>(null);
   const params = useSearchParams();
@@ -150,7 +153,7 @@ export function CaptureField({
   }
 
   return (
-    <form onSubmit={submit} autoComplete="off" className="max-w-[440px]">
+    <form onSubmit={submit} autoComplete="off" className={`max-w-[440px] ${inline ? "@min-[64rem]/page:relative @min-[64rem]/page:max-w-none" : ""}`}>
       <label htmlFor="capture" className="sr-only">
         {label}
       </label>
@@ -183,7 +186,7 @@ export function CaptureField({
           C
         </kbd>
       </div>
-      <div className="mt-1.5">
+      <div className={`mt-1.5 ${inline ? "@min-[64rem]/page:absolute @min-[64rem]/page:inset-x-0 @min-[64rem]/page:top-full @min-[64rem]/page:z-[1] @min-[64rem]/page:mt-0" : ""}`}>
         <div className="min-h-6 min-w-0 pt-0.5 text-[13px]">
           {/* While the line reads as a plan, the preview takes the status line's place; the status stays for screen readers. */}
           <p id="capture-status" role="status" className={preview ? "sr-only" : status?.error ? "font-medium text-ink" : "text-ink-2"}>

@@ -261,6 +261,7 @@ export function MonthView({
     <div className={selectedParam ? "min-[1180px]:grid min-[1180px]:grid-cols-[minmax(0,1fr)_328px]" : ""}>
       <div className="@container/page min-w-0 px-4 pt-6 pb-14 rail:px-9 rail:pt-8">
         <PageHeader
+          inline
           heading={
             <Fragment key="nav">
               {nav ?? (
@@ -273,6 +274,7 @@ export function MonthView({
           controls={<GuideButton topics={MONTH_GUIDE} />}
           capture={
             <CaptureField
+              inline
               captureAction={(title) => captureOnAction(title, active)}
               label={`Capture for ${formatDayHeading(active)}`}
               placeholder={`Capture for ${formatDayHeading(active)}`}
