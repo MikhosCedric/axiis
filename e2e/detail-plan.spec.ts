@@ -174,7 +174,7 @@ test("detail: a captured rule the menu cannot name opens in the editor and is ed
   await expect(every).toHaveValue("3");
   await expect(details(page).getByLabel("Days, weeks, months or years")).toHaveValue("weekly");
   const days = details(page).getByRole("group", { name: "On" });
-  await expect(days.getByRole("button", { pressed: true })).toHaveText(["Mon", "Wed", "Fri"]);
+  await expect(days.getByRole("button", { pressed: true }).locator("span[aria-hidden]")).toHaveText(["Mon", "Wed", "Fri"]);
 
   await days.getByRole("button", { name: "Wednesday" }).click();
   await expect(summary(page)).toHaveText("Every 3 weeks on Monday and Friday");
@@ -191,7 +191,7 @@ test("detail: a captured rule the menu cannot name opens in the editor and is ed
   await every.blur();
   await expect(every).toHaveValue("2");
 
-  await details(page).getByLabel("Ends").selectOption("count");
+  await details(page).getByLabel("Ends", { exact: true }).selectOption("count");
   await expect(summary(page)).toHaveText("Every 2 weeks on Mon, Thu, Fri, 10 times");
   await expect(details(page).getByLabel("First day")).toHaveValue("2026-10-05");
 
@@ -200,8 +200,8 @@ test("detail: a captured rule the menu cannot name opens in the editor and is ed
   await days.getByRole("button", { name: "Friday" }).click();
   await expect(summary(page)).toHaveText("Every 2 weeks on Monday, 10 times");
   await expect(days.getByRole("button", { name: "Monday" })).toHaveAttribute("aria-disabled", "true");
-  await days.getByRole("button", { name: "Monday" }).click();
-  await expect(days.getByRole("button", { pressed: true })).toHaveText(["Mon"]);
+  await days.getByRole("button", { name: "Monday" }).click({ force: true });
+  await expect(days.getByRole("button", { pressed: true }).locator("span[aria-hidden]")).toHaveText(["Mon"]);
   await expect(details(page).getByLabel("Repeat", { exact: true })).toHaveValue("custom");
 });
 
@@ -226,7 +226,7 @@ test("detail: Custom opens the editor on a monthly repeat, which can fall on a w
 
   // Weeks start on its own weekday.
   await details(page).getByLabel("Days, weeks, months or years").selectOption("weekly");
-  await expect(details(page).getByRole("group", { name: "On" }).getByRole("button", { pressed: true })).toHaveText(["Tue"]);
+  await expect(details(page).getByRole("group", { name: "On" }).getByRole("button", { pressed: true }).locator("span[aria-hidden]")).toHaveText(["Tue"]);
   await expect(summary(page)).toHaveText("Every 3 weeks on Tuesday");
 
   // A menu choice closes the editor again.

@@ -26,7 +26,7 @@ type Menu = RepeatPreset | "custom";
 
 /**
  * The Repeat rows of the detail list: the menu of usual choices, the editor
- * that "Custom?" opens (every N days, weeks, months or years, the weekdays of a
+ * that "Custom…" opens (every N days, weeks, months or years, the weekdays of a
  * weekly one, where in the month a monthly one falls) and how it ends. Every
  * change goes to the whole series as it is made. `save` runs inside the sheet's
  * transition, so a field shows the new choice at once and goes back if the save
@@ -134,7 +134,7 @@ export function RepeatRows({
               {PRESET_LABEL[p]}
             </option>
           ))}
-          <option value="custom">Custom?</option>
+          <option value="custom">Custom…</option>
         </select>
         {repeating && <span className="block text-[13px] text-ink-2">{repeat.summary}</span>}
       </dd>
@@ -187,12 +187,12 @@ export function RepeatRows({
                         key={day}
                         type="button"
                         aria-pressed={on}
-                        aria-label={DAY_NAME[day]}
                         aria-disabled={on && custom.byDay.length === 1 ? true : undefined}
                         onClick={() => toggleDay(day)}
                         className="pill px-2.5 py-1"
                       >
-                        {DAY_NAME[day].slice(0, 3)}
+                        <span aria-hidden="true">{DAY_NAME[day].slice(0, 3)}</span>
+                        <span className="sr-only">{DAY_NAME[day]}</span>
                       </button>
                     );
                   })}
