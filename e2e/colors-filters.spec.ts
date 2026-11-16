@@ -121,6 +121,53 @@ signedIn.describe("colours and filters", () => {
     expect(await axe(page)).toEqual([]);
   });
 
+  signedIn("a page says how many areas are hidden and Show all brings them back, on the Day, Week, Month, Inbox and Due", async ({ page }) => {
+    await page.goto(DAY);
+    await hydrated(page);
+    const note = page.locator("[data-hidden-areas]");
+    await expect(note).toHaveCount(0);
+    await areaRow(page, "Home").click();
+    await expect(note).toHaveText("1 area hidden·Show all");
+    for (const path of ["/week/2099-05-18", "/month/2099-05", "/inbox", "/due"]) {
+      await page.goto(path);
+      await expect(note).toHaveText("1 area hidden·Show all");
+    }
+    await page.goto(DAY);
+    await expect(ferns(page)).toHaveCount(0);
+    await note.getByRole("button", { name: "Show all" }).click();
+    await expect(note).toHaveCount(0);
+    await expect(ferns(page)).toBeVisible();
+    await expect(areaTick(page, "Home")).toBeChecked();
+  });
+
+  signedIn("[ ] T and the span keys work with a block of the grid focused", async ({ page }) => {
+    await page.goto("/week/2099-05-18");
+    await hydrated(page);
+    const block = () => page.getByRole("button", { name: /^Draft the budget/ });
+    const weekTitle = (name: string) => expect(page.getByRole("heading", { level: 1, name })).toBeVisible();
+    await block().focus();
+    await page.keyboard.press("]");
+    await expect(page).toHaveURL("/week/2099-05-25");
+    await weekTitle("25 to 31 May");
+    await page.keyboard.press("[");
+    await expect(page).toHaveURL("/week/2099-05-18");
+    await weekTitle("18 to 24 May");
+    await block().focus();
+    await page.keyboard.press("m");
+    await expect(page).toHaveURL("/month/2099-05");
+
+    await page.goto("/week/2099-05-18");
+    await hydrated(page);
+    await block().focus();
+    await page.keyboard.press("t");
+    await expect(page).toHaveURL("/week");
+    await page.goto("/day/2099-05-20");
+    await hydrated(page);
+    await page.getByRole("button", { name: /^Draft the budget/ }).focus();
+    await page.keyboard.press("w");
+    await expect(page).toHaveURL("/week/2099-05-18");
+  });
+
   signedIn("D on a focused item is that item's key, and switches to the day only when no item has it", async ({ page }) => {
     await page.goto("/week/2099-05-18");
     await hydrated(page);

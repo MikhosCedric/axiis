@@ -77,6 +77,18 @@ const NO_AREA = "No area";
 type Peek = { id: string; at: Box };
 type Creating = { slot: Slot; at: Box };
 
+/** The narrowest an overlapping block may be drawn; in a column too narrow for that, the blocks overlap a little instead of becoming slivers. */
+const MIN_SHARE = "76px";
+
+/** Where overlapping blocks sit in their column: side by side, or staggered when the column is too narrow to share. */
+function sideBySide(b: { column: number; columns: number }, box: { left: number; width: number }): CSSProperties {
+  if (b.columns < 2) return { left: "2px", width: "calc(100% - 4px)" };
+  return {
+    left: `calc(min(${box.left * 100}%, (100% - ${MIN_SHARE}) * ${b.column / (b.columns - 1)}) + 2px)`,
+    width: `max(calc(${box.width * 100}% - 4px), ${MIN_SHARE})`,
+  };
+}
+
 const boxOf = (el: Element): Box => {
   const r = el.getBoundingClientRect();
   return { left: r.left, top: r.top, width: r.width, height: r.height };
@@ -372,7 +384,7 @@ export function CalendarGrid({
         data-item={item.id}
         data-state={state}
         className={cls}
-        style={{ ...tint(item), top: b.top, height: b.height - 1, left: `calc(${box.left * 100}% + 2px)`, width: `calc(${box.width * 100}% - 4px)` }}
+        style={{ ...tint(item), top: b.top, height: b.height - 1, ...sideBySide(b, box) }}
       >
         {face({ item, state, day, startAt: b.start, roomy: !short, stack: b.height >= 50, onPointerDown: (e) => start(e, "move", day, item) })}
         {!b.after && <span className={styles.grip} aria-hidden="true" onPointerDown={(e) => start(e, "resize", day, item)} />}

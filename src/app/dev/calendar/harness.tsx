@@ -103,7 +103,9 @@ export function CalendarHarness({
     tagChoices: (key) => tagChoices(fake.repo, key, tz),
   };
 
-  const item = data.items.find((i) => i.id === selectedIn(data.items, selected));
+  // The Inbox tray's items open in the panel too.
+  const openable = [...data.items, ...(data.tray ?? [])];
+  const item = openable.find((i) => i.id === selectedIn(openable, selected));
 
   return (
     <QuickActionsProvider areas={data.areas} today={data.today} actions={quick}>

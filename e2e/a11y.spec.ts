@@ -10,13 +10,13 @@ const PAGES = [
   "/help",
   "/changelog",
   "/dev/no-such-page",
-  "/dev/score",
-  "/dev/score?view=list",
-  "/dev/score?view=list&item=f0000000-0000-4000-8000-000000000006",
-  "/dev/score?view=list&item=f0000000-0000-4000-8000-000000000007",
-  "/dev/score?tray=empty",
-  "/dev/score?firstday",
-  "/dev/week",
+  "/dev/day",
+  "/dev/day?view=list",
+  "/dev/day?view=list&item=f0000000-0000-4000-8000-000000000006",
+  "/dev/day?view=list&item=f0000000-0000-4000-8000-000000000007",
+  "/dev/day?tray=empty",
+  "/dev/day?firstday",
+  "/dev/calendar",
   "/dev/inbox",
   "/dev/inbox?empty",
   "/dev/inbox?item=f2000000-0000-4000-8000-000000000003",
@@ -76,7 +76,7 @@ for (const variant of VARIANTS) {
   });
 }
 
-// The real signed-in screens on the busy account, which draws every kind of item: beams, chips, due marks, tags,
+// The real signed-in screens on the busy account, which draws every kind of item: blocks, chips, due marks, tags,
 // rows and month marks. Read only, so they can share the account with the specs that tick it.
 const SIGNED_IN = ["/today", "/today?view=list", "/week", "/month", "/inbox", "/due", "/lists", "/tags"];
 const zone = Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -108,18 +108,18 @@ for (const variant of VARIANTS) {
   }
 }
 
-// Where now falls decides how the Score scrolls and which beams say "passed", so Label in Name is checked at every
-// half hour of the day, on both clocks, at phone width, where beams sit half out of view.
+// Where now falls decides how the grid scrolls and which blocks say "passed", so Label in Name is checked at every
+// half hour of the day, on both clocks, at phone width, where blocks sit half out of view.
 const HALF_HOURS = Array.from({ length: 48 }, (_, i) => `${String(Math.floor(i / 2)).padStart(2, "0")}:${i % 2 ? "30" : "00"}`);
 for (const clock of ["12", "24"] as const) {
-  test.describe(`the Score at phone width on the ${clock}-hour clock, all day`, () => {
+  test.describe(`the day grid at phone width on the ${clock}-hour clock, all day`, () => {
     test.use({ viewport: { width: 390, height: 844 } });
     for (const at of HALF_HOURS) {
-      test(`at ${at} every beam and chip is named with the words it draws`, async ({ page, baseURL }) => {
+      test(`at ${at} every block and chip is named with the words it draws`, async ({ page, baseURL }) => {
         await page.context().addCookies([{ name: "clock", value: clock, url: baseURL }]);
-        await page.goto(`/dev/score?at=${at}`);
+        await page.goto(`/dev/day?at=${at}`);
         await hydrated(page);
-        await expect(page.locator("[data-axis-measured]")).toBeAttached();
+        await expect(page.locator("[data-calendar-grid]")).toBeVisible();
         const { violations } = await new AxeBuilder({ page }).withRules(["label-content-name-mismatch"]).analyze();
         expect(violations.flatMap((v) => v.nodes.map((n) => n.html.slice(0, 200)))).toEqual([]);
       });

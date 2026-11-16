@@ -2,7 +2,7 @@
 
 import { PaletteProvider } from "@/features/palette/palette";
 import { useSearchParams } from "next/navigation";
-import { startTransition, useState } from "react";
+import { startTransition, useRef, useState } from "react";
 import type { Area, Item } from "@/domain/item";
 import { selectedIn } from "@/domain/item-key";
 import { DayView, type DayActions } from "@/features/day/day-view";
@@ -31,6 +31,8 @@ export function DayHarness({
   const [fake] = useState(() => tagByTitle(fakeRepo(structuredClone(items), areas), DAY_TAGS));
   const [data, setData] = useState(initial);
   const [failing, setFailing] = useState(false);
+  // An offer made before the box was ticked still runs after it, so the save reads the box as it is now.
+  const failingNow = useRef(false);
   const selected = useSearchParams().get(SELECTED_ITEM_PARAM);
 
   async function run(command: (repo: ItemsRepo) => Promise<ActionResult>): Promise<ActionResult> {
@@ -38,7 +40,7 @@ export function DayHarness({
     const fail = async (): Promise<never> => {
       throw new Error("harness: saves are set to fail");
     };
-    const result = await command(failing ? { ...fake.repo, update: fail, create: fail } : fake.repo);
+    const result = await command(failingNow.current ? { ...fake.repo, update: fail, create: fail } : fake.repo);
     if (result.ok) {
       const next = structuredClone(await loadDayData(fake.repo, new Date(data.nowIso), data.timeZone));
       startTransition(() => setData(next));
@@ -62,7 +64,10 @@ export function DayHarness({
       <div className="flex flex-wrap items-center gap-4 border-b border-rule bg-paper-2 px-4 py-2 text-[13px] text-ink-2">
         <span>Day harness with fixture data. Saves stay in this tab.</span>
         <label className="flex items-center gap-2">
-          <input type="checkbox" checked={failing} onChange={(e) => setFailing(e.target.checked)} />
+          <input type="checkbox" checked={failing} onChange={(e) => {
+              failingNow.current = e.target.checked;
+              setFailing(e.target.checked);
+            }} />
           Make saves fail
         </label>
       </div>
