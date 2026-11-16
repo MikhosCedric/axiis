@@ -257,7 +257,7 @@ export function CalendarView({
         ) : (
           <>
             {grid}
-            <div className="mt-2 min-h-6 text-[13px]">{statusLine}</div>
+            <div className="mt-2 min-h-6 text-[13px] max-rail:mt-1 max-rail:min-h-5">{statusLine}</div>
           </>
         )}
       </div>

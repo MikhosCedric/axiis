@@ -121,8 +121,8 @@ test.describe("on a phone", () => {
     await open(page, "?at=10:30");
     const row = page.locator("[data-anytime] ul").first();
     await expect(row.locator("li[data-item]")).toHaveCount(2);
-    const more = row.getByRole("button", { name: /^\+\d+ more$/ });
-    await expect(more).toBeVisible();
+    const more = row.locator("button[aria-expanded]");
+    await expect(more).toHaveText(/^\+\d+ more$/);
     await more.click();
     await expect(more).toHaveText("Show fewer");
     expect(await row.locator("li[data-item]").count()).toBeGreaterThan(2);
