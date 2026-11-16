@@ -182,6 +182,11 @@ signedIn.describe("signed in", () => {
     const title = `Stretch ${Date.now()}`;
     const details = page.getByRole("complementary", { name: "Details" }).first();
     const chip = page.getByRole("button", { name: new RegExp(`^${title}\\s*, `) });
+    // A click on a block shows it in brief; Enter on it opens the panel.
+    const openBlock = async (block: Locator) => {
+      await block.focus();
+      await page.keyboard.press("Enter");
+    };
     const expectOccurrenceOpen = async () => {
       await expect(page).toHaveURL(/[?&]item=[0-9a-f-]{36}(~|%7E)\d{4}-\d{2}-\d{2}(&|$)/);
       await expect(details.getByRole("textbox", { name: "Title" })).toHaveValue(title);
@@ -192,13 +197,13 @@ signedIn.describe("signed in", () => {
     await page.goto("/today");
     await page.getByLabel("Capture anything").fill(`${title} today`);
     await page.getByLabel("Capture anything").press("Enter");
-    await chip.click();
+    await openBlock(chip);
     await details.getByRole("button", { name: "Repeat" }).click();
     await details.getByLabel("Repeat").selectOption("daily");
     await expect(details.getByRole("status").filter({ hasText: /^Repeats every day/ })).toBeVisible();
 
     await page.goto("/today");
-    await chip.click();
+    await openBlock(chip);
     await expectOccurrenceOpen();
     await page.reload();
     await expectOccurrenceOpen();
@@ -208,7 +213,7 @@ signedIn.describe("signed in", () => {
     await expectOccurrenceOpen();
 
     await page.goto("/week");
-    await chip.last().click();
+    await openBlock(chip.last());
     await expectOccurrenceOpen();
   });
 
@@ -224,7 +229,8 @@ signedIn.describe("signed in", () => {
       await page.getByLabel("Capture anything").press("Enter");
       await expect(page.locator("#capture-status")).toContainText("Planned for");
       await page.goto(`/day/${day}`);
-      await page.getByRole("button", { name: new RegExp(`^${title}\\s*, `) }).click();
+      await page.getByRole("button", { name: new RegExp(`^${title}[ ,]`) }).focus();
+      await page.keyboard.press("Enter");
       return details(page).getByRole("group", { name: "Time" });
     }
 
