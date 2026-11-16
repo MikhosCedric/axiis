@@ -117,7 +117,7 @@ signedIn.describe("the tour", () => {
     await expect(tour).toContainText("1 of 4");
     expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
 
-    for (const title of ["The Score is your day", "Inbox or Today", "The Guide explains the rest"]) {
+    for (const title of ["The grid is your day", "Inbox or Today", "The Guide explains the rest"]) {
       await page.getByRole("button", { name: "Next", exact: true }).click();
       await expect(page.getByRole("region", { name: title })).toBeVisible();
     }
