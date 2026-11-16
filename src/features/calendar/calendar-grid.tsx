@@ -574,7 +574,7 @@ export function CalendarGrid({
         </div>
       </div>
 
-      {tray && (
+      {tray && examples.length === 0 && (
         <section data-drop="tray" aria-labelledby="calendar-tray-h" className={`${styles.tray} ${overTray ? styles.over : ""}`}>
           <h3 id="calendar-tray-h" className="font-display text-lg leading-tight font-medium">
             {INBOX}

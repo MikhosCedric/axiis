@@ -25,7 +25,10 @@ const areaTick = (page: Page, name: string) => rail(page).getByRole("region", { 
 const areaRow = (page: Page, name: string) => rail(page).getByRole("region", { name: "Areas" }).locator("label").filter({ hasText: name });
 const ferns = (page: Page) => page.getByRole("button", { name: /^Water the ferns/ });
 const chips = (page: Page) => page.getByRole("group", { name: "Filter" });
-const staffLabel = (page: Page, name: string) => page.locator("[data-staff-label]").filter({ hasText: name });
+// The grid has no lane per area: an area is on the day when one of its items has a block there (the seed's Work item
+// is "Draft the budget", its Home item "Water the ferns").
+const TITLE_OF: Record<string, string> = { Work: "Draft the budget", Home: "Water the ferns" };
+const staffLabel = (page: Page, area: string) => page.locator("[data-calendar-grid] [data-item]").filter({ hasText: TITLE_OF[area] });
 
 /** Opens the tag's picker, once the page answers clicks. */
 async function openTagPicker(page: Page, tag: string) {
