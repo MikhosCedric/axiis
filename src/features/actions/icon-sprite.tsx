@@ -38,6 +38,8 @@ const DRAWINGS = {
   ),
   /** An event's beam, with the two ticks that close it. */
   event: <path d="M3 5.5v7M15 5.5v7M3 9h12" />,
+  up: <path d="M4 11.5L9 6.5l5 5" />,
+  down: <path d="M4 6.5l5 5 5-5" />,
   /** A task's round head on its beam. */
   task: (
     <>

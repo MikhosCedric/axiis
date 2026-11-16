@@ -128,7 +128,7 @@ export function fakeRepo(items: Item[] = [], areas: Area[] = []) {
     async listChecklists() {
       return items
         .filter((i) => i.type === "checklist" && i.parentId === null && i.recurrence.kind !== "override" && i.status !== "dropped")
-        .sort((a, b) => RANK[a.status] - RANK[b.status] || b.createdAt.getTime() - a.createdAt.getTime())
+        .sort((a, b) => RANK[a.status] - RANK[b.status] || a.position - b.position || b.createdAt.getTime() - a.createdAt.getTime())
         .slice(0, LISTS_LIMIT);
     },
     async listDue(doneSince) {
@@ -188,7 +188,7 @@ export function fakeRepo(items: Item[] = [], areas: Area[] = []) {
       );
     },
     async listChildren(parentId) {
-      return items.filter((i) => i.parentId === parentId);
+      return items.filter((i) => i.parentId === parentId).sort((a, b) => a.position - b.position || a.createdAt.getTime() - b.createdAt.getTime());
     },
     async childCounts(parentIds) {
       const counts: Record<string, { total: number; done: number }> = {};

@@ -2,14 +2,17 @@
 
 import { renameKey, useQuick } from "@/features/actions/context";
 import { RenameField, RowActions, rowProps } from "@/features/actions/row-actions";
-import { useId, type ReactNode } from "react";
+import { startTransition, useId, useOptimistic, useState, type ReactNode } from "react";
+import { ReorderHandle, ReorderHint, useReorder } from "@/components/reorder";
+import { reorderChecklistsAction } from "@/features/order/actions";
+import { reach } from "@/lib/reach";
 import { AreaLabel } from "@/components/area-mark";
 import { ProgressLine } from "@/components/progress-line";
 import { place } from "@/components/shell/places";
 import { DetailAside } from "@/features/detail/detail-aside";
 import { useItemSelection } from "@/features/detail/use-item-selection";
 import { CaptureField } from "@/features/today/capture-field";
-import type { CaptureResult } from "@/features/today/commands";
+import type { ActionResult, CaptureResult } from "@/features/today/commands";
 import { setDoneAction } from "@/features/today/actions";
 import { DoneToggle, useDoneToggles, type SetDone } from "@/features/today/done-toggle";
 import { Glyph } from "@/features/today/glyph";
@@ -17,7 +20,7 @@ import { RepeatMark } from "@/features/today/repeat-mark";
 import { PageHeader } from "@/components/shell/page-header";
 import { FilterChips } from "@/features/filter/filter-chip";
 import { GuideButton, NO_TOPICS } from "@/features/palette/guide";
-import { NO_FILTER, scopePrefix, type ViewFilter } from "@/features/filter/model";
+import { narrows, NO_FILTER, scopePrefix, type ViewFilter } from "@/features/filter/model";
 import { captureChecklistAction } from "./actions";
 import { listsSummary, progressShare, progressWords, type ListRow, type ListsData } from "./model";
 
@@ -28,6 +31,7 @@ export function ListsView({
   filter = NO_FILTER,
   capture = captureChecklistAction,
   setDone = setDoneAction,
+  reorder = reorderChecklistsAction,
 }: {
   data: ListsData;
   detail?: ReactNode;
@@ -36,9 +40,31 @@ export function ListsView({
   /** Defaults to the server actions; the dev harness passes in-memory ones. */
   capture?: (title: string) => Promise<CaptureResult>;
   setDone?: SetDone;
+  /** Stores the checklists in the order given; the dev harness passes an in-memory one. */
+  reorder?: (ids: string[]) => Promise<ActionResult>;
 }) {
   const { selectedParam, selectedId, select } = useItemSelection();
   const ticks = useDoneToggles(setDone);
+  const [shown, arrange] = useOptimistic(data.rows, (rows, ids: string[]) => {
+    const at = new Map(ids.map((id, i) => [id, i]));
+    return [...rows].sort((a, b) => (at.get(a.id) ?? 0) - (at.get(b.id) ?? 0));
+  });
+  const [orderError, setOrderError] = useState<string | null>(null);
+  // A narrowed page shows only some checklists, so a move there would say little about the whole order.
+  const movable = !narrows(filter) && shown.length > 1;
+  const order = useReorder({
+    rows: movable ? shown : [],
+    // Open checklists stay above done ones, as the page reads them.
+    groupOf: (id) => (shown.find((r) => r.id === id)?.done ? "done" : "open"),
+    onMove: (ids) => {
+      setOrderError(null);
+      startTransition(async () => {
+        arrange(ids);
+        const result = await reach(reorder(ids));
+        if (!result.ok) setOrderError(result.error);
+      });
+    },
+  });
 
   // A new checklist opens beside the list at once, since its lines are the next thing to write.
   async function captureAndOpen(title: string): Promise<CaptureResult> {
@@ -76,7 +102,7 @@ export function ListsView({
 
         {data.rows.length > 0 ? (
           <ul className="surface overflow-hidden px-3 py-1.5 [&_li:last-child]:border-b-0 mt-2">
-            {data.rows.map((row) => {
+            {shown.map((row) => {
               const done = ticks.isDone(row.id, row.done);
               return (
                 <ListRowView
@@ -86,6 +112,7 @@ export function ListsView({
                   justDone={ticks.justDone === row.id}
                   onSelect={() => select(row.id)}
                   onToggleDone={() => ticks.toggle(row.id, row.title, !done)}
+                  order={movable ? order : null}
                 />
               );
             })}
@@ -96,6 +123,10 @@ export function ListsView({
             go in beside it.
           </p>
         )}
+        {movable && <ReorderHint id={order.hintId} said={order.said} />}
+        <p role="status" className="mt-2 text-[13px] text-ink-2 empty:hidden">
+          {orderError}
+        </p>
         {data.full && (
           <p className="mt-3 text-[13px] text-ink-3">Showing the first {data.rows.length}. Older done checklists may not be listed.</p>
         )}
@@ -112,27 +143,38 @@ function ListRowView({
   justDone,
   onSelect,
   onToggleDone,
+  order,
 }: {
   row: ListRow;
   selected: boolean;
   justDone: boolean;
   onSelect: () => void;
   onToggleDone: () => void;
+  /** Set while the rows can be moved by hand. */
+  order: ReturnType<typeof useReorder> | null;
 }) {
   const metaId = useId();
   const quick = useQuick();
   const patch = quick?.patched(row.id);
   const title = patch?.title ?? row.title;
   const qi = { ...row.quick, title };
-  const hooks = { onOpen: onSelect, onToggleDone: row.repeats ? undefined : onToggleDone, doneBox: !row.repeats, inlineRename: "lists", swipe: true };
+  const edge = order?.edge(row.id);
+  const moves = order && edge ? { up: edge.first ? undefined : () => order.move(row.id, -1), down: edge.last ? undefined : () => order.move(row.id, 1) } : undefined;
+  const hooks = { onOpen: onSelect, onToggleDone: row.repeats ? undefined : onToggleDone, doneBox: !row.repeats, inlineRename: "lists", swipe: true, moves };
   // The quietest ink is too faint to read on the accent wash of a selected row.
   const quiet = selected ? "text-ink-2" : "text-ink-3";
   if (patch?.hidden) return null;
   return (
     <li
       {...rowProps(quick, qi, hooks)}
-      className={`group/row relative grid grid-cols-[48px_minmax(0,1fr)] items-start gap-x-3 border-b border-rule-soft py-(--row-y) pointer-coarse:grid-cols-[48px_minmax(0,1fr)_auto] ${selected ? "row-selected" : ""}`}
+      {...(order ? order.row(row.id) : {})}
+      onKeyDown={(e) => {
+        if (order?.rowKeyDown(e, row.id)) return;
+        rowProps(quick, qi, hooks).onKeyDown?.(e);
+      }}
+      className={`group/row relative grid items-start gap-x-3 border-b border-rule-soft py-(--row-y) ${order ? "grid-cols-[20px_48px_minmax(0,1fr)] pointer-coarse:grid-cols-[20px_48px_minmax(0,1fr)_auto]" : "grid-cols-[48px_minmax(0,1fr)] pointer-coarse:grid-cols-[48px_minmax(0,1fr)_auto]"} ${selected ? "row-selected" : ""}`}
     >
+      {order && <ReorderHandle {...order.handle({ id: row.id, title })} className="-ml-1 !w-5" />}
       {/* A repeating checklist is ticked one day at a time, on that day. */}
       {row.repeats ? (
         <span className="grid h-6 place-items-center">

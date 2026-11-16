@@ -24,6 +24,7 @@ import {
   unplanAction,
 } from "./actions";
 import { planAction } from "@/features/inbox/actions";
+import { reorderChildrenAction } from "@/features/order/actions";
 import { loadDetail } from "./commands";
 import { DetailSheet, MissingItem } from "./detail-sheet";
 import type { DetailActions } from "./model";
@@ -40,6 +41,7 @@ const actions: DetailActions = {
   clearTime: clearTimeAction,
   setFirstDay: setFirstDayAction,
   addSubtask: addSubtaskAction,
+  reorder: reorderChildrenAction,
   promote: promoteSubtaskAction,
   remove: deleteItemAction,
   setRepeat: setRepeatAction,

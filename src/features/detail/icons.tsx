@@ -69,3 +69,15 @@ export const StopIcon = () => (
     <path d="M14.5 4.5v9" />
   </Icon>
 );
+
+export const MoveUpIcon = () => (
+  <Icon>
+    <path d="M4 11.5L9 6.5l5 5" />
+  </Icon>
+);
+
+export const MoveDownIcon = () => (
+  <Icon>
+    <path d="M4 6.5l5 5 5-5" />
+  </Icon>
+);

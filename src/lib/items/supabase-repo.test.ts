@@ -56,7 +56,7 @@ describe("SupabaseItemsRepo and series", () => {
     expect(q.get("limit")).toBe("200");
   });
 
-  it("reads live top-level checklists outside any override, dropped ones left out, open first then newest, at most 200", async () => {
+  it("reads live top-level checklists outside any override, dropped ones left out, open first, then manual order, then newest, at most 200", async () => {
     const { repo, requests } = stubbed();
     await repo.listChecklists();
     const q = requests[0];
@@ -69,7 +69,7 @@ describe("SupabaseItemsRepo and series", () => {
     });
     // Series are kept (each shows once), and a schedule does not matter.
     expect([q.get("rrule"), q.get("start_at"), q.get("scheduled_on")]).toEqual([null, null, null]);
-    expect(q.get("order")).toBe("status.asc,created_at.desc");
+    expect(q.get("order")).toBe("status.asc,position.asc,created_at.desc");
     expect(q.get("limit")).toBe("200");
   });
 
@@ -336,5 +336,54 @@ describe("SupabaseItemsRepo reads that must be complete", () => {
 
     expect(Object.keys(byItem)).toHaveLength(200);
     expect(Object.values(byItem).every((tags) => tags.length === 10)).toBe(true);
+  });
+});
+
+describe("SupabaseItemsRepo and manual order", () => {
+  const ID = "00000000-0000-4000-8000-0000000000b1" as ItemId;
+  const row = {
+    id: ID,
+    type: "task",
+    title: "Socks",
+    status: "open",
+    area_id: null,
+    parent_id: SERIES,
+    position: -1.5,
+    start_at: null,
+    end_at: null,
+    scheduled_on: null,
+    due_on: null,
+    rrule: null,
+    series_id: null,
+    original_on: null,
+    completed_at: null,
+    created_at: "2020-01-01T00:00:00Z",
+    updated_at: "2020-01-01T00:00:00Z",
+  };
+
+  it("writes a new position as a PATCH of that one row, touching nothing else", async () => {
+    const sent: { method: string; query: URLSearchParams; body: unknown }[] = [];
+    const db = createClient("http://db.test", "anon", {
+      global: {
+        fetch: async (input, init) => {
+          sent.push({ method: String(init?.method), query: new URL(String(input)).searchParams, body: init?.body ? JSON.parse(String(init.body)) : null });
+          return new Response(JSON.stringify(row), { status: 200, headers: { "content-type": "application/json" } });
+        },
+      },
+    });
+    const updated = await new SupabaseItemsRepo(db).update(ID, { position: -1.5 });
+    expect(sent).toHaveLength(1);
+    expect(sent[0].method).toBe("PATCH");
+    expect(sent[0].query.get("id")).toBe(`eq.${ID}`);
+    expect(sent[0].query.get("deleted_at")).toBe("is.null");
+    expect(Object.keys(sent[0].body as object).filter((k) => k !== "updated_at")).toEqual(["position"]);
+    expect((sent[0].body as { position: number }).position).toBe(-1.5);
+    expect(updated.position).toBe(-1.5);
+  });
+
+  it("reads the lines of a checklist by position, then by when they were added", async () => {
+    const { repo, requests } = stubbed();
+    await repo.listChildren(SERIES);
+    expect(requests[0].get("order")).toBe("position.asc,created_at.asc");
   });
 });
