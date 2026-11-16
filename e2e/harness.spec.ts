@@ -565,7 +565,7 @@ test.describe("lists", () => {
     await page.goto("/dev/lists");
     await expect(page.getByRole("heading", { level: 1, name: "Lists" })).toBeVisible();
     await expect(page.getByText("4 open, 1 done.")).toBeVisible();
-    await expect(page.getByRole("list").first().getByRole("button").filter({ hasNot: page.locator("[data-reorder-handle]") })).toHaveText([
+    await expect(page.getByRole("list").first().locator("button:not([data-reorder-handle])")).toHaveText([
       "Ideas for the garden",
       "Pack for the coast",
       "Launch day",
@@ -576,7 +576,7 @@ test.describe("lists", () => {
     await expect(page.getByRole("button", { name: /^Weekly reset/ })).toHaveAccessibleDescription(
       "Repeats every week on Sunday",
     );
-    await expect(page.getByRole("button", { name: "Ideas for the garden" })).toHaveAccessibleDescription("No lines yet");
+    await expect(page.getByRole("button", { name: "Ideas for the garden", exact: true })).toHaveAccessibleDescription("No lines yet");
   });
 
   test("a row opens the checklist beside the list, and ticking a line there moves its progress", async ({ page }) => {
