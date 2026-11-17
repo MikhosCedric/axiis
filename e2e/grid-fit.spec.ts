@@ -234,7 +234,7 @@ test.describe("on a wide window, 1819 by 1030", () => {
   test("the Day's grid and side column sit centred, and the head shares their edges", async ({ page }) => {
     await open(page);
     const m = await page.evaluate(() => {
-      const main = document.querySelector<HTMLElement>("#main")!.getBoundingClientRect();
+      const main = { left: 0, right: window.innerWidth };
       const grid = document.querySelector<HTMLElement>("[data-calendar-grid]")!.getBoundingClientRect();
       const tray = document.querySelector<HTMLElement>("[data-drop='tray']")!.getBoundingClientRect();
       const head = document.querySelector("header")!.getBoundingClientRect();
