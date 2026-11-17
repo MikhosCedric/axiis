@@ -56,7 +56,9 @@ export function UndoToast({ note, onDone }: { note: UndoNote | null; onDone: () 
   if (note && note !== last) setLast(note);
   useEffect(() => {
     if (note) return;
-    const gone = window.setTimeout(() => setLast(null), 140);
+    // Under reduced motion it does not fade, so it is gone at once rather than lingering as a picture of itself.
+    const still = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const gone = window.setTimeout(() => setLast(null), still ? 0 : 140);
     return () => window.clearTimeout(gone);
   }, [note]);
   const shown = note ?? last;

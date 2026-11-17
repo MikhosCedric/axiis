@@ -126,6 +126,7 @@ signedIn.describe("segmented controls", () => {
   });
 
   signedIn("Grid and List slide their thumb, and nothing slides under reduced motion", async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: "no-preference" });
     await page.goto("/today");
     await hydrated(page);
     const view = page.getByRole("group", { name: "View" });

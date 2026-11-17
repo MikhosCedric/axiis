@@ -24,6 +24,10 @@ export default defineConfig({
   use: {
     baseURL,
     trace: "retain-on-failure",
+    // Deterministic by default: every transition and animation takes its reduced path (instant, or a fade of 100ms at
+    // most), so no spec races an item gliding or a panel sliding. A spec about motion asks for it with
+    // `test.use({ reducedMotion: "no-preference" })` (e2e/motion.spec.ts, e2e/landing.spec.ts).
+    reducedMotion: "reduce",
     // Time format: Auto would follow the browser's en-US locale to the 12-hour clock. Specs read
     // 24-hour times unless they choose otherwise (e2e/time-format.spec.ts).
     storageState: {

@@ -77,6 +77,7 @@ for (const viewport of WIDTHS) {
 
 test.describe("first-day capture", () => {
   test("turns the placeholder through real examples under a lead line", async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: "no-preference" });
     await page.goto("/dev/day?firstday");
     await expect(field(page)).toHaveAttribute("placeholder", FIRST_EXAMPLE);
     await expect(field(page)).toHaveAttribute("aria-describedby", /capture-lead/);
