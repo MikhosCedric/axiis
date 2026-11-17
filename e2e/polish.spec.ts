@@ -53,6 +53,10 @@ signedIn.describe("large titles", () => {
       await page.setViewportSize({ width, height: 700 });
       await page.goto(path);
       await hydrated(page);
+      // On a phone the grid scrolls the page to the current time at 0, 150, 450 and 1000 ms (calendar-grid.tsx) and
+      // keeps doing so until the reader's own scroll differs from its last; let it finish, then start from the top.
+      await page.waitForTimeout(1100);
+      await page.evaluate(() => window.scrollTo(0, 0));
       const bar = page.locator(".title-bar");
       await expect(bar).not.toHaveAttribute("data-folded");
       await expect(bar.locator(".title-bar-text")).toHaveCSS("opacity", "0");

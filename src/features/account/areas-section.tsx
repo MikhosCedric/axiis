@@ -1,6 +1,6 @@
 "use client";
 
-import { startTransition, useEffect, useId, useMemo, useOptimistic, useRef, useState, useTransition, type FormEvent } from "react";
+import { startTransition, useEffect, useId, useOptimistic, useRef, useState, useTransition, type FormEvent } from "react";
 import { ColorPicker, SwatchButton } from "@/components/color-picker";
 import { COLOR_HINT_COOKIE } from "@/components/shell/cookies";
 import { wantsColorNudge, type AreaColor } from "@/domain/area-color";
@@ -9,7 +9,7 @@ import { ConfirmDelete } from "@/features/detail/confirm-delete";
 import type { ActionResult } from "@/features/today/commands";
 import { AREA_LIMIT, AREA_NAME_MAX, moved, type MoveDirection } from "./commands";
 import { ArrowIcon } from "./icons";
-import { latestSave } from "@/lib/latest-save";
+import { useLatestSave } from "@/lib/latest-save";
 import { reach } from "@/lib/reach";
 
 export type AreaActions = {
@@ -60,7 +60,7 @@ export function AreasSection({ areas, actions, colorHint = false }: { areas: Are
   const refocus = useRef<{ id: AreaId; direction: MoveDirection } | null>(null);
   const [picking, setPicking] = useState<AreaId | null>(null);
   // Arrow keys through the palette choose a colour per press; only the last of a run needs to reach the server.
-  const saveColor = useMemo(() => latestSave((id: string, color: AreaColor | null) => actions.color(id, color)), [actions]);
+  const saveColor = useLatestSave((id: string, color: AreaColor | null) => actions.color(id, color));
   const moveButtonId = (id: AreaId, direction: MoveDirection) => `${prefix}-${direction}-${id}`;
 
   // Moving a row can take the pressed button out of the document and drop focus to the body; put it back.

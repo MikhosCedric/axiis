@@ -1,4 +1,5 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
+import { hydrated } from "./session";
 
 async function dragTo(page: Page, from: Locator, to: { x: number; y: number }, { escape = false } = {}) {
   const box = await from.boundingBox();
@@ -688,6 +689,7 @@ test.describe("on a phone", () => {
 
   test("a block opens its details in view with focus there", async ({ page }) => {
     await page.goto("/dev/day");
+    await hydrated(page);
     await page.getByRole("button", { name: /^Design sync[ ,]/ }).dblclick();
     const details = page.getByRole("complementary", { name: "Details" });
     await expect(details.getByRole("heading", { name: "Design sync" })).toBeInViewport();
@@ -719,6 +721,7 @@ test.describe("on a touch phone", () => {
     page,
   }) => {
     await page.goto("/dev/day");
+    await hydrated(page);
     await expect(page.getByText(/^Press and hold one, then drag it onto a day/)).toBeVisible();
     await expect(page.getByText(/^Drag one onto the grid/)).toBeHidden();
     await expect(page.locator("kbd", { hasText: /^C$/ })).toBeHidden();
