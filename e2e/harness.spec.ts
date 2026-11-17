@@ -117,7 +117,7 @@ for (const view of ["", "&view=list"]) {
   test(`day${view}: an empty tray does not claim everything has a time while some are at any time`, async ({ page }) => {
     await page.goto(`/dev/day?tray=empty${view}`);
     await expect(page.getByText(/Take vitamins/).first()).toBeVisible();
-    await expect(page.getByText("The Inbox is empty. What you capture lands here first.")).toBeVisible();
+    await expect(page.getByText(view ? "The Inbox is empty. What you capture lands here first." : "Empty. What you capture lands here first.")).toBeVisible();
     await expect(page.getByText(/Everything has a/)).toHaveCount(0);
   });
 }

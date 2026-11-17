@@ -25,7 +25,7 @@ import type { ChildCount } from "@/lib/items/repo";
 import type { Box } from "@/lib/placement";
 import styles from "./calendar.module.css";
 import { DEFAULT_MINUTES, keyPlacement, toAnyTime, wallSpan, type KeyContext, type Placement, type Slot } from "./grid-drop";
-import { blockBox, DAY_MINUTES, fitHourPx, gridHeight, layoutGrid, openMinute, rangeSpans, scaleOf, segmentOn, visibleRange, yAt, type Block, type CalendarMode } from "./grid-layout";
+import { blockBox, DAY_MINUTES, emptyDayRange, fitHourPx, gridHeight, layoutGrid, openMinute, rangeSpans, scaleOf, segmentOn, visibleRange, yAt, type Block, type CalendarMode } from "./grid-layout";
 import { QuickCreate } from "./quick-create";
 import { useGridDrag, type DragPreview } from "./use-grid-drag";
 
@@ -148,10 +148,12 @@ export function CalendarGrid({
 
   // The hours drawn: from an hour before the first planned thing, or 07:00, to an hour after the last, or 22:00.
   const nowMinutes = useMemo(() => layoutGrid({ days, items: [], timeZone, now }).now?.minutes ?? null, [days, timeZone, now]);
-  const hoursShown = useMemo(
-    () => visibleRange(rangeSpans(days, items, timeZone), nowMinutes === null ? null : Math.floor(nowMinutes / 60) * 60, { earlier, later }),
-    [days, items, timeZone, nowMinutes, earlier, later],
-  );
+  const hoursShown = useMemo(() => {
+    const spans = rangeSpans(days, items, timeZone);
+    // A day with nothing timed on it draws a short range around now, not fifteen hours of blank lines.
+    if (mode === "day" && spans.length === 0 && examples.length === 0) return emptyDayRange(nowMinutes, { earlier, later });
+    return visibleRange(spans, nowMinutes === null ? null : Math.floor(nowMinutes / 60) * 60, { earlier, later });
+  }, [mode, days, items, examples.length, timeZone, nowMinutes, earlier, later]);
   const showEarlier = hoursShown.from > 0 || earlier;
   const showLater = hoursShown.to < DAY_MINUTES || later;
   const hourPx = fitHourPx(
@@ -582,6 +584,10 @@ export function CalendarGrid({
         <TrayHeading as={trayHost ? "h2" : "h3"}>
           {INBOX}
         </TrayHeading>
+        {tray.items.length === 0 && !tray.full ? (
+          <p className="mt-1 text-[13px] text-ink-3">Empty. What you capture lands here first.</p>
+        ) : (
+        <>
         <p className="mt-1 mb-3 text-[13px] text-ink-3">
           No day yet. <span className="pointer-coarse:hidden">Drag one onto the grid to plan it for that time{trayHost ? ", or click it to plan it for today. " : ". Drag a block back here to clear its day. "}</span>
           <span className="hidden pointer-coarse:inline">Press and hold one, then drag it onto a day to plan it for that time. </span>
@@ -589,6 +595,8 @@ export function CalendarGrid({
         </p>
         {tray.items.length ? <ul className={`flex flex-wrap gap-2 ${trayHost ? styles.trayList : ""}`}>{tray.items.map(trayChip)}</ul> : <p className="text-[13px] text-ink-3">{EMPTY_TRAY}</p>}
         {tray.full && <p className="mt-3 text-[13px] text-ink-3">{TRAY_FULL}</p>}
+        </>
+        )}
       </section>
     ) : null;
   const peeked = peek ? byId.get(peek.id) : undefined;
@@ -710,6 +718,16 @@ export function CalendarGrid({
                     {ex.title} <span className={styles.meta}>{range(ex.start, ex.end)}</span>
                   </div>
                 ))}
+              {mode === "day" && col.blocks.length === 0 && examples.length === 0 && (
+                <p
+                  aria-hidden="true"
+                  data-empty-day
+                  className={styles.emptyDay}
+                  style={{ top: nowAt?.day === i ? nowAt.top + 16 : yAt(scale.from + 120, scale) + 6 }}
+                >
+                  Nothing planned. Click a time to add something, or drag from the Inbox.
+                </p>
+              )}
               {col.blocks.map((b) => block(b, col.date))}
               {ghostOn(col.date)}
               {nowAt?.day === i && (

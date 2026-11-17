@@ -20,6 +20,7 @@ import {
   scaleOf,
   segmentOn,
   visibleRange,
+  emptyDayRange,
   yAt,
 } from "./grid-layout";
 
@@ -278,5 +279,18 @@ describe("a visible range scale", () => {
   it("opens on the top of the range for another day, and not above it for today", () => {
     expect(openMinute(null, 5 * 60)).toBe(5 * 60);
     expect(openMinute({ day: 0, minutes: 8 * 60, top: 0 }, 7 * 60)).toBe(7 * 60);
+  });
+});
+
+describe("emptyDayRange", () => {
+  it("draws nine hours from two before now, kept inside the day", () => {
+    expect(emptyDayRange(12 * 60 + 34)).toEqual({ from: 10 * 60, to: 19 * 60 });
+    expect(emptyDayRange(60)).toEqual({ from: 0, to: 9 * 60 });
+    expect(emptyDayRange(23 * 60)).toEqual({ from: 15 * 60, to: 24 * 60 });
+  });
+
+  it("is 08:00 to 17:00 when now is not on screen, and opens out on request", () => {
+    expect(emptyDayRange(null)).toEqual({ from: 8 * 60, to: 17 * 60 });
+    expect(emptyDayRange(null, { earlier: true, later: true })).toEqual({ from: 0, to: 1440 });
   });
 });

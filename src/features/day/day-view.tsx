@@ -146,7 +146,7 @@ export function DayView({
       examples={examples}
       offer={offer}
       trayHost={mode === "grid" ? trayHost : undefined}
-      className="@container/page px-4 pt-6 pb-14 rail:px-9 rail:pt-8 rail:pb-4"
+      className="@container/page mx-auto w-full max-w-[1272px] px-4 pt-6 pb-14 rail:px-9 rail:pt-8 rail:pb-4"
     >
       {(ctx, grid) => (
         <DayPage
@@ -315,7 +315,7 @@ function DayPage({
           Narrow: one column, in the order they read, the week left out. */}
       <div
         data-focus={focus ? "" : undefined}
-        className={`flex flex-col ${hasSide ? "@min-[66rem]/page:grid @min-[66rem]/page:grid-cols-[minmax(0,42rem)_minmax(18rem,24rem)] @min-[66rem]/page:grid-rows-[auto_1fr] @min-[66rem]/page:justify-start @min-[66rem]/page:gap-x-8" : ""}`}
+        className={`flex flex-col ${hasSide ? "@min-[66rem]/page:grid @min-[66rem]/page:grid-cols-[minmax(0,46rem)_minmax(18rem,27rem)] @min-[66rem]/page:grid-rows-[auto_1fr] @min-[66rem]/page:justify-start @min-[66rem]/page:gap-x-8" : ""}`}
       >
         {hasSide && (
           <div className="contents @min-[66rem]/page:surface @min-[66rem]/page:col-start-2 @min-[66rem]/page:row-start-1 @min-[66rem]/page:block @min-[66rem]/page:max-h-[var(--calendar-fit,none)] @min-[66rem]/page:divide-y @min-[66rem]/page:divide-rule-soft @min-[66rem]/page:self-start @min-[66rem]/page:overflow-y-auto">

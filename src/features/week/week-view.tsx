@@ -52,7 +52,7 @@ export function WeekView({
       mode={narrow ? "3day" : "week"}
       detail={detail}
       actions={actions}
-      className="@container/page px-4 pt-6 pb-14 rail:px-9 rail:pt-8 rail:pb-4"
+      className="@container/page mx-auto w-full max-w-[1600px] px-4 pt-6 pb-14 rail:px-9 rail:pt-8 rail:pb-4"
     >
       {(ctx, grid) => <WeekPage ctx={ctx} grid={grid} calendar={calendar} days={days} from={from} weekFull={weekFull} filter={filter} capture={actions?.capture} />}
     </CalendarView>

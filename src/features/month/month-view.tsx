@@ -259,7 +259,7 @@ export function MonthView({
 
   return (
     <div className={selectedParam ? "min-[1180px]:grid min-[1180px]:grid-cols-[minmax(0,1fr)_328px]" : ""}>
-      <div className="@container/page min-w-0 px-4 pt-6 pb-14 rail:px-9 rail:pt-8">
+      <div className="@container/page mx-auto w-full min-w-0 max-w-[1600px] px-4 pt-6 pb-14 rail:px-9 rail:pt-8">
         <PageHeader
           inline
           heading={

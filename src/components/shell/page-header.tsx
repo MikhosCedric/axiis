@@ -37,7 +37,7 @@ export function PageHeader({
     <header
       className={
         inline
-          ? "@min-[64rem]/page:mb-5 @min-[64rem]/page:grid @min-[64rem]/page:grid-cols-[auto_minmax(0,max-content)_minmax(18rem,1fr)_auto] @min-[64rem]/page:items-center @min-[64rem]/page:gap-x-5"
+          ? "@min-[64rem]/page:mb-5 @min-[64rem]/page:grid @min-[64rem]/page:grid-cols-[auto_fit-content(24rem)_minmax(18rem,1fr)_auto] @min-[64rem]/page:items-center @min-[64rem]/page:gap-x-5"
           : undefined
       }
     >
