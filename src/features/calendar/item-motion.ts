@@ -76,6 +76,7 @@ function stand(from: Rec, root: HTMLElement): HTMLElement {
     b.style.pointerEvents = "none";
   }
   copy.setAttribute("aria-hidden", "true");
+  copy.dataset.itemCopy = "";
   copy.inert = true;
   const at = viewport(from, root);
   Object.assign(copy.style, {
@@ -216,6 +217,17 @@ export function useItemMotion({ scroller, days, mode, busy }: { scroller: RefObj
       out.addEventListener("cancel", () => copy.remove());
     }
   });
+
+  // A new press ends whatever is still playing: the page is the real one the moment a hand is on it.
+  useLayoutEffect(() => {
+    const settle = () => {
+      for (const a of playing.current) a.cancel();
+      playing.current.clear();
+      for (const c of document.querySelectorAll("[data-item-copy]")) c.remove();
+    };
+    document.addEventListener("pointerdown", settle, true);
+    return () => document.removeEventListener("pointerdown", settle, true);
+  }, []);
 
   // Hand the last picture to the grid that replaces this one when a step remounts it.
   useLayoutEffect(
