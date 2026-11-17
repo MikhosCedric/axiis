@@ -151,9 +151,9 @@ export function CalendarGrid({
   const hoursShown = useMemo(() => {
     const spans = rangeSpans(days, items, timeZone);
     // A day with nothing timed on it draws a short range around now, not fifteen hours of blank lines.
-    if (mode === "day" && spans.length === 0) return emptyDayRange(nowMinutes, { earlier, later });
+    if (mode === "day" && spans.length === 0 && examples.length === 0) return emptyDayRange(nowMinutes, { earlier, later });
     return visibleRange(spans, nowMinutes === null ? null : Math.floor(nowMinutes / 60) * 60, { earlier, later });
-  }, [mode, days, items, timeZone, nowMinutes, earlier, later]);
+  }, [mode, days, items, examples.length, timeZone, nowMinutes, earlier, later]);
   const showEarlier = hoursShown.from > 0 || earlier;
   const showLater = hoursShown.to < DAY_MINUTES || later;
   const hourPx = fitHourPx(
