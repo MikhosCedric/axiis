@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { signedIn } from "./session";
 
 // How the time grid fits its window. A desktop window: the Day is one comfortable column beside a side column (not
 // a bar the width of the window), the page does not scroll and the grid is its one scroll area, drawn over the
@@ -222,5 +223,40 @@ test.describe("on a phone", () => {
     await more.click();
     await expect(more).toHaveText("Show fewer");
     expect(await row.locator("li[data-item]:visible").count()).toBeGreaterThan(2);
+  });
+});
+
+// A wide window: the Day's grid and side column are one composition, centred in the page, with the head on the same
+// edges; an empty day draws a short range with one quiet line, not a field of blank hours.
+test.describe("on a wide window, 1819 by 1030", () => {
+  test.use({ viewport: { width: 1819, height: 1030 } });
+
+  test("the Day's grid and side column sit centred, and the head shares their edges", async ({ page }) => {
+    await open(page);
+    const m = await page.evaluate(() => {
+      const main = document.querySelector<HTMLElement>("#main")!.getBoundingClientRect();
+      const grid = document.querySelector<HTMLElement>("[data-calendar-grid]")!.getBoundingClientRect();
+      const tray = document.querySelector<HTMLElement>("[data-drop='tray']")!.getBoundingClientRect();
+      const head = document.querySelector("header")!.getBoundingClientRect();
+      return { left: grid.left - main.left, right: main.right - tray.right, headLeft: head.left, gridLeft: grid.left, headRight: head.right, trayRight: tray.right };
+    });
+    // Free width is split to either side of the composition.
+    expect(Math.abs(m.left - m.right)).toBeLessThan(40);
+    expect(m.left).toBeGreaterThan(100);
+    expect(Math.abs(m.headLeft - m.gridLeft)).toBeLessThan(2);
+    expect(m.headRight).toBeGreaterThanOrEqual(m.trayRight - 2);
+  });
+});
+
+signedIn.describe("an empty day, 1819 by 1030", () => {
+  signedIn.use({ viewport: { width: 1819, height: 1030 } });
+
+  signedIn("draws about nine hours and says nothing is planned", async ({ page }) => {
+    await page.goto("/day/2027-03-03");
+    await expect(page.locator("[data-calendar-grid]")).toBeVisible();
+    await expect(page.locator("[data-empty-day]")).toHaveText("Nothing planned. Click a time to add something, or drag from the Inbox.");
+    await expect.poll(async () => (await fit(page)).count).toBeLessThanOrEqual(10);
+    await expect(page.locator("[data-expand='earlier']")).toBeVisible();
+    await expect(page.locator("[data-expand='later']")).toBeVisible();
   });
 });

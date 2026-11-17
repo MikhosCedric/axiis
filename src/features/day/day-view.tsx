@@ -146,7 +146,7 @@ export function DayView({
       examples={examples}
       offer={offer}
       trayHost={mode === "grid" ? trayHost : undefined}
-      className="@container/page px-4 pt-6 pb-14 rail:px-9 rail:pt-8 rail:pb-4"
+      className="@container/page mx-auto w-full max-w-[1160px] px-4 pt-6 pb-14 rail:px-9 rail:pt-8 rail:pb-4"
     >
       {(ctx, grid) => (
         <DayPage

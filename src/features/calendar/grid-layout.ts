@@ -59,6 +59,19 @@ export function visibleRange(
   return { from: open.earlier ? 0 : from, to: open.later ? DAY_MINUTES : to };
 }
 
+/** How many hours an empty day draws: enough to click into, not a field of blank lines. */
+export const EMPTY_HOURS = 9;
+
+/**
+ * The hours drawn on a day with nothing timed on it: nine of them, from two before now (kept inside the
+ * day), or 08:00 to 17:00 when now is not on screen. `earlier` and `later` open out to midnight as in `visibleRange`.
+ */
+export function emptyDayRange(now: number | null, open: { earlier?: boolean; later?: boolean } = {}): { from: number; to: number } {
+  const at = now === null ? 8 : Math.floor(now / 60) - 2;
+  const from = Math.max(0, Math.min(24 - EMPTY_HOURS, at)) * 60;
+  return { from: open.earlier ? 0 : from, to: open.later ? DAY_MINUTES : from + EMPTY_HOURS * 60 };
+}
+
 /** The segments of every item on the days shown, for `visibleRange`. */
 export function rangeSpans(days: readonly LocalDate[], items: readonly ShownItem[], timeZone: string) {
   return items.filter(drawn).flatMap((item) => days.flatMap((d) => segmentOn(item, d, timeZone) ?? []));

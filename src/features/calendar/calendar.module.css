@@ -437,6 +437,18 @@
   height: 100%;
 }
 
+/* A day with nothing timed on it: one quiet line in the grid, never in the way of a click. */
+.emptyDay {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  margin: 0;
+  font-size: 13px;
+  line-height: 18px;
+  color: var(--ink-3);
+  pointer-events: none;
+}
+
 /* A first-day example: the outline of a planned block, with nothing to press. */
 .example {
   --tint: var(--ink);
