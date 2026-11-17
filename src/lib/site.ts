@@ -2,7 +2,7 @@ import { z } from "zod";
 
 export const SITE_NAME = "Axiis";
 export const SITE_DESCRIPTION =
-  "One place for your tasks and your time. Each part of your life gets a line, one hour axis runs across them, and the whole day fits on one page.";
+  "One place for your tasks and your time. A time grid for the day and the week, capture in plain English, and a line for now: the whole day fits on one page.";
 
 const FALLBACK_ORIGIN = "http://localhost:3000";
 

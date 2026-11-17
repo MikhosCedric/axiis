@@ -1,48 +1,98 @@
 "use client";
 
-import { useState, type CSSProperties } from "react";
+import { useState, useSyncExternalStore, type CSSProperties } from "react";
 import { useClock } from "@/components/shell/clock-context";
-import { Glyph } from "@/features/today/glyph";
-import { formatHour, formatMinutes, type Clock } from "@/lib/clock";
+import { scaleOf } from "@/features/calendar/grid-layout";
+import { formatMinutes, type Clock } from "@/lib/clock";
 import {
   LANDING,
-  LIVE_STAVES,
+  LIVE_ANYTIME,
+  LIVE_AREAS,
+  LIVE_BLOCKS,
   LIVE_TRAY,
-  WIDEST,
+  LIVE_WINDOW,
+  axisMinutes,
   nowParts,
-  roomAfter,
-  stateAt,
+  stateOn,
   wallMinutesOf,
-  type LiveBeam,
+  type LiveBlock,
 } from "./live-day";
+import { packSample } from "./grid-pack";
+import { MiniBlock, MiniChip, TimeGrid, type GridColumn } from "./mini-grid";
 import { useNowMinutes } from "./use-now";
 import styles from "./live-score.module.css";
 
-const HOURS = Array.from({ length: WIDEST.to - WIDEST.from + 1 }, (_, i) => WIDEST.from + i);
+const HOUR_PX = 48;
 const STATE_WORD = { live: "happening now", planned: "planned", done: "done" } as const;
 const CLOCKS: { clock: Clock; label: string }[] = [
   { clock: "24", label: "24-hour" },
   { clock: "12", label: "12-hour" },
 ];
+const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+/** What the server draws for the three day heads, before the browser knows today. */
+const SERVER_HEADS = "Tue 17|Wed 18|Thu 19";
 
-/** Each beam's place in the arrival order, counted across the staves. */
-const FIRST = LIVE_STAVES.map((_, k) => LIVE_STAVES.slice(0, k).reduce((sum, s) => sum + s.beams.length, 0));
+const noop = () => () => {};
+function headsNow(): string {
+  const d = new Date();
+  return [0, 1, 2]
+    .map((k) => {
+      const day = new Date(d.getFullYear(), d.getMonth(), d.getDate() + k);
+      return `${DAYS[day.getDay()]} ${day.getDate()}`;
+    })
+    .join("|");
+}
 
 const vars = (v: Record<string, number | string>) => v as CSSProperties;
+const DAY_NAMES = ["Today", "Tomorrow", "The day after"];
 
 /**
- * The Score of a made-up day, laid around the visitor's own time now. It draws itself in on arrival
- * (staves, then beams, then the now line sweeping to now), and every so often an Inbox item is lifted
- * onto a line, the way a drag gives it a time. All of it is CSS on transform and opacity; this component
- * only places things and keeps the clock current.
+ * A sample of the app's Week, laid around the visitor's own time now: three days as columns, hours down the
+ * side, an Any time row, the Inbox as a tray under the grid and the line for now. On arrival the blocks slide
+ * onto the grid in order and the now line sweeps down to now; every so often an Inbox item is lifted onto the
+ * day, the way a drag gives it a time. All of it is CSS on transform and opacity; this component only places
+ * things and keeps the clock current. Nothing under the pointer moves.
  */
 export function LiveScore() {
   const minutes = useNowMinutes();
   const [clock, setClock] = useState<Clock>(useClock());
+  const heads = useSyncExternalStore(noop, headsNow, () => SERVER_HEADS).split("|");
   const { hour, into } = nowParts(minutes);
-
-
+  const scale = scaleOf(axisMinutes(LIVE_WINDOW.from, hour), axisMinutes(LIVE_WINDOW.to, hour), HOUR_PX);
   const wall = (rel: number) => formatMinutes(wallMinutesOf(rel, hour), clock);
+  const area = (b: Pick<LiveBlock, "area">) => LIVE_AREAS[b.area];
+
+  const columns: GridColumn[] = [0, 1, 2].map((day) => {
+    const blocks = LIVE_BLOCKS.filter((b) => b.day === day);
+    const packed = packSample(
+      blocks.map((b) => ({ ...b, id: b.title, start: axisMinutes(b.start, hour), end: axisMinutes(b.end, hour) })),
+      scale,
+    );
+    return {
+      key: `d${day}`,
+      head: heads[day],
+      today: day === 0,
+      extra: day > 0,
+      anyTime: LIVE_ANYTIME.filter((a) => a.day === day).map((a) => <MiniChip key={a.title} title={a.title} area={LIVE_AREAS[a.area]} />),
+      children: (
+        <>
+          {packed.map((p) => (
+            <MiniBlock
+              key={p.id}
+              block={p}
+              clock={clock}
+              area={area(p)}
+              state={stateOn(blocks.find((b) => b.title === p.id)!, into)}
+              hint={p.progress ? `${p.progress.done}/${p.progress.total}` : undefined}
+              className={styles.arrive}
+              style={vars({ "--n": LIVE_BLOCKS.findIndex((b) => b.title === p.id) })}
+            />
+          ))}
+          {day === LANDING.day && <Landing hour={hour} clock={clock} scale={scale} />}
+        </>
+      ),
+    };
+  });
 
   return (
     <figure className={styles.figure} aria-labelledby="sample-caption">
@@ -60,61 +110,20 @@ export function LiveScore() {
         </div>
       </div>
 
-      <div className={styles.score} data-loop="" style={vars({ "--into": into })} aria-hidden="true">
-        <div className={styles.sheet}>
-          <div className={styles.axisRow}>
-            <div className={styles.labelCell} />
-            <div className={styles.track}>
-              {HOURS.map((h) => (
-                <span key={h} className={`${styles.tick} tabular`} style={vars({ "--h": h })}>
-                  {formatHour(hour + h, clock)}
-                </span>
-              ))}
-            </div>
-          </div>
-
-          {LIVE_STAVES.map((staff, k) => (
-            <div key={staff.name} className={styles.staff} style={vars({ "--k": k })}>
-              <div className={styles.labelCell}>
-                <span className={styles.staffName}>{staff.name}</span>
-                <span className="mt-1 block text-xs text-ink-3">
-                  {staff.beams.filter((b) => stateAt(b, into) !== "done").length} open
-                </span>
-              </div>
-              <div className={styles.track} style={vars({ "--rows": staff.rows })}>
-                {Array.from({ length: staff.rows }, (_, r) => (
-                  <div key={r} className={styles.lines} style={vars({ "--row": r })} />
-                ))}
-                {staff.beams.map((beam, i) => (
-                  <Beam
-                    key={beam.title}
-                    beam={beam}
-                    order={FIRST[k] + i}
-                    into={into}
-                    room={roomAfter(staff, beam, WIDEST.to)}
-                    clock={wall(beam.start)}
-                  />
-                ))}
-                {k === LANDING.staff && <Landing clockFrom={wall(LANDING.start)} clockTo={wall(LANDING.end)} />}
-              </div>
-            </div>
-          ))}
-
-          <div className={styles.nowLayer}>
-            <div className={styles.nowMover}>
-              <span className={`${styles.nowPill} tabular`}>{formatMinutes(minutes, clock)}</span>
-              <span className={styles.playhead} />
-            </div>
-          </div>
-        </div>
-
+      <div className={styles.score} data-loop="" aria-hidden="true">
+        <TimeGrid
+          scale={scale}
+          clock={clock}
+          columns={columns}
+          anyLabel="Any time"
+          now={{ minutes: axisMinutes(into, hour), column: 0, label: formatMinutes(minutes, clock) }}
+        />
         <div className={styles.tray}>
-          <div className={`${styles.labelCell} ${styles.trayLabel}`}>Inbox</div>
+          <span className={styles.trayLabel}>Inbox</span>
           <ul className={styles.chips}>
             {LIVE_TRAY.map((title) => (
-              <li key={title} className={`${styles.chip} ${title === LANDING.title ? styles.lifted : ""}`}>
-                <Glyph type="task" state="planned" className={styles.chipGlyph} />
-                {title}
+              <li key={title} className={title === LANDING.title ? styles.lifted : ""}>
+                <MiniChip title={title} area={null} />
               </li>
             ))}
           </ul>
@@ -124,12 +133,17 @@ export function LiveScore() {
       <LineKey />
 
       <div className="sr-only">
-        {LIVE_STAVES.map((staff) => (
-          <ul key={staff.name} aria-label={`${staff.name} line`}>
-            {staff.beams.map((b) => (
+        {[0, 1, 2].map((day) => (
+          <ul key={day} aria-label={DAY_NAMES[day]}>
+            {LIVE_BLOCKS.filter((b) => b.day === day).map((b) => (
               <li key={b.title}>
-                {b.title}, {wall(b.start)} to {wall(b.end)}, {STATE_WORD[stateAt(b, into)]}
+                {b.title}, {wall(b.start)} to {wall(b.end)}, {b.area}, {STATE_WORD[stateOn(b, into)]}
                 {b.progress && `, ${b.progress.done} of ${b.progress.total} subtasks done`}
+              </li>
+            ))}
+            {LIVE_ANYTIME.filter((a) => a.day === day).map((a) => (
+              <li key={a.title}>
+                {a.title}, any time, {a.area}, planned
               </li>
             ))}
           </ul>
@@ -144,40 +158,18 @@ export function LiveScore() {
   );
 }
 
-function Beam({ beam, order, into, room, clock }: { beam: LiveBeam; order: number; into: number; room: number; clock: string }) {
-  const state = stateAt(beam, into);
-  return (
-    <div
-      className={`${styles.beam} ${styles[state]}`}
-      style={vars({ "--s": beam.start, "--e": beam.end, "--room": room, "--row": beam.row, "--n": order })}
-    >
-      <span className={styles.label}>
-        {beam.title}
-        {beam.progress && (
-          <span className={styles.count}>
-            {beam.progress.done}/{beam.progress.total}
-          </span>
-        )}
-        <span className={styles.clock}>{clock}</span>
-      </span>
-      <Glyph type="task" state={state} className={styles.glyph} />
-    </div>
-  );
-}
-
-/** The loop's drop: a dashed verdigris ghost with its time, which then settles as a planned beam. */
-function Landing({ clockFrom, clockTo }: { clockFrom: string; clockTo: string }) {
-  const place = vars({ "--s": LANDING.start, "--e": LANDING.end, "--row": 0, "--room": LANDING.end - LANDING.start });
+/** The loop's drop: a dashed verdigris ghost with its time, which then settles as a planned block. */
+function Landing({ hour, clock, scale }: { hour: number; clock: Clock; scale: ReturnType<typeof scaleOf> }) {
+  const start = axisMinutes(LANDING.start, hour);
+  const end = axisMinutes(LANDING.end, hour);
+  const [packed] = packSample([{ id: LANDING.title, title: LANDING.title, start, end }], scale);
+  const place = { top: packed.top, height: packed.height };
   return (
     <>
-      <div className={`${styles.beam} ${styles.ghost}`} style={place}>
-        <span className={`${styles.ghostTip} tabular`}>
-          {clockFrom} to {clockTo}
-        </span>
+      <div className={`${styles.ghost} tabular`} style={place}>
+        {formatMinutes(start, clock)} to {formatMinutes(end, clock)}
       </div>
-      <div className={`${styles.beam} ${styles.planned} ${styles.landed}`} style={place}>
-        <Glyph type="task" state="planned" className={styles.glyph} />
-      </div>
+      <MiniBlock block={packed} clock={clock} area={LIVE_AREAS[LANDING.area]} state="planned" className={styles.landed} />
     </>
   );
 }
@@ -193,7 +185,7 @@ export function LineKey() {
       {entries.map((e) => (
         <div key={e.state} className="flex items-center gap-2.5">
           <dt className="flex items-center gap-2.5">
-            <Glyph type="task" state={e.state} />
+            <span className={`${styles.keyMark} ${styles[e.state]}`} aria-hidden="true" />
             <span className="font-medium text-ink">{e.word}</span>
           </dt>
           <dd className="text-ink-2">{e.meaning}</dd>

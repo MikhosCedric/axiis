@@ -2,6 +2,7 @@
  * The run: a stage that holds still (sticky) while the reader scrolls through a run three screens tall,
  * and a named view timeline over that run. Every moving part below reads the timeline's `contain` range,
  * which is exactly the stretch the stage is held, so 0% is seven in the morning and 100% eleven at night.
+ * The day is the app's time grid: hours down a gutter, blocks tinted by area, now crossing from the top.
  */
 .run {
   position: relative;
@@ -75,24 +76,27 @@
 }
 
 .score {
-  --lw: 88px;
-  --row: 60px;
-  display: flex;
-  border-block: 1px solid var(--rule);
+  max-width: 64rem;
+  --gut: 56px;
+  --hour: 52px;
+  --win: 340px;
+  border: 1px solid var(--rule);
+  border-radius: 6px;
+  background: var(--sheet);
   font-size: 13px;
+  overflow: clip;
 }
 
 @media (min-width: 640px) {
   .score {
-    --lw: 120px;
-    --row: 68px;
+    --gut: 64px;
+    --hour: 56px;
   }
 }
 
 @media (min-width: 1600px) {
   .score {
-    --lw: 168px;
-    --row: 76px;
+    --hour: 64px;
     font-size: 14px;
   }
 }
@@ -123,179 +127,208 @@
   color: var(--ink-2);
 }
 
-.keyGlyph {
-  width: 44px;
+.keyMark {
+  display: inline-block;
+  width: 28px;
+  color: var(--ink);
 }
 
-.names {
-  display: flex;
-  flex: none;
-  flex-direction: column;
-  width: var(--lw);
-  border-right: 1px solid var(--rule);
+.key_planned {
+  height: 2.5px;
+  background: repeating-linear-gradient(to right, currentColor 0 3.5px, transparent 3.5px 5.5px);
 }
 
-.axisGap {
-  height: 34px;
-  border-bottom: 1px solid var(--rule);
+.key_live {
+  height: 3.5px;
+  border-radius: 2px;
+  background: var(--accent);
 }
 
-.name {
-  display: flex;
-  align-items: center;
-  height: var(--row);
-  border-bottom: 1px solid var(--rule);
-  padding-inline: 12px;
-  font-family: var(--font-display);
-  font-size: clamp(15px, 0.8rem + 0.4vw, 23px);
-  font-weight: 500;
-}
-
-.name:last-child {
-  border-bottom: 0;
+.key_done {
+  height: 9px;
+  border: 1.5px solid var(--ink-3);
+  border-radius: 4px;
 }
 
 .window {
   position: relative;
-  flex: 1;
-  min-width: 0;
+  height: var(--win);
   overflow: clip;
 }
 
-/* An hour is the window's share of the day, but never under 84px; a narrow window follows now instead. */
+/* The track is the whole day; the window shows a stretch of it and, in the run, follows now down it. */
 .track {
-  --hour: max(84px, (100cqw - var(--lw)) / var(--span));
   position: relative;
-  width: calc(var(--span) * var(--hour));
-  transform: translateX(calc(min(0px, 100cqw - var(--lw) - 100%) * var(--p)));
-}
-
-.axis {
-  position: relative;
-  height: 34px;
-  border-bottom: 1px solid var(--rule);
+  height: calc(var(--span) * var(--hour));
+  transform: translateY(calc(min(0px, var(--win) - 100%) * var(--p)));
 }
 
 .tick {
   position: absolute;
-  inset-block: 0;
-  left: calc(var(--h) * var(--hour));
-  border-left: 1px solid var(--rule);
-  padding: 10px 0 0 6px;
-  white-space: nowrap;
-  font-size: 12px;
+  left: 0;
+  width: var(--gut);
+  top: calc(var(--h) * var(--hour));
+  padding-right: 8px;
+  translate: 0 -50%;
+  text-align: right;
+  font-size: 11px;
   line-height: 1;
   font-weight: 500;
   color: var(--ink-3);
 }
 
-.staff {
-  position: relative;
-  height: var(--row);
-  border-bottom: 1px solid var(--rule);
-  background:
-    repeating-linear-gradient(to bottom, var(--rule-soft) 0 1px, transparent 1px 6px) left bottom 6px / 100% 25px no-repeat,
-    linear-gradient(to right, var(--rule-soft) 1px, transparent 1px) 0 0 / var(--hour) 100%;
-}
-
-.staff:last-child {
-  border-bottom: 0;
-}
-
-.beam {
+.day {
   position: absolute;
-  bottom: 6px;
-  height: 25px;
-  left: calc(var(--s) * var(--hour));
-  width: calc((var(--e) - var(--s)) * var(--hour));
+  inset: 0 0 0 var(--gut);
+  border-left: 1px solid var(--rule-soft);
+  background-image:
+    linear-gradient(to bottom, var(--rule-soft) 0 1px, transparent 1px),
+    linear-gradient(to bottom, color-mix(in srgb, var(--rule-soft) 45%, transparent) 0 1px, transparent 1px);
+  background-size:
+    100% var(--hour),
+    100% var(--hour);
+  background-position:
+    0 -1px,
+    0 calc(var(--hour) / 2 - 1px);
 }
 
-.glyph,
-.liveOut {
+.block {
+  --wash: light-dark(color-mix(in srgb, var(--tint) 17%, var(--sheet)), color-mix(in srgb, var(--tint) 30%, var(--sheet)));
   position: absolute;
-  left: -6px;
-  right: 0;
-  top: 4.5px;
-}
-
-.beam .glyph {
-  width: auto;
-}
-
-.liveOut .glyph {
-  inset: 0;
-  top: 0;
-  left: 0;
-}
-
-.label {
-  position: absolute;
-  left: -6px;
-  bottom: calc(100% + 1px);
-  white-space: nowrap;
-  line-height: 20px;
-  font-weight: 500;
+  z-index: 1;
+  top: calc(var(--s) * var(--hour));
+  height: max(22px, calc((var(--e) - var(--s)) * var(--hour)));
+  overflow: hidden;
+  border-radius: 6px;
+  background: var(--wash);
+  box-shadow: 0 0 0 1px var(--sheet);
   color: var(--ink);
-  text-shadow:
-    0 0 2px var(--paper),
-    0 0 4px var(--paper),
-    0 0 6px var(--paper);
+}
+
+.words {
+  display: block;
+  padding: 3px 6px 3px 25px;
+  font-size: 12.5px;
+  line-height: 16px;
+}
+
+.block[data-short] .words {
+  overflow: hidden;
+  padding-block: 4px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.title {
+  font-weight: 600;
 }
 
 .clock {
-  font-size: 0.92em;
-  font-weight: 400;
   font-variant-numeric: tabular-nums;
-  color: var(--ink-3);
+  color: color-mix(in srgb, var(--ink) 78%, var(--wash));
 }
 
 @media (max-width: 639px) {
-  .clock {
+  .block[data-short] .clock {
     display: none;
   }
 }
 
-/* The still moment: each beam shows its one line form. */
+/* A mark, as in the app's blocks: dashed planned, solid live, hollow done. They sit in one place and fade over each other. */
+.mark,
+.liveOut {
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  color: color-mix(in srgb, var(--tint) 55%, var(--ink));
+}
+
+.mark i {
+  display: block;
+  width: 12px;
+}
+
+.planned i {
+  height: 2.5px;
+  background: repeating-linear-gradient(to right, currentColor 0 3.5px, transparent 3.5px 5.5px);
+}
+
+.liveIn {
+  height: 3.5px;
+  border-radius: 2px;
+  background: var(--accent);
+}
+
+.done i {
+  height: 8px;
+  border: 1.5px solid currentColor;
+  border-radius: 4px;
+}
+
+/* Over the block once it is over: the app fades a done block. */
+.veil {
+  position: absolute;
+  inset: 0;
+  background: color-mix(in srgb, var(--sheet) 55%, transparent);
+  opacity: 0;
+}
+
+/* The still moment: each block shows its one line form. */
 .planned,
 .done,
 .liveIn {
   opacity: 0;
 }
 
-.beam[data-still="planned"] .planned,
-.beam[data-still="done"] .done,
-.beam[data-still="live"] .liveIn {
+.block[data-still="planned"] .planned,
+.block[data-still="done"] .done,
+.block[data-still="live"] .liveIn {
   opacity: 1;
+}
+
+.block[data-still="done"] .veil {
+  opacity: 1;
+}
+
+.block[data-still="done"] .title {
+  font-weight: 500;
+  text-decoration: line-through;
+  text-decoration-color: color-mix(in srgb, var(--ink) 45%, transparent);
 }
 
 .now {
   position: absolute;
   inset: 0;
-  z-index: 2;
+  z-index: 0;
   pointer-events: none;
-  transform: translateX(calc(var(--p) * 100%));
+  transform: translateY(calc(var(--p) * 100%));
 }
 
 .line {
   position: absolute;
-  top: 34px;
-  bottom: 0;
-  left: -1px;
-  width: 2px;
+  top: -1px;
+  left: calc(var(--gut) - 1px);
+  right: 0;
+  height: 2px;
   background: var(--accent);
 }
 
 .flag {
   position: absolute;
-  top: 6px;
-  left: 0;
+  z-index: 2;
+  top: -10px;
+  left: 4px;
+  width: calc(var(--gut) - 10px);
   height: 20px;
   overflow: clip;
-  transform: translateX(-50%);
   border-radius: 4px;
   background: var(--accent);
-  padding-inline: 6px;
-  font-size: 12px;
+  text-align: center;
+  font-size: 11.5px;
   line-height: 20px;
   font-weight: 600;
   white-space: nowrap;
@@ -325,7 +358,7 @@
       view-timeline: --run block;
     }
 
-    /* Held under the header, with its staves taller on a taller window, so the stage fills the screen. */
+    /* Held under the header, with its window taller on a taller screen, so the stage fills it. */
     .stage {
       position: sticky;
       top: 76px;
@@ -335,7 +368,7 @@
     }
 
     .score {
-      --row: clamp(60px, (100svh - 560px) / 4, 116px);
+      --win: clamp(300px, calc(100svh - 76px - 330px), 720px);
     }
 
     .track {
@@ -380,6 +413,19 @@
       animation-range: contain var(--b) contain var(--b2);
     }
 
+    .veil,
+    .block[data-still="done"] .veil {
+      opacity: 0;
+      animation: fade-in linear both;
+      animation-timeline: --run;
+      animation-range: contain var(--b) contain var(--b2);
+    }
+
+    .block[data-still="done"] .title {
+      font-weight: 600;
+      text-decoration: none;
+    }
+
     .phase > span,
     .phase[data-still] > span {
       opacity: 1;
@@ -401,19 +447,19 @@
 
 @keyframes camera {
   from {
-    transform: translateX(0);
+    transform: translateY(0);
   }
   to {
-    transform: translateX(min(0px, 100cqw - var(--lw) - 100%));
+    transform: translateY(min(0px, var(--win) - 100%));
   }
 }
 
 @keyframes now-runs {
   from {
-    transform: translateX(0);
+    transform: translateY(0);
   }
   to {
-    transform: translateX(100%);
+    transform: translateY(100%);
   }
 }
 

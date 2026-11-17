@@ -1,49 +1,32 @@
+import type { AreaColor } from "@/domain/area-color";
+
 /**
  * The day the landing runs through as the reader scrolls "How it works": a fixed day of made-up items
- * on wall-clock hours, from seven in the morning to eleven at night. Scrolling the stage carries now
- * across it, so each beam turns from dashed to solid to hollow at the share of the scroll its hour sits at.
+ * on wall-clock hours, from seven in the morning to eleven at night, drawn on the time grid. Scrolling the
+ * stage carries now down it, so each block turns from dashed to solid to hollow at the share of the scroll
+ * its hour sits at.
  */
-export type RunBeam = { title: string; start: number; end: number };
-
-export type RunStaff = { name: string; beams: RunBeam[] };
+export type RunBlock = { title: string; start: number; end: number; area: "Work" | "Home" | "Health" | "Errands" };
 
 export const RUN_AXIS = { from: 7, to: 23 } as const;
 
+export const RUN_AREAS: Record<RunBlock["area"], AreaColor> = { Work: "indigo", Home: "ochre", Health: "sage", Errands: "plum" };
+
 /** Made-up items. Nothing here describes a real person. */
-export const RUN_STAVES: RunStaff[] = [
-  {
-    name: "Work",
-    beams: [
-      { title: "Write the plan", start: 9, end: 10.5 },
-      { title: "Design review", start: 11, end: 12 },
-      { title: "Reply to the venue", start: 14.25, end: 15 },
-      { title: "Plan next week", start: 16.25, end: 17.5 },
-    ],
-  },
-  {
-    name: "Home",
-    beams: [
-      { title: "Call the landlord", start: 12.5, end: 13 },
-      { title: "Groceries", start: 18, end: 18.75 },
-      { title: "Cook dinner", start: 19.5, end: 20.5 },
-    ],
-  },
-  {
-    name: "Health",
-    beams: [
-      { title: "Easy run", start: 7.5, end: 8.25 },
-      { title: "Physio exercises", start: 13.25, end: 13.75 },
-      { title: "Yoga class", start: 20.75, end: 21.75 },
-    ],
-  },
-  {
-    name: "Errands",
-    beams: [
-      { title: "Pick up the parcel", start: 10.25, end: 10.75 },
-      { title: "Pharmacy", start: 15.5, end: 16 },
-      { title: "Post the letter", start: 17.75, end: 18.25 },
-    ],
-  },
+export const RUN_BLOCKS: RunBlock[] = [
+  { title: "Easy run", start: 7.5, end: 8.25, area: "Health" },
+  { title: "Write the plan", start: 9, end: 10.5, area: "Work" },
+  { title: "Pick up the parcel", start: 10.25, end: 10.75, area: "Errands" },
+  { title: "Design review", start: 11, end: 12, area: "Work" },
+  { title: "Call the landlord", start: 12.5, end: 13, area: "Home" },
+  { title: "Physio exercises", start: 13.25, end: 13.75, area: "Health" },
+  { title: "Reply to the venue", start: 14.25, end: 15, area: "Work" },
+  { title: "Pharmacy", start: 15.5, end: 16, area: "Errands" },
+  { title: "Plan next week", start: 16.25, end: 17.5, area: "Work" },
+  { title: "Post the letter", start: 17.75, end: 18.25, area: "Errands" },
+  { title: "Groceries", start: 18, end: 18.75, area: "Home" },
+  { title: "Cook dinner", start: 19.5, end: 20.5, area: "Home" },
+  { title: "Yoga class", start: 20.75, end: 21.75, area: "Health" },
 ];
 
 export const PHASES = [

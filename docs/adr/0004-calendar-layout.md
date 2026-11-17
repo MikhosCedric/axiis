@@ -45,7 +45,7 @@ Match Google Calendar unless `PRODUCT.md` forbids it.
 - **Grid or List.** The Day keeps one switch, Grid and List (`?view=list`). The List is the day as a plain agenda: it reads better than a grid on a day of mostly any-time tasks, and it carries inline rename, the swipes and the Done fold. The Week has no list form.
 - **What stayed Axiis.** Next up, Focus (it dims the grid to what is happening now and leaves only Next up beside it), the at-a-glance line, what is left over from earlier days (a quiet strip beside today, never a count in colour), and the week's pulse.
 - **Hidden areas say so.** Every page that can be narrowed shows "2 areas hidden" with Show all under its summary (`HiddenAreasNote`).
-- **Retired.** The horizontal Score and the week's seven lists, with their drag hooks, styles and harness pages. The landing page and its film still draw a Score of their own (`src/features/landing/`); redoing them is a later task. The placement command and its snapping helpers still live in `src/features/score/`.
+- **Retired.** The horizontal Score and the week's seven lists, with their drag hooks, styles and harness pages. The landing page now draws the grid too (`src/features/landing/mini-grid.tsx`); its film still shows the Score and is off the page until it is re-recorded. The placement command and its snapping helpers still live in `src/features/score/`.
 
 ## Consequences
 

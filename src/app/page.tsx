@@ -25,7 +25,6 @@ import { DoneDemo } from "@/features/landing/done-demo";
 import { DragDemo } from "@/features/landing/drag-demo";
 import { HeroDrift, Seam } from "@/features/landing/drift";
 import { FocusDemo } from "@/features/landing/focus-demo";
-import { Film } from "@/features/landing/film";
 import { HeroFloaters } from "@/features/landing/floaters";
 import { LiveScore } from "@/features/landing/live-score";
 import { MonthDemo } from "@/features/landing/month-demo";
@@ -60,24 +59,29 @@ const BUBBLES: Record<string, string>[] = [
 
 /** Everything here ships today, each in a few words. Nothing is promised that is not built. */
 const NOW = [
-  "Capture in plain English",
+  "Capture in plain English: next week, 20 dec, 9am for 30m #tag",
   "A time grid for the day and the week, with a line for now",
-  "Drag to plan, or use the keys",
-  "List, Week and Month views",
+  "A side panel with Create, a small month and areas to show or hide",
+  "Drag a block, pull its edge, or move it with Alt and the arrows",
+  "Day, Week and Month, each one click away",
   "An Inbox for what is unplanned",
   "Due dates, kept apart",
   "Open items from earlier days",
   "Focus and Next up",
-  "Subtasks",
-  "Repeating tasks",
+  "Subtasks, in the order you set",
+  "Repeating tasks, down to every second Tuesday",
+  "Manual order for subtasks, lines and lists",
+  "Done, a page of what you finished",
   "Checklists in Lists",
   "Notes linked to tasks, and search",
   "Tags with a page each",
   "Twelve muted colours for areas and tags",
-  "A command palette on Ctrl or Cmd K",
+  "A command palette on Ctrl or Cmd K, and a Guide on every page",
   "G then a letter to jump",
   "12-hour or 24-hour clock",
   "Light and dark, compact density",
+  "Capture keeps working offline",
+  "A Windows app, with a list in the tray",
   "Installs from the browser as an app",
   "Export it all, or delete with 14 days to change your mind",
 ];
@@ -97,12 +101,12 @@ const TALLIES = [
 const KEYS: Record<Section["id"], readonly (readonly [keys: readonly string[], does: string])[]> = {
   capture: [[["Enter"], "says where the line lands"]],
   drag: [
-    [["←", "→"], "a quarter hour"],
-    [["Shift", "← →"], "moves its end"],
+    [["Alt", "↑ ↓"], "a quarter hour"],
+    [["Shift", "↑ ↓"], "moves its end"],
     [["Esc"], "lets go of a drag"],
   ],
   done: [[["Space"], "ticks it done, or back"]],
-  focus: [[["Enter"], "folds the day, or opens the fold"]],
+  focus: [[["Enter"], "dims the day to what is on now"]],
   month: [
     [["←", "→", "↑", "↓"], "a day or a week"],
     [["Home", "End"], "the week's ends"],
@@ -156,7 +160,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ a
             </h1>
             <div className={styles.heroFoot}>
               <p className={styles.lead}>
-                Every part of your life on one hour axis. The whole day, at a glance.
+                Hours down the page, every task in its place and a line for now. The whole day, at a glance.
               </p>
               <div>
                 <div className="flex flex-wrap items-center gap-3">
@@ -212,20 +216,20 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ a
               </div>
               <div className={`${siteWrap} ${styles.movements}`}>
                 <Movement section={capture} title="Write it the way you would say it." demo={<CaptureDemo />}>
-                  A day, a time, a length and <span className="font-medium text-ink">#tags</span> are read from your
-                  words. Leave the day out and it waits in the Inbox.
+                  A day, a time, a length, a repeat and <span className="font-medium text-ink">#tags</span> are read from
+                  your words. Leave the day out and it waits in the Inbox.
                 </Movement>
 
-                <Movement section={drag} title="Drag it onto a line." demo={<DragDemo />}>
-                  Where you let go is when it starts. Pull the right end for how long.
+                <Movement section={drag} title="Drag it onto the day." demo={<DragDemo />}>
+                  Where you let go is when it starts. Pull the bottom edge for how long.
                 </Movement>
 
-                <Movement section={done} title="Done is a hollow line." demo={<DoneDemo />}>
-                  Dashed is planned, solid is now, hollow is done. Nothing turns red when a day runs late.
+                <Movement section={done} title="Done is a hollow mark." demo={<DoneDemo />}>
+                  In each block, dashed is planned, solid is now and hollow is done. Nothing turns red when a day runs late.
                 </Movement>
 
-                <Movement section={focus} title="Fold the day to what is next." demo={<FocusDemo />}>
-                  Focus keeps what is happening and the next three, and folds the rest behind one line.
+                <Movement section={focus} title="Dim the day to what is next." demo={<FocusDemo />}>
+                  Focus keeps what is happening in colour, dims the rest, and lists the next three beside it.
                 </Movement>
 
                 <Movement
@@ -233,34 +237,26 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ a
                   title="Step back to the month."
                   demo={<MonthDemo days={monthGrid(month)} month={month} title={formatMonthHeading(month)} />}
                 >
-                  The Week and the Month show the same items further out.
+                  The Week and the Month show the same items further out, and the side panel is how you move between them.
                 </Movement>
               </div>
             </div>
           </div>
         </section>
 
-        <section className={styles.filmSection} aria-labelledby="film-title">
-          <div className={`${siteWrap} ${styles.filmGrid}`}>
-            <div className={styles.filmText}>
-              <Rise as="h2" id="film-title" className={styles.heading} text="A day, start to finish" />
-              <p className={`${styles.storyLead} ${styles.reveal}`} data-reveal="">
-                Write it down, drop it on the day, watch the line reach it, and finish it.
-              </p>
-              <p className={`${styles.filmNote} ${styles.reveal}`} data-reveal="">
-                Axiis also runs on Windows, with a list in the tray and a reminder before each timed item.{" "}
-                <a
-                  href="https://github.com/MikhosCedric/axiis/releases/latest"
-                  className={`text-ink underline decoration-(--rule) underline-offset-4 ${drawnLink}`}
-                >
-                  Get Axiis for Windows
-                </a>
-                .
-              </p>
-            </div>
-            <div className={`${styles.filmFrame} ${styles.reveal}`} data-reveal="">
-              <Film />
-            </div>
+        <section className={`${siteWrap} ${styles.deskSection}`} aria-labelledby="desk-title">
+          <div className={styles.deskText}>
+            <Rise as="h2" id="desk-title" className={styles.heading} text="Also on Windows" />
+            <p className={`${styles.deskNote} ${styles.reveal}`} data-reveal="">
+              Axiis runs on Windows too, with a list in the tray and a reminder before each timed item.{" "}
+              <a
+                href="https://github.com/MikhosCedric/axiis/releases/latest"
+                className={`text-ink underline decoration-(--rule) underline-offset-4 ${drawnLink}`}
+              >
+                Get Axiis for Windows
+              </a>
+              .
+            </p>
           </div>
         </section>
 
