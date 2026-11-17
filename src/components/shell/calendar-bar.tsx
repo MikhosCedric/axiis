@@ -314,7 +314,7 @@ function DateJump({
           if (opening) panel.current?.querySelector<HTMLElement>("[data-autofocus]")?.focus();
           else if (document.activeElement === document.body || panel.current?.contains(document.activeElement)) trigger.current?.focus();
         }}
-        className="inset-auto m-0 w-[min(264px,calc(100vw-32px))] rounded-lg border border-rule bg-sheet p-3 text-ink shadow-float [--ground:var(--sheet)]"
+        className="inset-auto m-0 w-[min(264px,calc(100vw-32px))] rounded-lg border border-rule bg-sheet p-3 text-ink shadow-float [--ground:var(--sheet)] motion-safe:animate-pop-in"
       >
         <MiniMonth today={today} anchor={anchor} from={from} to={to} hrefFor={hrefFor} onGo={close} autoFocus />
         <form onSubmit={onSubmit} className="mt-3 flex items-end gap-2 border-t border-rule-soft pt-3">

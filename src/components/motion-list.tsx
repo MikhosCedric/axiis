@@ -8,7 +8,7 @@ const EXIT = "cubic-bezier(0.4, 0, 1, 1)";
 
 /** The key a row is known by across renders: the item it draws (`data-quick`, on it or inside it). */
 function keyOf(el: Element): string | null {
-  return (el as HTMLElement).dataset?.quick ?? el.querySelector<HTMLElement>("[data-quick]")?.dataset.quick ?? null;
+  return (el as HTMLElement).dataset?.motion ?? (el as HTMLElement).dataset?.quick ?? el.querySelector<HTMLElement>("[data-quick]")?.dataset.quick ?? null;
 }
 
 const still = () => window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -68,6 +68,9 @@ export function MotionList({ ref: outer, className = "", ...rest }: HTMLAttribut
           const ghost = node.cloneNode(true) as HTMLElement;
           ghost.dataset.ghost = "";
           ghost.setAttribute("aria-hidden", "true");
+          // A picture of the row: it takes no focus and no pointer while it fades.
+          ghost.inert = true;
+          delete ghost.dataset.motion;
           ghost.removeAttribute("data-quick");
           for (const inner of ghost.querySelectorAll("[data-quick]")) inner.removeAttribute("data-quick");
           Object.assign(ghost.style, {

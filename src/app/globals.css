@@ -127,8 +127,12 @@
   /* Leaving goes faster than arriving; the spring is only for something let go under a hand. */
   --ease-exit: cubic-bezier(0.4, 0, 1, 1);
   --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  /* A drop: one small, quiet overshoot (about 3%) for a thing set down by a hand. Never on a page, text or a time reading. */
+  --ease-drop: cubic-bezier(0.3, 1.12, 0.5, 1);
+  /* The motion scale, one place to tune. Quick: an exit or feedback. Settle: a popover, a state change. Travel: a sheet, a panel, an item crossing the page. */
   --dur-quick: 120ms;
   --dur-settle: 200ms;
+  --dur-travel: 320ms;
   --dur-spring: 360ms;
   --breakpoint-rail: 760px;
   --shadow-float: var(--float);
@@ -142,14 +146,31 @@
    * The detail panel arriving: from the right beside the page, from below when it stacks under it.
    * Movement only, no fade, so its text is never measured half-transparent (axe reads opacity).
    */
-  --animate-panel-in: panel-in 320ms cubic-bezier(0.16, 1, 0.3, 1) both;
-  --animate-panel-rise: panel-rise 320ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  --animate-panel-in: panel-in var(--dur-travel) var(--ease-axiis) both;
+  --animate-panel-rise: panel-rise var(--dur-travel) var(--ease-axiis) both;
 
-  /* A popover or menu arriving: a 4px rise and a fade, on the house curve. */
-  --animate-pop-in: pop-in var(--dur-settle) cubic-bezier(0.16, 1, 0.3, 1) both;
+  /* A popover or menu arriving: a 4px rise, a 3% scale from its anchor and a fade, on the house curve. */
+  --animate-pop-in: pop-in var(--dur-settle) var(--ease-axiis) both;
+  /* A note rising in (the Undo toast); its leaving is `toast-out`. */
+  --animate-toast-in: toast-in var(--dur-settle) var(--ease-axiis) both;
+  --animate-toast-out: toast-out var(--dur-quick) var(--ease-exit) both;
 
   @keyframes pop-in {
     from {
+      opacity: 0;
+      transform: translateY(4px) scale(0.97);
+    }
+  }
+
+  @keyframes toast-in {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+  }
+
+  @keyframes toast-out {
+    to {
       opacity: 0;
       transform: translateY(4px);
     }
@@ -613,6 +634,30 @@
   animation:
     220ms ease-out 80ms both vt-fade,
     360ms cubic-bezier(0.16, 1, 0.3, 1) 80ms both vt-rise;
+}
+
+/* The detail panel closing: it slides 16px toward the edge it came from while it fades, and the page widens behind it. */
+::view-transition-old(.aside-out) {
+  animation: var(--dur-quick) var(--ease-exit) both vt-aside-out;
+}
+
+@keyframes vt-aside-out {
+  to {
+    opacity: 0;
+    transform: translateX(16px);
+  }
+}
+
+/* A card clearing (Left over, Plan your day): it fades and drops 4px where it stood. */
+::view-transition-old(.card-out) {
+  animation: var(--dur-quick) var(--ease-exit) both vt-card-out;
+}
+
+@keyframes vt-card-out {
+  to {
+    opacity: 0;
+    transform: translateY(4px);
+  }
 }
 
 /*

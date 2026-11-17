@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, type ReactNode } from "react";
+import { useEffect, useRef, ViewTransition, type ReactNode } from "react";
 import { isTypingTarget } from "@/features/day/nav";
 import { useItemSelection } from "./use-item-selection";
 
@@ -64,7 +64,9 @@ export function DetailAside({ pending, children }: { pending: boolean; children:
     [],
   );
 
+  // Closing is a navigation, so React can run the panel's exit: it slides out and fades (globals.css, `aside-out`). Arriving is its own CSS animation.
   return (
+    <ViewTransition enter="none" exit="aside-out" default="none">
     <aside
       ref={ref}
       tabIndex={-1}
@@ -79,5 +81,6 @@ export function DetailAside({ pending, children }: { pending: boolean; children:
         </div>
       </div>
     </aside>
+    </ViewTransition>
   );
 }

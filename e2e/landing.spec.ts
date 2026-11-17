@@ -2,6 +2,9 @@ import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Locator, type Page } from "@playwright/test";
 import { hydrated } from "./session";
 
+// The landing is the one page that moves for its own sake, so its specs run with motion on; the reduced form has its own describe below.
+test.use({ reducedMotion: "no-preference" });
+
 /** Console errors and page errors seen while a test runs; each test asserts there were none. */
 function watchErrors(page: Page): string[] {
   const errors: string[] = [];

@@ -51,6 +51,19 @@ export function UndoToast({ note, onDone }: { note: UndoNote | null; onDone: () 
     undo();
   }
 
+  // The note stays drawn for the moment it takes to fade out, so it leaves rather than vanishes.
+  const [last, setLast] = useState<UndoNote | null>(note);
+  if (note && note !== last) setLast(note);
+  useEffect(() => {
+    if (note) return;
+    // Under reduced motion it does not fade, so it is gone at once rather than lingering as a picture of itself.
+    const still = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const gone = window.setTimeout(() => setLast(null), still ? 0 : 140);
+    return () => window.clearTimeout(gone);
+  }, [note]);
+  const shown = note ?? last;
+  const out = !note && !!shown;
+
   // The status stays mounted with nothing in it, so a screen reader hears each new note; Undo sits beside it, not in it.
   return (
     <div className="pointer-events-none fixed inset-x-0 bottom-[calc(4.75rem+env(safe-area-inset-bottom))] z-40 flex justify-center px-4 rail:bottom-6 rail:left-[216px]">
@@ -62,20 +75,23 @@ export function UndoToast({ note, onDone }: { note: UndoNote | null; onDone: () 
         onBlur={(e) => {
           if (!e.currentTarget.contains(e.relatedTarget)) setHeld(false);
         }}
+        // Leaving, the note is a picture of itself: it takes no pointer, no focus and is not read again.
+        inert={out}
+        aria-hidden={out || undefined}
         className={
-          note
-            ? "pointer-events-auto flex max-w-[min(34rem,calc(100vw-2rem))] items-center gap-3 rounded-lg border border-rule bg-sheet py-1.5 pr-1.5 pl-4 text-ink shadow-float motion-safe:animate-panel-rise"
+          shown
+            ? `${out ? "pointer-events-none motion-safe:animate-toast-out" : "pointer-events-auto motion-safe:animate-toast-in"} flex max-w-[min(34rem,calc(100vw-2rem))] items-center gap-3 rounded-lg border border-rule bg-sheet py-1.5 pr-1.5 pl-4 text-ink shadow-float`
             : "sr-only"
         }
       >
         <p role="status" className="min-w-0 py-1.5">
-          {note?.text}
+          {shown?.text}
         </p>
-        {note?.undo && (
+        {shown?.undo && (
           <button
             type="button"
             aria-keyshortcuts="Control+Z Meta+Z"
-            onClick={() => run(note.undo!)}
+            onClick={() => shown.undo && run(shown.undo)}
             className="ml-auto h-9 flex-none rounded-md px-3 font-medium text-ink underline decoration-rule underline-offset-3 hover:bg-hover active:bg-press pointer-coarse:h-11"
           >
             Undo

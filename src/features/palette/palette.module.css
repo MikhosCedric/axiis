@@ -35,24 +35,46 @@
 }
 
 @media (prefers-reduced-motion: no-preference) {
+  .dialog {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.985);
+    transition:
+      opacity var(--dur-quick) var(--ease-exit),
+      transform var(--dur-quick) var(--ease-exit),
+      overlay var(--dur-quick) allow-discrete,
+      display var(--dur-quick) allow-discrete;
+  }
+
   .dialog[open] {
-    animation: rise 200ms cubic-bezier(0.16, 1, 0.3, 1);
+    opacity: 1;
+    transform: none;
+    transition-duration: var(--dur-settle);
+    transition-timing-function: var(--ease-axiis);
+  }
+
+  @starting-style {
+    .dialog[open] {
+      opacity: 0;
+      transform: translateY(-8px) scale(0.985);
+    }
+  }
+
+  .dialog::backdrop {
+    opacity: 0;
+    transition:
+      opacity var(--dur-quick) var(--ease-exit),
+      overlay var(--dur-quick) allow-discrete,
+      display var(--dur-quick) allow-discrete;
   }
 
   .dialog[open]::backdrop {
-    animation: fade 200ms ease-out;
+    opacity: 1;
+    transition-duration: var(--dur-settle);
   }
-}
 
-@keyframes rise {
-  from {
-    opacity: 0;
-    transform: translateY(-8px) scale(0.985);
-  }
-}
-
-@keyframes fade {
-  from {
-    opacity: 0;
+  @starting-style {
+    .dialog[open]::backdrop {
+      opacity: 0;
+    }
   }
 }

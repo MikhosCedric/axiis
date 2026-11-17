@@ -1,6 +1,6 @@
 "use client";
 
-import { useTransition } from "react";
+import { useTransition, ViewTransition } from "react";
 import { planAction } from "@/features/inbox/actions";
 import type { ActionResult } from "@/features/today/commands";
 import { Glyph } from "@/features/today/glyph";
@@ -45,7 +45,8 @@ export function PlanDayStrip({
   }
 
   return (
-    <section aria-labelledby="plan-day-h" className="surface side-part mb-5 max-w-[720px] px-4 py-3.5">
+    <ViewTransition enter="none" exit="card-out" default="none">
+    <section aria-labelledby="plan-day-h" className="surface side-part mb-5 max-w-[720px] px-4 py-3.5 motion-safe:animate-toast-in">
       <h2 id="plan-day-h" className="font-display text-lg leading-tight font-medium">
         Plan your day
       </h2>
@@ -65,5 +66,6 @@ export function PlanDayStrip({
       </ul>
       {total > rows.length && <p className="mt-1 text-xs text-ink-3">And {total - rows.length} more in the Inbox.</p>}
     </section>
+    </ViewTransition>
   );
 }

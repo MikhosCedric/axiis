@@ -26,6 +26,7 @@ import type { Box } from "@/lib/placement";
 import styles from "./calendar.module.css";
 import { DEFAULT_MINUTES, keyPlacement, toAnyTime, wallSpan, type KeyContext, type Placement, type Slot } from "./grid-drop";
 import { blockBox, DAY_MINUTES, emptyDayRange, fitHourPx, gridHeight, layoutGrid, openMinute, rangeSpans, scaleOf, segmentOn, visibleRange, yAt, type Block, type CalendarMode } from "./grid-layout";
+import { useItemMotion } from "./item-motion";
 import { QuickCreate } from "./quick-create";
 import { useGridDrag, type DragPreview } from "./use-grid-drag";
 
@@ -192,6 +193,7 @@ export function CalendarGrid({
     },
     setPreview,
   );
+  useItemMotion({ scroller, days, mode, busy: preview !== null });
 
   // Open on now, or on the morning of a day that is not today. Again when the days shown change.
   const span = days.join();
@@ -732,8 +734,8 @@ export function CalendarGrid({
               {ghostOn(col.date)}
               {nowAt?.day === i && (
                 <>
-                  <div className={styles.now} data-now aria-hidden="true" style={{ top: nowAt.top }} />
-                  <div className={styles.nowDot} aria-hidden="true" style={{ top: nowAt.top }} />
+                  <div className={styles.now} data-now aria-hidden="true" style={{ translate: `0 ${nowAt.top}px` }} />
+                  <div className={styles.nowDot} aria-hidden="true" style={{ translate: `0 ${nowAt.top}px` }} />
                 </>
               )}
             </div>

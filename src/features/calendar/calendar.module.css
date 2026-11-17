@@ -156,6 +156,7 @@
   left: 0;
   right: 0;
   /* Under the blocks, so it never strikes through a title; the block it crosses wears the live mark. */
+  top: 0;
   z-index: 0;
   height: 2px;
   margin-top: -1px;
@@ -165,6 +166,7 @@
 
 .nowDot {
   position: absolute;
+  top: 0;
   left: -1px;
   z-index: 3;
   width: 10px;
@@ -409,8 +411,26 @@
   .block,
   .chip {
     transition:
-      background-color 120ms cubic-bezier(0.16, 1, 0.3, 1),
-      opacity 120ms cubic-bezier(0.16, 1, 0.3, 1);
+      background-color var(--dur-settle) var(--ease-axiis),
+      opacity var(--dur-settle) var(--ease-axiis);
+  }
+
+  /* The state mark turns from a dashed line into a hollow box (done) or back, and the title follows the block's ink. */
+  .mark {
+    transition:
+      height var(--dur-settle) var(--ease-axiis),
+      border-radius var(--dur-settle) var(--ease-axiis),
+      border-color var(--dur-settle) var(--ease-axiis);
+  }
+
+  .title {
+    transition: color var(--dur-settle) var(--ease-axiis);
+  }
+
+  /* The now line glides to its new minute. It is placed by translate, so nothing is laid out. */
+  .now,
+  .nowDot {
+    transition: translate 800ms var(--ease-axiis);
   }
 
   .ghost {

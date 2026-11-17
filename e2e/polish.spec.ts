@@ -126,6 +126,7 @@ signedIn.describe("segmented controls", () => {
   });
 
   signedIn("Grid and List slide their thumb, and nothing slides under reduced motion", async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: "no-preference" });
     await page.goto("/today");
     await hydrated(page);
     const view = page.getByRole("group", { name: "View" });
@@ -166,6 +167,7 @@ const watchMotion = (page: Page) =>
 const motion = (page: Page) => page.evaluate(() => (window as unknown as { __motion: number }).__motion);
 
 signedIn.describe("rows that move", () => {
+  signedIn.use({ reducedMotion: "no-preference" });
   const list = (page: Page) => page.getByRole("region", { name: "List", exact: true });
 
   signedIn("a deleted row fades where it stood while the rows below close up, and comes back settling in", async ({ page }) => {

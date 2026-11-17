@@ -52,7 +52,8 @@ const WIDE_PAGES = ["/", "/login", "/dev/settings", "/dev/notes", "/dev/notes/00
 
 for (const colorScheme of ["light", "dark"] as const) {
   test.describe(`wide ${colorScheme}`, () => {
-    test.use({ colorScheme, viewport: { width: 1920, height: 1080 } });
+    // The public pages are checked as people with motion see them (their reduced form is checked in landing.spec.ts).
+    test.use({ colorScheme, viewport: { width: 1920, height: 1080 }, reducedMotion: "no-preference" });
 
     for (const path of WIDE_PAGES) {
       test(`${path} has no serious or critical axe violations`, async ({ page }) => {
@@ -67,7 +68,7 @@ for (const colorScheme of ["light", "dark"] as const) {
 
 for (const variant of VARIANTS) {
   test.describe(variant.name, () => {
-    test.use({ colorScheme: variant.colorScheme, viewport: variant.viewport });
+    test.use({ colorScheme: variant.colorScheme, viewport: variant.viewport, reducedMotion: "no-preference" });
 
     for (const path of PAGES) {
       test(`${path} has no serious or critical axe violations`, async ({ page }) => {
