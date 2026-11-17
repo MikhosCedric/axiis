@@ -3,6 +3,7 @@
 import { startTransition, useId, useOptimistic, useRef, useState, type FormEvent } from "react";
 import type { ActionResult } from "@/features/today/commands";
 import { TITLE_MAX } from "@/features/today/model";
+import { MotionList } from "@/components/motion-list";
 import { ConfirmDelete } from "./confirm-delete";
 import { GlyphCheckbox } from "./glyph-checkbox";
 import { LiftIcon, MoveDownIcon, MoveUpIcon } from "./icons";
@@ -123,12 +124,13 @@ export function Subtasks({
       </div>
 
       {rows.length > 0 && (
-        <ul>
+        <MotionList>
           {rows.map((row) => {
             const edge = reorder.edge(row.id);
             return (
             <li
               key={row.id}
+              data-motion={row.id}
               {...(row.pending ? {} : reorder.row(row.id))}
               onKeyDown={(e) => {
                 if (!row.pending) reorder.rowKeyDown(e, row.id);
@@ -192,7 +194,7 @@ export function Subtasks({
             </li>
             );
           })}
-        </ul>
+        </MotionList>
       )}
       {rows.length > 1 && <ReorderHint id={reorder.hintId} said={reorder.said} />}
 

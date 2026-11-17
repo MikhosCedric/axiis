@@ -22,12 +22,43 @@
 }
 
 @media (prefers-reduced-motion: no-preference) {
+  /* Rises on arriving, drops a little faster on leaving; the scrim fades with it. */
+  .sheet {
+    transform: translateY(100%);
+    transition:
+      transform var(--dur-settle) var(--ease-exit),
+      overlay var(--dur-settle) allow-discrete,
+      display var(--dur-settle) allow-discrete;
+  }
+
   .sheet[open] {
-    animation: rise 320ms cubic-bezier(0.16, 1, 0.3, 1);
+    transform: none;
+    transition-duration: var(--dur-travel);
+    transition-timing-function: var(--ease-axiis);
+  }
+
+  @starting-style {
+    .sheet[open] {
+      transform: translateY(100%);
+    }
+  }
+
+  .sheet::backdrop {
+    opacity: 0;
+    transition:
+      opacity var(--dur-settle) var(--ease-exit),
+      overlay var(--dur-settle) allow-discrete,
+      display var(--dur-settle) allow-discrete;
   }
 
   .sheet[open]::backdrop {
-    animation: fade 240ms ease-out;
+    opacity: 1;
+  }
+
+  @starting-style {
+    .sheet[open]::backdrop {
+      opacity: 0;
+    }
   }
 }
 
@@ -55,8 +86,30 @@
 }
 
 @media (prefers-reduced-motion: no-preference) {
+  /* Lifts 4px and fades in from its row; leaves faster. */
+  .menu {
+    opacity: 0;
+    transform: translateY(4px) scale(0.97);
+    transform-origin: bottom left;
+    transition:
+      opacity var(--dur-quick) var(--ease-exit),
+      transform var(--dur-quick) var(--ease-exit),
+      overlay var(--dur-quick) allow-discrete,
+      display var(--dur-quick) allow-discrete;
+  }
+
   .menu:popover-open {
-    animation: lift 160ms cubic-bezier(0.16, 1, 0.3, 1);
+    opacity: 1;
+    transform: none;
+    transition-duration: var(--dur-settle);
+    transition-timing-function: var(--ease-axiis);
+  }
+
+  @starting-style {
+    .menu:popover-open {
+      opacity: 0;
+      transform: translateY(4px) scale(0.97);
+    }
   }
 }
 

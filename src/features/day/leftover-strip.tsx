@@ -1,6 +1,6 @@
 "use client";
 
-import { useTransition } from "react";
+import { useTransition, ViewTransition } from "react";
 import { planAction } from "@/features/inbox/actions";
 import type { ActionResult } from "@/features/today/commands";
 import { Glyph } from "@/features/today/glyph";
@@ -42,7 +42,8 @@ export function LeftoverStrip({
   }
 
   return (
-    <section aria-labelledby="leftover-h" className="surface side-part mb-6 max-w-[720px] px-4 py-3">
+    <ViewTransition enter="none" exit="card-out" default="none">
+    <section aria-labelledby="leftover-h" className="surface side-part mb-6 max-w-[720px] px-4 py-3 motion-safe:animate-toast-in">
       <div className="flex items-center justify-between gap-3">
         <h2 id="leftover-h" className="flex items-center gap-2 text-[13px] font-semibold text-ink-2">
           {/* The full sentence is what a screen reader hears; the eye gets two words and a count. */}
@@ -97,6 +98,7 @@ export function LeftoverStrip({
       </ul>
       {data.total > data.rows.length && <p className="mt-1 text-xs text-ink-3">And {data.total - data.rows.length} more.</p>}
     </section>
+    </ViewTransition>
   );
 }
 
