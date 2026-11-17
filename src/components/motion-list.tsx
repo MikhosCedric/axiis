@@ -68,6 +68,9 @@ export function MotionList({ ref: outer, className = "", ...rest }: HTMLAttribut
           const ghost = node.cloneNode(true) as HTMLElement;
           ghost.dataset.ghost = "";
           ghost.setAttribute("aria-hidden", "true");
+          // A picture of the row: it takes no focus and no pointer while it fades.
+          ghost.inert = true;
+          delete ghost.dataset.motion;
           ghost.removeAttribute("data-quick");
           for (const inner of ghost.querySelectorAll("[data-quick]")) inner.removeAttribute("data-quick");
           Object.assign(ghost.style, {

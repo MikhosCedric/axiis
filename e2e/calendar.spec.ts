@@ -260,7 +260,7 @@ test.describe("calendar grid, where it opens", () => {
     await expect(page.locator('h3[aria-current="date"]')).toHaveCount(1);
     const now = page.locator("[data-now]");
     await expect(now).toHaveCount(1);
-    const top = await now.evaluate((el) => parseFloat((el as HTMLElement).style.top));
+    const top = await now.evaluate((el) => parseFloat((el as HTMLElement).style.translate.split(" ")[1]));
     const s = await scale(page);
     expect(top).toBeCloseTo(((13 * 60 + 20 - s.from) * s.hour) / 60, 1);
     // It opens a little before now: 11:00 is at the top, unless the whole range fits and nothing scrolls.
