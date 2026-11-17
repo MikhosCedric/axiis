@@ -71,7 +71,10 @@ function stand(from: Rec, root: HTMLElement): HTMLElement {
     n.removeAttribute("data-id");
     n.removeAttribute("id");
   }
-  for (const b of copy.querySelectorAll("button")) b.tabIndex = -1;
+  for (const b of copy.querySelectorAll<HTMLElement>("button")) {
+    b.tabIndex = -1;
+    b.style.pointerEvents = "none";
+  }
   copy.setAttribute("aria-hidden", "true");
   copy.inert = true;
   const at = viewport(from, root);
@@ -94,6 +97,7 @@ function stand(from: Rec, root: HTMLElement): HTMLElement {
 export function useItemMotion({ scroller, days, mode, busy }: { scroller: RefObject<HTMLElement | null>; days: readonly string[]; mode: string; busy: boolean }) {
   const before = useRef<Map<string, Rec> | null>(null);
   const first = useRef<string | null>(null);
+  const count = useRef(days.length);
   const playing = useRef<Set<Animation>>(new Set());
   const last = useRef<{ mode: string; first: string; recs: Map<string, Rec> } | null>(null);
 
@@ -105,8 +109,11 @@ export function useItemMotion({ scroller, days, mode, busy }: { scroller: RefObj
     for (const a of playing.current) a.cancel();
     playing.current.clear();
 
+    // The page waking to a different width redraws the span (a phone's seven days become three): a layout, not an action.
     const mine = days[0] ?? "";
-    if (before.current === null && memory && memory.mode === mode && Date.now() - memory.at < KEEP_MS) {
+    if (before.current && count.current !== days.length) before.current = null;
+    count.current = days.length;
+    if (first.current === null && before.current === null && memory && memory.mode === mode && Date.now() - memory.at < KEEP_MS) {
       before.current = memory.recs;
       first.current = memory.first;
     }
