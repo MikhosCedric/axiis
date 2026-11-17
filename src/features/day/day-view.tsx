@@ -146,7 +146,7 @@ export function DayView({
       examples={examples}
       offer={offer}
       trayHost={mode === "grid" ? trayHost : undefined}
-      className="@container/page mx-auto w-full max-w-[1272px] px-4 pt-6 pb-14 rail:px-9 rail:pt-8 rail:pb-4"
+      className="@container/page mx-auto w-full max-w-[1176px] px-4 pt-6 pb-14 rail:px-9 rail:pt-8 rail:pb-4"
     >
       {(ctx, grid) => (
         <DayPage
@@ -315,21 +315,21 @@ function DayPage({
           Narrow: one column, in the order they read, the week left out. */}
       <div
         data-focus={focus ? "" : undefined}
-        className={`flex flex-col ${hasSide ? "@min-[66rem]/page:grid @min-[66rem]/page:grid-cols-[minmax(0,46rem)_minmax(18rem,27rem)] @min-[66rem]/page:grid-rows-[auto_1fr] @min-[66rem]/page:justify-start @min-[66rem]/page:gap-x-8" : ""}`}
+        className={`flex max-w-[40rem] flex-col @min-[58rem]/page:max-w-none ${hasSide ? "@min-[58rem]/page:grid @min-[58rem]/page:grid-cols-[minmax(0,40rem)_minmax(16rem,1fr)] @min-[58rem]/page:grid-rows-[auto_1fr] @min-[58rem]/page:justify-start @min-[58rem]/page:gap-x-8" : ""}`}
       >
         {hasSide && (
-          <div className="contents @min-[66rem]/page:surface @min-[66rem]/page:col-start-2 @min-[66rem]/page:row-start-1 @min-[66rem]/page:block @min-[66rem]/page:max-h-[var(--calendar-fit,none)] @min-[66rem]/page:divide-y @min-[66rem]/page:divide-rule-soft @min-[66rem]/page:self-start @min-[66rem]/page:overflow-y-auto">
-            {progressNode && <div className="order-[0] hidden @min-[66rem]/page:block">{progressNode}</div>}
+          <div className="contents @min-[58rem]/page:surface @min-[58rem]/page:max-w-[27rem] @min-[58rem]/page:col-start-2 @min-[58rem]/page:row-start-1 @min-[58rem]/page:block @min-[58rem]/page:max-h-[var(--calendar-fit,none)] @min-[58rem]/page:divide-y @min-[58rem]/page:divide-rule-soft @min-[58rem]/page:self-start @min-[58rem]/page:overflow-y-auto">
+            {progressNode && <div className="order-[0] hidden @min-[58rem]/page:block">{progressNode}</div>}
             {nextNode && <div className="order-1">{nextNode}</div>}
             {planNode && <div className="order-2">{planNode}</div>}
             {/* The grid's Inbox: under the day on a narrow page, a card here on a wide one. */}
-            {mode === "grid" && <div ref={trayRef} className="order-4 mt-6 empty:hidden @min-[66rem]/page:order-3 @min-[66rem]/page:mt-0" />}
-            {leftNode && <div className="order-5 mt-7 @min-[66rem]/page:order-5 @min-[66rem]/page:mt-0">{leftNode}</div>}
-            {dueNode && <div className="order-6 hidden @min-[66rem]/page:block">{dueNode}</div>}
-            {pulseNode && <div className="order-7 hidden @min-[66rem]/page:block">{pulseNode}</div>}
+            {mode === "grid" && <div ref={trayRef} className="order-4 mt-6 empty:hidden @min-[58rem]/page:order-3 @min-[58rem]/page:mt-0" />}
+            {leftNode && <div className="order-5 mt-7 @min-[58rem]/page:order-5 @min-[58rem]/page:mt-0">{leftNode}</div>}
+            {dueNode && <div className="order-6 hidden @min-[58rem]/page:block">{dueNode}</div>}
+            {pulseNode && <div className="order-7 hidden @min-[58rem]/page:block">{pulseNode}</div>}
           </div>
         )}
-        <div className="order-3 min-w-0 @min-[66rem]/page:col-start-1 @min-[66rem]/page:row-span-2 @min-[66rem]/page:row-start-1">{dayNode}</div>
+        <div className="order-3 min-w-0 @min-[58rem]/page:col-start-1 @min-[58rem]/page:row-span-2 @min-[58rem]/page:row-start-1">{dayNode}</div>
       </div>
     </>
   );
