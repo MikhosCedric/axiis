@@ -7,7 +7,7 @@ import { signedIn } from "./session";
 // The Week fills the width. A phone: the page scrolls as one, with the day heads sticky.
 
 const HOUR_PX = 52;
-const DAY_COLUMN_MAX = 760;
+const DAY_COLUMN_MAX = 720;
 
 /** The hour labels as drawn, and how the columns sit in the grid's own scroller. */
 async function fit(page: Page) {
@@ -260,3 +260,35 @@ signedIn.describe("an empty day, 1819 by 1030", () => {
     await expect(page.locator("[data-expand='later']")).toBeVisible();
   });
 });
+
+// A window that is not maximised (900 to 1300 wide) with the real shell around the page: the side panel takes 216px, so
+// the page holds well under 1100px. The day is still one comfortable column there, never a bar the width of what is left,
+// and nothing on the page scrolls sideways.
+for (const width of [900, 1100, 1280]) {
+  signedIn.describe(`a middling window, ${width} by 760`, () => {
+    signedIn.use({ viewport: { width, height: 760 } });
+
+    signedIn("the Day column is at most 720px wide and nothing overflows sideways", async ({ page }) => {
+      await page.goto("/today");
+      await expect(page.locator("[data-calendar-grid]")).toBeVisible();
+      await page.evaluate(() => document.fonts.ready);
+      await expect.poll(async () => (await fit(page)).step).toBeGreaterThan(0);
+      const a = await fit(page);
+      expect(a.columns).toBe(1);
+      expect(a.frameWidth).toBeLessThanOrEqual(720);
+      expect(a.columnWidth).toBeLessThanOrEqual(720);
+      expect(a.scrollsSideways).toBe(false);
+      expect(a.pageScrolls).toBe(false);
+    });
+
+    signedIn("the Week and the Month fit the window without scrolling sideways", async ({ page }) => {
+      for (const path of ["/week", "/month"]) {
+        await page.goto(path);
+        await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+        await page.evaluate(() => document.fonts.ready);
+        const over = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+        expect(over, path).toBeLessThanOrEqual(0);
+      }
+    });
+  });
+}
