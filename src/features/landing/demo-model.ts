@@ -79,8 +79,8 @@ export function placeCapture(text: string): Placement {
 /** A stretch of one day in minutes past midnight. */
 export type Span = { start: number; end: number };
 
-/** The drag demo's staff: 08:00 to 20:00. */
-export const DRAG_AXIS: Span = { start: 8 * 60, end: 20 * 60 };
+/** The drag demo's grid: 09:00 to 18:00. */
+export const DRAG_AXIS: Span = { start: 9 * 60, end: 18 * 60 };
 
 const fit = (span: Span): Span => {
   const length = span.end - span.start;
@@ -88,21 +88,23 @@ const fit = (span: Span): Span => {
   return { start, end: start + length };
 };
 
-/** The beam moved by `minutes` from where the drag began, on the quarter hour and inside the staff. */
+/** The block moved by `minutes` from where the drag began, on the quarter hour and inside the grid. */
 export function moveBy(from: Span, minutes: number): Span {
   return fit({ start: snap(from.start + minutes), end: snap(from.start + minutes) + (from.end - from.start) });
 }
 
-/** The beam's end pulled by `minutes`, never shorter than a quarter hour or past the staff. */
+/** The block's end pulled by `minutes`, never shorter than a quarter hour or past the grid. */
 export function resizeBy(from: Span, minutes: number): Span {
   return { start: from.start, end: clamp(snap(from.end + minutes), from.start + SNAP_MINUTES, DRAG_AXIS.end) };
 }
 
-/** The Score's keys on a focused beam: arrows move a quarter hour, with Shift they change its end. */
-export function keySpan(span: Span, key: string, shiftKey: boolean): Span | null {
-  if (key !== "ArrowLeft" && key !== "ArrowRight") return null;
-  const step = key === "ArrowRight" ? SNAP_MINUTES : -SNAP_MINUTES;
-  return shiftKey ? resizeBy(span, step) : moveBy(span, step);
+/** The grid's keys on a focused block: Alt with Up or Down moves it a quarter hour, Shift with them changes its end. */
+export function keySpan(span: Span, key: string, shiftKey: boolean, altKey: boolean): Span | null {
+  if (key !== "ArrowUp" && key !== "ArrowDown") return null;
+  const step = key === "ArrowDown" ? SNAP_MINUTES : -SNAP_MINUTES;
+  if (altKey && !shiftKey) return moveBy(span, step);
+  if (shiftKey && !altKey) return resizeBy(span, step);
+  return null;
 }
 
 /** One row of the Focus demo's day. */

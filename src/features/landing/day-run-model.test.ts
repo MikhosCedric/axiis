@@ -1,17 +1,15 @@
 import { describe, expect, it } from "vitest";
-import { FLAG_STEP, PHASES, RUN_AXIS, RUN_STAVES, STILL_HOUR, rangeAt, shareOf } from "./day-run-model";
+import { FLAG_STEP, PHASES, RUN_AREAS, RUN_AXIS, RUN_BLOCKS, STILL_HOUR, rangeAt, shareOf } from "./day-run-model";
 import { stateAt } from "./live-day";
 
-const beams = RUN_STAVES.flatMap((s) => s.beams);
+const beams = RUN_BLOCKS;
 
 describe("the day the landing runs through", () => {
-  it("turns every beam over inside the run, and never two on one staff at once", () => {
-    for (const staff of RUN_STAVES) {
-      for (const beam of staff.beams) {
-        expect(beam.start, beam.title).toBeGreaterThan(RUN_AXIS.from);
-        expect(beam.end, beam.title).toBeLessThan(RUN_AXIS.to);
-        expect(staff.beams.filter((b) => b !== beam && b.start < beam.end && beam.start < b.end), beam.title).toEqual([]);
-      }
+  it("turns every block over inside the run, each in a known area", () => {
+    for (const beam of beams) {
+      expect(beam.start, beam.title).toBeGreaterThan(RUN_AXIS.from);
+      expect(beam.end, beam.title).toBeLessThan(RUN_AXIS.to);
+      expect(Object.keys(RUN_AREAS)).toContain(beam.area);
     }
   });
 

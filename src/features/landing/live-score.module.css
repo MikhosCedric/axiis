@@ -45,282 +45,21 @@
   }
 }
 
-/*
- * Hours here are counted from the top of the hour now is in (live-day.ts), so the window is
- * a few hours either side of now at any time of day. It narrows on small screens instead of scrolling.
- */
 .score {
-  --from: -2;
-  --to: 4;
-  --lw: 84px;
-  --row-h: 56px;
-  --span: calc(var(--to) - var(--from));
-  position: relative;
-  border-block: 1px solid var(--rule);
-}
-
-@media (min-width: 640px) {
-  .score {
-    --from: -3;
-    --to: 6;
-    --lw: 120px;
-    --row-h: 60px;
-  }
-}
-
-@media (min-width: 1000px) {
-  .score {
-    --from: -5;
-    --to: 7;
-    --lw: 136px;
-  }
-}
-
-/* Wider windows show more of the day rather than wider hours: 15, then 18, then 20 hours across. */
-@media (min-width: 1600px) {
-  .score {
-    --from: -6;
-    --to: 9;
-    --lw: 168px;
-    --row-h: 66px;
-  }
-}
-
-@media (min-width: 2200px) {
-  .score {
-    --from: -7;
-    --to: 11;
-    --lw: 188px;
-    --row-h: 72px;
-  }
-}
-
-@media (min-width: 3000px) {
-  .score {
-    --from: -8;
-    --to: 12;
-  }
-}
-
-.sheet {
   position: relative;
 }
 
-.labelCell {
-  flex: none;
-  width: var(--lw);
-  border-right: 1px solid var(--rule);
-  padding: 12px 10px;
-}
-
-.track {
-  position: relative;
-  flex: 1;
-  min-width: 0;
-  overflow: hidden;
-  border-right: 3px double var(--rule);
-}
-
-.axisRow {
-  display: flex;
-  height: 34px;
-  border-bottom: 1px solid var(--rule);
-}
-
-.axisRow .labelCell {
-  padding: 0;
-}
-
-.axisRow .track {
-  border-right-color: transparent;
-}
-
-.tick {
-  position: absolute;
-  inset-block: 0;
-  left: calc((var(--h) - var(--from)) / var(--span) * 100%);
-  border-left: 1px solid var(--rule);
-  padding: 10px 0 0 6px;
-  white-space: nowrap;
-  font-size: 12px;
-  line-height: 1;
-  font-weight: 500;
-  color: var(--ink-3);
-}
-
-.staff {
-  display: flex;
-  border-bottom: 1px solid var(--rule);
-}
-
-.staff .track {
-  height: calc(var(--rows) * var(--row-h) + 12px);
-  background-image: linear-gradient(to right, var(--rule-soft) 1px, transparent 1px);
-  background-size: calc(100% / var(--span)) 100%;
-}
-
-.staffName {
-  display: block;
-  font-family: var(--font-display);
-  font-size: 16px;
-  line-height: 1.2;
-  font-weight: 500;
-  color: var(--ink);
-}
-
-@media (min-width: 640px) {
-  .staffName {
-    font-size: 19px;
-  }
-
-  .labelCell {
-    padding-inline: 14px;
-  }
-}
-
-@media (min-width: 1600px) {
-  .staffName {
-    font-size: 23px;
-  }
-
-  .labelCell {
-    padding-inline: 20px;
-  }
-
-  .score .label {
-    font-size: 14px;
-  }
-
-  .score .tick {
-    font-size: 13px;
-  }
-}
-
-.lines {
-  position: absolute;
-  inset-inline: 0;
-  top: calc(var(--row) * var(--row-h) + var(--row-h) - 25px);
-  height: 25px;
-  background: repeating-linear-gradient(to bottom, var(--rule-soft) 0 1px, transparent 1px 6px);
-  transform-origin: left;
-}
-
-.beam {
-  position: absolute;
-  height: 25px;
-  top: calc(var(--row) * var(--row-h) + var(--row-h) - 25px);
-  left: calc((var(--s) - var(--from)) / var(--span) * 100%);
-  width: calc((var(--e) - var(--s)) / var(--span) * 100%);
-  min-width: 14px;
-}
-
-.beam .glyph {
-  position: absolute;
-  left: -6px;
-  right: 0;
-  top: 4.5px;
-  width: auto;
-}
-
-.label {
-  position: absolute;
-  left: -6px;
-  bottom: calc(100% + 1px);
-  max-width: calc(min(var(--room), var(--to) - var(--s)) / (var(--e) - var(--s)) * 100% - 10px);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-size: 13px;
-  line-height: 20px;
-  font-weight: 500;
-  color: var(--ink);
-  /* Over the now line, with a paper halo, so the line passes behind the words. */
-  z-index: 3;
-  text-shadow:
-    0 0 2px var(--paper),
-    0 0 4px var(--paper),
-    0 0 6px var(--paper);
-  /* A label whose beam starts outside the visible window would show only a stub of text; hide it. */
-  opacity: clamp(0, min((var(--s) - var(--from)) * 100 + 1, (var(--to) - 0.75 - var(--s)) * 100 + 1), 1);
-}
-
-.live .label {
-  font-weight: 700;
-}
-
-.done .label {
-  font-weight: 400;
-  color: var(--ink-3);
-}
-
-.count,
-.clock {
-  font-weight: 400;
-  font-variant-numeric: tabular-nums;
-}
-
-.count {
-  margin-left: 4px;
-  color: var(--ink-2);
-}
-
-.clock {
-  margin-left: 6px;
-  font-size: 12px;
-  color: var(--ink-3);
-}
-
-/*
- * The now line and its clock flag ride one layer the width of the track. The layer moves by transform,
- * a share of its own width, so the line sweeps and steps each minute on the compositor.
- */
-.nowLayer {
-  position: absolute;
-  inset-block: 0;
-  left: var(--lw);
-  right: 3px;
-  z-index: 2;
-  overflow: clip;
-  pointer-events: none;
-}
-
-.nowMover {
-  position: absolute;
-  inset: 0;
-  transform: translateX(calc((var(--into) - var(--from)) / var(--span) * 100%));
-  transition: transform 700ms cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.playhead {
-  position: absolute;
-  top: 34px;
-  bottom: 0;
-  left: -1px;
-  width: 2px;
-  background: var(--accent);
-}
-
-.nowPill {
-  position: absolute;
-  top: 6px;
-  left: 0;
-  transform: translateX(-50%);
-  border-radius: 4px;
-  background: var(--accent);
-  padding: 4px 6px;
-  white-space: nowrap;
-  font-size: 12px;
-  line-height: 1;
-  font-weight: 600;
-  color: var(--on-accent);
-}
-
+/* The Inbox is a tray under the grid, as in the app. */
 .tray {
   display: flex;
-  border-top: 1px solid var(--rule);
+  align-items: flex-start;
+  gap: 12px;
+  padding: 10px 2px 0;
 }
 
 .trayLabel {
+  flex: none;
+  padding-top: 3px;
   font-family: var(--font-display);
   font-size: 15px;
   line-height: 1.2;
@@ -330,51 +69,37 @@
 .chips {
   display: flex;
   flex-wrap: wrap;
-  align-content: flex-start;
-  gap: 8px;
+  gap: 6px;
   min-width: 0;
-  padding: 10px;
 }
 
-.chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  max-width: 100%;
-  border: 1px solid var(--rule);
-  border-radius: 8px;
-  background: var(--sheet);
-  padding: 7px 11px;
-  font-size: 13px;
-  font-weight: 500;
+.chips > li {
+  min-width: 0;
 }
 
-.chip .chipGlyph {
-  width: 28px;
+.chips > li > span {
+  padding-right: 12px;
 }
 
-/* The drag ghost, as the Score draws one: a dashed verdigris outline over its wash, the time range above. */
-.ghost::before {
-  content: "";
+/* The drop's ghost: a dashed verdigris outline over its wash, with its time, in the day's column. */
+.ghost {
   position: absolute;
-  inset: 8px 0 8px -6px;
+  left: 2px;
+  right: 2px;
+  z-index: 4;
+  padding: 3px 6px;
   border: 1.5px dashed var(--accent);
-  border-radius: 4px;
+  border-radius: 6px;
   background: var(--accent-wash);
-}
-
-.ghostTip {
-  position: absolute;
-  left: -6px;
-  bottom: calc(100% + 1px);
-  white-space: nowrap;
-  font-size: 12px;
-  line-height: 20px;
+  font-size: 11.5px;
   font-weight: 600;
-  color: var(--accent);
+  line-height: 15px;
+  white-space: nowrap;
+  overflow: hidden;
+  color: var(--ink);
+  opacity: 0;
 }
 
-.ghost,
 .landed {
   opacity: 0;
 }
@@ -392,30 +117,44 @@
   margin: 0;
 }
 
+.keyMark {
+  display: inline-block;
+  width: 28px;
+  color: var(--ink);
+}
+
+.keyMark.planned {
+  height: 2.5px;
+  background: repeating-linear-gradient(to right, currentColor 0 3.5px, transparent 3.5px 5.5px);
+}
+
+.keyMark.live {
+  height: 3.5px;
+  border-radius: 2px;
+  background: var(--accent);
+}
+
+.keyMark.done {
+  height: 9px;
+  border: 1.5px solid var(--ink-3);
+  border-radius: 4px;
+}
+
 .keyPlayhead {
   display: inline-block;
-  width: 2px;
-  height: 16px;
-  margin-inline: 21px;
+  width: 28px;
+  height: 2px;
   background: var(--accent);
 }
 
 /*
- * Arrival, once: the staff lines are ruled left to right, the beams slide onto them in order, and the
- * now line sweeps from the window's first hour to now. Then a loop every 14 seconds: the first Inbox chip
- * lifts, its ghost slides onto Health with its time, settles as a dashed beam, and goes back.
+ * Arrival, once: the blocks slide onto the grid in order, and the now line sweeps down to now. Then a loop
+ * every 14 seconds: the first Inbox chip lifts, its ghost slides onto today with its time, settles as a dashed
+ * block, and goes back. Only paper moves; nothing the visitor presses does.
  */
 @media (prefers-reduced-motion: no-preference) {
-  .lines {
-    animation: rule-in 900ms cubic-bezier(0.16, 1, 0.3, 1) calc(120ms + var(--k) * 110ms + var(--row) * 60ms) backwards;
-  }
-
-  .score .beam:not(.ghost, .landed) {
-    animation: beam-in 640ms cubic-bezier(0.16, 1, 0.3, 1) calc(520ms + var(--n) * 65ms) backwards;
-  }
-
-  .nowMover {
-    animation: sweep 1.8s cubic-bezier(0.65, 0, 0.35, 1) 450ms backwards;
+  .arrive {
+    animation: block-in 640ms cubic-bezier(0.16, 1, 0.3, 1) calc(420ms + var(--n) * 55ms) backwards;
   }
 
   .ghost {
@@ -435,32 +174,10 @@
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .nowMover {
-    transition: none;
-  }
-}
-
-@keyframes rule-in {
-  from {
-    transform: scaleX(0);
-  }
-}
-
-@keyframes beam-in {
+@keyframes block-in {
   from {
     opacity: 0;
-    transform: translateX(-18px);
-  }
-}
-
-@keyframes sweep {
-  from {
-    transform: translateX(0);
-    opacity: 0;
-  }
-  12% {
-    opacity: 1;
+    transform: translateY(10px);
   }
 }
 

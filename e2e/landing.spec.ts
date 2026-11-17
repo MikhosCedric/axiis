@@ -50,16 +50,20 @@ test.describe("the live score", () => {
     await expect(figure).toBeVisible();
 
     // The beam that is on now, and its neighbours, read in the visitor's hours.
-    const work = figure.getByRole("list", { name: "Work line" });
-    await expect(work.getByRole("listitem").filter({ hasText: "Review Ana's draft" })).toHaveText(
-      "Review Ana's draft, 14:30 to 16:15, happening now, 2 of 3 subtasks done",
+    const today = figure.getByRole("list", { name: "Today", exact: true });
+    await expect(today.getByRole("listitem").filter({ hasText: "Review Ana's draft" })).toHaveText(
+      "Review Ana's draft, 14:30 to 16:15, Work, happening now, 2 of 3 subtasks done",
     );
-    await expect(work.getByRole("listitem").filter({ hasText: "Write the quarterly summary" })).toContainText("done");
-    await expect(work.getByRole("listitem").filter({ hasText: "Plan next week" })).toContainText("17:00 to 18:30, planned");
+    await expect(today.getByRole("listitem").filter({ hasText: "Write the quarterly summary" })).toContainText("done");
+    await expect(today.getByRole("listitem").filter({ hasText: "Plan next week" })).toContainText("17:15 to 18:45, Work, planned");
+    // The other days are planned, and the day's Any time row is listed with them.
+    await expect(figure.getByRole("list", { name: "Tomorrow" }).getByRole("listitem").filter({ hasText: "Order the cake" })).toHaveText(
+      "Order the cake, any time, Home, planned",
+    );
 
     await figure.getByRole("button", { name: "12-hour" }).click();
     await expect(figure.getByRole("button", { name: "12-hour" })).toHaveAttribute("aria-pressed", "true");
-    await expect(work.getByRole("listitem").filter({ hasText: "Review Ana's draft" })).toContainText("2:30 PM to 4:15 PM");
+    await expect(today.getByRole("listitem").filter({ hasText: "Review Ana's draft" })).toContainText("2:30 PM to 4:15 PM");
     expect(errors).toEqual([]);
   });
 });
@@ -88,13 +92,13 @@ test("every demo works from the keyboard", async ({ page }) => {
   await page.keyboard.type("buy milk");
   await expect(line).toHaveAccessibleDescription("No day or time: it waits in the Inbox.");
 
-  // Drag: arrows move a quarter hour, Shift and an arrow move the end.
+  // Drag: Alt and an arrow move a quarter hour, Shift and an arrow move the end.
   const beam = page.getByRole("button", { name: /^Plan next week/ });
   await beam.focus();
-  await page.keyboard.press("ArrowRight");
-  await expect(beam).toHaveAccessibleName("Plan next week 14:15 to 15:45");
-  await page.keyboard.press("Shift+ArrowRight");
-  await expect(beam).toHaveAccessibleName("Plan next week 14:15 to 16:00");
+  await page.keyboard.press("Alt+ArrowDown");
+  await expect(beam).toHaveAccessibleName("Plan next week, 14:15 to 15:45, Work, planned");
+  await page.keyboard.press("Shift+ArrowDown");
+  await expect(beam).toHaveAccessibleName("Plan next week, 14:15 to 16:00, Work, planned");
   await expect(page.getByRole("status").filter({ hasText: "Plan next week, 14:15 to 16:00." })).toBeVisible();
 
   // Done: the glyph is the done box.
@@ -104,18 +108,18 @@ test("every demo works from the keyboard", async ({ page }) => {
   await expect(tick).toBeChecked();
   await expect(page.getByRole("status").filter({ hasText: "Review Ana's draft is done." })).toBeVisible();
 
-  // Focus: the day folds to what is happening and the next three.
+  // Focus: the day dims to what is happening, and Next up lists that and the next three.
   const focus = page.getByRole("button", { name: "Focus", exact: true });
+  const nextUp = page.locator("ol").filter({ hasText: "Call the landlord" });
+  await expect(nextUp).toHaveCount(0);
   await focus.focus();
   await page.keyboard.press("Enter");
   await expect(focus).toHaveAttribute("aria-pressed", "true");
-  const fold = page.getByRole("button", { name: /The whole day/ });
-  await expect(fold).toHaveText("The whole day 2 more planned · 2 done");
-  await expect(fold.locator("xpath=preceding-sibling::ol[1]").getByRole("listitem")).toHaveCount(4);
-  await fold.focus();
+  await expect(nextUp.getByRole("listitem")).toHaveCount(4);
+  await expect(page.getByText("Dimmed on the day: 2 more planned · 2 done")).toBeVisible();
   await page.keyboard.press("Enter");
-  await expect(fold).toHaveAttribute("aria-expanded", "true");
-  await expect(fold.locator("xpath=preceding-sibling::ol[1]").getByRole("listitem")).toHaveCount(8);
+  await expect(focus).toHaveAttribute("aria-pressed", "false");
+  await expect(nextUp).toHaveCount(0);
 
   // Month: the grid's keys move a day or a week, and the day is listed beside it.
   const grid = page.getByRole("grid");
@@ -296,7 +300,7 @@ test.describe("in-page links", () => {
 
     await letters.getByRole("link", { name: "C Done" }).click();
     await expect(page).toHaveURL(/#done$/);
-    await expect(page.getByRole("heading", { level: 3, name: "Done is a hollow line." })).toBeFocused();
+    await expect(page.getByRole("heading", { level: 3, name: "Done is a hollow mark." })).toBeFocused();
     // It lands under the header, once the glide is over, and the tab has moved to C.
     await expect
       .poll(() => page.locator("#done").evaluate((el) => Math.round(el.getBoundingClientRect().top)))
