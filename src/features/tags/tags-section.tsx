@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { startTransition, useId, useMemo, useOptimistic, useState } from "react";
+import { startTransition, useId, useOptimistic, useState } from "react";
 import { ColorPicker, SwatchButton } from "@/components/color-picker";
 import type { AreaColor } from "@/domain/area-color";
 import { parseTagName, TAG_NAME_MAX, type TagId, type TagName, type TagSummary } from "@/domain/tag";
@@ -11,7 +11,7 @@ import type { ActionResult } from "@/features/today/commands";
 import { deletePrompt, openCount, TAGS_PATH, tagHref } from "./model";
 import { tagDeleted, tagMerged, tagRenamed } from "./tag-pages";
 import { MergeIcon, MergePanel, type MergeActions } from "./tag-merge";
-import { latestSave } from "@/lib/latest-save";
+import { useLatestSave } from "@/lib/latest-save";
 import { reach } from "@/lib/reach";
 
 export type TagActions = {
@@ -58,7 +58,7 @@ export function TagsSection({
   const [merging, setMerging] = useState<TagId | null>(null);
   const canMerge = actions.merging !== undefined && shown.length > 1;
   // Arrow keys through the palette choose a colour per press; only the last of a run needs to reach the server.
-  const saveColor = useMemo(() => latestSave((id: string, color: AreaColor | null) => actions.color(id, color)), [actions]);
+  const saveColor = useLatestSave((id: string, color: AreaColor | null) => actions.color(id, color));
 
   function run(optimistic: Change, work: () => Promise<ActionResult>, done?: () => void) {
     setError(null);
@@ -223,7 +223,7 @@ export function TagToolbar({ tag, actions }: { tag: Pick<TagSummary, "id" | "nam
   const prefix = useId();
   const [error, setError] = useState<string | null>(null);
   const [picking, setPicking] = useState(false);
-  const saveColor = useMemo(() => latestSave((id: string, color: AreaColor | null) => actions.color(id, color)), [actions]);
+  const saveColor = useLatestSave((id: string, color: AreaColor | null) => actions.color(id, color));
 
   function after(work: Promise<ActionResult>, done?: () => void) {
     setError(null);
