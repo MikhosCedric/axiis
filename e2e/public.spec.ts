@@ -30,7 +30,7 @@ test("the landing page lists shipped features as shipped, and nothing as coming"
     /earlier days/,
     /compact density/,
     /G then a letter/,
-    /List, Week and Month views/,
+    /Day, Week and Month, each one click away/,
     /Focus and Next up/,
     /12-hour or 24-hour/,
     /Installs from the browser/,
@@ -141,8 +141,8 @@ test("the web manifest names the app and starts on today", async ({ request }) =
   expect(manifest.icons.length).toBeGreaterThan(0);
 });
 
-test("the landing's film loads for a visitor who is signed out", async ({ request }) => {
-  // The sign-in check once sent the video to /login, so the loop never played.
+test("the film files, kept for when the loop is re-recorded, load for a visitor who is signed out", async ({ request }) => {
+  // The landing no longer shows the film (it drew the old Score). The sign-in check once sent the video to /login.
   for (const path of ["/film/axiis-loop.webm", "/film/axiis-poster.jpg"]) {
     const response = await request.get(path, { maxRedirects: 0 });
     expect(response.status(), path).toBe(200);

@@ -1,23 +1,23 @@
 "use client";
 
-import { startTransition, useId, useState, ViewTransition, type CSSProperties } from "react";
+import { startTransition, useId, useState, ViewTransition } from "react";
 import { useClock } from "@/components/shell/clock-context";
+import { scaleOf } from "@/features/calendar/grid-layout";
 import { CAPTURE_EXAMPLES, parseCapture, previewWords } from "@/features/today/capture-syntax";
-import { Glyph } from "@/features/today/glyph";
-import { RepeatMark } from "@/features/today/repeat-mark";
-import { formatHour, formatMinutes } from "@/lib/clock";
+import { formatMinutes } from "@/lib/clock";
 import { placeCapture, type Placement } from "./demo-model";
+import { packSample } from "./grid-pack";
+import { MiniBlock, MiniChip, TimeGrid } from "./mini-grid";
 import styles from "./demos.module.css";
 
 const FIRST_LINE = "dentist tomorrow 9am #health";
 const EXAMPLES = [FIRST_LINE, ...CAPTURE_EXAMPLES.slice(1)];
 const WINDOW_HOURS = 6;
-
-const vars = (v: Record<string, number | string>) => v as CSSProperties;
+const HOUR_PX = 44;
 
 /**
  * The capture field, read by the app's own parser as you type. The line lands where Axiis would put it:
- * on its day's line at its time, in Any time for a day alone, or in the Inbox. Nothing is saved.
+ * as a block on its day at its time, in Any time for a day alone, or in the Inbox. Nothing is saved.
  */
 export function CaptureDemo() {
   const clock = useClock();
@@ -129,73 +129,46 @@ const capitalise = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 function Landing({ place, clock }: { place: Placement; clock: "12" | "24" }) {
   const timed = place.kind === "timed" ? place : null;
   const from = timed ? Math.max(0, Math.min(24 - WINDOW_HOURS, Math.floor(timed.start / 60) - 2)) : 7;
-  const hours = Array.from({ length: WINDOW_HOURS + 1 }, (_, i) => from + i);
+  const scale = scaleOf(from * 60, (from + WINDOW_HOURS) * 60, HOUR_PX);
   const day = place.kind === "timed" || place.kind === "anytime" ? place.day : "today";
-  const item = place.kind === "nothing" ? null : <Item place={place} clock={clock} />;
+  const tags = place.kind === "nothing" ? "" : place.tags.map((t) => `#${t}`).join(" ");
+  const title = place.kind === "nothing" ? "" : place.title;
+  const [block] = timed ? packSample([{ id: "new", title, start: timed.start, end: timed.end }], scale) : [];
 
   return (
-    <div className={styles.landing} aria-hidden="true" style={vars({ "--from": from, "--span": WINDOW_HOURS })}>
-      <div className={styles.landAxis}>
-        <span className={styles.landName} />
-        <div className={styles.landTrack}>
-          {hours.map((h) => (
-            <span key={h} className={`${styles.landTick} tabular`} style={vars({ "--h": h - from })}>
-              {formatHour(h, clock)}
-            </span>
-          ))}
-        </div>
-      </div>
+    <div className={styles.landing} aria-hidden="true">
+      <TimeGrid
+        scale={scale}
+        clock={clock}
+        anyLabel="Any time"
+        columns={[
+          {
+            key: "day",
+            head: capitalise(day),
+            anyTime: place.kind === "anytime" && (
+              <ViewTransition name="capture-item" share="capture-move" default="none">
+                <MiniChip title={title} area={null} />
+              </ViewTransition>
+            ),
+            children: block && (
+              <ViewTransition name="capture-item" share="capture-move" default="none">
+                <MiniBlock block={block} clock={clock} area={null} state="planned" hint={tags} />
+              </ViewTransition>
+            ),
+          },
+        ]}
+      />
+      <RepeatRow place={place} />
       <div className={styles.landRow}>
-        <span className={styles.landName}>
-          <span className="inline-block first-letter:uppercase">{day}</span>
-        </span>
-        <div className={`${styles.landTrack} ${styles.landStaff}`}>
-          {timed && (
-            <div
-              className={styles.landMover}
-              style={vars({ "--at": (timed.start / 60 - from) / WINDOW_HOURS, "--len": (timed.end - timed.start) / 60 / WINDOW_HOURS })}
-            >
-              {item}
-            </div>
+        <span className={`${styles.landName} ${styles.landSmall}`}>Inbox</span>
+        <div className={styles.landChips}>
+          {place.kind === "inbox" && (
+            <ViewTransition name="capture-item" share="capture-move" default="none">
+              <MiniChip title={title} area={null} />
+            </ViewTransition>
           )}
         </div>
       </div>
-      <RepeatRow place={place} />
-      <div className={styles.landRow}>
-        <span className={`${styles.landName} ${styles.landSmall}`}>Any time</span>
-        <div className={styles.landChips}>{place.kind === "anytime" && item}</div>
-      </div>
-      <div className={styles.landRow}>
-        <span className={`${styles.landName} ${styles.landSmall}`}>Inbox</span>
-        <div className={styles.landChips}>{place.kind === "inbox" && item}</div>
-      </div>
     </div>
-  );
-}
-
-function Item({ place, clock }: { place: Exclude<Placement, { kind: "nothing" }>; clock: "12" | "24" }) {
-  const tags = place.tags.map((t) => `#${t}`).join(" ");
-  const loop = place.kind !== "inbox" && place.repeats ? <RepeatMark className={styles.landRepeat} /> : null;
-  return (
-    <ViewTransition name="capture-item" share="capture-move" default="none">
-      {place.kind === "timed" ? (
-        <span className={styles.landBeam}>
-          <span className={styles.landLabel}>
-            {place.title}
-            {loop}
-            <span className={styles.landClock}>{formatMinutes(place.start, clock)}</span>
-            {tags && <span className={styles.landTags}>{tags}</span>}
-          </span>
-          <Glyph type="task" state="planned" className={styles.landGlyph} />
-        </span>
-      ) : (
-        <span className={styles.chip}>
-          <Glyph type="task" state="planned" className={styles.chipGlyph} />
-          <span className="truncate">{place.title}</span>
-          {loop}
-          {tags && <span className={styles.landTags}>{tags}</span>}
-        </span>
-      )}
-    </ViewTransition>
   );
 }

@@ -1,21 +1,28 @@
 import type { CSSProperties } from "react";
-import { Glyph } from "@/features/today/glyph";
+import { scaleOf } from "@/features/calendar/grid-layout";
 import { formatHour, formatMinutes, type Clock } from "@/lib/clock";
-import { FLAG_STEP, PHASES, RUN_AXIS, RUN_STAVES, STILL_HOUR, rangeAt, shareOf, type RunBeam } from "./day-run-model";
+import { FLAG_STEP, PHASES, RUN_AREAS, RUN_AXIS, RUN_BLOCKS, STILL_HOUR, rangeAt, shareOf, type RunBlock } from "./day-run-model";
 import { stateAt } from "./live-day";
+import { packSample, type Packed } from "./grid-pack";
 import styles from "./day-run.module.css";
 
 const SPAN = RUN_AXIS.to - RUN_AXIS.from;
-const HOURS = Array.from({ length: SPAN + 1 }, (_, i) => RUN_AXIS.from + i);
+const HOURS = Array.from({ length: SPAN }, (_, i) => RUN_AXIS.from + i + 1).filter((h) => h < RUN_AXIS.to);
 const FLAGS = Array.from({ length: SPAN / FLAG_STEP + 1 }, (_, i) => RUN_AXIS.from + i * FLAG_STEP);
+/** The packer only needs a scale to place side by side; the hour's height is the stylesheet's own. */
+const SCALE = scaleOf(RUN_AXIS.from * 60, RUN_AXIS.to * 60, 56);
+const PACKED = packSample(
+  RUN_BLOCKS.map((b) => ({ ...b, id: b.title, start: b.start * 60, end: b.end * 60 })),
+  SCALE,
+);
 
 const vars = (v: Record<string, number | string>) => v as CSSProperties;
 
-/** The three line forms the run passes each beam through, in the order now gives them. */
+/** The three line forms the run passes each block through, in the order now gives them. */
 const KEY = [
-  { state: "planned", term: "Dashed", words: "its time has not come" },
-  { state: "live", term: "Solid", words: "it is on now" },
-  { state: "done", term: "Hollow", words: "it is over" },
+  { form: "planned", term: "Dashed", words: "its time has not come" },
+  { form: "live", term: "Solid", words: "it is on now" },
+  { form: "done", term: "Hollow", words: "it is over" },
 ] as const;
 
 /** Two ranges on the run's scroll: where a change starts (`--a`, `--a2`) and where the next one does (`--b`, `--b2`). */
@@ -26,9 +33,9 @@ function ranges(from: number, to: number) {
 }
 
 /**
- * A sample day that runs as the reader scrolls: the stage holds still while now crosses it from morning
- * to evening, and each beam turns solid, then hollow, as now passes. It is all CSS scroll-driven animation
- * on opacity and transform; with reduced motion, or in a browser without it, the stage is one still moment.
+ * A sample day on the time grid that runs as the reader scrolls: the stage holds still while now crosses it
+ * from morning to evening, and each block turns solid, then hollow, as now passes. It is all CSS scroll-driven
+ * animation on opacity and transform; with reduced motion, or in a browser without it, the stage is one still moment.
  */
 export function DayRun({ clock, titleClassName }: { clock: Clock; titleClassName: string }) {
   const stillPhase = PHASES.findIndex((p) => STILL_HOUR >= p.from && STILL_HOUR < p.to);
@@ -61,30 +68,18 @@ export function DayRun({ clock, titleClassName }: { clock: Clock; titleClassName
         </div>
 
         <div className={styles.score} aria-hidden="true">
-          <div className={styles.names}>
-            <span className={styles.axisGap} />
-            {RUN_STAVES.map((s) => (
-              <span key={s.name} className={styles.name}>
-                {s.name}
-              </span>
-            ))}
-          </div>
           <div className={styles.window}>
             <div className={styles.track} style={vars({ "--span": SPAN, "--p": shareOf(STILL_HOUR) })}>
-              <div className={styles.axis}>
-                {HOURS.map((h) => (
-                  <span key={h} className={`${styles.tick} tabular`} style={vars({ "--h": h - RUN_AXIS.from })}>
-                    {formatHour(h, clock)}
-                  </span>
+              {HOURS.map((h) => (
+                <span key={h} className={`${styles.tick} tabular`} style={vars({ "--h": h - RUN_AXIS.from })}>
+                  {formatHour(h, clock)}
+                </span>
+              ))}
+              <div className={styles.day}>
+                {PACKED.map((b) => (
+                  <Block key={b.id} block={b} clock={clock} />
                 ))}
               </div>
-              {RUN_STAVES.map((s) => (
-                <div key={s.name} className={styles.staff}>
-                  {s.beams.map((b) => (
-                    <Beam key={b.title} beam={b} clock={clock} />
-                  ))}
-                </div>
-              ))}
               <div className={styles.now}>
                 <span className={`${styles.flag} tabular`}>
                   <span className={styles.reel} style={vars({ "--steps": FLAGS.length - 1, "--still": (STILL_HOUR - RUN_AXIS.from) / FLAG_STEP })}>
@@ -101,9 +96,9 @@ export function DayRun({ clock, titleClassName }: { clock: Clock; titleClassName
 
         <dl className={styles.key}>
           {KEY.map((k) => (
-            <div key={k.state}>
+            <div key={k.form}>
               <dt>
-                <Glyph type="task" state={k.state} className={styles.keyGlyph} />
+                <span className={`${styles.keyMark} ${styles[`key_${k.form}`]}`} aria-hidden="true" />
                 {k.term}
               </dt>
               <dd>{k.words}</dd>
@@ -115,21 +110,38 @@ export function DayRun({ clock, titleClassName }: { clock: Clock; titleClassName
   );
 }
 
-function Beam({ beam, clock }: { beam: RunBeam; clock: Clock }) {
+function Block({ block, clock }: { block: Packed<RunBlock & { id: string }>; clock: Clock }) {
+  const start = block.start / 60;
+  const end = block.end / 60;
+  const left = block.column / block.columns;
+  const width = block.span / block.columns;
   return (
     <div
-      className={styles.beam}
-      data-still={stateAt(beam, STILL_HOUR)}
-      style={vars({ "--s": beam.start - RUN_AXIS.from, "--e": beam.end - RUN_AXIS.from, ...ranges(beam.start, beam.end) })}
+      className={styles.block}
+      data-still={stateAt({ start, end }, STILL_HOUR)}
+      data-short={end - start < 0.75 ? "" : undefined}
+      style={vars({
+        "--s": start - RUN_AXIS.from,
+        "--e": end - RUN_AXIS.from,
+        "--tint": `var(--area-${RUN_AREAS[block.area]})`,
+        left: `calc(${left * 100}% + 1px)`,
+        width: `calc(${width * 100}% - 3px)`,
+        ...ranges(start, end),
+      })}
     >
-      <span className={styles.label}>
-        {beam.title} <span className={styles.clock}>{formatMinutes(beam.start * 60, clock)}</span>
+      <span className={styles.words}>
+        <span className={styles.title}>{block.title}</span> <span className={styles.clock}>{formatMinutes(Math.round(start * 60), clock)}</span>
       </span>
-      <Glyph type="task" state="planned" className={`${styles.glyph} ${styles.planned}`} />
-      <span className={styles.liveOut}>
-        <Glyph type="task" state="live" className={`${styles.glyph} ${styles.liveIn}`} />
+      <span className={`${styles.mark} ${styles.planned}`}>
+        <i />
       </span>
-      <Glyph type="task" state="done" className={`${styles.glyph} ${styles.done}`} />
+      <span className={`${styles.mark} ${styles.liveOut}`}>
+        <i className={styles.liveIn} />
+      </span>
+      <span className={`${styles.mark} ${styles.done}`}>
+        <i />
+      </span>
+      <span className={styles.veil} />
     </div>
   );
 }

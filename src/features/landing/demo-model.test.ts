@@ -82,10 +82,10 @@ describe("placeCapture", () => {
   });
 });
 
-describe("the drag demo's beam", () => {
+describe("the drag demo's block", () => {
   const beam = { start: 14 * 60, end: 15 * 60 + 30 };
 
-  it("moves on the quarter hour and stays on the staff", () => {
+  it("moves on the quarter hour and stays on the grid", () => {
     expect(moveBy(beam, 22)).toEqual({ start: 14 * 60 + 15, end: 15 * 60 + 45 });
     expect(moveBy(beam, -24 * 60)).toEqual({ start: DRAG_AXIS.start, end: DRAG_AXIS.start + 90 });
     expect(moveBy(beam, 24 * 60)).toEqual({ start: DRAG_AXIS.end - 90, end: DRAG_AXIS.end });
@@ -96,10 +96,11 @@ describe("the drag demo's beam", () => {
     expect(resizeBy(beam, -600)).toEqual({ start: beam.start, end: beam.start + 15 });
   });
 
-  it("answers the Score's keys: arrows move, Shift and an arrow change the end, others do nothing", () => {
-    expect(keySpan(beam, "ArrowRight", false)).toEqual({ start: 14 * 60 + 15, end: 15 * 60 + 45 });
-    expect(keySpan(beam, "ArrowLeft", true)).toEqual({ start: 14 * 60, end: 15 * 60 + 15 });
-    expect(keySpan(beam, "ArrowUp", false)).toBeNull();
+  it("answers the grid's keys: Alt and an arrow move, Shift and an arrow change the end, others do nothing", () => {
+    expect(keySpan(beam, "ArrowDown", false, true)).toEqual({ start: 14 * 60 + 15, end: 15 * 60 + 45 });
+    expect(keySpan(beam, "ArrowUp", true, false)).toEqual({ start: 14 * 60, end: 15 * 60 + 15 });
+    expect(keySpan(beam, "ArrowUp", false, false)).toBeNull();
+    expect(keySpan(beam, "ArrowRight", false, true)).toBeNull();
   });
 });
 

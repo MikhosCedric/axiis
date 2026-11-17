@@ -1,43 +1,53 @@
 "use client";
 
-import { useId, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent } from "react";
+import { useId, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { useClock } from "@/components/shell/clock-context";
-import { Glyph } from "@/features/today/glyph";
-import { formatHour, formatMinutes } from "@/lib/clock";
+import { scaleOf } from "@/features/calendar/grid-layout";
+import { formatMinutes } from "@/lib/clock";
 import { DRAG_AXIS, keySpan, moveBy, resizeBy, type Span } from "./demo-model";
+import { packSample } from "./grid-pack";
+import { MiniBlock, TimeGrid } from "./mini-grid";
 import styles from "./demos.module.css";
 
 const TITLE = "Plan next week";
 const START: Span = { start: 14 * 60, end: 15 * 60 + 30 };
-const AXIS_MINUTES = DRAG_AXIS.end - DRAG_AXIS.start;
-const HOURS = Array.from({ length: AXIS_MINUTES / 60 + 1 }, (_, i) => DRAG_AXIS.start / 60 + i);
+const HOUR_PX = 46;
+const SCALE = scaleOf(DRAG_AXIS.start, DRAG_AXIS.end, HOUR_PX);
 
-type Drag = { mode: "move" | "resize"; x: number; from: Span; width: number; pointer: number };
+/** Two fixed neighbours, so the day looks like a day and the dragged block has something to move between. */
+const NEIGHBOURS = [
+  { id: "standup", title: "Stand-up", start: 9 * 60 + 30, end: 9 * 60 + 45 },
+  { id: "lunch", title: "Lunch with Ana", start: 12 * 60 + 30, end: 13 * 60 + 30 },
+  { id: "review", title: "Review Ana's draft", start: 10 * 60 + 45, end: 12 * 60 },
+];
 
-const vars = (v: Record<string, number | string>) => v as CSSProperties;
+type Drag = { mode: "move" | "resize"; y: number; from: Span; pointer: number };
 
-/** One staff and one beam that drags like the Score's: along the line to move it, by its right end to change its length, or by the arrow keys. */
+
+/**
+ * One day of the grid and one block that drags like the app's: by its body to move it, by its bottom edge to
+ * change its length, or with the keys (Alt and an arrow move it a quarter hour, Shift and an arrow change its end).
+ */
 export function DragDemo() {
   const clock = useClock();
   const id = useId();
   const [span, setSpan] = useState(START);
   const [drag, setDrag] = useState<Drag | null>(null);
   const [said, setSaid] = useState("");
-  const track = useRef<HTMLDivElement>(null);
 
   const words = (s: Span) => `${formatMinutes(s.start, clock)} to ${formatMinutes(s.end, clock)}`;
 
   function begin(e: ReactPointerEvent<HTMLElement>, mode: Drag["mode"]) {
-    if (e.button !== 0 || !track.current) return;
+    if (e.button !== 0) return;
     e.preventDefault();
     e.stopPropagation();
     e.currentTarget.setPointerCapture(e.pointerId);
-    setDrag({ mode, x: e.clientX, from: span, width: track.current.clientWidth, pointer: e.pointerId });
+    setDrag({ mode, y: e.clientY, from: span, pointer: e.pointerId });
   }
 
   function follow(e: ReactPointerEvent<HTMLElement>) {
     if (!drag || e.pointerId !== drag.pointer) return;
-    const minutes = ((e.clientX - drag.x) / drag.width) * AXIS_MINUTES;
+    const minutes = (e.clientY - drag.y) / (HOUR_PX / 60);
     setSpan(drag.mode === "move" ? moveBy(drag.from, minutes) : resizeBy(drag.from, minutes));
   }
 
@@ -47,84 +57,79 @@ export function DragDemo() {
     setSaid(`${TITLE}, ${words(span)}.`);
   }
 
+  function cancel(e: { pointerId?: number }) {
+    if (drag && (e.pointerId === undefined || e.pointerId === drag.pointer)) {
+      setSpan(drag.from);
+      setDrag(null);
+    }
+  }
+
+  const others = packSample(NEIGHBOURS, SCALE);
+  const [mine] = packSample([{ id: "plan", title: TITLE, ...span }], SCALE);
+
   return (
     <div className={styles.demo}>
-      <div className={styles.dragScore} style={vars({ "--span": AXIS_MINUTES / 60 })}>
-        <div className={styles.landAxis} aria-hidden="true">
-          <span className={styles.landName} />
-          <div className={styles.landTrack}>
-            {HOURS.map((h, i) => (
-              <span key={h} className={`${styles.landTick} ${i % 2 ? styles.oddTick : ""} tabular`} style={vars({ "--h": i })}>
-                {formatHour(h, clock)}
-              </span>
-            ))}
-          </div>
-        </div>
-        <div className={styles.landRow}>
-          <span className={styles.landName} aria-hidden="true">
-            Work
-          </span>
-          <div ref={track} className={`${styles.landTrack} ${styles.landStaff} ${drag ? styles.dropping : ""}`}>
-            <div
-              className={styles.landMover}
-              data-dragging={drag ? "" : undefined}
-              style={vars({
-                "--at": (span.start - DRAG_AXIS.start) / AXIS_MINUTES,
-                "--len": (span.end - span.start) / AXIS_MINUTES,
-              })}
-            >
-              <button
-                type="button"
-                className={`${styles.landBeam} ${styles.dragBeam} ${drag ? styles.ghosted : ""}`}
-                aria-label={`${TITLE} ${words(span)}`}
-                aria-describedby={`${id}-keys`}
-                onPointerDown={(e) => begin(e, "move")}
-                onPointerMove={follow}
-                onPointerUp={end}
-                onPointerCancel={(e) => {
-                  if (drag && e.pointerId === drag.pointer) {
-                    setSpan(drag.from);
-                    setDrag(null);
+      <TimeGrid
+        scale={SCALE}
+        clock={clock}
+        anyLabel="Any time"
+        columns={[
+          {
+            key: "day",
+            head: "Today",
+            today: true,
+            bodyProps: { className: drag ? styles.dropping : "" },
+            children: (
+              <>
+                {others.map((b) => (
+                  <MiniBlock key={b.id} block={b} clock={clock} area={b.id === "lunch" ? "ochre" : "indigo"} state="planned" />
+                ))}
+                <MiniBlock
+                  block={mine}
+                  clock={clock}
+                  area="indigo"
+                  state="planned"
+                  hint={drag ? words(span) : undefined}
+                  className={drag ? styles.dragging : ""}
+                  style={drag ? { zIndex: 3 } : undefined}
+                  face={{
+                    "aria-label": `${TITLE}, ${words(span)}, Work, planned`,
+                    "aria-describedby": `${id}-keys`,
+                    "data-dragging": drag ? "" : undefined,
+                    onPointerDown: (e) => begin(e, "move"),
+                    onPointerMove: follow,
+                    onPointerUp: end,
+                    onPointerCancel: cancel,
+                    onKeyDown: (e) => {
+                      if (e.key === "Escape" && drag) {
+                        cancel({});
+                        return;
+                      }
+                      const next = keySpan(span, e.key, e.shiftKey, e.altKey);
+                      if (!next) return;
+                      e.preventDefault();
+                      setSpan(next);
+                      setSaid(`${TITLE}, ${words(next)}.`);
+                    },
+                  }}
+                  extra={
+                    <span
+                      className={styles.grip}
+                      aria-hidden="true"
+                      onPointerDown={(e) => begin(e, "resize")}
+                      onPointerMove={follow}
+                      onPointerUp={end}
+                      onPointerCancel={cancel}
+                    />
                   }
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === "Escape" && drag) {
-                    setSpan(drag.from);
-                    setDrag(null);
-                    return;
-                  }
-                  const next = keySpan(span, e.key, e.shiftKey);
-                  if (!next) return;
-                  e.preventDefault();
-                  setSpan(next);
-                  setSaid(`${TITLE}, ${words(next)}.`);
-                }}
-              >
-                <span className={`${styles.landLabel} ${drag ? styles.dragTip : ""}`}>
-                  {drag ? (
-                    <span className="tabular">{words(span)}</span>
-                  ) : (
-                    <>
-                      {TITLE}{" "}
-                      <span className={styles.landClock}>{formatMinutes(span.start, clock)}</span>
-                    </>
-                  )}
-                </span>
-                <Glyph type="task" state="planned" className={styles.landGlyph} />
-                <span
-                  className={styles.grip}
-                  aria-hidden="true"
-                  onPointerDown={(e) => begin(e, "resize")}
-                  onPointerMove={follow}
-                  onPointerUp={end}
                 />
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
+              </>
+            ),
+          },
+        ]}
+      />
       <p id={`${id}-keys`} className={styles.keysLine}>
-        Drag the beam, or its right end. With it focused, <kbd>←</kbd> <kbd>→</kbd> move it a quarter hour and{" "}
+        Drag the block, or its bottom edge. With it focused, <kbd>Alt</kbd> <kbd>↑</kbd> <kbd>↓</kbd> move it a quarter hour and{" "}
         <kbd>Shift</kbd> with an arrow changes its end.
       </p>
       <p role="status" className={styles.status}>
