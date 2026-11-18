@@ -181,8 +181,8 @@ export function CalendarBar({
   const gap = now.title.indexOf(" ");
 
   return (
-    <div data-calendar-bar={span} className="contents">
-      <nav aria-label={words.nav} className="flex flex-none items-center gap-2 @min-[64rem]/page:col-start-1 @min-[64rem]/page:row-span-2 @min-[64rem]/page:row-start-1">
+    <>
+      <nav aria-label={words.nav} data-slot="nav" data-calendar-bar={span} className="flex flex-none items-center gap-2">
         <Link
           href={keep(now.href(today))}
           aria-keyshortcuts="t"
@@ -219,7 +219,7 @@ export function CalendarBar({
           now.title
         )}
       </DateJump>
-    </div>
+    </>
   );
 }
 
@@ -288,7 +288,7 @@ function DateJump({
 
   return (
     <>
-      <h1 id={titleId} className="headline min-w-0 @min-[64rem]/page:text-[clamp(26px,2.3vw,34px)] @min-[64rem]/page:col-start-2 @min-[64rem]/page:row-start-1 @min-[64rem]/page:self-end @max-[56rem]/page:order-3 @max-[56rem]/page:basis-full @min-[56rem]/page:whitespace-nowrap max-rail:order-2! max-rail:flex-1 max-rail:basis-0! max-rail:text-[20px] max-rail:leading-[1.1]">
+      <h1 id={titleId} className="headline text-[clamp(22px,3.2cqw,32px)] leading-[1.1] text-balance">
         <button
           ref={trigger}
           type="button"
@@ -296,7 +296,7 @@ function DateJump({
           aria-haspopup="dialog"
           aria-expanded={open}
           title="Go to another date"
-          className="-mx-2 inline-flex max-w-full items-center gap-1.5 rounded-lg px-2 py-0.5 text-left hover:bg-hover active:bg-press [&>svg]:text-ink-3"
+          className="-mx-2 inline-flex max-w-full items-center gap-2 rounded-lg px-2 py-0.5 text-left hover:bg-hover active:bg-press [&>svg]:text-ink-3"
         >
           <span className="min-w-0">{children}</span>
           <Chevron to="down" />

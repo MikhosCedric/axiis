@@ -1,64 +1,48 @@
 import type { ReactNode } from "react";
 
 /**
- * The head of every signed-in page, one structure everywhere (ADR-0004):
+ * The head of every signed-in page, one structure everywhere (ADR-0004), laid out by the
+ * `page-header` utility in `globals.css` as a grid of named slots:
  *
- * 1. the top row: the page's title (on a calendar view, the calendar bar that holds it) and, at
- *    its trailing end, the page's own controls, the Guide always last;
- * 2. what the page holds, in a sentence, and the filter it is narrowed to;
- * 3. the page's capture, always on its own row under those.
+ * - the title (an `h1`; on a calendar view, the calendar bar's Today and steps plus the title);
+ * - the summary line and the filter it is narrowed to, under the title;
+ * - the page's own controls, the Guide always last;
+ * - the page's capture, with its status and preview line in room of its own.
  *
- * So Today, the steps, a view switch, the Guide and capture are each in one spot on every page.
- *
- * A calendar view passes `inline`: on a wide page the head is one compact bar, so the grid gets the
- * height. Today and the steps, then the title with its summary as a quiet second line, the capture
- * field in the room that is left, and the controls last. Narrower, it is the stack above.
+ * Narrow, those stack; wider, the title row holds the steps, the title and the controls with
+ * capture on its own row under it. Only a calendar view with room to spare (`inline`, a page
+ * container of 90rem or more) puts capture between the title and the controls, and then the
+ * head keeps the line under the capture as padding of its own, so nothing hangs below the bar.
  */
 export function PageHeader({
   heading,
   controls,
-  controlsRow = false,
   capture,
+  bar = false,
   inline = false,
   children,
 }: {
-  /** An `h1`, or the calendar bar, which carries the `h1` itself. */
+  /** An `h1`, or the calendar bar, which carries the `h1` and its steps itself. */
   heading: ReactNode;
   controls?: ReactNode;
-  /** On a phone, the controls take one compact row of their own under the title, instead of sharing its row. */
-  controlsRow?: boolean;
   capture?: ReactNode;
-  /** One bar on a wide page (a calendar view). */
+  /** A calendar view: the heading brings Today and the steps. */
+  bar?: boolean;
+  /** Where the page is wide enough, capture goes between the title and the controls. */
   inline?: boolean;
   /** The summary line and the filter chips. */
   children?: ReactNode;
 }) {
   return (
-    <header
-      className={
-        inline
-          ? "@min-[64rem]/page:mb-5 @min-[64rem]/page:grid @min-[64rem]/page:grid-cols-[auto_fit-content(20rem)_minmax(18rem,1fr)_auto] @min-[64rem]/page:items-center @min-[64rem]/page:gap-x-5"
-          : undefined
-      }
-    >
-      <div className={`flex flex-wrap items-center gap-x-4 gap-y-2 max-rail:gap-x-2 ${inline ? "@min-[64rem]/page:contents" : ""}`}>
-        {heading}
-        {controls && (
-          <div
-            className={`ml-auto flex flex-none items-center gap-2 @max-[56rem]/page:order-2 max-rail:order-3! ${controlsRow ? "max-rail:ml-0! max-rail:basis-full max-rail:justify-between" : ""} ${inline ? "@min-[64rem]/page:col-start-4 @min-[64rem]/page:row-span-2 @min-[64rem]/page:row-start-1" : ""}`}
-          >
-            {controls}
-          </div>
-        )}
-      </div>
-      {inline ? <div className="min-w-0 @min-[64rem]/page:col-start-2 @min-[64rem]/page:row-start-2 @min-[64rem]/page:[&_.page-summary]:mt-0.5">{children}</div> : children}
-      {capture && (
-        <div
-          className={`mt-5 mb-3 max-w-[440px] max-rail:mt-3 max-rail:mb-2 ${inline ? "@min-[64rem]/page:col-start-3 @min-[64rem]/page:row-span-2 @min-[64rem]/page:row-start-1 @min-[64rem]/page:my-0 @min-[64rem]/page:max-w-none @min-[64rem]/page:self-center" : ""}`}
-        >
-          {capture}
+    <header className="page-header" data-bar={bar ? "" : undefined} data-inline={bar && inline ? "" : undefined}>
+      {heading}
+      {children && <div data-slot="sum">{children}</div>}
+      {controls && (
+        <div data-slot="ctl" className="flex flex-none items-center gap-2">
+          {controls}
         </div>
       )}
+      {capture && <div data-slot="cap">{capture}</div>}
     </header>
   );
 }
