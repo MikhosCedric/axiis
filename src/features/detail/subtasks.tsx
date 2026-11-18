@@ -115,8 +115,8 @@ export function Subtasks({
 
   return (
     <section aria-labelledby={headingId}>
-      <div className="flex items-baseline justify-between gap-3 pb-1.5">
-        <h3 id={headingId} className="text-sm font-semibold text-ink">
+      <div className="flex items-baseline justify-between gap-3 pb-1">
+        <h3 id={headingId} className="text-[13px] font-medium text-ink-2">
           Subtasks
         </h3>
         {progress && <p className="text-[13px] text-ink-2 tabular">{progress}</p>}
@@ -225,7 +225,7 @@ export function Subtasks({
         )}
       </div>
 
-      <form onSubmit={add} autoComplete="off" className="mt-3">
+      <form onSubmit={add} autoComplete="off" className="mt-2">
         <label htmlFor={fieldId} className="sr-only">
           Add a subtask
         </label>
@@ -237,10 +237,10 @@ export function Subtasks({
           onChange={(e) => setDraft(e.target.value)}
           maxLength={TITLE_MAX}
           placeholder="Add a subtask"
-          className="w-full rounded-lg border border-field bg-sheet px-3 py-2 text-ink"
+          className="h-9 w-full rounded-md border border-rule-soft bg-transparent px-2.5 text-ink hover:border-rule focus:border-field focus:bg-sheet pointer-coarse:h-11"
         />
       </form>
-      <p role="status" className="mt-1.5 min-h-5 text-[13px] text-ink-2">
+      <p role="status" className="mt-1.5 text-[13px] text-ink-2 empty:hidden">
         {status}
       </p>
     </section>

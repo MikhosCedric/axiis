@@ -122,10 +122,22 @@ for (const view of ["", "&view=list"]) {
   });
 }
 
+/**
+ * The detail panel's schedule as a line: the date the row shows (a series or "All of them" shows its First day
+ * as written in the field), then the start and end when the item has a time.
+ */
+const whenOf = async (page: Page) => {
+  const panel = page.getByRole("complementary", { name: "Details" });
+  const planned = panel.getByRole("button", { name: /^Planned for/ });
+  const day = (await planned.count()) ? await planned.textContent() : await panel.getByLabel("First day").inputValue();
+  const start = panel.getByLabel("Starts at");
+  const times = (await start.count()) ? `, ${await start.inputValue()} to ${await panel.getByLabel("Ends at").inputValue()}` : "";
+  return `${day}${times}`;
+};
+
 test("detail: a time set for all of them moves the series and leaves other changed days alone", async ({ page }) => {
-  const when = (label: string) => page.getByRole("complementary").locator("dt", { hasText: label }).locator("+ dd");
   await page.goto("/dev/detail?item=00000000-0000-4000-8000-000000000061");
-  const wednesday = await when("Planned for").textContent();
+  const wednesday = await whenOf(page);
 
   await page.getByRole("link", { name: "Repeating: Friday's run, not touched yet" }).click();
   await expect(page.getByText("Repeats. This is the one for Friday 9 October.")).toBeVisible();
@@ -134,26 +146,26 @@ test("detail: a time set for all of them moves the series and leaves other chang
   await time.getByLabel("Starts at").fill("08:00");
   await time.getByLabel("Ends at").fill("08:30");
   await time.getByLabel("Ends at").press("Enter");
-  await expect(when("Planned for")).toHaveText("Friday 9 October, 08:00 to 08:30");
+  await expect(page.getByRole("status").filter({ hasText: "All of them are at 08:00 now." })).toBeVisible();
+  await expect.poll(() => whenOf(page)).toBe("2026-10-05, 08:00 to 08:30");
 
   await page.getByRole("link", { name: "Repeating: the run series itself" }).click();
-  await expect(when("Starts")).toHaveText("Monday 5 October, 08:00 to 08:30");
+  await expect.poll(() => whenOf(page)).toBe("2026-10-05, 08:00 to 08:30");
   await page.getByRole("link", { name: "Repeating: Wednesday's run, renamed and done" }).click();
-  await expect(when("Planned for")).toHaveText(wednesday!);
+  await expect.poll(() => whenOf(page)).toBe(wednesday);
 });
 
 test("detail: all of them can go back to any time and start on another day", async ({ page }) => {
-  const when = (label: string) => page.getByRole("complementary").locator("dt", { hasText: label }).locator("+ dd");
   await page.goto("/dev/detail?item=00000000-0000-4000-8000-000000000061");
-  const wednesday = await when("Planned for").textContent();
+  const wednesday = await whenOf(page);
   await page.getByRole("link", { name: "Repeating: Friday's run, not touched yet" }).click();
   await expect(page.getByText("Repeats. This is the one for Friday 9 October.")).toBeVisible();
   await expect(page.getByLabel("First day")).toHaveCount(0);
 
   await page.getByText("All of them").click();
-  await page.getByRole("button", { name: "Any time" }).click();
+  await page.getByRole("switch", { name: "Any time" }).click();
   await expect(page.getByRole("status").filter({ hasText: "All of them are at any time of day now." })).toBeVisible();
-  await expect(when("Planned for")).toHaveText("Friday 9 October");
+  await expect(page.getByLabel("Starts at")).toHaveCount(0);
 
   const first = page.getByLabel("First day");
   await expect(first).toHaveValue("2026-10-05");
@@ -162,13 +174,12 @@ test("detail: all of them can go back to any time and start on another day", asy
   await expect(page.getByRole("status").filter({ hasText: "It starts on Wednesday 7 October now." })).toBeVisible();
 
   await page.getByRole("link", { name: "Repeating: the run series itself" }).click();
-  await expect(when("Starts")).toHaveText("Wednesday 7 October");
+  await expect.poll(() => whenOf(page)).toBe("2026-10-07");
   await page.getByRole("link", { name: "Repeating: Wednesday's run, renamed and done" }).click();
-  await expect(when("Planned for")).toHaveText(wednesday!);
+  await expect.poll(() => whenOf(page)).toBe(wednesday);
 });
 
 test("detail: the series itself has a Time and a First day row", async ({ page }) => {
-  const when = (label: string) => page.getByRole("complementary").locator("dt", { hasText: label }).locator("+ dd");
   await page.goto("/dev/detail?item=00000000-0000-4000-8000-000000000060");
   await expect(page.getByText("This one")).toHaveCount(0);
   const time = page.getByRole("group", { name: "Time" });
@@ -176,16 +187,16 @@ test("detail: the series itself has a Time and a First day row", async ({ page }
   await time.getByLabel("Starts at").fill("0700");
   await time.getByLabel("Starts at").press("Enter");
   await expect(page.getByRole("status").filter({ hasText: "All of them are at 07:00 now." })).toBeVisible();
-  await expect(when("Starts")).toHaveText("Monday 5 October, 07:00 to 07:15");
+  await expect.poll(() => whenOf(page)).toBe("2026-10-05, 07:00 to 07:15");
 
   const first = page.getByLabel("First day");
   await expect(first).toHaveValue("2026-10-05");
   await first.fill("2026-10-07");
   await first.press("Enter");
-  await expect(when("Starts")).toHaveText("Wednesday 7 October, 07:00 to 07:15");
+  await expect.poll(() => whenOf(page)).toBe("2026-10-07, 07:00 to 07:15");
 
-  await page.getByRole("button", { name: "Any time" }).click();
-  await expect(when("Starts")).toHaveText("Wednesday 7 October");
+  await page.getByRole("switch", { name: "Any time" }).click();
+  await expect.poll(() => whenOf(page)).toBe("2026-10-07");
 });
 
 test("detail: a skipped day is listed on the series and can be restored", async ({ page }) => {
@@ -213,8 +224,6 @@ test("detail: a skipped day is listed on the series and can be restored", async 
 });
 
 test("detail: times are typed either way and shown on the 24-hour clock, and an unreadable one is not saved", async ({ page }) => {
-  // The When row also holds the Move to button, so read only the words it shows.
-  const when = (label: string) => page.getByRole("complementary").locator("dt", { hasText: label }).locator("+ dd > span").first();
   await page.goto("/dev/detail?item=00000000-0000-4000-8000-000000000070~2026-10-11");
   const time = page.getByRole("group", { name: "Time" });
   const start = time.getByLabel("Starts at");
@@ -225,22 +234,22 @@ test("detail: times are typed either way and shown on the 24-hour clock, and an 
   await end.press("Enter");
   await expect(start).toHaveValue("14:30");
   await expect(end).toHaveValue("15:15");
-  await expect(when("Planned for")).toHaveText("Sunday 11 October, 14:30 to 15:15");
+  await expect.poll(() => whenOf(page)).toBe("Sun 11 Oct, 14:30 to 15:15");
   await start.fill("930");
   await start.press("Enter");
   await expect(start).toHaveValue("09:30");
-  await expect(when("Planned for")).toHaveText("Sunday 11 October, 09:30 to 15:15");
+  await expect.poll(() => whenOf(page)).toBe("Sun 11 Oct, 09:30 to 15:15");
 
   await end.fill("3pm");
   await end.press("Enter");
   await expect(end).toHaveValue("15:00");
-  await expect(when("Planned for")).toHaveText("Sunday 11 October, 09:30 to 15:00");
+  await expect.poll(() => whenOf(page)).toBe("Sun 11 Oct, 09:30 to 15:00");
 
   await end.fill("3 xm");
   await end.press("Enter");
   await expect(end).toHaveAttribute("aria-invalid", "true");
   await expect(page.getByText("That time could not be read. 24-hour clock, like 14:30 or 1430. 2:30pm works too.")).toBeVisible();
-  await expect(when("Planned for")).toHaveText("Sunday 11 October, 09:30 to 15:00");
+  await expect.poll(() => whenOf(page)).toBe("Sun 11 Oct, 09:30 to 15:00");
 });
 
 test("detail: a new subtask can be renamed in place", async ({ page }) => {
