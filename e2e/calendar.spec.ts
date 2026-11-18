@@ -79,8 +79,9 @@ test.describe("calendar grid", () => {
     await expect(dialog).toContainText("11:00 to 11:30");
     const field = dialog.getByRole("textbox", { name: "What is it" });
     await expect(field).toBeFocused();
-    await expect(field).toHaveValue(/11:00 for 30m$/);
-    // The caret sits before the slot's words, so the title is typed in front of them.
+    // The field starts empty: the slot is held apart and applied when saving.
+    await expect(field).toHaveValue("");
+    await expect(dialog.getByRole("button", { name: "Add" })).toHaveAttribute("aria-disabled", "true");
     await page.keyboard.type("Lunch with Ana");
     await expect(dialog.getByText(/11:00 to 11:30/).last()).toBeVisible();
     await page.keyboard.press("Enter");
@@ -89,11 +90,23 @@ test.describe("calendar grid", () => {
     await expect(page.locator("[data-calendar-status]")).toHaveText("Planned for Thursday 12 March, 11:00 to 11:30.");
   });
 
+  test("a length typed in capture wins over the slot's", async ({ page }) => {
+    const spot = await at(page, THU, 15 * 60 + 5);
+    await page.mouse.click(spot.x, spot.y);
+    const dialog = page.getByRole("dialog", { name: "New item" });
+    await expect(dialog.getByRole("textbox", { name: "What is it" })).toBeFocused();
+    await page.keyboard.type("Review 1h");
+    await expect(dialog).toContainText("15:00 to 16:00");
+    await page.keyboard.press("Enter");
+    await expect(dialog).toBeHidden();
+    await expect(block(page, /^Review 15:00 to 16:00, Thursday 12 March/)).toBeVisible();
+  });
+
   test("dragging over empty time draws the length first", async ({ page }) => {
     await drag(page, await at(page, SAT, 13 * 60 + 5), await at(page, SAT, 14 * 60 + 20));
     const dialog = page.getByRole("dialog", { name: "New item" });
     await expect(dialog).toContainText("13:00 to 14:30");
-    await expect(dialog.getByRole("textbox")).toHaveValue(/13:00 for 1h 30m$/);
+    await expect(dialog.getByRole("textbox")).toHaveValue("");
     await page.keyboard.type("Garden");
     await dialog.getByRole("button", { name: "Add" }).click();
     await expect(block(page, /^Garden 13:00 to 14:30, Saturday 14 March/)).toBeVisible();
@@ -174,7 +187,7 @@ test.describe("calendar grid", () => {
     await expect(slot).toHaveAccessibleName("New item, Tuesday 10 March, 09:30");
     await page.keyboard.press("Enter");
     const dialog = page.getByRole("dialog", { name: "New item" });
-    await expect(dialog.getByRole("textbox")).toHaveValue(/09:30 for 30m$/);
+    await expect(dialog.getByRole("textbox")).toHaveValue("");
     await page.keyboard.press("Escape");
     await expect(slot).toBeFocused();
   });
