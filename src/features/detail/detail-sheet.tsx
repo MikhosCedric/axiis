@@ -1,19 +1,20 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { startTransition, useEffect, useId, useOptimistic, useRef, useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
+import { startTransition, useEffect, useOptimistic, useRef, useState } from "react";
 import { AreaMark } from "@/components/area-mark";
 import type { AreaId, ItemType } from "@/domain/item";
 import type { ActionResult } from "@/features/today/commands";
+import { ChipSelect } from "./chip-select";
 import { ConfirmDelete } from "./confirm-delete";
 import { GlyphCheckbox } from "./glyph-checkbox";
-import { BackIcon, CloseIcon, LiftIcon, RestoreIcon, SkipIcon, StopIcon } from "./icons";
+import { BackIcon, CloseIcon, DueIcon, LiftIcon, RepeatIcon, RestoreIcon, SkipIcon, StopIcon } from "./icons";
 import type { ConnectedRow } from "@/features/notes/model";
 import { RepeatMark } from "@/features/today/repeat-mark";
 import { InlineTitle } from "./inline-title";
 import { LinkedNotes } from "./linked-notes";
-import { NewArea } from "./new-area";
+import { NewAreaField } from "./new-area";
 import { useItemHref } from "./item-href";
 import { useItemSelection } from "./use-item-selection";
 import { planOptions, TYPE_CHOICES, type TypeChoice, type DetailActions, type DetailView, type Scope, type SkippedDate } from "./model";
@@ -22,10 +23,11 @@ import { startsRepeating } from "./repeat";
 import { dayWords, planDate } from "@/features/inbox/model";
 import { RepeatRows } from "./repeat-control";
 import { addDays } from "@/lib/dates";
+import { Row, rowButton } from "./rows";
 import { SkippedDates } from "./skipped-dates";
 import { Subtasks } from "./subtasks";
 import { DateRow, TimeRow } from "./time-row";
-import { formatDayHeading } from "@/features/today/format";
+import { formatDayHeading, formatDayShort } from "@/features/today/format";
 import { useClock } from "@/components/shell/clock-context";
 import { formatMinutes } from "@/lib/clock";
 import { TagField } from "@/features/tags/tag-field";
@@ -34,11 +36,14 @@ import { reach } from "@/lib/reach";
 const TYPE_WORD: Record<ItemType, string> = { task: "Task", event: "Event", note: "Note", checklist: "Checklist" };
 const EVENT_NEEDS_TIME = "An event needs a time. Add one under Time.";
 const EVENT_NEEDS_DAY = "An event needs a day and a time. Plan it under When.";
+/** Values of the Area menu that are not areas. */
+const NEW_AREA = "~new";
+const MANAGE_AREAS = "~manage";
 
-const field =
-  "-ml-2 max-w-full rounded-md border border-transparent bg-transparent py-1 pr-1 pl-1.5 text-ink hover:border-rule-soft focus:border-field focus:bg-sheet";
 const iconButton = "grid size-8 pointer-coarse:size-11 place-items-center rounded-md text-ink-2 hover:bg-hover active:bg-press hover:text-ink";
 const textButton = "-ml-2 inline-flex items-center gap-2 rounded-md px-2 py-1 font-medium text-ink-2 hover:bg-hover active:bg-press hover:text-ink";
+/** A group of lines, set off from the one above by a hairline. */
+const group = "border-t border-rule-soft pt-2";
 
 /** A link to this page with no item, so it opens in a new tab too; a plain click closes the panel through history. */
 function CloseDetails() {
@@ -106,6 +111,7 @@ export function DetailSheet({
   linkedNotes?: ConnectedRow[];
 }) {
   const clock = useClock();
+  const router = useRouter();
   const { item, nesting, repeat } = view;
   const itemHref = useItemHref();
   const { select, selectedParam } = useItemSelection();
@@ -125,18 +131,10 @@ export function DetailSheet({
   const [scope, setScope] = useState<Scope>("one");
   const planTrigger = useRef<HTMLButtonElement>(null);
   const timeStart = useRef<HTMLInputElement>(null);
-  const areaFieldId = useId();
-  const card = useRef<HTMLDivElement>(null);
-  // Empty rows stay folded into "+ Due date", "+ Area" and "+ Repeat" until asked for; this is the set asked for, for this item.
-  const [opened, setOpened] = useState<{ id: string; rows: string[] }>({ id: item.id, rows: [] });
-  // The row just opened, so its control takes focus once it is on the page.
-  const focusRow = useRef<string | null>(null);
-  const isOpen = (row: string) => opened.id === item.id && opened.rows.includes(row);
-  function openRow(row: string, label: string) {
-    setOpened({ id: item.id, rows: [...(opened.id === item.id ? opened.rows : []), row] });
-    focusRow.current = label;
-  }
-  const typeFieldId = useId();
+  // A due date row stays folded into "Add due date" until asked for; this is the item it was asked for on.
+  const [dueFor, setDueFor] = useState<string | null>(null);
+  const dueOpen = dueFor === item.id;
+  const [naming, setNaming] = useState(false);
 
   function write(save: () => Promise<ActionResult>, after?: () => void) {
     setStatus(null);
@@ -157,6 +155,8 @@ export function DetailSheet({
   }
 
   function changeArea(value: string) {
+    if (value === NEW_AREA) return setNaming(true);
+    if (value === MANAGE_AREAS) return router.push("/settings#areas");
     const next = value === "" ? null : (value as AreaId);
     write(() => {
       setAreaId(next);
@@ -192,14 +192,12 @@ export function DetailSheet({
   const plan = planOptions(view, scope);
   // An event is drawn by its time, so point at where one goes.
   const eventHint = !needsTime || view.time !== null ? null : plan.time ? EVENT_NEEDS_TIME : EVENT_NEEDS_DAY;
-
-  useEffect(() => {
-    const label = focusRow.current;
-    if (label === null) return;
-    focusRow.current = null;
-    const dt = [...(card.current?.querySelectorAll("dt") ?? [])].find((el) => el.textContent?.trim().startsWith(label));
-    (dt?.nextElementSibling?.querySelector("select, input, button") as HTMLElement | null)?.focus();
-  }, [opened]);
+  const area = view.areas.find((a) => a.id === areaId) ?? null;
+  const showDue = view.due.editable ? view.due.on !== null || dueOpen : view.due.on !== null;
+  // A series or an occurrence for all of them is moved by its First day, so the day is not shown twice.
+  const showDay = view.when !== null && !plan.firstDay;
+  const hasSchedule =
+    showDay || plan.time || plan.firstDay || showDue || (view.due.editable && !showDue) || repeat.kind !== "hidden";
 
   useEffect(() => {
     if (eventHint === null) return;
@@ -207,42 +205,36 @@ export function DetailSheet({
   }, [eventHint]);
 
   return (
-    <div className="relative grid gap-4">
-      <h2 className="sr-only">
-        Details
-      </h2>
+    <div className="relative grid gap-3">
+      <h2 className="sr-only">Details</h2>
 
-      <div className={nesting.kind === "is-subtask" ? "flex min-h-8 items-center gap-2" : "absolute top-0 right-0 z-[1]"}>
-        {nesting.kind === "is-subtask" &&
-          (nesting.parent ? (
-            <Link
-              href={itemHref(nesting.parent.id)}
-              className="-ml-1.5 inline-flex min-w-0 items-center gap-1 rounded-md py-1 pr-2 pl-1 text-[13px] text-ink-2 hover:bg-hover active:bg-press hover:text-ink"
-            >
-              <BackIcon />
-              <span className="truncate">Part of {nesting.parent.title}</span>
-            </Link>
-          ) : (
-            <span className="text-[13px] text-ink-3">Part of an item that is gone</span>
-          ))}
-        {!alone && (
-          <div className="ml-auto flex items-center">
-            {selectedParam && <OpenInWindow id={selectedParam} />}
-            <CloseDetails />
-          </div>
-        )}
-      </div>
+      {(nesting.kind === "is-subtask" || !alone) && (
+        <div className="-mt-1 flex min-h-8 items-center gap-2">
+          {nesting.kind === "is-subtask" &&
+            (nesting.parent ? (
+              <Link
+                href={itemHref(nesting.parent.id)}
+                className="-ml-1.5 inline-flex min-w-0 items-center gap-1 rounded-md py-1 pr-2 pl-1 text-[13px] text-ink-2 hover:bg-hover active:bg-press hover:text-ink"
+              >
+                <BackIcon />
+                <span className="truncate">Part of {nesting.parent.title}</span>
+              </Link>
+            ) : (
+              <span className="text-[13px] text-ink-3">Part of an item that is gone</span>
+            ))}
+          {!alone && (
+            <div className="ml-auto flex items-center">
+              {selectedParam && <OpenInWindow id={selectedParam} />}
+              <CloseDetails />
+            </div>
+          )}
+        </div>
+      )}
 
-      <div className={`flex items-start gap-1.5 ${nesting.kind === "is-subtask" ? "" : "pr-9"}`}>
+      <div className="flex items-start gap-1">
         {item.type !== "note" && !isSeries && (
-          <span className="pt-1.5">
-            <GlyphCheckbox
-              type={type}
-              done={done}
-              justDone={justDone}
-              label={`Done: ${item.title}`}
-              onChange={markDone}
-            />
+          <span className="-ml-2 pt-1">
+            <GlyphCheckbox type={type} done={done} justDone={justDone} label={`Done: ${item.title}`} onChange={markDone} />
           </span>
         )}
         <InlineTitle
@@ -250,21 +242,57 @@ export function DetailSheet({
           label="Title"
           onSave={(title) => actions.rename(item.id, title, scope)}
           onError={setStatus}
-          className={`font-display text-[clamp(22px,2.4vw,28px)] leading-[1.2] font-medium tracking-[-0.01em] ${
-            done ? "text-ink-3" : "text-ink"
-          }`}
+          className={`font-display text-[clamp(22px,2.4vw,26px)] leading-[1.2] font-medium tracking-[-0.01em] ${done ? "text-ink-3" : "text-ink"}`}
         />
       </div>
 
+      <div className="flex flex-wrap items-center gap-2">
+        {view.retype ? (
+          <span title={isSeries || isOccurrence ? "The type belongs to every time it repeats." : undefined}>
+            <ChipSelect label="Type" value={type} onChange={(v) => changeType(v as TypeChoice)}>
+              {TYPE_CHOICES.map((t) => (
+                <option key={t} value={t}>
+                  {TYPE_WORD[t]}
+                </option>
+              ))}
+            </ChipSelect>
+          </span>
+        ) : (
+          <span className="inline-flex h-8 items-center rounded-full border border-rule-soft px-3 text-[13px] font-medium text-ink-2">
+            <span className="sr-only">Type: </span>
+            {TYPE_WORD[item.type]}
+          </span>
+        )}
+        {naming && actions.addArea ? (
+          <NewAreaField add={actions.addArea} onClose={() => setNaming(false)} onMessage={setStatus} />
+        ) : (
+          <ChipSelect
+            label="Area"
+            value={areaId ?? ""}
+            onChange={changeArea}
+            mark={area ? <AreaMark color={area.color} /> : undefined}
+          >
+            <option value="">No area</option>
+            {view.areas.map((a) => (
+              <option key={a.id} value={a.id}>
+                {a.name}
+              </option>
+            ))}
+            {actions.addArea && <option value={NEW_AREA}>New area…</option>}
+            <option value={MANAGE_AREAS}>Manage areas</option>
+          </ChipSelect>
+        )}
+      </div>
+
       {isSeries && (
-        <p className="-mt-2 flex items-center gap-2 text-[13px] text-ink-2">
+        <p className="flex items-center gap-2 text-[13px] text-ink-2">
           <RepeatMark className="text-ink-3" />
-          Repeats. Each time is ticked done on its own day, on the Day or the Week.
+          Repeats. Each time is ticked done on its own day.
         </p>
       )}
 
       {isOccurrence && (
-        <div className="grid gap-2.5">
+        <div className="grid gap-2">
           <p className="flex items-center gap-2 text-[13px] text-ink-2">
             <RepeatMark className="text-ink-3" />
             Repeats. This is the one for {repeat.on}{skipped && ", skipped"}.
@@ -277,14 +305,7 @@ export function DetailSheet({
                   key={s}
                   className="cursor-pointer rounded px-2.5 py-1 text-[13px] text-ink-2 has-checked:bg-ink has-checked:font-medium has-checked:text-paper has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-accent"
                 >
-                  <input
-                    type="radio"
-                    name="scope"
-                    value={s}
-                    checked={scope === s}
-                    onChange={() => setScope(s)}
-                    className="sr-only"
-                  />
+                  <input type="radio" name="scope" value={s} checked={scope === s} onChange={() => setScope(s)} className="sr-only" />
                   {s === "one" ? "This one" : "All of them"}
                 </label>
               ))}
@@ -293,43 +314,12 @@ export function DetailSheet({
         </div>
       )}
 
-      <div>
-        <div ref={card} className="rounded-xl bg-[color-mix(in_srgb,var(--paper-2)_55%,var(--sheet))] px-3.5 py-3">
-        <dl className="grid grid-cols-[5.5rem_minmax(0,1fr)] items-baseline gap-x-3 gap-y-2.5">
-          {view.retype ? (
-            <>
-              <dt className="text-[13px] text-ink-3">
-                <label htmlFor={typeFieldId}>Type</label>
-              </dt>
-              <dd>
-                <select
-                  id={typeFieldId}
-                  value={type}
-                  onChange={(e) => changeType(e.target.value as TypeChoice)}
-                  className={field}
-                >
-                  {TYPE_CHOICES.map((t) => (
-                    <option key={t} value={t}>
-                      {TYPE_WORD[t]}
-                    </option>
-                  ))}
-                </select>
-                {(isSeries || isOccurrence) && (
-                  <span className="block text-[13px] text-ink-2">The type belongs to every time it repeats.</span>
-                )}
-              </dd>
-            </>
-          ) : (
-            <>
-              <dt className="text-[13px] text-ink-3">Type</dt>
-              <dd>{TYPE_WORD[item.type]}</dd>
-            </>
-          )}
-
-          {view.when !== null && (
+      {hasSchedule && (
+        <div role="group" aria-label="When" className={group}>
+          {showDay && view.when !== null && (
             <PlanRow
-              label={isSeries ? "Starts" : "Planned for"}
-              when={view.when}
+              label="Planned for"
+              short={view.day === null ? "No day" : formatDayShort(view.day, view.today)}
               day={view.day}
               today={view.today}
               days={plan.days}
@@ -351,6 +341,7 @@ export function DetailSheet({
             <TimeRow
               time={view.time}
               startRef={timeStart}
+              needed={eventHint === EVENT_NEEDS_TIME}
               save={(time) =>
                 write(
                   () => actions.setTime(item.id, time, seriesScope),
@@ -363,8 +354,7 @@ export function DetailSheet({
               clear={() =>
                 write(
                   () => actions.clearTime(item.id, seriesScope),
-                  () =>
-                    setStatus(seriesScope === "all" ? "All of them are at any time of day now." : "At any time of day now."),
+                  () => setStatus(seriesScope === "all" ? "All of them are at any time of day now." : "At any time of day now."),
                 )
               }
             />
@@ -373,6 +363,7 @@ export function DetailSheet({
           {plan.firstDay && (repeat.kind === "series" || repeat.kind === "occurrence") && (
             <DateRow
               label="First day"
+              kind="day"
               on={repeat.firstOn}
               save={(on) =>
                 write(
@@ -383,62 +374,12 @@ export function DetailSheet({
             />
           )}
 
-          {view.due.editable ? (
-            (view.due.on || isOpen("due")) && (
-            <DateRow
-              label="Due by"
-              on={view.due.on}
-              picks={[
-                { label: "Today", on: view.today },
-                { label: "Tomorrow", on: addDays(view.today, 1) },
-                { label: "Next week", on: addDays(view.today, 7) },
-              ]}
-              save={(on) => write(() => actions.setDue(item.id, on), () => setStatus(`Due ${formatDayHeading(on)}.`))}
-              clear={{
-                label: "No due date",
-                run: () => write(() => actions.setDue(item.id, null), () => setStatus("No due date now.")),
-              }}
-            />
-            )
-          ) : (
-            view.due.on && (
-              <>
-                <dt className="text-[13px] text-ink-3">Due by</dt>
-                <dd className="tabular">{formatDayHeading(view.due.on)}</dd>
-              </>
-            )
-          )}
-
-          {(areaId !== null || isOpen("area") || view.areas.length === 0) && (
-            <>
-          <dt className="text-[13px] text-ink-3">
-            <label htmlFor={areaFieldId}>Area</label>
-          </dt>
-          <dd className="flex items-center gap-1">
-            <select id={areaFieldId} value={areaId ?? ""} onChange={(e) => changeArea(e.target.value)} className={field}>
-              <option value="">None</option>
-              {view.areas.map((a) => (
-                <option key={a.id} value={a.id}>
-                  {a.name}
-                </option>
-              ))}
-            </select>
-            <AreaMark color={view.areas.find((a) => a.id === areaId)?.color ?? null} />
-            <Link href="/settings#areas" className="rounded-md px-1.5 py-1 text-[13px] text-ink-3 hover:bg-hover active:bg-press hover:text-ink">
-              Manage areas
-            </Link>
-          </dd>
-          {actions.addArea && <NewArea add={actions.addArea} onOpen={() => setOpened({ id: item.id, rows: [...(opened.id === item.id ? opened.rows : []), "area"] })} />}
-            </>
-          )}
-
           {repeat.kind === "unavailable" && (
-            <>
-              <dt className="text-[13px] text-ink-3">Repeat</dt>
-              <dd className="text-ink-2">{repeat.reason}</dd>
-            </>
+            <Row icon={<RepeatIcon />}>
+              <span className="text-ink-2">{repeat.reason}</span>
+            </Row>
           )}
-          {((repeat.kind === "off" && isOpen("repeat")) || isSeries || isOccurrence) && (
+          {(repeat.kind === "off" || isSeries || isOccurrence) && (
             <RepeatRows
               repeat={repeat}
               startOn={view.day ?? view.today}
@@ -453,57 +394,67 @@ export function DetailSheet({
               }
             />
           )}
-        </dl>
-        {(() => {
-          const folded = [
-            view.due.editable && !view.due.on && !isOpen("due") ? { row: "due", label: "Due by", text: "Due date" } : null,
-            areaId === null && !isOpen("area") && view.areas.length > 0 ? { row: "area", label: "Area", text: "Area" } : null,
-            repeat.kind === "off" && !isOpen("repeat") ? { row: "repeat", label: "Repeat", text: "Repeat" } : null,
-          ].filter((f) => f !== null);
-          return (
-            folded.length > 0 && (
-              <div className="mt-3 flex flex-wrap gap-1.5">
-                {folded.map((f) => (
-                  <button
-                    key={f.row}
-                    type="button"
-                    onClick={() => openRow(f.row, f.label)}
-                    className="inline-flex h-8 items-center gap-1 rounded-full border border-dashed border-rule px-3 text-[13px] font-medium text-ink-2 hover:bg-hover hover:text-ink active:bg-press pointer-coarse:h-11"
-                  >
-                    <span aria-hidden="true">+</span>
-                    {f.text}
-                  </button>
-                ))}
-              </div>
-            )
-          );
-        })()}
-        </div>
-        {!isSeries && view.day !== null && view.due.on !== null && view.day > view.due.on && (
-          <p className="mt-1.5 px-1 text-[13px] text-ink-2">Planned after it is due.</p>
-        )}
-        <p role="status" className="mt-1.5 min-h-5 px-1 text-[13px] text-ink-2 empty:hidden">
-          {eventHint ?? status}
-        </p>
-      </div>
 
-      {isSeries && (
-        <SkippedDates skipped={repeat.skipped} restore={restore} />
+          {view.due.editable ? (
+            showDue ? (
+              <DateRow
+                label="Due by"
+                kind="due"
+                on={view.due.on}
+                autoFocus={dueOpen && view.due.on === null}
+                picks={[
+                  { label: "Today", on: view.today },
+                  { label: "Tomorrow", on: addDays(view.today, 1) },
+                  { label: "Next week", on: addDays(view.today, 7) },
+                ]}
+                save={(on) => write(() => actions.setDue(item.id, on), () => setStatus(`Due ${formatDayHeading(on)}.`))}
+                clear={{
+                  label: "No due date",
+                  run: () => write(() => actions.setDue(item.id, null), () => setStatus("No due date now.")),
+                }}
+              />
+            ) : (
+              <Row icon={<DueIcon />}>
+                <button type="button" onClick={() => setDueFor(item.id)} className={`${rowButton} text-ink-3`}>
+                  Add due date
+                </button>
+              </Row>
+            )
+          ) : (
+            view.due.on && (
+              <Row icon={<DueIcon />}>
+                <span className="text-[13px] text-ink-2">Due by </span>
+                <span className="tabular">{formatDayHeading(view.due.on)}</span>
+              </Row>
+            )
+          )}
+        </div>
       )}
 
+      {!isSeries && view.day !== null && view.due.on !== null && view.day > view.due.on && (
+        <p className="text-[13px] text-ink-2">Planned after it is due.</p>
+      )}
+      <p role="status" className="text-[13px] text-ink-2 empty:hidden">
+        {eventHint ?? status}
+      </p>
+
+      {isSeries && <SkippedDates skipped={repeat.skipped} restore={restore} />}
+
       {nesting.kind === "holds-subtasks" && (
-        <Subtasks
-          parentId={item.id}
-          parentDone={done}
-          subtasks={nesting.subtasks}
-          actions={actions}
-          onMarkParentDone={() => markDone(true)}
-          focusAdd={promoted}
-        />
+        <div className={group}>
+          <Subtasks
+            parentId={item.id}
+            parentDone={done}
+            subtasks={nesting.subtasks}
+            actions={actions}
+            onMarkParentDone={() => markDone(true)}
+            focusAdd={promoted}
+          />
+        </div>
       )}
 
       {nesting.kind === "is-subtask" && (
-        <section className="grid justify-items-start gap-1.5 border-t border-rule pt-4">
+        <section className={`grid justify-items-start gap-1.5 ${group}`}>
           <p className="text-ink-2">Subtasks go one level deep, so this one cannot hold its own.</p>
           <button
             type="button"
@@ -524,28 +475,27 @@ export function DetailSheet({
         </section>
       )}
 
-      <TagField
-        itemId={item.id}
-        tags={view.tags.on}
-        known={view.tags.known}
-        colors={view.tags.colors}
-        series={isSeries || isOccurrence}
-        add={actions.addTag}
-        remove={actions.removeTag}
-      />
+      <div className={group}>
+        <TagField
+          itemId={item.id}
+          tags={view.tags.on}
+          known={view.tags.known}
+          colors={view.tags.colors}
+          series={isSeries || isOccurrence}
+          add={actions.addTag}
+          remove={actions.removeTag}
+        />
 
-      {item.type === "note" ? (
-        <Link
-          href={`/notes/${item.id}`}
-          className="-ml-2 inline-flex items-center gap-2 justify-self-start rounded-md px-2 py-1 font-medium text-ink-2 hover:bg-hover active:bg-press hover:text-ink"
-        >
-          Open the note
-        </Link>
-      ) : (
-        <LinkedNotes itemId={view.notesFor} notes={linkedNotes} actions={actions} />
-      )}
+        {item.type === "note" ? (
+          <Link href={`/notes/${item.id}`} className={`${textButton} mt-1`}>
+            Open the note
+          </Link>
+        ) : (
+          <LinkedNotes itemId={view.notesFor} notes={linkedNotes} actions={actions} />
+        )}
+      </div>
 
-      <div className="grid justify-items-start gap-1 border-t border-rule-soft pt-3">
+      <div className={`flex flex-wrap items-center gap-x-3 gap-y-1 ${group}`}>
         {isOccurrence ? (
           <>
             {scope === "one" && skipped ? (
@@ -579,6 +529,7 @@ export function DetailSheet({
         ) : (
           <ConfirmDelete
             label={`Delete this ${word}`}
+            shown="Delete"
             prompt={
               isSeries
                 ? "Delete it and every time it repeats?"

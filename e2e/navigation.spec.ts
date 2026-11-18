@@ -210,9 +210,8 @@ signedIn.describe("managing from the details", () => {
     await open(page, "/inbox");
     await title(page, "Read the lease").click();
     await expect(details(page)).toBeVisible();
-    const fold = details(page).getByRole("button", { name: "Area", exact: true });
-    if (await fold.count()) await fold.click();
-    await details(page).getByRole("button", { name: "New area" }).click();
+    // New area and Manage areas are the last entries of the Area menu.
+    await details(page).getByRole("combobox", { name: "Area" }).selectOption({ label: "New area…" });
     await details(page).getByRole("textbox", { name: "New area name" }).fill("Studio");
     await page.keyboard.press("Enter");
     await expect(details(page).getByText("Studio added.")).toBeVisible();

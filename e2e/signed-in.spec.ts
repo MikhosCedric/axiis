@@ -198,8 +198,8 @@ signedIn.describe("signed in", () => {
     await page.getByLabel("Capture anything").fill(`${title} today`);
     await page.getByLabel("Capture anything").press("Enter");
     await openBlock(chip);
-    await details.getByRole("button", { name: "Repeat" }).click();
-    await details.getByLabel("Repeat").selectOption("daily");
+    await details.getByRole("button", { name: /^Repeat:/ }).click();
+    await details.getByLabel("Repeat", { exact: true }).selectOption("daily");
     await expect(details.getByRole("status").filter({ hasText: /^Repeats every day/ })).toBeVisible();
 
     await page.goto("/today");
@@ -221,7 +221,11 @@ signedIn.describe("signed in", () => {
     signedIn.use({ timezoneId: "America/New_York" });
 
     const details = (page: Page) => page.getByRole("complementary", { name: "Details" });
-    const when = (page: Page) => details(page).locator("dt", { hasText: "Planned for" }).locator("+ dd > span").first();
+    // The start and end as the fields read them, "01:30 to 04:00".
+    const range = async (page: Page) => {
+      const time = details(page).getByRole("group", { name: "Time" });
+      return `${await time.getByLabel("Starts at").inputValue()} to ${await time.getByLabel("Ends at").inputValue()}`;
+    };
 
     async function timeOnDay(page: Page, day: string, title: string) {
       await page.goto("/today");
@@ -235,6 +239,8 @@ signedIn.describe("signed in", () => {
     }
 
     async function typeTime(page: Page, time: Locator, start: string, end: string) {
+      // With no time the fields are folded behind the Any time switch.
+      if ((await time.getByLabel("Starts at").count()) === 0) await time.getByRole("switch", { name: "Any time" }).click();
       await time.getByLabel("Starts at").fill(start);
       await time.getByLabel("Ends at").fill(end);
       await time.getByLabel("Ends at").press("Enter");
@@ -248,9 +254,9 @@ signedIn.describe("signed in", () => {
         const time = await timeOnDay(page, day, `Night shift ${day} ${Date.now()}`);
         await typeTime(page, time, start, end);
         await expect(details(page).getByRole("status").filter({ hasText: `At ${start} now.` })).toBeVisible();
-        await expect(when(page)).toHaveText(new RegExp(`, ${start} to ${end}$`));
+        await expect.poll(() => range(page)).toBe(`${start} to ${end}`);
         await page.reload();
-        await expect(when(page)).toHaveText(new RegExp(`, ${start} to ${end}$`));
+        await expect.poll(() => range(page)).toBe(`${start} to ${end}`);
       }
     });
 
@@ -261,7 +267,8 @@ signedIn.describe("signed in", () => {
         details(page).getByRole("status").filter({ hasText: "02:30 does not happen on Sunday 8 March, when the clocks go forward. Try 03:00." }),
       ).toBeVisible();
       await page.reload();
-      await expect(when(page)).toHaveText("Sunday 8 March");
+      await expect(details(page).getByRole("button", { name: /^Planned for/ })).toHaveText("Sun 8 Mar");
+      await expect(details(page).getByRole("group", { name: "Time" }).getByLabel("Starts at")).toHaveCount(0);
     });
   });
 

@@ -11,12 +11,15 @@ export function ConfirmDelete({
   prompt,
   onConfirm,
   compact = false,
+  shown,
   icon = <DeleteIcon />,
 }: {
   label: string;
   prompt: string;
   onConfirm: () => void;
   compact?: boolean;
+  /** What the button says when that is shorter than `label`, which stays its accessible name. */
+  shown?: string;
   icon?: ReactNode;
 }) {
   const [asking, setAsking] = useState(false);
@@ -72,8 +75,8 @@ export function ConfirmDelete({
     <button
       ref={trigger}
       type="button"
-      aria-label={compact ? label : undefined}
-      title={compact ? label : undefined}
+      aria-label={compact || shown ? label : undefined}
+      title={compact || shown ? label : undefined}
       onClick={() => setAsking(true)}
       className={
         compact
@@ -82,7 +85,7 @@ export function ConfirmDelete({
       }
     >
       {icon}
-      {!compact && label}
+      {!compact && (shown ?? label)}
     </button>
   );
 }

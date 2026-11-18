@@ -4,7 +4,7 @@ import Link from "next/link";
 import { startTransition, useId, useOptimistic, useState, type KeyboardEvent } from "react";
 import { AreaMark } from "@/components/area-mark";
 import { parseTagName, sameTag, tagKey, TAG_NAME_MAX, type TagColors, type TagName } from "@/domain/tag";
-import { CloseIcon } from "@/features/detail/icons";
+import { CloseIcon, TagIcon } from "@/features/detail/icons";
 import type { ActionResult } from "@/features/today/commands";
 import { suggestTags, tagHref } from "./model";
 import { reach } from "@/lib/reach";
@@ -12,8 +12,8 @@ import { reach } from "@/lib/reach";
 type Change = { kind: "add" | "remove"; name: TagName };
 
 /**
- * The detail panel's Tags section: the item's tags as chips that can be taken
- * off, and a field that adds one on Enter, offering existing tags as it goes.
+ * The detail panel's tags line: the item's tags as chips that can be taken
+ * off, and a field after them that adds one on Enter, offering existing tags as it goes.
  */
 export function TagField({
   itemId,
@@ -41,7 +41,6 @@ export function TagField({
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(-1);
   const [status, setStatus] = useState("");
-  const headingId = useId();
   const fieldId = useId();
   const listId = useId();
   const hintId = useId();
@@ -92,91 +91,95 @@ export function TagField({
   }
 
   return (
-    <section aria-labelledby={headingId} className="grid gap-1.5">
-      <h3 id={headingId} className="text-sm font-semibold text-ink">
-        Tags
-      </h3>
-      {series && (
-        <p id={hintId} className="text-[13px] text-ink-3">
-          Tags belong to every time it repeats.
-        </p>
-      )}
-      {shown.length > 0 && (
-        <ul className="flex flex-wrap gap-1.5">
-          {shown.map((name) => (
-            <li key={name} className="inline-flex items-center rounded-full border border-rule text-[13px] text-ink-2">
-              <Link href={tagHref(name)} className="inline-flex items-center gap-1.5 rounded-l-full py-0.5 pr-1 pl-2.5 hover:text-ink">
-                <AreaMark color={colors[tagKey(name)] ?? null} size={6} />#{name}
-              </Link>
-              <button
-                type="button"
-                aria-label={`Remove tag ${name}`}
-                title="Remove"
-                onClick={() => save({ kind: "remove", name }, `Took ${name} off.`)}
-                className="grid size-6 place-items-center rounded-full text-ink-3 hover:bg-hover active:bg-press hover:text-ink"
-              >
-                <CloseIcon />
-              </button>
-            </li>
-          ))}
-        </ul>
-      )}
-      <div className="relative">
-        <label htmlFor={fieldId} className="sr-only">
-          Add a tag
-        </label>
-        <input
-          id={fieldId}
-          role="combobox"
-          aria-expanded={suggestions.length > 0}
-          aria-controls={listId}
-          aria-autocomplete="list"
-          aria-activedescendant={active >= 0 && suggestions[active] ? optionId(active) : undefined}
-          aria-describedby={series ? hintId : undefined}
-          autoComplete="off"
-          enterKeyHint="done"
-          maxLength={TAG_NAME_MAX + 8}
-          placeholder="Add a tag"
-          value={input}
-          onChange={(e) => {
-            setInput(e.target.value);
-            setOpen(true);
-            setActive(-1);
-          }}
-          onFocus={() => setOpen(true)}
-          onBlur={() => {
-            setOpen(false);
-            setActive(-1);
-          }}
-          onKeyDown={onKeyDown}
-          className="w-full rounded-lg border border-field bg-sheet px-3 py-2 text-ink"
-        />
-        <ul
-          id={listId}
-          role="listbox"
-          aria-label="Tags you have"
-          hidden={suggestions.length === 0}
-          className="absolute inset-x-0 top-full z-10 mt-1 grid rounded-lg border border-rule bg-sheet py-1 shadow-sm"
-        >
-          {suggestions.map((name, i) => (
-            <li
-              key={name}
-              id={optionId(i)}
-              role="option"
-              aria-selected={i === active}
-              // Keeps focus in the field, so the list does not close before the click lands.
-              onMouseDown={(e) => e.preventDefault()}
-              onClick={() => addTyped(name)}
-              className="cursor-pointer px-3 py-1.5 text-ink-2 hover:bg-hover active:bg-press hover:text-ink aria-selected:bg-accent-wash aria-selected:text-ink"
+    <section aria-label="Tags" className="grid grid-cols-[1rem_minmax(0,1fr)] items-start gap-x-3 py-1">
+      <span aria-hidden="true" className="grid h-8 place-items-center text-ink-3 pointer-coarse:h-11">
+        <TagIcon />
+      </span>
+      <div className="min-w-0">
+        <div className="flex flex-wrap items-center gap-1.5">
+          {shown.length > 0 && (
+            <ul className="contents">
+              {shown.map((name) => (
+                <li key={name} className="inline-flex items-center rounded-full border border-rule-soft text-[13px] text-ink-2">
+                  <Link href={tagHref(name)} className="inline-flex items-center gap-1.5 rounded-l-full py-0.5 pr-1 pl-2.5 hover:text-ink">
+                    <AreaMark color={colors[tagKey(name)] ?? null} size={6} />#{name}
+                  </Link>
+                  <button
+                    type="button"
+                    aria-label={`Remove tag ${name}`}
+                    title="Remove"
+                    onClick={() => save({ kind: "remove", name }, `Took ${name} off.`)}
+                    className="grid size-6 place-items-center rounded-full text-ink-3 hover:bg-hover active:bg-press hover:text-ink pointer-coarse:size-8"
+                  >
+                    <CloseIcon />
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+          <div className="relative min-w-[8rem] flex-1">
+            <label htmlFor={fieldId} className="sr-only">
+              Add a tag
+            </label>
+            <input
+              id={fieldId}
+              role="combobox"
+              aria-expanded={suggestions.length > 0}
+              aria-controls={listId}
+              aria-autocomplete="list"
+              aria-activedescendant={active >= 0 && suggestions[active] ? optionId(active) : undefined}
+              aria-describedby={series ? hintId : undefined}
+              autoComplete="off"
+              enterKeyHint="done"
+              maxLength={TAG_NAME_MAX + 8}
+              placeholder="Add a tag"
+              value={input}
+              onChange={(e) => {
+                setInput(e.target.value);
+                setOpen(true);
+                setActive(-1);
+              }}
+              onFocus={() => setOpen(true)}
+              onBlur={() => {
+                setOpen(false);
+                setActive(-1);
+              }}
+              onKeyDown={onKeyDown}
+              className="h-8 w-full rounded-md border border-transparent bg-transparent px-1.5 text-ink hover:border-rule-soft focus:border-field focus:bg-sheet pointer-coarse:h-11"
+            />
+            <ul
+              id={listId}
+              role="listbox"
+              aria-label="Tags you have"
+              hidden={suggestions.length === 0}
+              className="absolute inset-x-0 top-full z-10 mt-1 grid rounded-lg border border-rule bg-sheet py-1 shadow-sm"
             >
-              #{name}
-            </li>
-          ))}
-        </ul>
+              {suggestions.map((name, i) => (
+                <li
+                  key={name}
+                  id={optionId(i)}
+                  role="option"
+                  aria-selected={i === active}
+                  // Keeps focus in the field, so the list does not close before the click lands.
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => addTyped(name)}
+                  className="cursor-pointer px-3 py-1.5 text-ink-2 hover:bg-hover active:bg-press hover:text-ink aria-selected:bg-accent-wash aria-selected:text-ink"
+                >
+                  #{name}
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+        {series && (
+          <p id={hintId} className="text-[13px] text-ink-3">
+            Tags belong to every time it repeats.
+          </p>
+        )}
+        <p role="status" className="text-[13px] text-ink-2 empty:hidden">
+          {status}
+        </p>
       </div>
-      <p role="status" className="min-h-5 text-[13px] text-ink-2">
-        {status}
-      </p>
     </section>
   );
 }
