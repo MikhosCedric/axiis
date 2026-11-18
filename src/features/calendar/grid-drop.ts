@@ -1,5 +1,7 @@
 import type { LocalDate, ShownItem } from "@/domain/item";
 import { changes, DEFAULT_MINUTES, MIN_MINUTES, type Placement } from "@/features/score/drop";
+import { parseCapture, type CaptureArea } from "@/features/today/capture-syntax";
+import type { WeekStart } from "@/features/week/week-of";
 import { clamp, SNAP_MINUTES, snap } from "@/features/score/snap";
 import { addDays, instantAt, localMinutes, toLocalDate, utcMidnight } from "@/lib/dates";
 import { formatMinutes, type Clock } from "@/lib/clock";
@@ -101,6 +103,41 @@ export function slotWords(slot: Slot, today: LocalDate, clock: Clock): string {
   const minutes = slot.length % 60;
   const length = `${hours ? `${hours}h` : ""}${hours && minutes ? " " : ""}${minutes ? `${minutes}m` : ""}`;
   return ` ${day} ${at} for ${length}`;
+}
+
+const TRAILING_LENGTH = /(?:^|\s)(?:for\s+)?(?:(\d+)\s*h(?:ours?|rs?)?)?\s*(?:(\d+)\s*m(?:in(?:ute)?s?)?)?$/i;
+
+/** A length typed alone at the end ("1h", "for 90m", "1h 30m"), cut from the text; capture itself reads a length only beside a time. */
+function splitLength(typed: string): { text: string; length: number | null } {
+  const hit = TRAILING_LENGTH.exec(typed.trimEnd());
+  if (!hit || (hit[1] === undefined && hit[2] === undefined) || !hit[0].trim()) return { text: typed, length: null };
+  const length = Number(hit[1] ?? 0) * 60 + Number(hit[2] ?? 0);
+  if (length <= 0) return { text: typed, length: null };
+  return { text: typed.slice(0, hit.index).trimEnd(), length };
+}
+
+/**
+ * What a slot's capture line saves: the typed words, then the slot as the default schedule. A day, a time,
+ * a repeat or "in 2 hours" typed in the words wins over the slot's own; a length typed alone ("1h") sets
+ * the slot's length. `typedWhen` says whether the words took over the day or the time.
+ */
+export function slotCapture(
+  typed: string,
+  slot: Slot,
+  today: LocalDate,
+  clock: Clock,
+  options: { weekStart?: WeekStart; areas?: readonly CaptureArea[] } = {},
+): { text: string; title: string; day: boolean; time: boolean } {
+  const whole = parseCapture(typed, options);
+  const own = whole.time || whole.soon ? { text: typed, length: null } : splitLength(typed);
+  // A length cut off the end leaves the day, if any, at the line's edge where capture reads it.
+  const read = own.length === null ? whole : parseCapture(own.text, options);
+  const day = Boolean(read.day || read.soon || read.repeat);
+  const time = Boolean(read.time || read.soon);
+  const kept = { ...slot, length: own.length ?? slot.length };
+  const [, slotDay = "", slotTime = ""] = /^ (\S+) (.*)$/.exec(slotWords(kept, today, clock)) ?? [];
+  const words = [day ? "" : slotDay, time ? "" : slotTime].filter(Boolean).join(" ");
+  return { text: [own.text.trim(), words].filter(Boolean).join(" "), title: own.text.trim(), day: day || false, time: time || own.length !== null };
 }
 
 export type GridPress = { key: string; shiftKey: boolean; altKey: boolean };

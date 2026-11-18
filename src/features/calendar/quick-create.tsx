@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, useTransition, type FormEvent } from "react";
+import { useState, useTransition, type FormEvent } from "react";
 import { Floating } from "@/components/floating";
 import { useWeekStart } from "@/components/shell/week-start-context";
 import type { LocalDate } from "@/domain/item";
@@ -12,13 +12,13 @@ import { TITLE_MAX } from "@/features/today/model";
 import { formatMinutes, type Clock } from "@/lib/clock";
 import type { Box } from "@/lib/placement";
 import { reach } from "@/lib/reach";
-import { slotWords, type Slot } from "./grid-drop";
+import { slotCapture, type Slot } from "./grid-drop";
 
 /**
- * Capture, opened on a slot of the grid: the same plain-English line the capture field takes, already
- * holding the slot's day, time and length after the caret, with the same preview of what it understood
- * underneath. What is typed goes to the same capture command, so anything capture reads (a tag, a repeat,
- * another time) works here too.
+ * Capture, opened on a slot of the grid: the same plain-English line the capture field takes, empty, with the
+ * same preview of what it understood underneath. The slot's day, time and length are held apart and applied
+ * when saving as the default schedule; a day, time or length typed in the line wins over them. What is saved
+ * goes to the same capture command, so anything capture reads (a tag, a repeat) works here too.
  */
 export function QuickCreate({
   slot,
@@ -38,26 +38,28 @@ export function QuickCreate({
   onCaptured: (result: CaptureResult | ActionResult, text: string) => void;
   onClosed: (refocus: boolean) => void;
 }) {
-  const input = useRef<HTMLInputElement>(null);
-  const [value, setValue] = useState(() => slotWords(slot, today, clock));
+  const [value, setValue] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [moment, setMoment] = useState<Moment | undefined>(undefined);
   const [pending, startTransition] = useTransition();
   const weekStart = useWeekStart();
   const areas = useAreas() as readonly CaptureArea[] | undefined;
-  const said = parseCapture(value, { weekStart, areas });
-  const preview = previewWords(said, clock, moment ?? { today });
-  // Nothing typed yet: the line is only the slot's own words, which capture reads as a title with no plan.
-  const untitled = said.untitled || !value.trim() || value.trim() === slotWords(slot, today, clock).trim();
-
-  // The slot's words sit after the caret, so the title is typed in front of them.
-  useEffect(() => {
-    input.current?.setSelectionRange(0, 0);
-  }, []);
+  const options = { weekStart, areas };
+  const full = slotCapture(value, slot, today, clock, options);
+  const said = parseCapture(full.text, options);
+  const typed = parseCapture(value, options);
+  const range = `${formatMinutes(slot.start, clock)} to ${formatMinutes(slot.start + slot.length, clock)}`;
+  // What will be saved: the slot as written when nothing typed overrides it, else what capture read.
+  const preview = (() => {
+    if (full.day || full.time) return previewWords(said, clock, moment ?? { today });
+    const rest = previewWords({ ...typed, day: null, time: null }, clock, moment ?? { today });
+    return [`${formatDayHeading(slot.day)}, ${range}`, rest].filter(Boolean).join(", ");
+  })();
+  const untitled = said.untitled || !full.title;
 
   function submit(e: FormEvent) {
     e.preventDefault();
-    const text = value.trim();
+    const text = full.text.trim();
     if (!text || untitled || pending) return;
     setError(null);
     startTransition(async () => {
@@ -67,7 +69,6 @@ export function QuickCreate({
     });
   }
 
-  const range = `${formatMinutes(slot.start, clock)} to ${formatMinutes(slot.start + slot.length, clock)}`;
   return (
     <Floating at={at} label="New item" onClosed={onClosed} className="w-[min(22rem,calc(100vw-2rem))] p-3.5">
       <form onSubmit={submit} autoComplete="off">
@@ -78,7 +79,6 @@ export function QuickCreate({
           What is it
         </label>
         <input
-          ref={input}
           id="slot-capture"
           data-autofocus
           name="title"
@@ -88,6 +88,7 @@ export function QuickCreate({
             setMoment(momentHere());
           }}
           maxLength={TITLE_MAX}
+          placeholder="Add a title, e.g. Dentist"
           aria-describedby="slot-capture-preview slot-capture-status"
           className="mt-2.5 w-full rounded-lg border border-field bg-sheet px-3 py-2 text-ink"
         />
