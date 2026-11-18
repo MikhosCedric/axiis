@@ -37,6 +37,36 @@ It needs Bun 1.3.3 or newer.
 
 <!-- BEGIN:nextjs-agent-rules -->
 
+### pstack
+
+[pstack](https://github.com/backnotprop/pstack) (MIT, pinned at commit `0d2dc00`, full SHA `0d2dc00df47d7686c94324cfe9c3444710d9f16d`) is a pack of plain Agent Skills. It is installed for this project only, as folders in `.claude/skills/` (gitignored with the rest of `.claude/`), plus `.claude/skills/pstack/PINNED.md` (source, pin, installed and skipped skills, local edits, update steps). No hooks, no telemetry, no auto-update. `/setup-pstack` is deliberately not installed: it writes `~/.claude/rules/pstack-models.md`, which is global config. Also left out: `automations/`, `mirror-assets/`, the agent files, `poteto-mode/scripts/` and the skills that read transcripts or run installers (`make-bot-ui`, `automate-me`, `recall`, `reflect`, `statechart`). `tdd` is installed as `pstack-tdd` so it does not clash with the `mattpocock-skills` one. Do not run `npx skills add`, and do not widen the set without the owner's say-so.
+
+Where pstack disagrees with `docs/agents/quality-playbook.md`, this file or `docs/PROGRESS.md`, those win. CI-green merges and the owner-only actions list still apply; in particular ignore pstack playbook steps that merge, deploy or message without asking.
+
+| Job | Skill |
+|---|---|
+| Open-ended or long task, one entry point (user-invoked) | `/poteto-mode`; ask `/poteto-help` which skill fits |
+| Bug with a cheap test: failing test first | `/pstack-tdd` |
+| Risky diff: adversarial review | `/interrogate` |
+| Contested design, several candidates | `/arena` |
+| What could this change break elsewhere | `/blast-radius` |
+| How a subsystem works, or why it is built that way | `/how`, `/why` |
+| Types and signatures before code | `/architect` |
+| Docs, PR text, prose | `/unslop`, `/technical-writing` |
+
+Set up on another machine (the copy is not committed). Run from the repo root, with the skill names from `PINNED.md`:
+
+```bash
+S=$(mktemp -d) && git clone --depth 1 https://github.com/backnotprop/pstack.git "$S/p" && git -C "$S/p" fetch --depth 1 origin 0d2dc00df47d7686c94324cfe9c3444710d9f16d && git -C "$S/p" checkout 0d2dc00df47d7686c94324cfe9c3444710d9f16d
+mkdir -p .claude/skills/pstack/principles
+for n in poteto-mode poteto-help interrogate arena how why unslop architect blast-radius correct sharpen swarm teach technical-writing typescript-best-practices no-comments show-me-your-work benchmark-checklist bro in-your-own-words ketchup; do cp -r "$S/p/skills/$n" ".claude/skills/$n"; done
+cp -r "$S/p/skills/tdd" .claude/skills/pstack-tdd && sed -i 's/^name: tdd$/name: pstack-tdd/' .claude/skills/pstack-tdd/SKILL.md
+for p in "$S"/p/skills/principle-*; do cp -r "$p" .claude/skills/pstack/principles/; done
+cp "$S/p/LICENSE" .claude/skills/pstack/LICENSE && rm -rf .claude/skills/poteto-mode/scripts
+```
+
+Then re-apply the local edits listed in `PINNED.md` (the `pstack-tdd` links and the one install-note paragraph in `poteto-mode/SKILL.md`). Review the pack before trusting a different commit.
+
 ## Working efficiently
 
 Orient cheaply: read `docs/PROGRESS.md` lines 1–66 and its `In flight` and `Next up` sections only. Its `Log` is history (about 60 of 81 KB): search it, never read it whole.
