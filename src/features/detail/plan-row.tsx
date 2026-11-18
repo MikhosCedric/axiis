@@ -5,20 +5,22 @@ import { Floating } from "@/components/floating";
 import type { Box } from "@/lib/placement";
 import type { LocalDate } from "@/domain/item";
 import { planDate, type PlanFor } from "@/features/inbox/model";
+import { CalendarIcon } from "./icons";
+import { Row, rowButton } from "./rows";
 import { FIRST_DATE, LAST_DATE, parseLocalDate } from "@/lib/dates";
 
 const choice =
   "pill h-9 px-3.5";
 
 /**
- * The When row: where the item sits in time, and when `days` is on, a way to
- * put it on today, tomorrow or another day, or take it off its day. The choices
- * open under the row like the Inbox's "Plan for": the first takes focus, Escape
- * closes them, and focus goes back to the trigger once one is picked.
+ * The date row: the day the item sits on, which is also the way to move it.
+ * When `days` is on, it opens today, tomorrow, another day, or no day, under the
+ * row like the Inbox's "Plan for": the first takes focus, Escape closes them,
+ * and focus goes back to the trigger once one is picked.
  */
 export function PlanRow({
   label,
-  when,
+  short,
   day,
   today,
   days,
@@ -28,7 +30,8 @@ export function PlanRow({
   onUnplan,
 }: {
   label: string;
-  when: string;
+  /** The day in a few characters ("Wed 7 Oct"), or "No day". */
+  short: string;
   day: LocalDate | null;
   today: LocalDate;
   days: boolean;
@@ -69,25 +72,22 @@ export function PlanRow({
   }
 
   return (
-    <>
-      <dt className="text-[13px] text-ink-3">{label}</dt>
-      <dd className="flex flex-wrap items-baseline gap-x-2 gap-y-1.5">
-        <span className="tabular">{when}</span>
-        {days && (
-          <button
-            ref={trigger}
-            type="button"
-            aria-expanded={open}
-            aria-controls={panelId}
-            onClick={() => setOpen(!open)}
-            className="pill gap-1 py-1.5 pr-2 pl-3"
-          >
-            {verb}
-            <svg aria-hidden="true" viewBox="0 0 16 16" width={14} height={14} fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" className={open ? "rotate-180" : ""}>
-              <path d="M4 6.5l4 4 4-4" />
-            </svg>
-          </button>
-        )}
+    <Row icon={<CalendarIcon />}>
+      {days ? (
+        <button
+          ref={trigger}
+          type="button"
+          aria-expanded={open}
+          aria-controls={panelId}
+          aria-label={`${label}: ${short}`}
+          onClick={() => setOpen(!open)}
+          className={`${rowButton} tabular ${day === null ? "text-ink-2" : ""}`}
+        >
+          {short}
+        </button>
+      ) : (
+        <span className="tabular">{short}</span>
+      )}
         {days && open && (
           <Floating
             at={at}
@@ -142,7 +142,6 @@ export function PlanRow({
             </div>
           </Floating>
         )}
-      </dd>
-    </>
+    </Row>
   );
 }
