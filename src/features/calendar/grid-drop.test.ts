@@ -4,7 +4,7 @@ import { placeItem } from "@/features/score/commands";
 import { dayOf, parseCapture } from "@/features/today/capture-syntax";
 import { fakeRepo, makeItem } from "@/features/today/test-support";
 import { instantAt, localMinutes, toLocalDate } from "@/lib/dates";
-import { keyPlacement, lengthOf, minutesAt, moveTo, resizeTo, slotFor, slotWords, toAnyTime, type KeyContext } from "./grid-drop";
+import { keyPlacement, lengthOf, minutesAt, moveTo, resizeTo, slotCapture, slotFor, slotWords, toAnyTime, type KeyContext } from "./grid-drop";
 import { GRID_PX, gridHeight, HOUR_PX, scaleOf } from "./grid-layout";
 
 const d = (s: string) => s as LocalDate;
@@ -111,6 +111,48 @@ describe("slotFor", () => {
   it("stays inside the day", () => {
     expect(slotFor(MON, 1435, 1435)).toEqual({ day: MON, start: 1425, length: 15 });
     expect(slotFor(MON, 1300, 1440)).toEqual({ day: MON, start: 1290, length: 150 });
+  });
+});
+
+describe("slotCapture", () => {
+  const slot = { day: MON, start: 15 * 60, length: 30 };
+  const saved = (typed: string, today = MON) => {
+    const said = parseCapture(slotCapture(typed, slot, today, "24").text);
+    return { title: said.title, day: said.day && dayOf(said.day, today), time: said.time, soon: said.soon };
+  };
+
+  it("applies the slot to a bare title", () => {
+    expect(saved("Dentist")).toEqual({ title: "Dentist", day: MON, time: { start: 900, length: 30 }, soon: undefined });
+    expect(slotCapture("", slot, MON, "24").text).toBe("today 15:00 for 30m");
+  });
+
+  it("lets a typed day win and keeps the slot's time", () => {
+    expect(saved("Dentist tomorrow")).toEqual({ title: "Dentist", day: TUE, time: { start: 900, length: 30 }, soon: undefined });
+  });
+
+  it("lets a typed time win and keeps the slot's day", () => {
+    expect(saved("Dentist 9am")).toEqual({ title: "Dentist", day: MON, time: { start: 540, length: null }, soon: undefined });
+  });
+
+  it("lets a typed day and time win together", () => {
+    expect(saved("Dentist tomorrow 9am")).toEqual({ title: "Dentist", day: TUE, time: { start: 540, length: null }, soon: undefined });
+  });
+
+  it("lets a typed length set the slot's length", () => {
+    for (const typed of ["Dentist 1h", "Dentist for 1h"]) {
+      expect(saved(typed)).toEqual({ title: "Dentist", day: MON, time: { start: 900, length: 60 }, soon: undefined });
+    }
+    expect(saved("Dentist 1h 30m").time).toEqual({ start: 900, length: 90 });
+  });
+
+  it("leaves an 'in 2 hours' alone", () => {
+    expect(saved("Dentist in 2 hours")).toMatchObject({ title: "Dentist", day: null, time: null, soon: { after: 120 } });
+  });
+
+  it("says what the words took over", () => {
+    expect(slotCapture("Dentist", slot, MON, "24")).toMatchObject({ day: false, time: false });
+    expect(slotCapture("Dentist tomorrow", slot, MON, "24")).toMatchObject({ day: true, time: false });
+    expect(slotCapture("Dentist 1h", slot, MON, "24")).toMatchObject({ day: false, time: true });
   });
 });
 
