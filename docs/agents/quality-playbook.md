@@ -141,6 +141,8 @@ Treat a helper's report as a claim, not a fact. Before repeating it to the owner
 
 For reviews, match the tool to the risk (the table in `CLAUDE.md`): nothing for a small fix, `/review` once on a normal feature, `/design-review` for UI, `/cso` scoped to the diff for auth, data or privacy, `/investigate` when the cause is unknown. Report first, fix only what is accepted. Do not rerun a review on an unchanged commit.
 
+The pstack skill pack (`/poteto-mode`, `/interrogate`, `/pstack-tdd` and others) is installed project-locally; see the pstack section of `CLAUDE.md` for which skill suits which job. This playbook wins where they differ.
+
 ## 10. Safety and the owner's decisions
 
 Ask first, every time, for:
