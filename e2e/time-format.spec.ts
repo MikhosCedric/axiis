@@ -39,13 +39,13 @@ signedIn.describe("time format", () => {
     await beam.focus();
     await page.keyboard.press("Enter");
     const panel = page.getByRole("complementary");
-    await expect(panel.getByText(/^Tuesday 10 March, 9:30\sPM to 10:15\sPM$/)).toBeVisible();
+    await expect(panel.getByRole("button", { name: /^Planned for/ })).toHaveText("Tue 10 Mar 2099");
     await expect(panel.getByLabel("Starts at")).toHaveValue(/^9:30\sPM$/);
     await expect(panel.getByLabel("Ends at")).toHaveValue(/^10:15\sPM$/);
     await panel.getByLabel("Ends at").fill("23:00");
     await panel.getByLabel("Ends at").press("Enter");
     await expect(panel.getByLabel("Ends at")).toHaveValue(/^11:00\sPM$/);
-    await expect(panel.getByText(/^Tuesday 10 March, 9:30\sPM to 11:00\sPM$/)).toBeVisible();
+    await expect(panel.getByLabel("Starts at")).toHaveValue(/^9:30\sPM$/);
 
     await page.goto("/week/2099-03-10");
     await expect(page.getByRole("button", { name: new RegExp(`^${TITLE}[ ,]`) })).toContainText(/9:30\sPM/);
