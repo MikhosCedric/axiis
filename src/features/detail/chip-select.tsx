@@ -31,7 +31,7 @@ export function ChipSelect({
         aria-label={label}
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className={`h-8 max-w-full cursor-pointer appearance-none truncate rounded-full border border-rule-soft bg-transparent pr-7 text-[13px] font-medium text-ink hover:bg-hover focus:border-field pointer-coarse:h-11 ${
+        className={`h-8 max-w-full cursor-pointer appearance-none [field-sizing:content] truncate rounded-full border border-rule-soft bg-transparent pr-7 text-[13px] font-medium text-ink hover:bg-hover focus:border-field pointer-coarse:h-11 ${
           mark ? "pl-7" : "pl-3"
         }`}
       >

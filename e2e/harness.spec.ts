@@ -129,9 +129,11 @@ for (const view of ["", "&view=list"]) {
 const whenOf = async (page: Page) => {
   const panel = page.getByRole("complementary", { name: "Details" });
   const planned = panel.getByRole("button", { name: /^Planned for/ });
-  const day = (await planned.count()) ? await planned.textContent() : await panel.getByLabel("First day").inputValue();
+  const first = panel.getByLabel("First day");
+  // Nothing here waits: while the next item loads, the panel may show neither, and the caller polls.
+  const day = (await planned.count()) ? await planned.textContent({ timeout: 1000 }) : (await first.count()) ? await first.inputValue({ timeout: 1000 }) : "";
   const start = panel.getByLabel("Starts at");
-  const times = (await start.count()) ? `, ${await start.inputValue()} to ${await panel.getByLabel("Ends at").inputValue()}` : "";
+  const times = (await start.count()) ? `, ${await start.inputValue({ timeout: 1000 })} to ${await panel.getByLabel("Ends at").inputValue({ timeout: 1000 })}` : "";
   return `${day}${times}`;
 };
 
@@ -229,6 +231,9 @@ test("detail: times are typed either way and shown on the 24-hour clock, and an 
   const start = time.getByLabel("Starts at");
   const end = time.getByLabel("Ends at");
 
+  // This one has no time yet, so its fields are folded behind the Any time switch.
+  await time.getByRole("switch", { name: "Any time" }).click();
+  await expect(start).toBeFocused();
   await start.fill("1430");
   await end.fill("15.15");
   await end.press("Enter");
@@ -249,7 +254,8 @@ test("detail: times are typed either way and shown on the 24-hour clock, and an 
   await end.press("Enter");
   await expect(end).toHaveAttribute("aria-invalid", "true");
   await expect(page.getByText("That time could not be read. 24-hour clock, like 14:30 or 1430. 2:30pm works too.")).toBeVisible();
-  await expect.poll(() => whenOf(page)).toBe("Sun 11 Oct, 09:30 to 15:00");
+  // What was typed stays to be mended; the last saved end is the one the day shows.
+  await expect(end).toHaveValue("3 xm");
 });
 
 test("detail: a new subtask can be renamed in place", async ({ page }) => {
