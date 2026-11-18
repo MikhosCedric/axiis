@@ -66,6 +66,23 @@ for (const colorScheme of ["light", "dark"] as const) {
   });
 }
 
+// The public pages again with reduced motion on (the suite's default), at 375px as well: the landing's reduced form once
+// failed label-content-name-mismatch while its animated form passed.
+const PUBLIC_PAGES = ["/", "/help", "/changelog", "/login", "/privacy"];
+for (const variant of [...VARIANTS, { name: "phone at night", colorScheme: "dark", viewport: { width: 375, height: 812 } }] as const) {
+  test.describe(`${variant.name}, reduced motion`, () => {
+    test.use({ colorScheme: variant.colorScheme, viewport: variant.viewport, reducedMotion: "reduce" });
+
+    for (const path of PUBLIC_PAGES) {
+      test(`${path} has no serious or critical axe violations`, async ({ page }) => {
+        await page.goto(path);
+        await expect(page.locator("h1").first()).toBeVisible();
+        expect(await blockingViolations(page)).toEqual([]);
+      });
+    }
+  });
+}
+
 for (const variant of VARIANTS) {
   test.describe(variant.name, () => {
     test.use({ colorScheme: variant.colorScheme, viewport: variant.viewport, reducedMotion: "no-preference" });

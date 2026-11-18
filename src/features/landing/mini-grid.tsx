@@ -139,6 +139,8 @@ export function MiniBlock({
       </span>
       <span className={styles.words}>
         <span className={styles.title}>{block.title}</span>
+        {/* A real space between the title and the time, so the visible words read "Title 14:00" to a checker (WCAG 2.5.3) and the button's name, "Title, 14:00 to 15:30, ...", contains them. */}
+        {" "}
         {hint && <span className={`${styles.meta} ${styles.inline}`}> {hint}</span>}
         <span className={`${styles.meta} ${short ? styles.inline : ""}`}>
           {short ? " " : ""}

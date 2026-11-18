@@ -396,15 +396,18 @@ for (const variant of [
   { name: "phone at night", colorScheme: "dark", viewport: { width: 375, height: 812 } },
   { name: "wide at night", colorScheme: "dark", viewport: { width: 2560, height: 1440 } },
 ] as const) {
-  test.describe(variant.name, () => {
-    test.use({ colorScheme: variant.colorScheme, viewport: variant.viewport });
+  // Both motion modes: the reduced form has failed axe on its own (a demo block's name did not hold its visible words).
+  for (const motion of ["no-preference", "reduce"] as const) {
+    test.describe(`${variant.name}, ${motion === "reduce" ? "reduced motion" : "motion"}`, () => {
+      test.use({ colorScheme: variant.colorScheme, viewport: variant.viewport, reducedMotion: motion });
 
-    test("the landing has no axe violations and no sideways scroll", async ({ page }) => {
-      await page.goto("/");
-      await settle(page);
-      const { violations } = await new AxeBuilder({ page }).analyze();
-      expect(violations.map((v) => `${v.id}: ${v.nodes.map((n) => n.target.join(" ")).join(", ")}`)).toEqual([]);
-      expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBe(0);
+      test("the landing has no axe violations and no sideways scroll", async ({ page }) => {
+        await page.goto("/");
+        await settle(page);
+        const { violations } = await new AxeBuilder({ page }).analyze();
+        expect(violations.map((v) => `${v.id}: ${v.nodes.map((n) => n.target.join(" ")).join(", ")}`)).toEqual([]);
+        expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBe(0);
+      });
     });
-  });
+  }
 }
