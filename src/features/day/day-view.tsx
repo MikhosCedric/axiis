@@ -301,7 +301,7 @@ function DayPage({
       <PageHeader
         heading={<CalendarBar span="day" date={date} today={today} mode={mode} titleId="day-title" />}
         controls={controls}
-        controlsRow
+        bar
         inline={!firstDay}
         capture={<CaptureField inline={!firstDay} captureAction={capture} pasteActions={paste} firstDay={firstDay} screenStatus={ctx.status} />}
       >

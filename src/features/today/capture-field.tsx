@@ -206,7 +206,7 @@ export function CaptureField({
   }
 
   return (
-    <form onSubmit={submit} autoComplete="off" className={`max-w-[440px] ${inline ? "@min-[64rem]/page:relative @min-[64rem]/page:max-w-none" : ""}`}>
+    <form onSubmit={submit} autoComplete="off" className={`max-w-[440px] ${inline ? "@min-[90rem]/page:relative @min-[90rem]/page:max-w-none" : ""}`}>
       <label htmlFor="capture" className="sr-only">
         {label}
       </label>
@@ -257,7 +257,7 @@ export function CaptureField({
           C
         </kbd>
       </div>
-      <div className={`mt-1.5 ${inline ? "@min-[64rem]/page:absolute @min-[64rem]/page:inset-x-0 @min-[64rem]/page:top-full @min-[64rem]/page:z-[1] @min-[64rem]/page:mt-0" : ""}`}>
+      <div className={`mt-1.5 ${inline ? "@min-[90rem]/page:absolute @min-[90rem]/page:inset-x-0 @min-[90rem]/page:top-full @min-[90rem]/page:z-[1] @min-[90rem]/page:mt-0" : ""}`}>
         <div className="min-h-6 min-w-0 pt-0.5 text-[13px]">
           {/* While the line reads as a plan, the preview takes the status line's place; the status stays for screen readers. */}
           <p id="capture-status" role="status" className={preview || pasted ? "sr-only" : status?.error ? "font-medium text-ink" : "text-ink-2"}>

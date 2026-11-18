@@ -237,6 +237,126 @@
   }
 }
 
+/*
+ * The head of every signed-in page (page-header.tsx): a grid of named slots, so nothing is ever
+ * placed by chance. title (the heading), sum (summary and filter), nav (Today and the steps),
+ * ctl (the page's controls, the Guide last), cap (capture with its status line in its own space).
+ * Calendar pages (`data-bar`) answer to the `page` container: one column on a phone; the steps
+ * and controls on one row under the title; then nav, title and controls on one row with capture
+ * under; then, with room to spare (`data-inline`), capture sits between title and controls.
+ */
+@utility page-header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    "title ctl"
+    "sum sum"
+    "cap cap";
+  align-items: start;
+  column-gap: 1.25rem;
+  margin-bottom: 0.75rem;
+
+  & h1 {
+    grid-area: title;
+    min-width: 0;
+  }
+  & > [data-slot="nav"] {
+    grid-area: nav;
+    margin-top: 0.75rem;
+  }
+  & > [data-slot="sum"] {
+    grid-area: sum;
+    min-width: 0;
+  }
+  & > [data-slot="ctl"] {
+    grid-area: ctl;
+    justify-self: end;
+    align-self: center;
+  }
+  & > [data-slot="cap"] {
+    grid-area: cap;
+    min-width: 0;
+    margin-top: 1rem;
+    max-width: 44rem;
+  }
+
+  &[data-bar] {
+    & > [data-slot="sum"] .page-summary {
+      margin-top: 0.25rem;
+    }
+    /* A phone: a lone Guide button shares the steps' row; several controls take a row of their own. */
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      "title title"
+      "sum sum"
+      "nav ctl"
+      "cap cap";
+    & > [data-slot="ctl"] {
+      margin-top: 0.75rem;
+    }
+    @container page (width < 30rem) {
+      &:has(> [data-slot="ctl"] > :nth-child(2)) {
+        grid-template-columns: minmax(0, 1fr);
+        grid-template-areas:
+          "title"
+          "sum"
+          "nav"
+          "ctl"
+          "cap";
+        & > [data-slot="ctl"] {
+          justify-self: stretch;
+          justify-content: space-between;
+        }
+      }
+    }
+  }
+
+  @container page (width >= 30rem) {
+    &[data-bar] {
+      grid-template-columns: minmax(0, 1fr) auto;
+      grid-template-areas:
+        "title title"
+        "sum sum"
+        "nav ctl"
+        "cap cap";
+      & > [data-slot="ctl"] {
+        justify-self: end;
+        margin-top: 0.75rem;
+      }
+    }
+  }
+
+  @container page (width >= 48rem) {
+    &[data-bar] {
+      grid-template-columns: auto minmax(0, 1fr) auto;
+      grid-template-areas:
+        "nav title ctl"
+        "nav sum ctl"
+        "cap cap cap";
+      column-gap: 1.5rem;
+      & > [data-slot="nav"],
+      & > [data-slot="ctl"] {
+        margin-top: 0;
+        align-self: center;
+      }
+    }
+  }
+
+  @container page (width >= 90rem) {
+    &[data-inline] {
+      grid-template-columns: auto minmax(22rem, 1fr) minmax(22rem, 30rem) auto;
+      grid-template-areas:
+        "nav title cap ctl"
+        "nav sum cap ctl";
+      padding-bottom: 1.5rem;
+      & > [data-slot="cap"] {
+        margin-top: 0;
+        align-self: center;
+      }
+    }
+  }
+}
+
 /* A text control inside a row: under a coarse pointer its hit area reaches 44px tall without moving the text. */
 @utility tap-y {
   @media (pointer: coarse) {

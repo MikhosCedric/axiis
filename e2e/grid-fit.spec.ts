@@ -71,27 +71,26 @@ test.describe("on a desktop window, 1440 by 900", () => {
     expect(rail.trayLeft).toBeGreaterThanOrEqual(rail.gridRight);
   });
 
-  test("the head is one bar: Today and the steps, the title with its summary under it, capture, then the controls", async ({ page }) => {
+  test("the head is two rows: Today, the title with its summary and the controls, then capture under them", async ({ page }) => {
     await open(page);
     const row = await page.evaluate(() => {
-      const top = (el: Element | null) => el!.getBoundingClientRect().top;
-      const mid = (el: Element | null) => {
-        const r = el!.getBoundingClientRect();
-        return r.top + r.height / 2;
-      };
+      const box = (el: Element | null) => el!.getBoundingClientRect();
       const header = document.querySelector("header")!;
       return {
-        today: mid(header.querySelector("nav a")),
-        capture: mid(document.querySelector("#capture")),
-        titleTop: top(document.querySelector("#day-title")),
-        summaryTop: top(header.querySelector("[data-glance]")),
-        headerBottom: header.getBoundingClientRect().bottom,
-        gridTop: top(document.querySelector("[data-calendar-grid]")),
+        today: box(header.querySelector("nav a")),
+        title: box(document.querySelector("#day-title")),
+        summary: box(header.querySelector("[data-glance]")),
+        capture: box(document.querySelector("#capture")),
+        header: box(header),
+        grid: box(document.querySelector("[data-calendar-grid]")),
       };
     });
-    expect(Math.abs(row.today - row.capture)).toBeLessThan(24);
-    expect(row.summaryTop).toBeGreaterThan(row.titleTop);
-    expect(row.gridTop - row.headerBottom).toBeLessThan(40);
+    // Today shares the title's row; capture has a row of its own under it, inside the head.
+    expect(Math.abs(row.today.top + row.today.height / 2 - (row.title.top + row.summary.bottom) / 2)).toBeLessThan(24);
+    expect(row.summary.top).toBeGreaterThan(row.title.top);
+    expect(row.capture.top).toBeGreaterThanOrEqual(row.summary.bottom);
+    expect(row.capture.bottom).toBeLessThanOrEqual(row.header.bottom);
+    expect(row.grid.top - row.header.bottom).toBeLessThan(40);
     // The capture field has room for its whole placeholder.
     const field = await page.evaluate(() => {
       const input = document.querySelector<HTMLInputElement>("#capture")!;

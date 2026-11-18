@@ -95,6 +95,7 @@ function WeekPage({
     <>
       <TitleBar heading="week-title">{formatWeekHeading(days)}</TitleBar>
       <PageHeader
+        bar
         inline
         heading={<CalendarBar span="week" date={days[0]} from={from} today={today} titleId="week-title" />}
         controls={<GuideButton topics={WEEK_GUIDE} />}
