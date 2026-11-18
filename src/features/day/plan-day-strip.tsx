@@ -1,6 +1,6 @@
 "use client";
 
-import { useTransition, ViewTransition } from "react";
+import { useId, useState, useTransition, ViewTransition } from "react";
 import { planAction } from "@/features/inbox/actions";
 import type { ActionResult } from "@/features/today/commands";
 import { Glyph } from "@/features/today/glyph";
@@ -18,7 +18,8 @@ const button =
 /**
  * A morning nudge for a day with nothing on it while the Inbox has something waiting: the first few
  * Inbox items, each a tap from today. It goes as soon as the day has anything planned, and never
- * shows on a day with an empty Inbox. Quiet on purpose, one card, no count in red.
+ * shows on a day with an empty Inbox. Quiet on purpose, one card, no count in red. Beside the day it is a full
+ * card in the page's side column; with no room for a column it is one line above the grid with a Show button.
  */
 export function PlanDayStrip({
   rows,
@@ -35,6 +36,9 @@ export function PlanDayStrip({
   planOne?: (id: string) => Promise<ActionResult>;
 }) {
   const [pending, startTransition] = useTransition();
+  // Without a side column the card is one line, so the grid stays the first thing under the header; Show opens it.
+  const [open, setOpen] = useState(false);
+  const listId = useId();
 
   function plan(row: PlanDayRow) {
     startTransition(async () => {
@@ -46,25 +50,42 @@ export function PlanDayStrip({
 
   return (
     <ViewTransition enter="none" exit="card-out" default="none">
-    <section aria-labelledby="plan-day-h" className="surface side-part mb-5 max-w-[720px] px-4 py-3.5 motion-safe:animate-toast-in">
-      <h2 id="plan-day-h" className="font-display text-lg leading-tight font-medium">
-        Plan your day
-      </h2>
-      <p className="mt-0.5 text-[13px] text-ink-3">Pull something in from the Inbox.</p>
-      <ul className="mt-2">
-        {rows.map((row) => (
-          <li key={row.id} className="flex items-center gap-3 border-t border-rule-soft py-1.5 first:border-t-0">
-            <Glyph type={row.type} state="planned" />
-            <button type="button" onClick={() => onSelect(row.id)} className="min-w-0 flex-1 cursor-pointer rounded text-left tap-y font-medium break-words hover:underline">
-              {row.title}
-            </button>
-            <button type="button" disabled={pending} onClick={() => plan(row)} className={button}>
-              Plan for today<span className="sr-only">: {row.title}</span>
-            </button>
-          </li>
-        ))}
-      </ul>
-      {total > rows.length && <p className="mt-1 text-xs text-ink-3">And {total - rows.length} more in the Inbox.</p>}
+    <section aria-labelledby="plan-day-h" className="surface side-part mb-3 max-w-[720px] px-4 py-2.5 motion-safe:animate-toast-in @min-[58rem]/page:mb-5 @min-[58rem]/page:py-3.5">
+      <div className="flex items-center gap-3">
+        <h2 id="plan-day-h" className="font-display text-lg leading-tight font-medium">
+          Plan your day
+        </h2>
+        <p className="min-w-0 flex-1 truncate text-[13px] text-ink-3 @min-[58rem]/page:hidden">
+          {total === 1 ? "1 item" : `${total} items`} in the Inbox
+        </p>
+        <button
+          type="button"
+          aria-expanded={open}
+          aria-controls={listId}
+          onClick={() => setOpen((v) => !v)}
+          className={`${button} @min-[58rem]/page:hidden`}
+        >
+          {open ? "Hide" : "Show"}
+          <span className="sr-only"> the Inbox items</span>
+        </button>
+      </div>
+      <div id={listId} className={open ? "" : "hidden @min-[58rem]/page:block"}>
+        <p className="mt-0.5 text-[13px] text-ink-3">Pull something in from the Inbox.</p>
+        <ul className="mt-2">
+          {rows.map((row) => (
+            <li key={row.id} className="flex items-center gap-3 border-t border-rule-soft py-1.5 first:border-t-0">
+              <Glyph type={row.type} state="planned" />
+              <button type="button" onClick={() => onSelect(row.id)} className="min-w-0 flex-1 cursor-pointer rounded text-left tap-y font-medium break-words hover:underline">
+                {row.title}
+              </button>
+              <button type="button" disabled={pending} onClick={() => plan(row)} className={button}>
+                Plan for today<span className="sr-only">: {row.title}</span>
+              </button>
+            </li>
+          ))}
+        </ul>
+        {total > rows.length && <p className="mt-1 text-xs text-ink-3">And {total - rows.length} more in the Inbox.</p>}
+      </div>
     </section>
     </ViewTransition>
   );
