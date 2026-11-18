@@ -143,6 +143,7 @@ describe("slotCapture", () => {
       expect(saved(typed)).toEqual({ title: "Dentist", day: MON, time: { start: 900, length: 60 }, soon: undefined });
     }
     expect(saved("Dentist 1h 30m").time).toEqual({ start: 900, length: 90 });
+    expect(saved("Dentist tomorrow 1h")).toEqual({ title: "Dentist", day: TUE, time: { start: 900, length: 60 }, soon: undefined });
   });
 
   it("leaves an 'in 2 hours' alone", () => {

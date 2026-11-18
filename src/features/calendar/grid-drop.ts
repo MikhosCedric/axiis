@@ -128,8 +128,10 @@ export function slotCapture(
   clock: Clock,
   options: { weekStart?: WeekStart; areas?: readonly CaptureArea[] } = {},
 ): { text: string; title: string; day: boolean; time: boolean } {
-  const read = parseCapture(typed, options);
-  const own = read.time || read.soon ? { text: typed, length: null } : splitLength(typed);
+  const whole = parseCapture(typed, options);
+  const own = whole.time || whole.soon ? { text: typed, length: null } : splitLength(typed);
+  // A length cut off the end leaves the day, if any, at the line's edge where capture reads it.
+  const read = own.length === null ? whole : parseCapture(own.text, options);
   const day = Boolean(read.day || read.soon || read.repeat);
   const time = Boolean(read.time || read.soon);
   const kept = { ...slot, length: own.length ?? slot.length };
