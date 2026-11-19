@@ -18,11 +18,11 @@ export default async function TodayPage({ searchParams }: PageProps<"/today">) {
   const today = await getTodayDate();
   const { mode, itemId } = readDayQuery(await searchParams);
   const filter = await getFilter(searchParams, true);
-  const [data, leftover, jar, due] =await Promise.all([
+  const [data, leftover, jar, due] = await Promise.all([
     getDay(today),
     getItemsRepo().then(async (repo) => loadLeftover(repo, today, await getTimeZone(), filter)),
     cookies(),
-    getItemsRepo().then((repo) => loadDueSoon(repo, today, getNow(), filter)),
+    getItemsRepo().then(async (repo) => loadDueSoon(repo, today, await getNow(), filter)),
   ]);
   return (
     <TagColorsProvider value={data.tagColors}>

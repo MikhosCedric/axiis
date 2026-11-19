@@ -56,3 +56,40 @@ describe("isFakeSession", () => {
     expect(isFakeSession(cookie)).toBe(false);
   });
 });
+
+describe("getFakePinnedMinutes", () => {
+  const jar = new Map<string, string>();
+  const pinned = async () => {
+    vi.resetModules();
+    vi.doMock("next/headers", () => ({ cookies: async () => ({ get: (name: string) => (jar.has(name) ? { value: jar.get(name) } : undefined) }) }));
+    return (await import("./fake-session")).getFakePinnedMinutes();
+  };
+
+  beforeEach(() => {
+    jar.clear();
+    jar.set("axiis-e2e-session", SECRET);
+    jar.set("axiis-e2e-at", "11:50");
+  });
+  afterEach(() => {
+    vi.doUnmock("next/headers");
+  });
+
+  it("reads the pinned time of day when every condition holds", async () => {
+    expect(await pinned()).toBe(11 * 60 + 50);
+  });
+
+  it.each([
+    ["the build is not the browser-test build", () => vi.stubEnv("AXIIS_E2E_BUILD", "")],
+    ["E2E_FAKE_SESSION is unset", () => vi.stubEnv("E2E_FAKE_SESSION", undefined)],
+    ["VERCEL is set", () => vi.stubEnv("VERCEL", "1")],
+    ["the secret is too short", () => vi.stubEnv("E2E_FAKE_SESSION_SECRET", "x".repeat(31))],
+    ["the session cookie is wrong", () => jar.set("axiis-e2e-session", "nope")],
+    ["the session cookie is absent", () => jar.delete("axiis-e2e-session")],
+    ["the time is not HH:MM", () => jar.set("axiis-e2e-at", "11:5")],
+    ["the hour is out of range", () => jar.set("axiis-e2e-at", "24:00")],
+    ["the pin is absent", () => jar.delete("axiis-e2e-at")],
+  ])("is null when %s", async (_, arrange) => {
+    arrange();
+    expect(await pinned()).toBeNull();
+  });
+});

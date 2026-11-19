@@ -15,6 +15,7 @@ import { formatDayHeading } from "@/features/today/format";
 import { STATE_WORD } from "@/features/today/item-name";
 import { buildToday, stateOf } from "@/features/today/model";
 import { formatClock } from "@/lib/clock";
+import { clockIsPinned } from "@/lib/e2e-pinned-clock";
 import { dayRangeFor, toLocalDate } from "@/lib/dates";
 import type { ChildCount } from "@/lib/items/repo";
 import { reach } from "@/lib/reach";
@@ -76,7 +77,7 @@ type Status = { text: string; error: boolean; offer?: PlaceOffer };
 function useNow(nowIso: string, ticking: boolean) {
   const [now, setNow] = useState(() => new Date(nowIso));
   useEffect(() => {
-    if (!ticking) return;
+    if (!ticking || clockIsPinned()) return;
     const id = window.setInterval(() => setNow(new Date()), 30_000);
     return () => window.clearInterval(id);
   }, [ticking]);
