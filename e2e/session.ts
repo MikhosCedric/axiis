@@ -1,4 +1,4 @@
-import { test as base, type Page } from "@playwright/test";
+import { test as base, type BrowserContext, type Page } from "@playwright/test";
 
 // The cookie src/lib/supabase/fake-session.ts reads. Its value is the per-run secret playwright.config.ts makes.
 export const SESSION_COOKIE = "axiis-e2e-session";
@@ -34,4 +34,14 @@ export const signedIn = base.extend({
  */
 export async function hydrated(page: Page): Promise<void> {
   await page.locator("html[data-hydrated]").waitFor({ state: "attached" });
+}
+
+/**
+ * Pins the app's "now" to a time of day today ("HH:MM", in the context's zone) on the signed-in routes, so a spec
+ * that reads the now line or an hour label does not depend on when it runs. The server honours the cookie only in
+ * the browser-test build with the fake session (getFakePinnedMinutes in src/lib/supabase/fake-session.ts), and
+ * the page stops ticking to the real clock. Call it before the first navigation.
+ */
+export async function pinClock(context: BrowserContext, at: string, baseURL: string): Promise<void> {
+  await context.addCookies([{ name: "axiis-e2e-at", value: at, url: baseURL }]);
 }

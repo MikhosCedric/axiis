@@ -25,7 +25,7 @@ export default async function TodayPage({ searchParams }: PageProps<"/today">) {
     getItemsRepo().then(async (repo) => loadLeftover(repo, today, await getTimeZone(), filter)),
     cookies(),
     getWeek(today),
-    getItemsRepo().then((repo) => loadDueSoon(repo, today, getNow(), filter)),
+    getItemsRepo().then(async (repo) => loadDueSoon(repo, today, await getNow(), filter)),
   ]);
   return (
     <TagColorsProvider value={data.tagColors}>
