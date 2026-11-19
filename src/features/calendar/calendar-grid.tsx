@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { createPortal } from "react-dom";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
 import { AreaLabel } from "@/components/area-mark";
@@ -10,6 +11,8 @@ import { useQuick, type RowHooks } from "@/features/actions/context";
 import type { QuickItem } from "@/features/actions/model";
 import { quickItem } from "@/features/actions/quick-item";
 import { rowProps } from "@/features/actions/row-actions";
+import { dayHref } from "@/features/day/nav";
+import { useKeepFilter } from "@/features/filter/keep-filter";
 import { SameInInbox } from "@/features/inbox/same-in-inbox";
 import type { ActionResult, CaptureResult } from "@/features/today/commands";
 import { DoneToggle } from "@/features/today/done-toggle";
@@ -129,6 +132,7 @@ export function CalendarGrid({
   className = "",
 }: CalendarGridProps) {
   const quick = useQuick();
+  const keep = useKeepFilter();
   const scroller = useRef<HTMLDivElement>(null);
   const refocus = useRef<{ id: string; until: number } | null>(null);
   /** Set by a double-click, so the press that ended it does not also open the block in brief. */
@@ -517,6 +521,8 @@ export function CalendarGrid({
     preview?.kind === "move" && preview.placement?.schedule.kind === "day" && preview.placement.schedule.on === day && preview.item.schedule.kind !== "day";
 
   const overTray = preview?.kind === "move" && preview.placement?.schedule.kind === "unscheduled" && preview.item.schedule.kind !== "unscheduled";
+  /** A placed block is being dragged: the Inbox strip says what dropping on it does. */
+  const clearing = preview?.kind === "move" && preview.item.schedule.kind !== "unscheduled";
 
   const trayChip = (item: ShownItem) => {
     if (hidden(item)) return null;
@@ -580,26 +586,51 @@ export function CalendarGrid({
     );
   };
 
+  // The Week's Inbox is a strip under the grid, one line tall, so it stays in view and a drag reaches it from any hour. The Day's is a card in its side column.
+  const strip = !trayHost;
   const trayNode =
     tray && examples.length === 0 ? (
-      <section data-drop="tray" aria-labelledby="calendar-tray-h" aria-describedby="calendar-tray-help" className={`${styles.tray} ${trayHost ? styles.trayRail : ""} ${overTray ? styles.over : ""}`}>
-        <TrayHeading as={trayHost ? "h2" : "h3"}>
-          {INBOX}
-        </TrayHeading>
+      <section
+        data-drop="tray"
+        aria-labelledby="calendar-tray-h"
+        aria-describedby="calendar-tray-help"
+        className={`${styles.tray} ${trayHost ? styles.trayRail : styles.trayStrip} ${overTray ? styles.over : ""}`}
+      >
         {/* How to plan an item, read out as the tray's description and drawn nowhere: the Guide has it in words. */}
         <p id="calendar-tray-help" className="sr-only">
           No day yet. Drag one onto the grid to plan it for that time{trayHost ? ", or click it to plan it for today" : ""}. On a touch screen, press and hold one first. Drag a block back here to clear its day.
         </p>
-        {tray.items.length === 0 && !tray.full ? (
-          <p className="mt-1 text-[13px] text-ink-3">Empty.</p>
+        {strip ? (
+          <div className={styles.trayRow}>
+            <TrayHeading as="h3">{INBOX}</TrayHeading>
+            {clearing ? (
+              <p className="flex-none text-[13px] font-medium text-ink" aria-hidden="true">
+                Drop here to clear its day
+              </p>
+            ) : (
+              tray.items.length === 0 && !tray.full && <p className="flex-none text-[13px] text-ink-3">Empty.</p>
+            )}
+            {tray.items.length > 0 && <ul className={styles.trayScroll}>{tray.items.map(trayChip)}</ul>}
+            {tray.full && <p className="flex-none text-[13px] text-ink-3">{TRAY_FULL}</p>}
+            <p className="ml-auto flex-none text-[13px] text-ink-3">
+              <SameInInbox />
+            </p>
+          </div>
         ) : (
-        <>
-        <p className="mt-1 mb-3 text-[13px] text-ink-3">
-          <SameInInbox />
-        </p>
-        {tray.items.length ? <ul className={`flex flex-wrap gap-2 ${trayHost ? styles.trayList : ""}`}>{tray.items.map(trayChip)}</ul> : <p className="text-[13px] text-ink-3">{EMPTY_TRAY}</p>}
-        {tray.full && <p className="mt-3 text-[13px] text-ink-3">{TRAY_FULL}</p>}
-        </>
+          <>
+            <TrayHeading as="h2">{INBOX}</TrayHeading>
+            {tray.items.length === 0 && !tray.full ? (
+              <p className="mt-1 text-[13px] text-ink-3">Empty.</p>
+            ) : (
+              <>
+                <p className="mt-1 mb-3 text-[13px] text-ink-3">
+                  <SameInInbox />
+                </p>
+                {tray.items.length ? <ul className={`flex flex-wrap gap-2 ${styles.trayList}`}>{tray.items.map(trayChip)}</ul> : <p className="text-[13px] text-ink-3">{EMPTY_TRAY}</p>}
+                {tray.full && <p className="mt-3 text-[13px] text-ink-3">{TRAY_FULL}</p>}
+              </>
+            )}
+          </>
         )}
       </section>
     ) : null;
@@ -625,9 +656,15 @@ export function CalendarGrid({
           <div className={styles.corner} />
           {days.map((day) => (
             <h3 key={day} className={`${styles.dayHead} ${day === today ? styles.today : ""}`} aria-current={day === today ? "date" : undefined}>
-              <time dateTime={day} aria-label={`${formatDayHeading(day)}${day === today ? ", today" : ""}`}>
-                <span className={styles.dayName}>{weekday.format(utcMidnight(day))}</span> <span className={styles.dayNum}>{Number(day.slice(8))}</span>
-              </time>
+              <Link
+                href={keep(dayHref(day, today, "grid"))}
+                className={styles.dayLink}
+                aria-label={`${weekday.format(utcMidnight(day))} ${Number(day.slice(8))}, open ${formatDayHeading(day)}${day === today ? ", today" : ""}`}
+              >
+                <time dateTime={day}>
+                  <span className={styles.dayName}>{weekday.format(utcMidnight(day))}</span> <span className={styles.dayNum}>{Number(day.slice(8))}</span>
+                </time>
+              </Link>
             </h3>
           ))}
           <div className={styles.anyLabel}>Any time</div>

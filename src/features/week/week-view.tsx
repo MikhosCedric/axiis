@@ -5,6 +5,8 @@ import { CalendarBar } from "@/components/shell/calendar-bar";
 import { PageHeader } from "@/components/shell/page-header";
 import { TitleBar } from "@/components/shell/title-bar";
 import type { LocalDate } from "@/domain/item";
+import { LeftoverBar } from "@/features/day/leftover-bar";
+import type { LeftoverData } from "@/features/day/leftover-model";
 import { CalendarView, type CalendarActions, type CalendarContext, type CalendarData } from "@/features/calendar/calendar-view";
 import { FilterChips } from "@/features/filter/filter-chip";
 import { NO_FILTER, scopeWords, type ViewFilter } from "@/features/filter/model";
@@ -27,6 +29,7 @@ export function WeekView({
   days,
   from,
   weekFull = false,
+  leftover = null,
   detail,
   filter = NO_FILTER,
   actions,
@@ -38,6 +41,8 @@ export function WeekView({
   from: LocalDate;
   /** The week's read hit its cap, so later items are not drawn. */
   weekFull?: boolean;
+  /** Open items from earlier days, as one line above the grid. */
+  leftover?: LeftoverData | null;
   detail?: ReactNode;
   /** What the page narrowed its data to; the data passed in is already narrowed. */
   filter?: ViewFilter;
@@ -54,7 +59,7 @@ export function WeekView({
       actions={actions}
       className="@container/page mx-auto w-full max-w-[1600px] px-4 pt-6 pb-14 rail:px-9 rail:pt-8 rail:pb-4"
     >
-      {(ctx, grid) => <WeekPage ctx={ctx} grid={grid} calendar={calendar} days={days} from={from} weekFull={weekFull} filter={filter} capture={actions?.capture} />}
+      {(ctx, grid) => <WeekPage ctx={ctx} grid={grid} calendar={calendar} days={days} from={from} weekFull={weekFull} leftover={leftover} filter={filter} capture={actions?.capture} />}
     </CalendarView>
   );
 }
@@ -66,6 +71,7 @@ function WeekPage({
   days,
   from,
   weekFull,
+  leftover,
   filter,
   capture,
 }: {
@@ -75,6 +81,7 @@ function WeekPage({
   days: LocalDate[];
   from: LocalDate;
   weekFull: boolean;
+  leftover: LeftoverData | null;
   filter: ViewFilter;
   capture?: CalendarActions["capture"];
 }) {
@@ -106,6 +113,7 @@ function WeekPage({
         </p>
         <FilterChips filter={filter} className="mt-2.5" />
       </PageHeader>
+      <LeftoverBar data={leftover} />
       {grid}
       {weekFull && <p className="mt-2 text-[13px] text-ink-3">{WEEK_FULL}</p>}
     </>

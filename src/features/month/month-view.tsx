@@ -20,6 +20,8 @@ import {
 } from "react";
 import { AreaLabel, AreaMark } from "@/components/area-mark";
 import type { LocalDate } from "@/domain/item";
+import { LeftoverBar } from "@/features/day/leftover-bar";
+import type { LeftoverData } from "@/features/day/leftover-model";
 import { dayHref } from "@/features/day/nav";
 import { DetailAside } from "@/features/detail/detail-aside";
 import { useItemSelection } from "@/features/detail/use-item-selection";
@@ -102,9 +104,12 @@ export function MonthView({
   data,
   nav,
   detail,
+  leftover = null,
   filter = NO_FILTER,
 }: {
   data: MonthData;
+  /** Open items from earlier days, as one line above the grid. */
+  leftover?: LeftoverData | null;
   nav?: ReactNode;
   detail?: ReactNode;
   /** What the page narrowed its data to; the data passed in is already narrowed. */
@@ -165,6 +170,12 @@ export function MonthView({
 
   const openDay = (date: LocalDate) => router.push(keep(dayHref(date, today, "grid")));
 
+  /** Makes the day the active one and goes to the capture field, which captures for the active day. */
+  function addTo(date: LocalDate) {
+    setActive(date);
+    document.getElementById("capture")?.focus();
+  }
+
   function moveFocus(to: LocalDate) {
     if (days.includes(to)) {
       focusActive.current = true;
@@ -186,6 +197,11 @@ export function MonthView({
     if (e.key === "Escape" && selectedParam) {
       e.preventDefault();
       select(null);
+      return;
+    }
+    if (e.key === "+") {
+      e.preventDefault();
+      addTo(date);
       return;
     }
     const step = gridStep(e.key, index);
@@ -291,6 +307,8 @@ export function MonthView({
           <FilterChips filter={filter} className="mt-2.5" />
         </PageHeader>
 
+        <LeftoverBar data={leftover} />
+
         <section aria-label="Days of the month" className="@container/month">
           <div
             ref={grid}
@@ -328,6 +346,7 @@ export function MonthView({
                     onFocus={() => setActive(cell.date)}
                     onPointerDown={() => (pressedChosen.current = cell.date === active)}
                     onClick={() => cellClick(cell.date)}
+                    onAdd={() => addTo(cell.date)}
                     onKeyDown={(e) => cellKeyDown(e, cell.date, w * 7 + i)}
                   >
                     {cell.marks.map((m) => (
@@ -356,18 +375,27 @@ export function MonthView({
                 ))}
               </ul>
             )}
-            <Link
-              href={keep(dayHref(activeCell.date, today, "grid"))}
-              className="mt-2 inline-flex min-h-11 items-center rounded-md font-medium text-ink underline underline-offset-2 hover:bg-hover"
-            >
-              {activeCell.more > 0 ? `${activeCell.more} more. Open the day` : "Open the day"}
-            </Link>
+            <div className="mt-2 flex flex-wrap items-center gap-x-4">
+              <Link
+                href={keep(dayHref(activeCell.date, today, "grid"))}
+                className="inline-flex min-h-11 items-center rounded-md font-medium text-ink underline underline-offset-2 hover:bg-hover"
+              >
+                {activeCell.more > 0 ? `${activeCell.more} more. Open the day` : "Open the day"}
+              </Link>
+              <button
+                type="button"
+                onClick={() => addTo(activeCell.date)}
+                className="inline-flex min-h-11 items-center rounded-md font-medium text-ink underline underline-offset-2 hover:bg-hover"
+              >
+                Add to this day
+              </button>
+            </div>
           </section>
         </section>
 
         <p id={KEYS_ID} className="sr-only">
           Arrow keys move between days, Home and End go to the ends of the week, Page Up and Page Down change the month,
-          and Enter opens the day. Tab reaches the focused day&apos;s items; Enter opens one. Drag an item to another day
+          Enter opens the day, and the plus key adds to it. Tab reaches the focused day&apos;s items; Enter opens one. Drag an item to another day
           to move it. The bracket keys change the month and T comes back to this one.
         </p>
 
@@ -401,6 +429,7 @@ function DayCell({
   onFocus,
   onPointerDown,
   onClick,
+  onAdd,
   onKeyDown,
   children,
 }: {
@@ -413,6 +442,7 @@ function DayCell({
   onFocus: () => void;
   onPointerDown: () => void;
   onClick: () => void;
+  onAdd: () => void;
   onKeyDown: (e: KeyboardEvent<HTMLElement>) => void;
   children: ReactNode;
 }) {
@@ -452,6 +482,27 @@ function DayCell({
         )}
         {number === 1 && <span className="ml-1 hidden text-xs text-ink-3 @min-[36rem]/month:inline">{formatDayHeading(cell.date).split(" ").at(-1)?.slice(0, 3)}</span>}
       </span>
+
+      {/* Quick add for a pointer: on hover and focus, or on the chosen day where there is no hover. It stays out of the cell's name and
+          the tab order; a keyboard adds with + on the day, and a phone from the list under the grid. */}
+      <button
+        type="button"
+        tabIndex={-1}
+        aria-hidden="true"
+        title="Add to this day"
+        onPointerDown={(e) => e.stopPropagation()}
+        onClick={(e) => {
+          e.stopPropagation();
+          onAdd();
+        }}
+        className={`absolute top-1 right-1 hidden size-6 items-center justify-center rounded-full text-ink-2 hover:bg-hover hover:text-ink focus-visible:opacity-100 group-focus-within/day:opacity-100 group-hover/day:opacity-100 @min-[36rem]/month:flex pointer-coarse:size-9 ${
+          active ? "opacity-0 pointer-coarse:opacity-100" : "pointer-events-none opacity-0 group-hover/day:pointer-events-auto pointer-coarse:hidden"
+        }`}
+      >
+        <svg aria-hidden="true" viewBox="0 0 16 16" width={14} height={14} fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round">
+          <path d="M8 3v10M3 8h10" />
+        </svg>
+      </button>
 
       {cell.marks.length > 0 && (
         <span aria-hidden="true" className="mt-1 flex items-center justify-center gap-[3px] @min-[36rem]/month:hidden">

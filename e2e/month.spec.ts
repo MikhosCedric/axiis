@@ -199,6 +199,28 @@ signedIn.describe("the Month", () => {
     });
   }
 
+  signedIn("adds to a day from its cell: the plus on hover, or the plus key, both land in the capture field for that day", async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await page.goto("/month/2099-05");
+    await gridHydrated(page);
+    const day = page.locator('[role=gridcell][data-date="2099-05-22"]');
+    const add = day.locator('button[title="Add to this day"]');
+    await expect(add).toHaveCSS("opacity", "0");
+    await day.hover();
+    await expect(add).toHaveCSS("opacity", "1");
+    await add.click();
+    const capture = page.getByRole("textbox", { name: "Capture for Friday 22 May" });
+    await expect(capture).toBeFocused();
+    await expect(page).toHaveURL("/month/2099-05");
+
+    await cell(page, /^Wednesday 20 May/).focus();
+    await page.keyboard.press("+");
+    await expect(page.getByRole("textbox", { name: "Capture for Wednesday 20 May" })).toBeFocused();
+    await cell(page, /^Wednesday 20 May/).focus();
+    await page.keyboard.press("Enter");
+    await expect(page).toHaveURL("/day/2099-05-20");
+  });
+
   signedIn("on a phone draws dots, lists the chosen day under the grid, and a second tap opens it", async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 812 });
     await page.goto("/month/2099-05");
@@ -214,6 +236,7 @@ signedIn.describe("the Month", () => {
     const list = page.getByRole("region", { name: "Wednesday 20 May" });
     await expect(list.getByRole("button", { name: /^Renew the lease/ })).toBeVisible();
     await expect(list.getByRole("link", { name: "Open the day" })).toBeVisible();
+    await expect(list.getByRole("button", { name: "Add to this day" })).toBeVisible();
     expect(await axe(page)).toEqual([]);
     await day.click();
     await expect(page).toHaveURL("/day/2099-05-20");

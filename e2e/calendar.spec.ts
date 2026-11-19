@@ -54,6 +54,15 @@ test.describe("calendar grid", () => {
     await open(page);
   });
 
+  test("a day head is a link that opens the day, its name holding the visible text", async ({ page }) => {
+    const wed = page.locator("[data-head]").getByRole("link", { name: /^Wed 11\b/ });
+    await expect(wed).toHaveAttribute("href", "/day/2026-03-11");
+    await expect(wed).toContainText("Wed 11");
+    await expect(page.locator("[data-head]").getByRole("link")).toHaveCount(7);
+    await page.goto(`${WEEK}&area=work`);
+    await expect(page.locator("[data-head]").getByRole("link", { name: /^Wed 11\b/ })).toHaveAttribute("href", /^\/day\/2026-03-11\?.*area=work/);
+  });
+
   test("draws the week as columns, with overlapping items side by side and an any-time row", async ({ page }) => {
     await expect(page.locator("[data-day-col]")).toHaveCount(7);
     await expect(page.getByRole("heading", { name: "Monday 9 March" })).toBeVisible();
@@ -252,6 +261,28 @@ test.describe("calendar grid", () => {
     await drag(page, from, { x: from.x, y: from.y + (await scale(page)).hour });
     await expect(page.locator("[data-calendar-status]")).toContainText("did not save");
     await expect(call).toBeVisible();
+  });
+});
+
+test.describe("the Week's Inbox strip", () => {
+  test.use({ viewport: { width: 1280, height: 900 } });
+
+  test("stays in view under the grid, and says what dropping a block on it does", async ({ page }) => {
+    await open(page);
+    const tray = page.locator('[data-drop="tray"]');
+    const box = (await tray.boundingBox())!;
+    expect(box.height).toBeLessThan(80);
+    expect(box.y + box.height).toBeLessThanOrEqual(900);
+    await expect(tray.getByText("Drop here to clear its day")).toHaveCount(0);
+
+    const from = await middle(block(page, /^Review pull requests /));
+    await page.mouse.move(from.x, from.y);
+    await page.mouse.down();
+    await page.mouse.move(box.x + 300, box.y + box.height / 2, { steps: 12 });
+    await expect(tray.getByText("Drop here to clear its day")).toBeVisible();
+    await page.keyboard.press("Escape");
+    await page.mouse.up();
+    await expect(tray.getByText("Drop here to clear its day")).toHaveCount(0);
   });
 });
 

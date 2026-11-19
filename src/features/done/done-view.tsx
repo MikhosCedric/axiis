@@ -5,8 +5,14 @@ import { GuideButton, NO_TOPICS } from "@/features/palette/guide";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import type { ReactNode } from "react";
+import type { LocalDate } from "@/domain/item";
+import type { QuickItem } from "@/features/actions/model";
 import { AreaLabel } from "@/components/area-mark";
-import { renameKey, useQuick } from "@/features/actions/context";
+import { renameKey, useQuick, type Quick } from "@/features/actions/context";
+import { canDo } from "@/features/actions/model";
+import { dayHref } from "@/features/day/nav";
+import { useKeepFilter } from "@/features/filter/keep-filter";
+import { reach } from "@/lib/reach";
 import { RenameField, RowActions, rowProps } from "@/features/actions/row-actions";
 import { DetailAside } from "@/features/detail/detail-aside";
 import { useItemSelection } from "@/features/detail/use-item-selection";
@@ -15,7 +21,7 @@ import { NO_FILTER, scopePrefix, type ViewFilter } from "@/features/filter/model
 import { RowTags } from "@/features/tags/row-tags";
 import { setDoneAction } from "@/features/today/actions";
 import { DoneToggle, useDoneToggles, type SetDone } from "@/features/today/done-toggle";
-import { DONE_PAGE_PARAM, doneSummary, groupByDay, type DoneData, type DoneRow } from "./model";
+import { DONE_PAGE_PARAM, doneSummary, groupByDay, weekDoneLine, type DoneData, type DoneRow } from "./model";
 
 /**
  * What was finished, newest day first, one section per day. A row is the ordinary row: opening it shows
@@ -37,6 +43,7 @@ export function DoneView({
   const { selectedParam, selectedId, select } = useItemSelection();
   const ticks = useDoneToggles(setDone);
   const days = groupByDay(data.rows, data.today);
+  const keep = useKeepFilter();
 
   return (
     <div className={selectedParam ? "min-[1180px]:grid min-[1180px]:grid-cols-[minmax(0,1fr)_328px]" : ""}>
@@ -46,6 +53,7 @@ export function DoneView({
             {scopePrefix(filter)}
             {doneSummary(data.rows.length, data.more)}
           </p>
+          <p className="mt-1 text-[13px] text-ink-2 tabular">{weekDoneLine(data.rows, data.today, data.more)}</p>
           <FilterChips filter={filter} className="mt-2.5" />
         </PageHeader>
         <p role="status" className={`mt-4 min-h-5 text-[13px] ${ticks.status?.error ? "font-medium text-ink" : "text-ink-2"}`}>
@@ -62,7 +70,9 @@ export function DoneView({
           days.map((day) => (
             <section key={day.date} aria-labelledby={`done-${day.date}`} className="done-day mt-6">
               <h2 id={`done-${day.date}`} className="mb-2 flex items-baseline gap-3 font-display text-lg leading-[1.25] font-medium">
-                {day.heading}
+                <Link href={keep(dayHref(day.date, data.today, "grid"))} className="rounded hover:underline">
+                  {day.heading}
+                </Link>
               </h2>
               <ul className="surface overflow-hidden px-3 py-1.5 [&_li:last-child]:border-b-0">
                 {day.rows.map((row) => (
@@ -72,6 +82,7 @@ export function DoneView({
                     done={ticks.isDone(row.id, true)}
                     selected={selectedId === row.id}
                     justDone={ticks.justDone === row.id}
+                    today={data.today}
                     onSelect={() => select(row.id)}
                     onToggleDone={() => ticks.toggle(row.id, row.title, !ticks.isDone(row.id, true))}
                   />
@@ -108,6 +119,7 @@ function DoneRowView({
   done,
   selected,
   justDone,
+  today,
   onSelect,
   onToggleDone,
 }: {
@@ -115,6 +127,7 @@ function DoneRowView({
   done: boolean;
   selected: boolean;
   justDone: boolean;
+  today: LocalDate;
   onSelect: () => void;
   onToggleDone: () => void;
 }) {
@@ -154,8 +167,42 @@ function DoneRowView({
             <AreaLabel name={row.area} color={row.areaColor} />
           </p>
         )}
+        {quick && done && canDo(qi, "plan") && (
+          <button
+            type="button"
+            aria-label={`Plan again: ${title}`}
+            onClick={() => planAgain(quick, qi, today)}
+            className={`-ml-1 inline-flex items-center rounded px-1 text-xs font-medium underline underline-offset-2 hover:bg-hover hover:text-ink pointer-coarse:min-h-11 ${quiet}`}
+          >
+            Plan again
+          </button>
+        )}
       </div>
       <RowActions item={qi} hooks={hooks} className="quick-over" />
     </li>
   );
+}
+
+/** Opens a finished item again and puts it on today. One note says so, and its Undo puts it back done, on the day it had. */
+function planAgain(quick: Quick, item: QuickItem, today: LocalDate) {
+  const { key, title } = item;
+  quick.batch([[key, { hidden: true }]], async () => {
+    const opened = await reach(quick.actions.setDone(key, false));
+    if (!opened.ok) return { news: opened.error };
+    const planned = await reach(quick.actions.plan(key, "today"));
+    if (!planned.ok) return { news: `${title} is open again, but could not be planned. ${planned.error}` };
+    const back = item.day;
+    return {
+      news: `${title} is open again, planned for today.`,
+      undo:
+        item.series === "none"
+          ? () =>
+              quick.batch([], async () => {
+                const first = back === today ? { ok: true as const } : await reach(back ? quick.actions.plan(key, back) : quick.actions.unplan(key));
+                const second = first.ok ? await reach(quick.actions.setDone(key, true)) : first;
+                return { news: second.ok ? `${title} is back as it was.` : second.error };
+              })
+          : undefined,
+    };
+  });
 }

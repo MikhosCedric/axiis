@@ -36,6 +36,8 @@ import { LeftoverStrip } from "./leftover-strip";
 import { ListView } from "./list-view";
 import { GlanceLine, NextUp } from "./next-up";
 import { PLAN_DAY_SHOWN, PlanDayStrip } from "./plan-day-strip";
+import { RestOfDay } from "./rest-button";
+import { restOfDay } from "./rest-of-day";
 import { seriesTimeOffer } from "./series-time";
 import { Tour } from "./tour";
 import { DAY_VIEW_PARAM, type DayData, type DayViewMode } from "./types";
@@ -262,7 +264,10 @@ function DayPage({
         <ProgressLine share={glance.done / glance.total} className="mt-2 w-full text-ink-2" />
       </section>
     ) : null;
-  const hasSide = Boolean(nextNode || planNode || leftNode || dueNode || progressNode || mode === "grid");
+  // The rest of today: open tasks still to do, offered for tomorrow while the day is going. Focus folds it away with the rest.
+  const rest = useMemo(() => (isToday && !firstDay && !focus && mode === "grid" ? restOfDay(view.scheduled) : []), [isToday, firstDay, focus, mode, view]);
+  const restNode = rest.length > 0 ? <RestOfDay items={rest} onStatus={ctx.say} /> : null;
+  const hasSide = Boolean(restNode || nextNode || planNode || leftNode || dueNode || progressNode || mode === "grid");
 
   const dayNode =
     mode === "list" ? (
@@ -313,6 +318,8 @@ function DayPage({
             {/* The grid's Inbox: under the day on a narrow page, a card here on a wide one. */}
             {mode === "grid" && <div ref={trayRef} className="order-4 mt-6 empty:hidden @min-[58rem]/page:order-3 @min-[58rem]/page:mt-0" />}
             {leftNode && <div className="order-5 mt-7 @min-[58rem]/page:order-5 @min-[58rem]/page:mt-0">{leftNode}</div>}
+            {/* Not a scroll anchor: it mounts after the page has scrolled to now, and must not nudge that. */}
+            {restNode && <div className="order-5 mt-3 mb-3 [overflow-anchor:none] @min-[58rem]/page:mt-0 @min-[58rem]/page:px-4 @min-[58rem]/page:py-3">{restNode}</div>}
             {dueNode && <div className="order-6 hidden @min-[58rem]/page:block">{dueNode}</div>}
           </div>
         )}

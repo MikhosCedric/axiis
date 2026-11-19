@@ -22,6 +22,7 @@ export function LeftoverStrip({
   onStatus,
   moveOne = (id) => planAction(id, "today"),
   moveAll = moveLeftoverAction,
+  bare = false,
 }: {
   data: LeftoverData;
   onSelect: (id: string) => void;
@@ -30,6 +31,8 @@ export function LeftoverStrip({
   /** Default to the server actions; the dev harness passes in-memory ones. */
   moveOne?: (id: string) => Promise<ActionResult>;
   moveAll?: () => Promise<ActionResult>;
+  /** Just the rows, for a screen that already has its own line saying how many and offering to move them all. */
+  bare?: boolean;
 }) {
   const [pending, startTransition] = useTransition();
 
@@ -43,8 +46,11 @@ export function LeftoverStrip({
 
   return (
     <ViewTransition enter="none" exit="card-out" default="none">
-    <section aria-labelledby="leftover-h" className="surface side-part mb-6 max-w-[720px] px-4 py-3 motion-safe:animate-toast-in">
-      <div className="flex items-center justify-between gap-3">
+    <section
+      aria-labelledby="leftover-h"
+      className={bare ? "mt-1 max-w-[720px] motion-safe:animate-toast-in" : "surface side-part mb-6 max-w-[720px] px-4 py-3 motion-safe:animate-toast-in"}
+    >
+      <div className={bare ? "sr-only" : "flex items-center justify-between gap-3"}>
         <h2 id="leftover-h" className="flex items-center gap-2 text-[13px] font-semibold text-ink-2">
           {/* The full sentence is what a screen reader hears; the eye gets two words and a count. */}
           <span className="sr-only">{leftoverHeading(data.total)}</span>
@@ -54,7 +60,7 @@ export function LeftoverStrip({
           </span>
         </h2>
         {/* Moving all would move what the filter hides too, so a filtered strip moves one at a time. */}
-        {!data.filtered && data.total > 1 && (
+        {!bare && !data.filtered && data.total > 1 && (
           <button
             type="button"
             disabled={pending}
