@@ -1,6 +1,7 @@
 
 import { repeats } from "@/domain/item";
 import type { TodayEntry } from "@/features/today/model";
+import { reach } from "@/lib/reach";
 
 export type RestItem = { id: string; title: string };
 
@@ -20,6 +21,16 @@ export function restOfDay(entries: readonly TodayEntry[]): RestItem[] {
         e.item.schedule.kind !== "unscheduled",
     )
     .map((e) => ({ id: e.item.id, title: e.item.title }));
+}
+
+/** Plans each of `rows` for `when` with `plan`, all at once; the rows that saved, in the order given. */
+export async function moveRows(
+  plan: (id: string, when: "today" | "tomorrow") => Promise<{ ok: boolean }>,
+  rows: readonly RestItem[],
+  when: "today" | "tomorrow",
+): Promise<RestItem[]> {
+  const results = await Promise.all(rows.map((r) => reach(plan(r.id, when))));
+  return rows.filter((_, i) => results[i].ok);
 }
 
 /** The news after the move: "3 things are planned for tomorrow." */

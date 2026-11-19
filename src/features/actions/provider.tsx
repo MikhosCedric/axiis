@@ -16,8 +16,10 @@ import {
   type MouseEvent,
   type ReactNode,
 } from "react";
+import { useRouter } from "next/navigation";
 import { createPortal } from "react-dom";
 import type { LocalDate } from "@/domain/item";
+import { listenForNews } from "@/components/news-bus";
 import { UndoToast, type UndoNote } from "@/components/undo-toast";
 import { isTypingTarget } from "@/features/day/nav";
 import { sequencePending } from "@/features/palette/sequence";
@@ -107,7 +109,12 @@ export function QuickActionsProvider({
   });
 
   const tell = useCallback((text: string, undo?: () => void) => setNote({ id: ++notes.current, text, undo }), []);
+  const router = useRouter();
+  const go = useCallback((href: string) => router.push(href), [router]);
   const prefetch = useCallback(() => void loadLayer(), []);
+
+  // The palette tells this note of what it did, so its Undo is the one the rows use.
+  useEffect(() => listenForNews(tell), [tell]);
 
   // Which rows a click or X chooses is worked out by the layer's code, loaded on the first choice.
   const pick = useCallback((row: HTMLElement, how: "toggle" | "range") => {
@@ -313,6 +320,7 @@ export function QuickActionsProvider({
       save,
       remove,
       tell,
+      go,
       prefetch,
       picked,
       pick,
@@ -321,7 +329,7 @@ export function QuickActionsProvider({
       setSelecting,
       batch,
     }),
-    [areas, today, actions, overlay, renaming, layer, run, open, close, keyDown, contextMenu, commitRename, stopRenaming, save, remove, tell, prefetch, picked, pick, clearPicked, selecting, batch],
+    [areas, today, actions, overlay, renaming, layer, run, open, close, keyDown, contextMenu, commitRename, stopRenaming, save, remove, tell, go, prefetch, picked, pick, clearPicked, selecting, batch],
   );
   useEffect(() => {
     self.current = value;

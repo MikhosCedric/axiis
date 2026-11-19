@@ -45,6 +45,7 @@ const MORE_LABEL: Record<MoreEntry, string> = {
   "make-event": "Make it an event",
   "make-task": "Make it a task",
   inbox: "Move to the Inbox",
+  note: "Add a note",
   "delete-all": "Delete every time",
   open: "Open details",
 };
@@ -54,6 +55,7 @@ const MORE_ICON: Record<MoreEntry, QuickIconName> = {
   "make-event": "event",
   "make-task": "task",
   inbox: "inbox",
+  note: "note",
   "delete-all": "delete",
   open: "open",
 };
@@ -90,7 +92,7 @@ function ActionMenu({ quick, layer, onClosed }: PanelProps) {
           run: () => act(a),
         }))
       : [];
-  const rest: Entry[] = moreEntries(item).map((m, i) => ({
+  const rest: Entry[] = moreEntries(item).filter((m) => m !== "note" || quick.actions.addNote).map((m, i) => ({
     id: m,
     label: m === "delete-all" ? `${MORE_LABEL[m]}…` : MORE_LABEL[m],
     icon: MORE_ICON[m],
@@ -190,6 +192,11 @@ function runMore(quick: Quick, item: QuickItem, entry: MoreEntry, onOpen: () => 
         day ? () => quick.save(item, {}, () => actions.plan(item.key, day), `${item.title} is back on its day.`) : undefined,
       );
     }
+    case "note":
+      return void reach(actions.addNote!(item.key)).then((made) => {
+        if (made.ok) quick.go(`/notes/${made.id}`);
+        else quick.tell(made.error);
+      });
     case "open":
       return onOpen();
   }

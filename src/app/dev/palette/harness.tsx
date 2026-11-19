@@ -5,8 +5,11 @@ import { NavRail } from "@/components/shell/nav-rail";
 import type { LocalDate } from "@/domain/item";
 import { isTypingTarget, shortcutAction } from "@/features/day/nav";
 import { PaletteProvider, type PaletteActions } from "@/features/palette/palette";
+import { duplicateItem, restoreItems } from "@/features/actions/commands";
+import { deleteItem, restoreOccurrence, setType } from "@/features/detail/commands";
 import { planItem } from "@/features/inbox/commands";
-import { describeItem } from "@/features/palette/commands";
+import { describeItem, restOfToday } from "@/features/palette/commands";
+import { moveItem } from "@/features/week/commands";
 import { addTag } from "@/features/tags/commands";
 import { CaptureField } from "@/features/today/capture-field";
 import { captureTask, setDone, type ActionResult } from "@/features/today/commands";
@@ -30,8 +33,20 @@ const actions: PaletteActions = {
   describe: (key) => describeItem(store.items, key, ZONE),
   setDone: (key, done) => write(() => setDone(store.items, key, done, ZONE)),
   plan: (key, when) => write(() => planItem(store.items, key, when, new Date(), ZONE)),
+  unplan: (key) => write(() => moveItem(store.items, key, "tray", ZONE)),
   tag: (key, name) => write(() => addTag(store.items, key, name, ZONE)),
+  duplicate: (key) => writeAny(() => duplicateItem(store.items, key, ZONE)),
+  setType: (key, type) => write(() => setType(store.items, key, type, ZONE)),
+  remove: (key, scope) => writeAny(() => deleteItem(store.items, key, ZONE, scope)),
+  restore: (ids) => write(() => restoreItems(store.items, ids)),
+  unskip: (key) => write(() => restoreOccurrence(store.items, key, ZONE)),
+  restOfToday: () => restOfToday(store.items, new Date(), ZONE),
 };
+
+async function writeAny<T extends { ok: boolean }>(command: () => Promise<T>): Promise<T> {
+  await pause(450);
+  return settings.failing ? ({ ok: false, error: "That change did not save. Try again." } as unknown as T) : command();
+}
 
 async function write(command: () => Promise<ActionResult>): Promise<ActionResult> {
   await pause(450);
