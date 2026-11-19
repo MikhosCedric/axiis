@@ -15,7 +15,6 @@
   "dependencies": {
     "@supabase/ssr": "^0.12.7",
     "@supabase/supabase-js": "^2.119.0",
-    "@tiptap/extension-link": "3.34.0",
     "@tiptap/extension-list": "3.34.0",
     "@tiptap/extension-placeholder": "3.34.0",
     "@tiptap/pm": "3.34.0",

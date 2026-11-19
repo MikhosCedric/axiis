@@ -1,5 +1,5 @@
 import type { Item, ItemId } from "@/domain/item";
-import { SEARCH_LIMIT, type LinkId, type Note, type NotesRepo } from "./repo";
+import { NOTES_LIMIT, SEARCH_LIMIT, type LinkId, type Note, type NotesRepo } from "./repo";
 import { queryTerms, snippetFor } from "./snippet";
 
 export type FakeLink = { id: LinkId; fromId: ItemId; toId: ItemId };
@@ -25,10 +25,11 @@ export function fakeNotesRepo(store: NotesStore, now: () => Date = () => new Dat
   const byEdit = (a: Item, b: Item) => b.updatedAt.getTime() - a.updatedAt.getTime();
 
   return {
-    async listNotes() {
+    async listNotes(limit = NOTES_LIMIT) {
       return store.items
         .filter((i) => i.type === "note")
         .sort(byEdit)
+        .slice(0, Math.max(1, Math.min(limit, NOTES_LIMIT + 1)))
         .map((i) => ({
           id: i.id,
           title: i.title,

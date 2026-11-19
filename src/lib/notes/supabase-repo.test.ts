@@ -69,6 +69,20 @@ describe("SupabaseNotesRepo.search", () => {
   });
 });
 
+describe("SupabaseNotesRepo.listNotes", () => {
+  it("reads live notes newest edit first, capped at 200 (201 when asked for more, to tell if more exist)", async () => {
+    const { repo, requests } = stubbed([[], [], []]);
+    await repo.listNotes();
+    await repo.listNotes(51);
+    await repo.listNotes(5000);
+    const q = requests.map((r) => r.url.searchParams);
+    expect(q[0].get("type")).toBe("eq.note");
+    expect(q[0].get("deleted_at")).toBe("is.null");
+    expect(q[0].get("order")).toBe("updated_at.desc,id.asc");
+    expect(q.map((p) => p.get("limit"))).toEqual(["200", "51", "201"]);
+  });
+});
+
 describe("SupabaseNotesRepo.linksFor", () => {
   it("reads links in both directions and drops ends that are deleted", async () => {
     const { repo, requests } = stubbed([

@@ -3,18 +3,24 @@ import { firstDay } from "@/features/detail/model";
 import { cadence } from "@/features/detail/repeat";
 import { tagsOfShown } from "@/features/tags/commands";
 import { buildToday } from "@/features/today/model";
-import { addDays, dayRangeFor, isSameDay } from "@/lib/dates";
-import { loadOccurrences } from "@/lib/items/occurrences";
+import { dayRangeFor, isSameDay } from "@/lib/dates";
+import { daySpan, loadOccurrences, type LoadedOccurrences } from "@/lib/items/occurrences";
 import { WAITING_LIMIT, type ItemsRepo } from "@/lib/items/repo";
 import type { DayData } from "./types";
 
-export async function loadDay(repo: ItemsRepo, date: LocalDate, now: Date, timeZone: string): Promise<DayData> {
+export async function loadDay(
+  repo: ItemsRepo,
+  date: LocalDate,
+  now: Date,
+  timeZone: string,
+  /** The day's occurrences when the request already loaded them, so the series are read once. */
+  loaded?: PromiseLike<LoadedOccurrences>,
+): Promise<DayData> {
   const range = dayRangeFor(date, timeZone);
-  const span = { from: range.from, to: range.to, fromDate: date, toDate: addDays(date, 1) };
   const [areas, items, { occurrences, series }] = await Promise.all([
     repo.listAreas(),
     repo.listForDay(range),
-    loadOccurrences(repo, span, timeZone),
+    loaded ?? loadOccurrences(repo, daySpan(date, timeZone), timeZone),
   ]);
   const view = buildToday({ scheduled: [...items.scheduled, ...occurrences], unscheduled: items.unscheduled }, range, now);
   // Virtual occurrences are never parents, so only stored items are counted.

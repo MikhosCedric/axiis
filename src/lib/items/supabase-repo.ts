@@ -41,6 +41,11 @@ function unwrap<T>(operation: string, { data, error }: QueryResult, parse: (raw:
   return parse(data);
 }
 
+function unwrapCount(operation: string, { count, error }: { count: number | null; error: { message: string } | null }): number {
+  if (error) throw new ItemsRepoError(`items.${operation} failed: ${error.message}`, { cause: error });
+  return count ?? 0;
+}
+
 /**
  * Every row a read matches. PostgREST answers at most its `max-rows` (1000 on
  * Supabase) and says nothing when it stops early, so the first page asks for
@@ -96,6 +101,11 @@ export class SupabaseItemsRepo implements ItemsRepo {
   async hasAnyItem(): Promise<boolean> {
     const result = await this.db.from("items").select("id").limit(1);
     return unwrap("hasAnyItem", result, (raw) => rowList.parse(raw).length > 0);
+  }
+
+  /** Live non-series items, read as a count only: no rows come back. */
+  private countOf() {
+    return this.db.from("items").select("id", { count: "exact", head: true }).is("deleted_at", null).is("rrule", null);
   }
 
   /** Items that are not series. A series is drawn through its expanded occurrences instead. */
@@ -175,6 +185,27 @@ export class SupabaseItemsRepo implements ItemsRepo {
       .order("created_at", { ascending: false })
       .limit(INBOX_LIMIT);
     return unwrap("listInbox", result, itemList);
+  }
+
+  async countInbox(): Promise<number> {
+    const result = await this.countOf()
+      .is("start_at", null)
+      .is("scheduled_on", null)
+      .is("parent_id", null)
+      .is("series_id", null)
+      .eq("status", "open")
+      .neq("type", "note");
+    return unwrapCount("countInbox", result);
+  }
+
+  async countOverdueDue(today: LocalDate): Promise<number> {
+    const result = await this.countOf()
+      .is("series_id", null)
+      .is("parent_id", null)
+      .lt("due_on", today)
+      .eq("status", "open")
+      .neq("type", "note");
+    return unwrapCount("countOverdueDue", result);
   }
 
   async listChecklists(): Promise<Item[]> {

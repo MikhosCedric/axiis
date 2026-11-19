@@ -47,7 +47,7 @@ export function statusLabel(s: AutosaveState): string {
   }
 }
 
-export const AUTOSAVE_DELAY_MS = 700;
+const AUTOSAVE_DELAY_MS = 700;
 export const SAVE_FAILED = "That did not save. Try again.";
 
 export type SaveResult = { ok: true } | { ok: false; error: string };

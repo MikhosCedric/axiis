@@ -4,7 +4,19 @@ import type { AreaId, Item, ItemId, ItemType } from "@/domain/item";
 import { toLocalDate } from "@/lib/dates";
 import type { ActionResult } from "@/features/today/commands";
 import { formatClock, type Clock } from "@/lib/clock";
+import { NOTES_LIMIT } from "@/lib/notes/repo";
 import { SELECTED_ITEM_PARAM } from "@/features/day/types";
+
+/** Notes shown at first, and added by each "Show more". */
+export const NOTES_PAGE = 50;
+export const NOTES_PAGE_PARAM = "pages";
+const MAX_PAGES = Math.floor(NOTES_LIMIT / NOTES_PAGE);
+
+/** How many pages the address asks for: one unless it names a whole number from 1 to the most the read allows. */
+export function readNotePages(raw: string | string[] | undefined): number {
+  const n = Number(Array.isArray(raw) ? raw[0] : raw);
+  return Number.isInteger(n) && n >= 1 ? Math.min(n, MAX_PAGES) : 1;
+}
 
 export type Created = { ok: true; id: string } | { ok: false; error: string };
 
