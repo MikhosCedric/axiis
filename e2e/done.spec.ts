@@ -38,6 +38,27 @@ signedIn.describe("Done", () => {
     await expect(page.getByRole("region", { name: /^Today/ }).getByText("Morning run")).toHaveCount(0);
   });
 
+  signedIn("a day heading opens that day, and the header counts the week plainly", async ({ page }) => {
+    await page.goto("/done");
+    await expect(page.getByRole("link", { name: /^Today/ })).toHaveAttribute("href", "/today");
+    await expect(page.getByText(/^This week: \d+\+? done$/)).toBeVisible();
+    await page.goto("/done?area=anything");
+    await expect(page.getByText(/streak|best|record/i)).toHaveCount(0);
+  });
+
+  signedIn("Plan again reopens a finished item for today, and Undo puts it back done", async ({ page }) => {
+    await page.goto("/done");
+    await hydrated(page);
+    const today = page.getByRole("region", { name: /^Today/ });
+    await today.getByRole("button", { name: "Plan again: Morning run" }).click();
+    await expect(page.getByText("Morning run is open again, planned for today.")).toBeVisible();
+    await expect(today.getByText("Morning run")).toHaveCount(0);
+    await page.getByRole("button", { name: "Undo" }).click();
+    await expect(page.getByText("Morning run is back as it was.")).toBeVisible();
+    await page.goto("/done");
+    await expect(page.getByRole("region", { name: /^Today/ }).getByText("Morning run")).toBeVisible();
+  });
+
   signedIn("narrows to an area, and G then F goes there", async ({ page }) => {
     await page.goto("/today");
     await hydrated(page);

@@ -2,6 +2,7 @@ import type { AreaColor } from "@/domain/area-color";
 import type { AreaId, ItemId, ItemType, LocalDate } from "@/domain/item";
 import type { QuickItem } from "@/features/actions/model";
 import { formatDayIn } from "@/features/today/format";
+import { weekOf } from "@/features/week/week-of";
 import { addDays } from "@/lib/dates";
 import { DONE_LIMIT } from "@/lib/items/repo";
 
@@ -66,4 +67,15 @@ export const dayCount = (n: number) => `${n} ${n === 1 ? "item" : "items"}`;
 export function doneSummary(shown: number, more: boolean): string {
   if (shown === 0) return "Nothing finished yet.";
   return more ? `The latest ${shown} you finished.` : `${dayCount(shown)} finished.`;
+}
+
+/**
+ * How many were finished in the week that holds `today`, as a bare count: "This week: 12 done". When the read stopped
+ * inside this week (more remain, and the oldest row shown is still this week), the true count is higher, so it says "12+".
+ */
+export function weekDoneLine(rows: readonly Pick<DoneRow, "doneOn">[], today: LocalDate, more: boolean): string {
+  const week = weekOf(today);
+  const count = rows.filter((r) => r.doneOn >= week[0] && r.doneOn <= week[6]).length;
+  const cut = more && rows.length > 0 && rows[rows.length - 1].doneOn >= week[0];
+  return `This week: ${count}${cut ? "+" : ""} done`;
 }
