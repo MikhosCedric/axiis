@@ -21,45 +21,40 @@ import {
   type Theme,
 } from "@/components/shell/cookies";
 import { applyTheme, useTheme } from "@/components/shell/theme-toggle";
-import { deviceClock, formatMinutes, type Clock } from "@/lib/clock";
+import { deviceClock, type Clock } from "@/lib/clock";
 import type { WeekStart } from "@/features/week/week-of";
 
-const WEEK_START_LABEL: Record<WeekStartSetting, { name: string; says: string }> = {
-  monday: { name: "Monday", says: "The Week and the Month begin on Monday and end on Sunday." },
-  sunday: { name: "Sunday", says: "The Week and the Month begin on Sunday and end on Saturday." },
+const WEEK_START_LABEL: Record<WeekStartSetting, { name: string }> = {
+  monday: { name: "Monday" },
+  sunday: { name: "Sunday" },
 };
 
-const START_PAGE_LABEL: Record<StartPage, { name: string; says: string }> = {
-  today: { name: "Today", says: "Axiis opens on your day." },
-  week: { name: "Week", says: "Axiis opens on this week." },
-  month: { name: "Month", says: "Axiis opens on this month." },
-  inbox: { name: "Inbox", says: "Axiis opens on what waits for a day." },
-  due: { name: "Due", says: "Axiis opens on deadlines, soonest first." },
+const START_PAGE_LABEL: Record<StartPage, { name: string }> = {
+  today: { name: "Today" },
+  week: { name: "Week" },
+  month: { name: "Month" },
+  inbox: { name: "Inbox" },
+  due: { name: "Due" },
 };
 
 const YEAR = "path=/; max-age=31536000; samesite=lax";
 
-const THEME_LABEL: Record<Theme, { name: string; says: string }> = {
-  system: { name: "System", says: "Light or dark, as this device is set." },
-  light: { name: "Light", says: "Warm paper, whatever the device says." },
-  dark: { name: "Dark", says: "Night ink, whatever the device says." },
+const THEME_LABEL: Record<Theme, { name: string }> = {
+  system: { name: "System" },
+  light: { name: "Light" },
+  dark: { name: "Dark" },
 };
 
-const DENSITY_LABEL: Record<Density, { name: string; says: string }> = {
-  spacious: { name: "Spacious", says: "Room around every row." },
-  compact: { name: "Compact", says: "Rows sit closer, so more of a long list fits on screen." },
+const DENSITY_LABEL: Record<Density, { name: string }> = {
+  spacious: { name: "Spacious" },
+  compact: { name: "Compact" },
 };
 
-/** Two times that show which clock a choice writes: "9:30 AM and 2:15 PM". */
-const sample = (clock: Clock) => `${formatMinutes(570, clock)} and ${formatMinutes(855, clock)}`;
-
-function clockNames(clock: Clock): Record<ClockSetting, { name: string; says: string }> {
-  return {
-    auto: { name: "Auto", says: `As this device’s language and region write times, so ${sample(clock)}.` },
-    "12": { name: "12-hour", says: `Like ${sample("12")}.` },
-    "24": { name: "24-hour", says: `Like ${sample("24")}.` },
-  };
-}
+const CLOCK_LABEL: Record<ClockSetting, { name: string }> = {
+  auto: { name: "Auto" },
+  "12": { name: "12-hour" },
+  "24": { name: "24-hour" },
+};
 
 function saveDensity(next: Density) {
   document.documentElement.dataset.density = next;
@@ -75,7 +70,7 @@ function Choice<T extends string>({
 }: {
   label: string;
   options: readonly T[];
-  names: Record<T, { name: string; says: string }>;
+  names: Record<T, { name: string }>;
   value: T;
   onChoose: (next: T) => void;
 }) {
@@ -94,7 +89,6 @@ function Choice<T extends string>({
           </button>
         ))}
       </div>
-      <p className="mt-2 text-[13px] text-ink-3">{names[value].says}</p>
     </>
   );
 }
@@ -153,7 +147,7 @@ export function DisplaySection({
       <h2 id="display-heading" className="font-display text-xl font-medium">
         Display
       </h2>
-      <p className="mt-1.5 max-w-[60ch] text-ink-2">How Axiis looks and where it opens on this device.</p>
+      <p className="mt-1.5 max-w-[60ch] text-ink-2">Kept on this device.</p>
 
       <h3 className="mt-5 font-medium text-ink">Theme</h3>
       <Choice label="Theme" options={THEMES} names={THEME_LABEL} value={shownTheme} onChoose={(next) => {
@@ -163,10 +157,7 @@ export function DisplaySection({
       />
 
       <h3 className="mt-6 font-medium text-ink">Density</h3>
-      <p className="mt-1 max-w-[60ch] text-ink-2">
-        How close the rows of a list sit. Compact tightens list rows only; the time grid of the Day and the Week stays as
-        it is.
-      </p>
+      <p className="mt-1 max-w-[60ch] text-ink-2">Compact tightens list rows only, not the time grid.</p>
       <Choice
         label="Density"
         options={DENSITIES}
@@ -180,15 +171,15 @@ export function DisplaySection({
       />
 
       <h3 className="mt-6 font-medium text-ink">Time format</h3>
-      <p className="mt-1 max-w-[60ch] text-ink-2">How every time in Axiis is written. A time can be typed either way.</p>
-      <Choice label="Time format" options={CLOCK_SETTINGS} names={clockNames(shownClock.clock)} value={shownClock.setting} onChoose={chooseClock} />
+      <p className="mt-1 max-w-[60ch] text-ink-2">How times are written. Either way can be typed.</p>
+      <Choice label="Time format" options={CLOCK_SETTINGS} names={CLOCK_LABEL} value={shownClock.setting} onChoose={chooseClock} />
 
       <h3 className="mt-6 font-medium text-ink">Week starts on</h3>
-      <p className="mt-1 max-w-[60ch] text-ink-2">The first column of the Week and the Month, and where Previous and Next step from.</p>
+      <p className="mt-1 max-w-[60ch] text-ink-2">First column of the Week and the Month.</p>
       <Choice label="Week starts on" options={WEEK_STARTS} names={WEEK_START_LABEL} value={shownWeekStart} onChoose={chooseWeekStart} />
 
       <h3 className="mt-6 font-medium text-ink">Start page</h3>
-      <p className="mt-1 max-w-[60ch] text-ink-2">Where Axiis opens when you go to its address or finish signing in.</p>
+      <p className="mt-1 max-w-[60ch] text-ink-2">Where Axiis opens.</p>
       {/* Five pages are too many for one row of buttons on a phone, so this one is a list. */}
       <select
         aria-label="Start page"
@@ -202,7 +193,6 @@ export function DisplaySection({
           </option>
         ))}
       </select>
-      <p className="mt-2 text-[13px] text-ink-3">{START_PAGE_LABEL[shownStartPage].says}</p>
       <p role="status" className="mt-3 min-h-5 text-[13px] text-ink-2">
         {saved}
       </p>

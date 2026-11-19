@@ -201,7 +201,7 @@ test.describe("calendar grid", () => {
     await expect(slot).toBeFocused();
   });
 
-  test("a click shows a block in brief: tick it done, edit it in the panel, delete it and undo", async ({ page }) => {
+  test("a click shows a block in brief: tick it done, edit it in the panel", async ({ page }) => {
     const walk = block(page, /^Long walk 10:00 to 12:00, Saturday 14 March, Health, planned/);
     await walk.click();
     const peek = page.getByRole("dialog", { name: "Long walk" });
@@ -221,12 +221,6 @@ test.describe("calendar grid", () => {
     await expect(page.getByRole("heading", { name: "Long walk", level: 2 })).toBeVisible();
     await page.goBack();
     await expect(page).not.toHaveURL(/[?&]item=/);
-
-    await walk.click();
-    await page.getByRole("dialog", { name: "Long walk" }).getByRole("button", { name: "Delete" }).click();
-    await expect(walk).toHaveCount(0);
-    await page.getByRole("button", { name: "Undo" }).click();
-    await expect(walk).toBeVisible();
   });
 
   test("the tick inside a block marks it done", async ({ page }) => {

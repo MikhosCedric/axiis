@@ -413,7 +413,7 @@ signedIn.describe("signed in", () => {
     await page.goto("/day/2099-05-20?item=e2e00000-0000-4000-8000-000000000007");
     await hydrated(page);
     const details = page.getByRole("complementary", { name: "Details" });
-    await details.getByRole("button", { name: "Link an existing note or task" }).click();
+    await details.getByRole("button", { name: "Add a note" }).click();
     await details.getByRole("combobox", { name: "Find a task or note to link" }).fill("Garden");
     await details.getByRole("option", { name: /Garden through the winter/ }).click();
     await expect(details.getByRole("link", { name: "Garden through the winter" })).toBeVisible();

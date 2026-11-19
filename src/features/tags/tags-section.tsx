@@ -78,7 +78,7 @@ export function TagsSection({
             Tags
           </h2>
           <p className="mt-1.5 max-w-[60ch] text-ink-2">
-            Renaming a tag renames it on every item. A colour shows as a dot beside the tag wherever it appears. Merging one into another moves its items onto the other. Deleting one takes it off its items and keeps the items.
+            Rename, colour or merge a tag; deleting one keeps its items.
           </p>
         </>
       )}

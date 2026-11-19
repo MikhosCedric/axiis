@@ -98,7 +98,7 @@ signedIn.describe("the palette as a way around", () => {
     await palette.getByRole("combobox").fill("");
     await expect(palette.getByRole("combobox")).toBeFocused();
     await expect(palette.getByRole("group", { name: "Recent" }).getByRole("option")).toHaveText(["Wednesday 2 January 2030"]);
-    await expect(palette.getByRole("option", { name: "Inbox, Captured, with no day yet" })).toContainText("GI");
+    await expect(palette.getByRole("option", { name: "Inbox", exact: true })).toContainText("GI");
     await expect(palette.getByRole("status")).toHaveText("Try “next friday”, “nov 3”, a #tag, or a line to capture.");
 
     await palette.getByRole("option", { name: "Wednesday 2 January 2030" }).click();

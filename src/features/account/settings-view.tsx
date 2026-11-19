@@ -5,12 +5,13 @@ import type { ClockSetting, Density, StartPage, Theme } from "@/components/shell
 import type { WeekStart } from "@/features/week/week-of";
 import type { Clock } from "@/lib/clock";
 import type { TagSummary } from "@/domain/tag";
+import { Kbd } from "@/features/palette/guide";
+import { HELP_KEY } from "@/features/palette/shortcuts";
 import { TagsSection, type TagActions } from "@/features/tags/tags-section";
 import { AreasSection, type AreaActions } from "./areas-section";
 import { DeleteAccountSection, type DeletionActions } from "./delete-account-section";
 import { DesktopSection } from "./desktop-section";
 import { DisplaySection } from "./display-section";
-import { KeyboardSection } from "./keyboard-section";
 import { SectionIndex, type SettingsPart } from "./section-index";
 
 export const EXPORT_PATH = "/settings/export";
@@ -21,20 +22,18 @@ function partsOf(desktop: boolean): SettingsPart[] {
     { id: "areas", name: "Areas" },
     { id: "tags", name: "Tags" },
     { id: "display", name: "Display" },
-    { id: "keyboard", name: "Keyboard", touchHidden: true },
     ...(desktop ? [{ id: "desktop", name: "Desktop app" }] : []),
-    { id: "help", name: "Help" },
-    { id: "your-data", name: "Your data" },
+    { id: "your-data", name: "Your data and help" },
   ];
 }
 
-const plainButton =
-  "mt-4 inline-flex items-center rounded-lg border border-rule px-3.5 py-2 font-medium text-ink no-underline hover:bg-hover active:bg-press pointer-coarse:min-h-11";
+const row = "flex flex-wrap items-baseline justify-between gap-x-6 gap-y-0.5 border-b border-rule-soft py-2.5 pointer-coarse:min-h-11";
+const rowLink = "font-medium text-ink underline-offset-2 hover:underline";
 
 /** How many items wait in Recently deleted, in words. */
 function deletedWords(n: number): string {
-  if (n === 0) return "Nothing is there now.";
-  return n === 1 ? "One item is there now." : `${n} items are there now.`;
+  if (n === 0) return "Empty now.";
+  return n === 1 ? "One item now." : `${n} items now.`;
 }
 
 export function SettingsView({
@@ -113,61 +112,50 @@ export function SettingsView({
           <DisplaySection theme={theme} density={density} clock={clock} weekStart={weekStart} startPage={startPage} />
         </div>
 
-        <div id="keyboard" className="pointer-coarse:hidden">
-          <KeyboardSection />
-        </div>
-
         {desktop && (
           <div id="desktop">
             <DesktopSection reminders={desktop.reminders} />
           </div>
         )}
 
-        <div id="help">
-          <section aria-labelledby="help-heading">
-            <h2 id="help-heading" className="font-display text-xl font-medium">
-              Help
-            </h2>
-            <p className="mt-1.5 max-w-[60ch] text-ink-2">
-              Capture words, keys, views, working offline and the desktop app, written out in one place. The changelog lists
-              what has changed, and when.
-            </p>
-            <p className="mt-4 flex flex-wrap gap-3">
-              <Link href="/help" className={`${plainButton} !mt-0`}>
-                Open Help
-              </Link>
-              <Link href="/changelog" className={`${plainButton} !mt-0`}>
-                Open the changelog
-              </Link>
-            </p>
-          </section>
-        </div>
-
         <div id="your-data" className="space-y-12">
-          <section aria-labelledby="trash-heading">
-            <h2 id="trash-heading" className="font-display text-xl font-medium">
-              Recently deleted
+          <section aria-labelledby="your-data-heading">
+            <h2 id="your-data-heading" className="font-display text-xl font-medium">
+              Your data and help
             </h2>
-            <p className="mt-1.5 max-w-[60ch] text-ink-2">
-              Items you delete wait here for 30 days, and each can be restored.
-              {deletedCount !== null && <> {deletedWords(deletedCount)}</>}
-            </p>
-            <Link href="/trash" className={plainButton}>
-              Open recently deleted
-            </Link>
-          </section>
-
-          <section aria-labelledby="export-heading">
-            <h2 id="export-heading" className="font-display text-xl font-medium">
-              Export your data
-            </h2>
-            <p className="mt-1.5 max-w-[60ch] text-ink-2">
-              One JSON file with every item, note, checklist, area, tag and link in your account, including items and
-              areas you have deleted. Times are in UTC. Nothing changes in your account when you export.
-            </p>
-            <a href={EXPORT_PATH} download className={plainButton}>
-              Download export
-            </a>
+            <ul className="mt-3 border-t border-rule">
+              <li id="help" className={row}>
+                <Link href="/help" className={rowLink}>
+                  Help
+                </Link>
+                <span className="text-ink-2">
+                  Words, keys and views, written out.{" "}
+                  <Link href="/changelog" className="underline">
+                    Changelog
+                  </Link>
+                </span>
+              </li>
+              <li id="trash" className={row}>
+                <Link href="/trash" className={rowLink}>
+                  Recently deleted
+                </Link>
+                <span className="text-ink-2">
+                  Kept 30 days, each can be restored.{deletedCount !== null && <> {deletedWords(deletedCount)}</>}
+                </span>
+              </li>
+              <li id="export" className={row}>
+                <a href={EXPORT_PATH} download className={rowLink}>
+                  Export your data
+                </a>
+                <span className="text-ink-2">One JSON file, times in UTC.</span>
+              </li>
+              <li className={`${row} pointer-coarse:hidden`}>
+                <span className="font-medium text-ink">Keyboard shortcuts</span>
+                <span className="text-ink-2">
+                  Press <Kbd>{HELP_KEY}</Kbd>
+                </span>
+              </li>
+            </ul>
           </section>
 
           <div className="border-t border-rule pt-10">

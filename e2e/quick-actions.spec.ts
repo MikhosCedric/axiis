@@ -201,12 +201,12 @@ signedIn.describe("quick actions on the grid", () => {
     await hydrated(page);
     const block = blockOf(page, "Call the plumber");
     await block.scrollIntoViewIfNeeded();
-    // A click shows the block in brief, with its actions beside it: done, Edit and Delete.
+    // A click shows the block in brief, with its actions beside it: done and Edit.
     await block.click();
     const peek = page.getByRole("dialog", { name: "Call the plumber" });
     await expect(peek).toBeVisible();
     await expect(peek.getByRole("button", { name: "Edit" })).toBeVisible();
-    await expect(peek.getByRole("button", { name: "Delete" })).toBeVisible();
+    await expect(peek.getByRole("button", { name: "Delete" })).toHaveCount(0);
     await expect(peek.getByRole("checkbox", { name: "Done: Call the plumber" })).toBeAttached();
     await page.keyboard.press("Escape");
     await expect(peek).toBeHidden();

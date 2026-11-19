@@ -590,9 +590,7 @@ function PaletteBody({
                   aria-label={
                     command.kind === "open"
                       ? `${command.label}, ${TYPE_WORD[command.target.type]}${command.target.done ? ", done" : ""}`
-                      : (command.kind === "go" || command.kind === "help") && command.hint
-                        ? `${command.label}, ${command.hint}`
-                        : undefined
+                      : undefined
                   }
                   onMouseDown={(e) => e.preventDefault()}
                   onMouseMove={() => i !== current && setActive(i)}
@@ -620,12 +618,11 @@ function PaletteBody({
 }
 
 function CommandLine({ command }: { command: Command }) {
-  if ((command.kind === "go" || command.kind === "help") && command.hint) {
+  if (command.kind === "go" || command.kind === "help") {
     const go = command.kind === "go" ? command.go : undefined;
     return (
       <>
-        <span className="min-w-0 flex-none truncate text-ink">{command.label}</span>
-        <span className="min-w-0 flex-1 truncate text-right text-[13px] text-ink-3">{command.hint}</span>
+        <span className="min-w-0 flex-1 truncate text-ink">{command.label}</span>
         <span aria-hidden="true" className="flex w-12 flex-none justify-end gap-1 text-ink-3 max-rail:hidden">
           {go && (
             <>

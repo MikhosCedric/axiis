@@ -807,7 +807,6 @@ export function CalendarGrid({
             return s ? `${formatDayHeading(s.day)}, ${range(s.start, s.end)}` : `${formatDayHeading(peeked.schedule.kind === "day" ? peeked.schedule.on : today)}, any time`;
           })()}
           today={today}
-          canDelete={quick !== null}
           onClosed={(back) => {
             const id = peek.id;
             setPeek(null);
@@ -826,12 +825,6 @@ export function CalendarGrid({
           onEdit={() => {
             setPeek(null);
             onSelect(peeked.id);
-          }}
-          onDelete={() => {
-            const face = document.querySelector<HTMLElement>(`[data-nav][data-id="${peek.id}"]`);
-            const q = quickOf(peeked);
-            setPeek(null);
-            if (face) quick?.run("delete", q.item, q.hooks, face);
           }}
         />
       )}
@@ -868,7 +861,7 @@ function TrayHeading({ as: Tag, children }: { as: "h2" | "h3"; children: ReactNo
   );
 }
 
-/** A block in brief, over the grid: what it is and when, its done tick, and the way on to the panel or to deleting it. */
+/** A block in brief, over the grid: what it is and when, its done tick, and the way on to the panel. */
 function BlockPeek({
   at,
   item,
@@ -876,11 +869,9 @@ function BlockPeek({
   area,
   when,
   today,
-  canDelete,
   onClosed,
   onToggleDone,
   onEdit,
-  onDelete,
   onPlan,
   planWord,
 }: {
@@ -890,11 +881,9 @@ function BlockPeek({
   area: Area | null;
   when: string;
   today: LocalDate;
-  canDelete: boolean;
   onClosed: (refocus: boolean) => void;
   onToggleDone: () => void;
   onEdit: () => void;
-  onDelete: () => void;
   onPlan?: () => void;
   planWord: string;
 }) {
@@ -916,22 +905,14 @@ function BlockPeek({
       </p>
       <div className="mt-3 flex items-center gap-2 border-t border-rule-soft pt-2.5">
         <DoneToggle type={item.type} title={item.title} done={state === "done"} justDone={false} onToggle={onToggleDone} />
-        <span aria-hidden="true" className="mr-auto text-[13px] text-ink-2">
-          {state === "done" ? "Done" : STATE_WORD[state] === "happening now" ? "Happening now" : "Planned"}
-        </span>
         {onPlan && (
-          <button type="button" data-autofocus className={quiet} onClick={onPlan}>
+          <button type="button" data-autofocus className={`${quiet} ml-auto`} onClick={onPlan}>
             {planWord}
           </button>
         )}
-        <button type="button" data-autofocus={onPlan ? undefined : ""} className={quiet} onClick={onEdit}>
+        <button type="button" data-autofocus={onPlan ? undefined : ""} className={`${quiet} ${onPlan ? "" : "ml-auto"}`} onClick={onEdit}>
           Edit
         </button>
-        {canDelete && (
-          <button type="button" className={quiet} onClick={onDelete}>
-            Delete
-          </button>
-        )}
       </div>
     </Floating>
   );
