@@ -6,6 +6,7 @@ import type { LocalDate } from "@/domain/item";
 import { getAreas } from "@/features/filter/server";
 import { getItemsRepo } from "@/lib/items";
 import { resolveTimeZone, toLocalDate } from "@/lib/dates";
+import { daySpan, loadOccurrences } from "@/lib/items/occurrences";
 import { loadDay } from "./load";
 import { loadRailCounts } from "./rail";
 import { reminderRows } from "./reminders";
@@ -30,13 +31,22 @@ export const getNow = cache(() => new Date());
 /** The user's current local date. */
 export const getTodayDate = cache(async () => toLocalDate(getNow(), await getTimeZone()));
 
+/** The day's series occurrences: one read of the series and overrides per date per request, shared by the day and the nav rail. */
+const getOccurrences = cache(async (date: LocalDate) => {
+  const timeZone = await getTimeZone();
+  return loadOccurrences(await getItemsRepo(), daySpan(date, timeZone), timeZone);
+});
+
 /** One load per date per request. */
-export const getDay = cache(async (date: LocalDate) => loadDay(await getItemsRepo(), date, getNow(), await getTimeZone()));
+export const getDay = cache(async (date: LocalDate) =>
+  loadDay(await getItemsRepo(), date, getNow(), await getTimeZone(), getOccurrences(date)),
+);
 
 /** The nav rail's areas with today's open count for each, once per request. */
 export const getRailAreas = cache(async () => {
   const repo = await getItemsRepo();
-  const [areas, open] = await Promise.all([getAreas(), loadRailCounts(repo, await getTodayDate(), await getTimeZone())]);
+  const today = await getTodayDate();
+  const [areas, open] = await Promise.all([getAreas(), loadRailCounts(repo, today, await getTimeZone(), getOccurrences(today))]);
   return areas.map((a) => ({ id: a.id, name: a.name, color: a.color, open: open.get(a.id) ?? 0 }));
 });
 
