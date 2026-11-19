@@ -203,7 +203,7 @@ signedIn.describe("the Month", () => {
     await page.setViewportSize({ width: 1280, height: 900 });
     await page.goto("/month/2099-05");
     await gridHydrated(page);
-    const day = page.locator('[data-date="2099-05-22"]');
+    const day = page.locator('[role=gridcell][data-date="2099-05-22"]');
     const add = day.locator('button[title="Add to this day"]');
     await expect(add).toHaveCSS("opacity", "0");
     await day.hover();

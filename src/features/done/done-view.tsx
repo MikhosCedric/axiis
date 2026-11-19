@@ -172,11 +172,11 @@ function DoneRowView({
         {quick && done && canDo(qi, "plan") && (
           <button
             type="button"
+            aria-label={`Plan again: ${title}`}
             onClick={() => planAgain(quick, qi, today)}
             className={`-ml-1 inline-flex items-center rounded px-1 text-xs font-medium underline underline-offset-2 hover:bg-hover hover:text-ink pointer-coarse:min-h-11 ${quiet}`}
           >
             Plan again
-            <span className="sr-only">: {title}</span>
           </button>
         )}
       </div>

@@ -73,6 +73,47 @@ signedIn.describe("Done", () => {
     await expect(page.getByText("Write the Q4 plan")).toHaveCount(0);
   });
 
+  // The busy account is reset for every test here, so what is left over is still there; the default account loses it to the Today test in signed-in.spec.ts.
+  for (const path of ["/week", "/month"]) {
+    signedIn(`${path} keeps what is left over in one quiet line that opens to its items`, async ({ page }) => {
+      await page.goto(path);
+      await hydrated(page);
+      const line = page.getByRole("region", { name: "Left over from earlier days" });
+      await expect(line).toContainText("left over from earlier days");
+      await expect(line.getByRole("button", { name: "Move to today" })).toBeVisible();
+      const show = line.getByRole("button", { name: "Show" });
+      await expect(show).toHaveAttribute("aria-expanded", "false");
+      await expect(line.getByRole("button", { name: "Return the library books", exact: true })).toHaveCount(0);
+      await show.click();
+      await expect(line.getByRole("button", { name: "Hide" })).toHaveAttribute("aria-expanded", "true");
+      await expect(line.getByRole("button", { name: "Return the library books", exact: true })).toBeVisible();
+      expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+    });
+  }
+
+  // Here and not in a spec of its own: the busy account is shared by every worker, and this moves its items.
+  signedIn("Plan the rest of today for tomorrow moves the open tasks in one note, and Undo puts them back", async ({ page }) => {
+    await page.setViewportSize({ width: 1600, height: 900 });
+    await page.goto("/today");
+    await hydrated(page);
+    const plan = page.getByRole("button", { name: "Plan the rest of today for tomorrow" });
+    await expect(plan).toBeVisible();
+    await plan.click();
+    // Call the plumber, Send the invoice and Groceries: the event, the live block and what is done stay.
+    await expect(page.getByText("3 things are planned for tomorrow.")).toBeVisible();
+    await expect(plan).toHaveCount(0);
+    await expect(page.getByRole("checkbox", { name: "Done: Send the invoice" })).toHaveCount(0);
+    await page.getByRole("button", { name: "Undo" }).click();
+    await expect(page.getByText("Back on today.")).toBeVisible();
+    await expect(plan).toBeVisible();
+  });
+
+  signedIn("Plan the rest of today for tomorrow is not offered on another day", async ({ page }) => {
+    await page.goto("/day/2099-05-20");
+    await hydrated(page);
+    await expect(page.getByRole("button", { name: "Plan the rest of today for tomorrow" })).toHaveCount(0);
+  });
+
   for (const scheme of ["light", "dark"] as const) {
     signedIn(`/done has no serious or critical axe violations (${scheme}, 375px)`, async ({ page }) => {
       await page.emulateMedia({ colorScheme: scheme });
