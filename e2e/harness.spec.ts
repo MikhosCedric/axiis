@@ -130,15 +130,22 @@ const whenOf = async (page: Page) => {
   const panel = page.getByRole("complementary", { name: "Details" });
   const planned = panel.getByRole("button", { name: /^Planned for/ });
   const first = panel.getByLabel("First day");
-  // Nothing here waits: while the next item loads, the panel may show neither, and the caller polls.
-  const day = (await planned.count()) ? await planned.textContent({ timeout: 1000 }) : (await first.count()) ? await first.inputValue({ timeout: 1000 }) : "";
   const start = panel.getByLabel("Starts at");
-  const times = (await start.count()) ? `, ${await start.inputValue({ timeout: 1000 })} to ${await panel.getByLabel("Ends at").inputValue({ timeout: 1000 })}` : "";
-  return `${day}${times}`;
+  // Nothing here waits: while the next item loads, the panel may show neither, and the caller polls. A row can also
+  // be swapped between counting it and reading it; that read counts as "not there yet", so the poll goes round again.
+  try {
+    const day = (await planned.count()) ? await planned.textContent({ timeout: 1000 }) : (await first.count()) ? await first.inputValue({ timeout: 1000 }) : "";
+    const times = (await start.count()) ? `, ${await start.inputValue({ timeout: 1000 })} to ${await panel.getByLabel("Ends at").inputValue({ timeout: 1000 })}` : "";
+    return `${day}${times}`;
+  } catch {
+    return "(panel changing)";
+  }
 };
 
 test("detail: a time set for all of them moves the series and leaves other changed days alone", async ({ page }) => {
   await page.goto("/dev/detail?item=00000000-0000-4000-8000-000000000061");
+  // The baseline is read once, so wait for the panel to show Wednesday first; read at once it can be ", 06:30 to 07:15".
+  await expect(page.getByRole("complementary", { name: "Details" }).getByRole("button", { name: /^Planned for/ })).toBeVisible();
   const wednesday = await whenOf(page);
 
   await page.getByRole("link", { name: "Repeating: Friday's run, not touched yet" }).click();
@@ -159,6 +166,8 @@ test("detail: a time set for all of them moves the series and leaves other chang
 
 test("detail: all of them can go back to any time and start on another day", async ({ page }) => {
   await page.goto("/dev/detail?item=00000000-0000-4000-8000-000000000061");
+  // The baseline is read once, so wait for the panel to show Wednesday first; read at once it can be ", 06:30 to 07:15".
+  await expect(page.getByRole("complementary", { name: "Details" }).getByRole("button", { name: /^Planned for/ })).toBeVisible();
   const wednesday = await whenOf(page);
   await page.getByRole("link", { name: "Repeating: Friday's run, not touched yet" }).click();
   await expect(page.getByText("Repeats. This is the one for Friday 9 October.")).toBeVisible();
