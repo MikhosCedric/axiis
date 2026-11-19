@@ -155,7 +155,7 @@ signedIn.describe("signed in", () => {
     await hydrated(page);
     await page.getByRole("navigation", { name: "Primary" }).getByRole("button", { name: /^Search or go to/ }).click();
     await expect(page.getByRole("dialog", { name: "Search and commands" })).toBeVisible();
-    await page.getByRole("option", { name: "Search, Find any task or note" }).click();
+    await page.getByRole("option", { name: "Search", exact: true }).click();
     await expect(page).toHaveURL("/search");
     await expect(page.getByRole("heading", { level: 1, name: "Search" })).toBeVisible();
   });

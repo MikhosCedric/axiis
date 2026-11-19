@@ -75,7 +75,7 @@ test.describe("the rail", () => {
     await field.click();
     const palette = page.getByRole("dialog", { name: "Search and commands" });
     await expect(palette).toBeVisible();
-    await expect(palette.getByRole("option", { name: "Search, Find any task or note" })).toBeVisible();
+    await expect(palette.getByRole("option", { name: "Search", exact: true })).toBeVisible();
   });
 
   test("the account row opens a menu that Escape closes, handing focus back", async ({ page }) => {

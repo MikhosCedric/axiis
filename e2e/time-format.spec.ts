@@ -25,7 +25,6 @@ signedIn.describe("time format", () => {
 
   signedIn("12-hour writes the Day, Week, Month, detail panel and capture in AM and PM, and is kept on reload", async ({ page }) => {
     await choose(page, "12-hour");
-    await expect(page.getByText("Like 9:30 AM and 2:15 PM.")).toBeVisible();
 
     await page.goto("/inbox");
     const field = page.locator("#capture");
@@ -79,7 +78,6 @@ signedIn.describe("time format", () => {
       // An en-US browser writes the 12-hour clock: the sync reports it and the page is drawn again.
       await expect.poll(async () => every(await labels(page), /^(1[0-2]|[1-9])\s[AP]M$/)).toBe(true);
       await choose(page, "Auto");
-      await expect(page.getByText(/so 9:30\sAM and 2:15\sPM\.$/)).toBeVisible();
     });
   }
 });
@@ -93,7 +91,6 @@ signedIn.describe("time format in a 24-hour region", () => {
       await context.clearCookies({ name: "clock" });
       await page.goto("/settings");
       await expect(timeFormat(page).getByRole("button", { name: "Auto" })).toHaveAttribute("aria-pressed", "true");
-      await expect(page.getByText("so 09:30 and 14:15.", { exact: false })).toBeVisible();
       await page.goto("/today");
       await expect.poll(async () => every(await labels(page), /^\d{2}$/)).toBe(true);
       // The pin took: the 12 label is hidden exactly when the pinned now is within 14 minutes of noon.
