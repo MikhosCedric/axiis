@@ -25,16 +25,16 @@ signedIn.describe("a busy day", () => {
     await useAccount(page, request, baseURL, "busy");
   });
 
-  signedIn("Today says where the day stands and what is next, the Week and the Month say where their span is", async ({ page }) => {
+  signedIn("Today says where the day stands and shows the one next thing, the Week and the Month count what is open", async ({ page }) => {
     await page.goto("/today");
     // Morning run, the Q4 plan and the plants are done in the seed; what else the day holds depends on the weekday.
     // Focus block is seeded around now; another seeded item can share the hour, so it need not be the only one.
-    await expect(glance(page)).toHaveText(/^Today · 3 of \d+ done · now: (.+, )?Focus block/);
+    await expect(glance(page)).toHaveText(/^Today · 3 of \d+ done( · \d+ due)?$/);
     await expect(glance(page)).toContainText("due");
 
     const next = page.getByRole("region", { name: "Next up" });
     await expect(next.getByRole("listitem").filter({ hasText: "Focus block" })).toContainText(/^Focus block\s*Now, until/);
-    await expect(next.getByRole("listitem")).toHaveCount(3);
+    await expect(next.getByRole("listitem")).toHaveCount(1);
     await expect(next.getByRole("checkbox", { name: "Done: Focus block" })).not.toBeChecked();
 
     // A due date carries the same mark on the grid as in Next up.
@@ -44,9 +44,9 @@ signedIn.describe("a busy day", () => {
     await expect(page.locator("[data-anytime] li").getByRole("button", { name: /^Water the plants.*done/ })).toBeVisible();
 
     await page.goto("/week");
-    await expect(page.locator(".page-summary").first()).toHaveText(/^This week · (Last day|\d days left) · \d+ open .*· 4 in the Inbox$/);
+    await expect(page.locator(".page-summary").first()).toHaveText(/^\d+ open( · \d+ due)?$/);
     await page.goto("/month");
-    await expect(page.locator(".page-summary").first()).toHaveText(/^This month · (Last day|\d+ days left) · \d+ open/);
+    await expect(page.locator(".page-summary").first()).toHaveText(/^\d+ open( · \d+ due)?$/);
   });
 
   signedIn("ticking the first thing in Next up brings the next one up", async ({ page }) => {
@@ -111,14 +111,14 @@ signedIn.describe("the tour", () => {
     await page.context().addCookies([{ name: "tour", value: "replay", url: baseURL }]);
   });
 
-  signedIn("steps through four steps once, and the Guide brings them back", async ({ page, baseURL }) => {
+  signedIn("steps through three steps once, and the Guide brings them back", async ({ page, baseURL }) => {
     await page.goto("/today");
-    const tour = page.getByRole("region", { name: "Capture first, sort later" });
+    const tour = page.getByRole("region", { name: "The grid is your day" });
     await expect(tour).toBeVisible();
-    await expect(tour).toContainText("1 of 4");
+    await expect(tour).toContainText("1 of 3");
     expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
 
-    for (const title of ["The grid is your day", "Inbox or Today", "The Guide explains the rest"]) {
+    for (const title of ["Inbox or Today", "The Guide explains the rest"]) {
       await page.getByRole("button", { name: "Next", exact: true }).click();
       await expect(page.getByRole("region", { name: title })).toBeVisible();
     }
@@ -126,15 +126,15 @@ signedIn.describe("the tour", () => {
     await page.getByRole("button", { name: "Done", exact: true }).click();
     await expect(page.getByRole("region", { name: "The Guide explains the rest" })).toHaveCount(0);
     await page.reload();
-    await expect(page.getByRole("region", { name: "Capture first, sort later" })).toHaveCount(0);
+    await expect(page.getByRole("region", { name: "The grid is your day" })).toHaveCount(0);
 
     await page.getByRole("button", { name: "Guide" }).click();
     const guide = page.getByRole("dialog");
     await expect(guide.getByRole("list", { name: "Kinds of item" }).getByRole("listitem")).toHaveCount(3);
     await guide.getByRole("button", { name: "Take the tour again" }).click();
-    await expect(page.getByRole("region", { name: "Capture first, sort later" })).toBeVisible();
+    await expect(page.getByRole("region", { name: "The grid is your day" })).toBeVisible();
     await page.getByRole("button", { name: "Skip the tour" }).click();
-    await expect(page.getByRole("region", { name: "Capture first, sort later" })).toHaveCount(0);
+    await expect(page.getByRole("region", { name: "The grid is your day" })).toHaveCount(0);
     expect((await page.context().cookies(baseURL)).find((c) => c.name === "tour")?.value).toBe("done");
   });
 });

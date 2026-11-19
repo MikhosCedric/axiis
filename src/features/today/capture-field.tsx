@@ -90,7 +90,7 @@ export function CaptureField({
   captureAction = serverCapture,
   pasteActions,
   label = "Capture anything",
-  placeholder = "Capture anything, then place it later",
+  placeholder = "Capture",
   plans = true,
   firstDay = false,
   screenStatus,

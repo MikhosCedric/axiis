@@ -6,12 +6,12 @@ test("the Day and Week trays are the Inbox and link to it", async ({ page }) => 
   for (const path of ["/dev/day", "/dev/calendar"]) {
     await page.goto(path);
     const tray = page.getByRole("region", { name: "Inbox", exact: true });
-    await expect(tray).toContainText("No day yet.");
+    await expect(tray).toHaveAccessibleDescription(/^No day yet\./);
     await expect(tray.getByRole("link", { name: "Inbox" })).toHaveAttribute("href", "/inbox");
   }
   await page.goto("/dev/inbox");
   await expect(page.getByRole("region", { name: "Items with no day", exact: true })).toBeVisible();
-  await expect(page.getByText("Captured, with no day yet. Plan each one when you are ready.")).toBeVisible();
+  await expect(page.locator(".page-summary")).toHaveText(/^\d+ to plan$/);
 });
 
 signedIn("the date jump's typed date field shows the focus ring", async ({ page }) => {

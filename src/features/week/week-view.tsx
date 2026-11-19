@@ -88,7 +88,7 @@ function WeekPage({
       dayRangeFor(today, timeZone),
       now,
     ).waiting;
-    return weekSummary(week, inbox, today, scopeWords(filter));
+    return weekSummary(week, inbox, scopeWords(filter));
   }, [items, days, timeZone, now, today, filter]);
 
   return (

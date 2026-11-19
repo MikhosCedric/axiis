@@ -55,7 +55,7 @@ export async function loadMonth(
     month,
     today,
     cells,
-    summary: monthSummary(month, today, open, dueCount, scopeWords(filter)),
+    summary: monthSummary(open, dueCount, scopeWords(filter)),
     full: stored.length >= RANGE_LIMIT || due.length >= RANGE_LIMIT,
   };
 }

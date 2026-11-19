@@ -4,7 +4,6 @@ import { renameKey, useQuick } from "@/features/actions/context";
 import { RenameField, RowActions, rowProps } from "@/features/actions/row-actions";
 import type { ReactNode } from "react";
 import { AreaLabel } from "@/components/area-mark";
-import { place } from "@/components/shell/places";
 import { DetailAside } from "@/features/detail/detail-aside";
 import { useItemSelection } from "@/features/detail/use-item-selection";
 import { setDoneAction } from "@/features/today/actions";
@@ -43,7 +42,7 @@ export function DueView({
       <div className="mx-auto w-full max-w-[880px] min-w-0 px-4 pt-6 pb-14 rail:px-9 rail:pt-8">
         <PageHeader heading={<h1 className="headline">Due</h1>} controls={<GuideButton topics={NO_TOPICS} />}>
           <p className="page-summary">
-            {place("due").hint}. {scopePrefix(filter)}
+            {scopePrefix(filter)}
             {dueSummary(rows)}
           </p>
           <FilterChips filter={filter} className="mt-2.5" />
@@ -53,10 +52,7 @@ export function DueView({
         </p>
 
         {rows.length === 0 ? (
-          <p className="mt-2 max-w-[52ch] text-ink-2">
-            A due date is a deadline, kept apart from the day you plan to do the thing. Set one from an item&rsquo;s
-            details and it shows up here, soonest first.
-          </p>
+          <p className="mt-2 max-w-[52ch] text-ink-2">Set a due date from an item&rsquo;s details and it shows up here.</p>
         ) : (
           GROUPS.map((group) => {
             const inThis = inGroup(rows, group);

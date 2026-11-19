@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { LocalDate } from "@/domain/item";
-import { dayCount, doneHeading, doneSummary, groupByDay, readPages, type DoneRow } from "./model";
+import { doneHeading, doneSummary, groupByDay, readPages, type DoneRow } from "./model";
 
 const d = (s: string) => s as LocalDate;
 const today = d("2026-10-08");
@@ -36,10 +36,8 @@ describe("readPages", () => {
 
 describe("words", () => {
   it("counts plainly, without praise", () => {
-    expect(dayCount(1)).toBe("1 item");
-    expect(dayCount(3)).toBe("3 items");
-    expect(doneSummary(0, false)).toBe("Nothing finished yet.");
-    expect(doneSummary(12, false)).toBe("12 items finished.");
-    expect(doneSummary(50, true)).toBe("The latest 50 you finished.");
+    expect(doneSummary(0, false)).toBe("Nothing yet");
+    expect(doneSummary(12, false)).toBe("12 finished");
+    expect(doneSummary(50, true)).toBe("Latest 50");
   });
 });

@@ -33,6 +33,3 @@ export function exampleBeams(areas: readonly Area[]): ExampleBeam[] {
 export function exampleBlocks(areas: readonly Area[]): GridExample[] {
   return exampleBeams(areas).map((e) => ({ title: e.title, start: e.span.start, end: e.span.end, color: areas.find((a) => a.id === e.areaId)?.color ?? null }));
 }
-
-/** Under the grid on the first day. */
-export const EXAMPLES_NOTE = "The faint blocks are examples. They go once you add your first item.";
