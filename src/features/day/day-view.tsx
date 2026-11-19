@@ -330,7 +330,8 @@ function DayPage({
             {/* The grid's Inbox: under the day on a narrow page, a card here on a wide one. */}
             {mode === "grid" && <div ref={trayRef} className="order-4 mt-6 empty:hidden @min-[58rem]/page:order-3 @min-[58rem]/page:mt-0" />}
             {leftNode && <div className="order-5 mt-7 @min-[58rem]/page:order-5 @min-[58rem]/page:mt-0">{leftNode}</div>}
-            {restNode && <div className="order-5 mt-3 mb-3 @min-[58rem]/page:mt-0 @min-[58rem]/page:px-4 @min-[58rem]/page:py-3">{restNode}</div>}
+            {/* Not a scroll anchor: it mounts after the page has scrolled to now, and must not nudge that. */}
+            {restNode && <div className="order-5 mt-3 mb-3 [overflow-anchor:none] @min-[58rem]/page:mt-0 @min-[58rem]/page:px-4 @min-[58rem]/page:py-3">{restNode}</div>}
             {dueNode && <div className="order-6 hidden @min-[58rem]/page:block">{dueNode}</div>}
             {pulseNode && <div className="order-7 hidden @min-[58rem]/page:block">{pulseNode}</div>}
           </div>
