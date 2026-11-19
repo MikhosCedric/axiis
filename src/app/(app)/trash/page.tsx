@@ -11,7 +11,7 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 
 export default async function TrashPage() {
   const deleted = await (await getItemsRepo()).listDeleted();
-  const now = getNow().getTime();
+  const now = (await getNow()).getTime();
   const rows: TrashRow[] = deleted.map(({ item, deletedAt }) => ({
     id: item.id,
     title: displayTitle(item),

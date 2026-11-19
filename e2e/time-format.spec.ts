@@ -1,10 +1,17 @@
 import { expect, type Page } from "@playwright/test";
-import { signedIn } from "./session";
+import { pinClock, signedIn } from "./session";
 
 // Time format on the real signed-in routes. playwright.config.ts pins the clock cookie to 24-hour for every
 // other spec; these tests change it. The item is planned in March 2099, a month no other spec reads.
 
 const TITLE = "Board call";
+
+// The Today grid hides the hour label the now line is within 14 minutes of, and an empty day draws only the hours
+// around now. So the specs below pin the app's now (pinClock) to times either side of noon and of midnight, and
+// read every label the axis draws instead of looking for one hour.
+const PINS = ["00:05", "11:50", "12:00", "12:10", "23:55"] as const;
+const labels = (page: Page) => page.locator("[data-hour]").evaluateAll((spans) => spans.map((s) => s.textContent ?? ""));
+const every = (texts: string[], shape: RegExp) => texts.length > 0 && texts.every((t) => shape.test(t));
 const timeFormat = (page: Page) => page.getByRole("group", { name: "Time format" });
 
 async function choose(page: Page, name: "Auto" | "12-hour" | "24-hour") {
@@ -64,25 +71,36 @@ signedIn.describe("time format", () => {
     await expect(page.getByRole("button", { name: new RegExp(`^${TITLE}[ ,].*21:30.*23:00`) })).toBeVisible();
   });
 
-  signedIn("Auto follows the browser's language and region", async ({ page, context }) => {
-    await context.clearCookies({ name: "clock" });
-    await page.goto("/today");
-    // An en-US browser writes the 12-hour clock: the sync reports it and the page is drawn again.
-    await expect(page.locator("[data-hour]").filter({ hasText: /^12\sPM$/ })).toHaveCount(1);
-    await choose(page, "Auto");
-    await expect(page.getByText(/so 9:30\sAM and 2:15\sPM\.$/)).toBeVisible();
-  });
+  for (const at of PINS) {
+    signedIn(`Auto follows the browser's language and region (now ${at})`, async ({ page, context, baseURL }) => {
+      await pinClock(context, at, baseURL!);
+      await context.clearCookies({ name: "clock" });
+      await page.goto("/today");
+      // An en-US browser writes the 12-hour clock: the sync reports it and the page is drawn again.
+      await expect.poll(async () => every(await labels(page), /^(1[0-2]|[1-9])\s[AP]M$/)).toBe(true);
+      await choose(page, "Auto");
+      await expect(page.getByText(/so 9:30\sAM and 2:15\sPM\.$/)).toBeVisible();
+    });
+  }
 });
 
 signedIn.describe("time format in a 24-hour region", () => {
   signedIn.use({ timezoneId: "UTC", locale: "en-GB" });
 
-  signedIn("Auto writes the 24-hour clock", async ({ page, context }) => {
-    await context.clearCookies({ name: "clock" });
-    await page.goto("/settings");
-    await expect(timeFormat(page).getByRole("button", { name: "Auto" })).toHaveAttribute("aria-pressed", "true");
-    await expect(page.getByText("so 09:30 and 14:15.", { exact: false })).toBeVisible();
-    await page.goto("/today");
-    await expect(page.locator("[data-hour]").filter({ hasText: /^12$/ })).toHaveCount(1);
-  });
+  for (const at of PINS) {
+    signedIn(`Auto writes the 24-hour clock (now ${at})`, async ({ page, context, baseURL }) => {
+      await pinClock(context, at, baseURL!);
+      await context.clearCookies({ name: "clock" });
+      await page.goto("/settings");
+      await expect(timeFormat(page).getByRole("button", { name: "Auto" })).toHaveAttribute("aria-pressed", "true");
+      await expect(page.getByText("so 09:30 and 14:15.", { exact: false })).toBeVisible();
+      await page.goto("/today");
+      await expect.poll(async () => every(await labels(page), /^\d{2}$/)).toBe(true);
+      // The pin took: the 12 label is hidden exactly when the pinned now is within 14 minutes of noon.
+      const [h, m] = at.split(":").map(Number);
+      const noon = page.locator('[data-hour="12"]');
+      if (Math.abs(h * 60 + m - 720) < 14) await expect(noon).toBeHidden();
+      else if (await noon.count()) await expect(noon).toBeVisible();
+    });
+  }
 });

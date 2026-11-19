@@ -5,8 +5,9 @@ import { getRequestClock } from "@/components/shell/request-clock";
 import type { LocalDate } from "@/domain/item";
 import { getAreas } from "@/features/filter/server";
 import { getItemsRepo } from "@/lib/items";
-import { resolveTimeZone, toLocalDate } from "@/lib/dates";
+import { instantAt, resolveTimeZone, toLocalDate } from "@/lib/dates";
 import { daySpan, loadOccurrences } from "@/lib/items/occurrences";
+import { getFakePinnedMinutes } from "@/lib/supabase/fake-session";
 import { loadDay } from "./load";
 import { loadRailCounts } from "./rail";
 import { reminderRows } from "./reminders";
@@ -25,11 +26,17 @@ export async function areasNamedIn(words: string | readonly string[]) {
   return [words].flat().some((w) => typeof w === "string" && w.includes("@")) ? getAreas() : [];
 }
 
-// One instant per request, so the shell and the page agree on which day is today.
-export const getNow = cache(() => new Date());
+// One instant per request, so the shell and the page agree on which day is today. In the browser-test build a
+// fake-session request may pin the time of day (`axiis-e2e-at`), so a spec does not depend on when it runs.
+export const getNow = cache(async () => {
+  const pinned = await getFakePinnedMinutes();
+  if (pinned === null) return new Date();
+  const timeZone = await getTimeZone();
+  return instantAt(toLocalDate(new Date(), timeZone), pinned, timeZone);
+});
 
 /** The user's current local date. */
-export const getTodayDate = cache(async () => toLocalDate(getNow(), await getTimeZone()));
+export const getTodayDate = cache(async () => toLocalDate(await getNow(), await getTimeZone()));
 
 /** The day's series occurrences: one read of the series and overrides per date per request, shared by the day and the nav rail. */
 const getOccurrences = cache(async (date: LocalDate) => {
@@ -39,7 +46,7 @@ const getOccurrences = cache(async (date: LocalDate) => {
 
 /** One load per date per request. */
 export const getDay = cache(async (date: LocalDate) =>
-  loadDay(await getItemsRepo(), date, getNow(), await getTimeZone(), getOccurrences(date)),
+  loadDay(await getItemsRepo(), date, await getNow(), await getTimeZone(), getOccurrences(date)),
 );
 
 /** The nav rail's areas with today's open count for each, once per request. */
@@ -53,11 +60,11 @@ export const getRailAreas = cache(async () => {
 /** The lines the desktop tray shows for today. Only asked for in the desktop shell, and the page loads the same day, so it is one read. */
 export const getTrayRows = cache(async () => {
   const [today, timeZone, clock] = await Promise.all([getTodayDate(), getTimeZone(), getClock()]);
-  return trayRows((await getDay(today)).view, today, getNow(), timeZone, clock);
+  return trayRows((await getDay(today)).view, today, await getNow(), timeZone, clock);
 });
 
 /** What the desktop shell may notify about today. Asked for only in the shell, and from the day the page loads anyway. */
-export const getReminders = cache(async () => reminderRows((await getDay(await getTodayDate())).view, getNow()));
+export const getReminders = cache(async () => reminderRows((await getDay(await getTodayDate())).view, await getNow()));
 
 /** What waits in the Inbox, and how many due dates have passed, for the badges on the places. Once per request. */
 export const getRailBadges = cache(async () => {

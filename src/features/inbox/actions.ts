@@ -8,7 +8,7 @@ import { planItem } from "./commands";
 
 // Inputs are untrusted; planItem validates them, and RLS scopes the write to the session's user.
 export async function planAction(id: string, when: string): Promise<ActionResult> {
-  const result = await planItem(await getItemsRepo(), id, when, getNow(), await getTimeZone());
+  const result = await planItem(await getItemsRepo(), id, when, await getNow(), await getTimeZone());
   if (result.ok) refresh();
   return result;
 }

@@ -12,7 +12,7 @@ import { getItemsRepo } from "@/lib/items";
  */
 export async function captureOnAction(title: string, on: string): Promise<CaptureResult> {
   const day = planDateSchema.safeParse(on);
-  const result = await captureTask(await getItemsRepo(), title, getNow(), await getTimeZone(), day.success ? day.data : null, undefined, await getWeekStart(), await areasNamedIn(title));
+  const result = await captureTask(await getItemsRepo(), title, await getNow(), await getTimeZone(), day.success ? day.data : null, undefined, await getWeekStart(), await areasNamedIn(title));
   if (result.ok) refresh();
   return result;
 }
