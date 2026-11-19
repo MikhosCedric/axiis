@@ -183,10 +183,13 @@ test.describe("on a phone", () => {
         const now = document.querySelector<HTMLElement>("[data-now]")!.getBoundingClientRect();
         return { scrolled: window.scrollY, headBottom: head.bottom, now: now.top, height: window.innerHeight };
       });
-    await expect.poll(async () => (await seen()).scrolled).toBeGreaterThan(100);
-    const a = await seen();
-    expect(a.now).toBeGreaterThan(a.headBottom);
-    expect(a.now).toBeLessThan(a.height - 60);
+    // Poll the whole outcome: the page scrolls in steps, so "scrolled a bit" is not "settled with now in view".
+    await expect
+      .poll(async () => {
+        const a = await seen();
+        return a.scrolled > 100 && a.now > a.headBottom && a.now < a.height - 60;
+      })
+      .toBe(true);
   });
 
   test("the page scrolls as one: the grid has no scroll of its own and its day head sticks", async ({ page }) => {
@@ -232,6 +235,9 @@ test.describe("on a wide window, 1819 by 1030", () => {
 
   test("the Day's grid and side column sit centred, and the head shares their edges", async ({ page }) => {
     await open(page);
+    // The side column and the head draw with the page, not with the grid; measure only once all three are there.
+    await expect(page.locator("[data-drop='tray']")).toBeVisible();
+    await expect(page.locator("header").first()).toBeVisible();
     const m = await page.evaluate(() => {
       const main = { left: 0, right: window.innerWidth };
       const grid = document.querySelector<HTMLElement>("[data-calendar-grid]")!.getBoundingClientRect();
