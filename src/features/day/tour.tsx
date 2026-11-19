@@ -4,7 +4,7 @@ import { useRef, useState } from "react";
 import { TOUR_COOKIE } from "@/components/shell/cookies";
 
 /** Four steps, each one thing a newcomer needs before the rest makes sense. */
-export const TOUR_STEPS: { title: string; body: string }[] = [
+const TOUR_STEPS: { title: string; body: string }[] = [
   {
     title: "Capture first, sort later",
     body: "Type anything into the field above and press Enter. Add a day or a time, as in “dentist tomorrow 9:00”, and it is planned; without one it goes to the Inbox.",

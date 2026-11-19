@@ -38,9 +38,9 @@ export const CAPTURE_KEY = "c";
 /** How long the key after G is waited for, in milliseconds. */
 export const GO_WINDOW_MS = 1500;
 
-export const AREA_KEY = "a";
+const AREA_KEY = "a";
 /** How many areas the A keys reach, one per digit. */
-export const AREA_KEYS_MAX = 9;
+const AREA_KEYS_MAX = 9;
 
 /** Where G followed by a key goes. */
 export const GO_PLACES = PLACES.flatMap((p) => (p.go ? [{ key: p.go, label: p.label, href: p.href }] : []));

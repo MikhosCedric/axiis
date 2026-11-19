@@ -7,15 +7,15 @@ import { localMinutes, toLocalDate } from "@/lib/dates";
 
 export const DAY_MINUTES = 24 * 60;
 export const HOUR_PX = 52;
-export const PX_PER_MINUTE = HOUR_PX / 60;
+const PX_PER_MINUTE = HOUR_PX / 60;
 export const GRID_PX = 24 * HOUR_PX;
 /** The least a block is drawn tall, so a five-minute item still shows its title. */
 export const MIN_BLOCK_PX = 22;
 /** The hour a day that is not today opens on, when nothing is planned earlier. */
-export const OPEN_AT = 7 * 60;
+const OPEN_AT = 7 * 60;
 /** The visible range always holds at least these hours (07:00 to 22:00), and one hour past what is planned. */
-export const RANGE_FROM = 7 * 60;
-export const RANGE_TO = 22 * 60;
+const RANGE_FROM = 7 * 60;
+const RANGE_TO = 22 * 60;
 /** The least and most an hour is drawn tall when the range is fitted to the window. */
 export const MIN_HOUR_PX = 44;
 export const MAX_HOUR_PX = 88;
@@ -60,7 +60,7 @@ export function visibleRange(
 }
 
 /** How many hours an empty day draws: enough to click into, not a field of blank lines. */
-export const EMPTY_HOURS = 9;
+const EMPTY_HOURS = 9;
 
 /**
  * The hours drawn on a day with nothing timed on it: nine of them, from two before now (kept inside the

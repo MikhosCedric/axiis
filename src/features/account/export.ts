@@ -1,7 +1,7 @@
 import { z } from "zod";
 import type { LocalDate } from "@/domain/item";
 
-export const EXPORT_PAGE_SIZE = 1000;
+const EXPORT_PAGE_SIZE = 1000;
 
 // Enums are read as plain strings: an export must stay faithful even if a value
 // is newer than this code, rather than fail and leave the user with nothing.
@@ -101,7 +101,7 @@ export const EXPORT_TABLES = {
 } as const;
 
 export type ExportTable = keyof typeof EXPORT_TABLES;
-export const EXPORT_TABLE_NAMES = Object.keys(EXPORT_TABLES) as ExportTable[];
+const EXPORT_TABLE_NAMES = Object.keys(EXPORT_TABLES) as ExportTable[];
 
 /** Reads rows `[from, to]` inclusive, in the table's `orderBy` order. */
 export type PageReader = (table: ExportTable, from: number, to: number) => Promise<unknown[]>;

@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { isTypingTarget } from "@/features/day/nav";
 
 /** How long a note with an Undo stays, unless a pointer or focus is on it. */
-export const UNDO_MS = 6000;
+const UNDO_MS = 6000;
 
 /** One piece of news about a change just made, and how to take it back. `id` tells two notes with the same words apart. */
 export type UndoNote = { id: number; text: string; undo?: () => void };

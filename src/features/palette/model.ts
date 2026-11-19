@@ -43,7 +43,7 @@ export type Find =
   | { status: "done"; query: string; rows: SearchRow[] }
   | { status: "failed"; query: string };
 
-export const FIND_MIN = 2;
+const FIND_MIN = 2;
 export const FIND_MAX = 6;
 
 type Destination = { label: string; href: string | null; hint: string; also: readonly string[]; go?: string | null };
