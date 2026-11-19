@@ -17,7 +17,7 @@ export default async function DonePage({ searchParams }: PageProps<"/done">) {
   const { itemId } = readDayQuery(query);
   const pages = readPages(query[DONE_PAGE_PARAM]);
   const [{ tagColors, ...data }, filter] = await Promise.all([
-    getItemsRepo().then(async (repo) => loadDone(repo, getNow(), await getTimeZone(), pages)),
+    getItemsRepo().then(async (repo) => loadDone(repo, await getNow(), await getTimeZone(), pages)),
     getFilter(searchParams, true),
   ]);
   const rows = data.rows.filter((r) => keeps(filter, r, r.tags));

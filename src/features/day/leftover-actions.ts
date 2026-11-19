@@ -8,7 +8,7 @@ import { moveLeftoverToToday } from "./leftover";
 
 // No input to trust: the repo reads the signed-in user's own rows, and RLS scopes every write.
 export async function moveLeftoverAction(): Promise<ActionResult> {
-  const result = await moveLeftoverToToday(await getItemsRepo(), getNow(), await getTimeZone());
+  const result = await moveLeftoverToToday(await getItemsRepo(), await getNow(), await getTimeZone());
   if (result.ok) refresh();
   return result;
 }

@@ -48,6 +48,20 @@ export async function getFakeAccount(): Promise<FakeAccount | null> {
   return null;
 }
 
+/**
+ * Server only. The minute of the day a browser test pinned "now" to, from an `axiis-e2e-at` cookie of `HH:MM`
+ * (today in the reader's zone), or null. Only a request that carries the fake session can pin: the same guard.
+ */
+export async function getFakePinnedMinutes(): Promise<number | null> {
+  if (process.env.AXIIS_E2E_BUILD === "1") {
+    const jar = await cookies();
+    if (!isFakeSession(jar.get("axiis-e2e-session")?.value)) return null;
+    const m = /^([01]\d|2[0-3]):([0-5]\d)$/.exec(jar.get("axiis-e2e-at")?.value ?? "");
+    return m ? Number(m[1]) * 60 + Number(m[2]) : null;
+  }
+  return null;
+}
+
 /** Server only. Clears the browser-test session cookie, as signing out clears Supabase's. */
 export async function endFakeSession(): Promise<void> {
   if (process.env.AXIIS_E2E_BUILD === "1") (await cookies()).delete("axiis-e2e-session");

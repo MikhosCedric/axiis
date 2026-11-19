@@ -14,7 +14,7 @@ export const metadata: Metadata = { title: "Inbox" };
 export default async function InboxPage({ searchParams }: PageProps<"/inbox">) {
   const { itemId } = readDayQuery(await searchParams);
   const [data, filter] = await Promise.all([
-    getItemsRepo().then(async (repo) => loadInbox(repo, getNow(), await getTimeZone())),
+    getItemsRepo().then(async (repo) => loadInbox(repo, await getNow(), await getTimeZone())),
     getFilter(searchParams, true),
   ]);
   return (

@@ -78,7 +78,7 @@ export async function deleteItemAction(id: string, scope?: unknown): Promise<Del
 }
 
 export async function setRepeatAction(id: string, choice: unknown): Promise<ActionResult> {
-  return refreshed(await setRepeat(await getItemsRepo(), id, choice, getNow(), await getTimeZone()));
+  return refreshed(await setRepeat(await getItemsRepo(), id, choice, await getNow(), await getTimeZone()));
 }
 
 export async function stopRepeatingAction(id: string): Promise<ActionResult> {

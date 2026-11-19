@@ -7,5 +7,5 @@ import type { ViewFilter } from "@/features/filter/model";
 
 /** One load per month and filter per request. */
 export const getMonth = cache(async (month: YearMonth, filter: ViewFilter) =>
-  loadMonth(await getItemsRepo(), month, getNow(), await getTimeZone(), await getClock(), filter, await getWeekStart()),
+  loadMonth(await getItemsRepo(), month, await getNow(), await getTimeZone(), await getClock(), filter, await getWeekStart()),
 );
