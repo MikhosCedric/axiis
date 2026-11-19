@@ -159,7 +159,7 @@ test.describe("palette actions", () => {
     await option.click();
 
     await expect(page.getByRole("group", { name: "Actions for “Plan the Lisbon trip”" })).toBeVisible();
-    await expect(page.getByRole("option")).toHaveText(["Open", "Mark done", "Plan for today", "Plan for tomorrow", "Add a tag"]);
+    await expect(page.getByRole("option")).toHaveText(["Open details", "Mark done", "Plan for today", "Plan for tomorrow", "Plan for next week", "Duplicate to tomorrow", "Make event", "Add a tag", "Delete"]);
     await expect(box).toBeFocused();
 
     await box.fill("done");
@@ -193,13 +193,13 @@ test.describe("palette actions", () => {
     await expect(first).toHaveAccessibleName("Plan the Lisbon trip, Task");
     await expect(page.getByRole("group", { name: "Selected" })).toBeVisible();
     await box.press("Enter");
-    await expect(page.getByRole("option")).toHaveText(["Mark done", "Plan for today", "Plan for tomorrow", "Add a tag"]);
+    await expect(page.getByRole("option")).toHaveText(["Mark done", "Plan for today", "Plan for tomorrow", "Plan for next week", "Duplicate to tomorrow", "Make event", "Add a tag", "Delete"]);
     await box.press("Backspace");
     await expect(page.getByRole("group", { name: "Selected" })).toBeVisible();
 
     await box.fill("garden");
     await page.getByRole("option", { name: "Garden through the winter, Note" }).click();
-    await expect(page.getByRole("option")).toHaveText(["Open", "Add a tag"]);
+    await expect(page.getByRole("option")).toHaveText(["Open", "Duplicate", "Add a tag", "Delete"]);
   });
 
   test("the palette says what a capture will understand, then what it did", async ({ page }) => {
@@ -223,7 +223,7 @@ test.describe("palette actions", () => {
     await expect(page.getByRole("option").first()).toHaveAccessibleName("Plan the Lisbon trip, Task");
     await expect(page.getByRole("option", { name: "Capture “plan the lisbon trip” as a new task" })).toBeVisible();
     await box.press("Enter");
-    await expect(page.getByRole("option")).toHaveText(["Open", "Mark done", "Plan for today", "Plan for tomorrow", "Add a tag"]);
+    await expect(page.getByRole("option")).toHaveText(["Open details", "Mark done", "Plan for today", "Plan for tomorrow", "Plan for next week", "Duplicate to tomorrow", "Make event", "Add a tag", "Delete"]);
   });
 
   test("the actions list has no serious axe violations", async ({ page }) => {

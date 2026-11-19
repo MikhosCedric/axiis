@@ -34,7 +34,7 @@ export function canDo(item: QuickItem, action: QuickAction): boolean {
 }
 
 /** The More menu's entries, in order. */
-export type MoreEntry = "duplicate" | "make-event" | "make-task" | "inbox" | "delete-all" | "open";
+export type MoreEntry = "duplicate" | "make-event" | "make-task" | "inbox" | "note" | "delete-all" | "open";
 
 export function moreEntries(item: QuickItem): MoreEntry[] {
   const retypable = item.type !== "note" && !item.subtask;
@@ -43,6 +43,7 @@ export function moreEntries(item: QuickItem): MoreEntry[] {
     ...(retypable && item.type !== "event" ? (["make-event"] as const) : []),
     ...(retypable && item.type === "event" ? (["make-task"] as const) : []),
     ...(item.type !== "note" && item.series === "none" && item.day !== null ? (["inbox"] as const) : []),
+    ...(item.type !== "note" && item.series === "none" ? (["note"] as const) : []),
     ...(item.series === "occurrence" ? (["delete-all"] as const) : []),
     "open",
   ];

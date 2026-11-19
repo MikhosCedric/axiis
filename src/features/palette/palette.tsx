@@ -18,28 +18,52 @@ import { useWeekStart } from "@/components/shell/week-start-context";
 import type { LocalDate } from "@/domain/item";
 import { isTypingTarget } from "@/features/day/nav";
 import { SELECTED_ITEM_PARAM } from "@/features/day/types";
+import { tellNews } from "@/components/news-bus";
+import {
+  DESKTOP_COOKIE,
+  readDensity,
+  readReminders,
+  readTheme,
+  REMINDERS_COOKIE,
+  weekStartSetting,
+} from "@/components/shell/cookies";
+import { saveDensity, saveReminders, saveWeekStart } from "@/components/shell/prefs";
+import { applyTheme } from "@/components/shell/theme-toggle";
+import type { WeekStart } from "@/features/week/week-of";
+import { moveRows, restNews, type RestItem } from "@/features/day/rest-of-day";
+import { restoreOccurrenceAction, setTypeAction, unplanAction, deleteItemAction } from "@/features/detail/actions";
+import type { DeleteResult } from "@/features/detail/commands";
+import { duplicateItemAction, restoreItemsAction } from "@/features/actions/actions";
+import type { DuplicateResult } from "@/features/actions/commands";
 import { planAction } from "@/features/inbox/actions";
+import { planDate, type PlanFor } from "@/features/inbox/model";
 import { searchItemsAction } from "@/features/notes/actions";
 import { TYPE_WORD, type SearchRow } from "@/features/notes/model";
 import { addTagAction } from "@/features/tags/actions";
 import { captureAction, setDoneAction } from "@/features/today/actions";
+import { filteredArea, withDefaultArea } from "@/features/today/capture-area";
 import { capturedLine } from "@/features/today/capture-syntax";
 import type { ActionResult, CaptureResult } from "@/features/today/commands";
 import { TITLE_MAX } from "@/features/today/model";
-import { describeItemAction } from "./actions";
+import { describeItemAction, restOfTodayAction } from "./actions";
 import {
   actedLine,
   actSections,
   areaSection,
+  commandSections,
   findQuery,
   findStatus,
   leadsWithMatch,
   paletteSections,
+  planDay,
   sameTitle,
   type Act,
   type Command,
+  type DisplayNow,
   type Find,
+  type Run,
   type Section,
+  type Setting,
   type Target,
 } from "./model";
 import { GuideBody, GuideContext, Kbd, type GuideTopic } from "./guide";
@@ -58,8 +82,17 @@ export type PaletteActions = {
   /** The item a screen has selected, by its key, or null when it names nothing. */
   describe: (key: string) => Promise<Target | null>;
   setDone: (key: string, done: boolean) => Promise<ActionResult>;
-  plan: (key: string, when: "today" | "tomorrow") => Promise<ActionResult>;
+  plan: (key: string, when: PlanFor) => Promise<ActionResult>;
+  unplan: (key: string) => Promise<ActionResult>;
   tag: (key: string, name: string) => Promise<ActionResult>;
+  duplicate: (key: string) => Promise<DuplicateResult>;
+  setType: (key: string, type: "event" | "task") => Promise<ActionResult>;
+  remove: (key: string, scope: "one" | "all") => Promise<DeleteResult>;
+  /** Undoes a delete: brings back what it took, or the skipped time it names. */
+  restore: (ids: string[]) => Promise<ActionResult>;
+  unskip: (key: string) => Promise<ActionResult>;
+  /** What is still to do today, which the rest-of-today command moves to tomorrow. */
+  restOfToday: () => Promise<RestItem[]>;
 };
 
 const serverActions: PaletteActions = {
@@ -68,7 +101,14 @@ const serverActions: PaletteActions = {
   describe: describeItemAction,
   setDone: setDoneAction,
   plan: planAction,
+  unplan: unplanAction,
   tag: addTagAction,
+  duplicate: duplicateItemAction,
+  setType: setTypeAction,
+  remove: deleteItemAction,
+  restore: restoreItemsAction,
+  unskip: restoreOccurrenceAction,
+  restOfToday: restOfTodayAction,
 };
 const SEARCH_DELAY_MS = 180;
 /** How long after a change of page its title is read, since the new title is written a beat after the address. */
@@ -307,6 +347,19 @@ function withAreas(sections: Section[], areas: Section[]): Section[] {
   return [...sections.slice(0, at), ...areas, ...sections.slice(at)];
 }
 
+const cookieOf = (name: string) => document.cookie.split("; ").find((c) => c.startsWith(`${name}=`))?.slice(name.length + 1);
+
+/** The display switches as this device has them now. Reminders are the desktop app's, so they are null in a browser. */
+function readDisplay(weekStart: WeekStart): DisplayNow {
+  const root = document.documentElement.dataset;
+  return {
+    density: readDensity(root.density),
+    theme: readTheme(root.theme),
+    weekStart: weekStartSetting(weekStart),
+    reminders: cookieOf(DESKTOP_COOKIE) ? readReminders(cookieOf(REMINDERS_COOKIE)) : null,
+  };
+}
+
 function restoreFocus(opener: { current: HTMLElement | null }) {
   const back = opener.current;
   opener.current = null;
@@ -361,9 +414,13 @@ function PaletteBody({
     };
   }, [actions]);
 
+  const [display, setDisplay] = useState(() => readDisplay(weekStart));
   const sections = target
     ? actSections(input, target)
-    : withAreas(paletteSections(input, today, clock, find, selected, recent, weekStart, areas), areaSection(input, areas, { pathname, query }));
+    : withAreas(
+        withAreas(paletteSections(input, today, clock, find, selected, recent, weekStart, areas), commandSections(input, display)),
+        areaSection(input, areas, { pathname, query }),
+      );
   const commands = sections.flatMap((s) => s.commands);
   const current = commands.length ? Math.min(active, commands.length - 1) : -1;
   const optionId = (c: Command) => `${id}-${c.id}`;
@@ -436,6 +493,9 @@ function PaletteBody({
       case "act":
         act(command.act);
         return;
+      case "run":
+        runCommand(command.run);
+        return;
       default:
         router.push(command.href);
         onClose();
@@ -477,25 +537,121 @@ function PaletteBody({
     setInput("");
     setActive(0);
     setNote("Saving");
-    const saving =
-      a.do === "done" ? actions.setDone(item.key, a.done) : a.do === "plan" ? actions.plan(item.key, a.when) : actions.tag(item.key, a.name);
-    saving.then(
-      (result) => {
-        setNote(result.ok ? actedLine(a, item.title) : result.error);
-        if (!result.ok || a.do !== "done") return;
-        const marked = (t: Target | null) => (t?.key === item.key ? { ...t, done: a.done } : t);
-        setTarget(marked);
-        setSelected(marked);
-      },
-      () => setNote("That change did not save. Try again."),
-    );
+    const failed = () => setNote("That change did not save. Try again.");
+    if (a.do === "delete") {
+      actions.remove(item.key, a.scope).then((result) => (result.ok ? deleted(item, a.scope, result) : setNote(result.error)), failed);
+      return;
+    }
+    const day = a.do === "plan" ? planDate(planDay(a.when, today, weekStart), today) : null;
+    const saving: Promise<ActionResult> =
+      a.do === "done"
+        ? actions.setDone(item.key, a.done)
+        : a.do === "plan"
+          ? actions.plan(item.key, planDay(a.when, today, weekStart))
+          : a.do === "inbox"
+            ? actions.unplan(item.key)
+            : a.do === "duplicate"
+              ? copy(item.key, a.tomorrow)
+              : a.do === "type"
+                ? actions.setType(item.key, a.type)
+                : actions.tag(item.key, a.name);
+    saving.then((result) => {
+      setNote(result.ok ? actedLine(a, item.title) : result.error);
+      if (!result.ok) return;
+      // What the item is now, so the list offers what still makes sense (no second Move to Inbox).
+      const now = (t: Target | null): Target | null => {
+        if (t?.key !== item.key) return t;
+        const quick = t.quick;
+        if (a.do === "done") return { ...t, done: a.done, quick: quick && { ...quick, done: a.done } };
+        if (a.do === "plan") return { ...t, quick: quick && { ...quick, day } };
+        if (a.do === "inbox") return { ...t, quick: quick && { ...quick, day: null, time: null } };
+        if (a.do === "type") return { ...t, type: a.type, quick: quick && { ...quick, type: a.type } };
+        return t;
+      };
+      setTarget(now);
+      setSelected(now);
+    }, failed);
+  }
+
+  /** A copy of the item, planned for tomorrow when asked. */
+  async function copy(key: string, tomorrow: boolean): Promise<ActionResult> {
+    const made = await actions.duplicate(key);
+    return made.ok && tomorrow ? actions.plan(made.id, "tomorrow") : made;
+  }
+
+  /** The item is gone: its news and Undo go to the quick actions' note, as for a row, and the palette steps aside to show it. */
+  function deleted(item: Target, scope: "one" | "all", result: Extract<DeleteResult, { ok: true }>) {
+    const news = result.skipped ? `“${item.title}” is skipped on this day.` : actedLine({ do: "delete", scope }, item.title);
+    const undo = () =>
+      void (result.skipped ? actions.unskip(result.skipped) : actions.restore(result.deleted)).then(
+        (back) => tellNews(back.ok ? `“${item.title}” is back.` : back.error),
+        () => tellNews("That change did not save. Try again."),
+      );
+    if (tellNews(news, undo)) onClose();
+    else setNote(news);
+  }
+
+  /** The commands that are about no item: a display switch, or the rest of today. */
+  function runCommand(r: Run) {
+    setInput("");
+    setActive(0);
+    if (r.do === "set") {
+      setting(r.setting);
+      return;
+    }
+    setNote("Saving");
+    const failed = () => setNote("That change did not save. Try again.");
+    actions.restOfToday().then(async (rows) => {
+      if (rows.length === 0) {
+        setNote("Nothing is left to plan for tomorrow.");
+        return;
+      }
+      const moved = await moveRows(actions.plan, rows, "tomorrow");
+      const news = restNews(moved.length, rows.length - moved.length);
+      const undo = moved.length
+        ? () =>
+            void moveRows(actions.plan, moved, "today").then(
+              (back) => tellNews(back.length === moved.length ? "Back on today." : "Some of those did not move back. Try again."),
+              () => tellNews("That change did not save. Try again."),
+            )
+        : undefined;
+      if (tellNews(news, undo)) onClose();
+      else setNote(news);
+    }, failed);
+  }
+
+  /** A display switch, kept on this device the way Settings keeps it. The Week and the Month are drawn from the cookie, so the page is drawn again. */
+  function setting(s: Setting) {
+    switch (s.name) {
+      case "density":
+        saveDensity(s.value);
+        setNote(`Density is ${s.value}.`);
+        break;
+      case "theme":
+        applyTheme(s.value);
+        setNote(`Theme is ${s.value === "system" ? "the system's" : s.value}.`);
+        break;
+      case "week-start":
+        saveWeekStart(s.value);
+        setNote(`The week starts on ${s.value === "monday" ? "Monday" : "Sunday"}.`);
+        router.refresh();
+        break;
+      case "reminders":
+        saveReminders(s.value);
+        setNote(s.value ? "Reminders are on." : "Reminders are off.");
+        router.refresh();
+        break;
+    }
+    setDisplay((d) => ({ ...d, [s.name === "week-start" ? "weekStart" : s.name]: s.value }) as DisplayNow);
   }
 
   function capture(title: string) {
     // Clear at once so the next thought can start while this one saves, as the capture field does.
     type("");
     setNote("Saving");
-    actions.capture(title).then(
+    // Narrowed to one area, a capture lands in it unless the words name another.
+    const said = withDefaultArea(title, filteredArea(query, areas), areas);
+    actions.capture(said).then(
       (result) => {
         if (result.ok) {
           setNote(capturedLine(result, "palette", clock));

@@ -6,12 +6,10 @@ import {
   CLOCK_COOKIE,
   CLOCK_SETTINGS,
   clockCookieValue,
-  DENSITY_COOKIE,
   DENSITIES,
   START_PAGE_COOKIE,
   START_PAGES,
   THEMES,
-  WEEK_START_COOKIE,
   WEEK_STARTS,
   weekStartSetting,
   type StartPage,
@@ -20,6 +18,7 @@ import {
   type Density,
   type Theme,
 } from "@/components/shell/cookies";
+import { saveDensity, saveWeekStart } from "@/components/shell/prefs";
 import { applyTheme, useTheme } from "@/components/shell/theme-toggle";
 import { deviceClock, type Clock } from "@/lib/clock";
 import type { WeekStart } from "@/features/week/week-of";
@@ -55,11 +54,6 @@ const CLOCK_LABEL: Record<ClockSetting, { name: string }> = {
   "12": { name: "12-hour" },
   "24": { name: "24-hour" },
 };
-
-function saveDensity(next: Density) {
-  document.documentElement.dataset.density = next;
-  document.cookie = `${DENSITY_COOKIE}=${next}; path=/; max-age=31536000; samesite=lax`;
-}
 
 function Choice<T extends string>({
   label,
@@ -131,7 +125,7 @@ export function DisplaySection({
   /** The Week and the Month are drawn on the server from the cookie, so the page is drawn again with it. */
   function chooseWeekStart(next: WeekStartSetting) {
     setWeekStart(next);
-    document.cookie = `${WEEK_START_COOKIE}=${next}; ${YEAR}`;
+    saveWeekStart(next);
     setSaved("First day of the week saved on this device.");
     router.refresh();
   }

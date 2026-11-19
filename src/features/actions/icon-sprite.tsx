@@ -59,6 +59,12 @@ const DRAWINGS = {
       <path d="M10.5 3.25v11.5" />
     </>
   ),
+  note: (
+    <>
+      <path d="M4 2.5h7l3.5 3.5v9.5H4z" />
+      <path d="M11 2.5V6h3.5M6.5 9.5h5M6.5 12.5h5" />
+    </>
+  ),
   /** Stepping over one occurrence, as the detail panel draws Skip this one. */
   skip: (
     <>

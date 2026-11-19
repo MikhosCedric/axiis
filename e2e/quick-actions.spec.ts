@@ -118,6 +118,7 @@ signedIn.describe("quick actions on a row", () => {
       "Duplicate",
       "Make it an event",
       "Move to the Inbox",
+      "Add a note",
       "Open details",
       /^Choose/,
     ]);

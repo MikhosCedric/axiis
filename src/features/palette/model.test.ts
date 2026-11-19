@@ -2,8 +2,9 @@ import { describe, expect, it } from "vitest";
 import type { ItemId, LocalDate } from "@/domain/item";
 import type { TagName } from "@/domain/tag";
 import type { SearchRow } from "@/features/notes/model";
-import { quickNote } from "@/features/actions/quick-item";
-import { actedLine, actSections, FIND_MAX, findQuery, findStatus, leadsWithMatch, paletteSections, sameTitle, type Find, type Target } from "./model";
+import { quickItem, quickNote } from "@/features/actions/quick-item";
+import { makeItem } from "@/features/today/test-support";
+import { actedLine, actSections, commandSections, FIND_MAX, findQuery, findStatus, leadsWithMatch, paletteSections, planDay, sameTitle, type Find, type Target } from "./model";
 
 const today = "2026-10-06" as LocalDate;
 const idle: Find = { status: "idle" };
@@ -197,15 +198,17 @@ describe("actSections", () => {
       { do: "done", done: true },
       { do: "plan", when: "today" },
       { do: "plan", when: "tomorrow" },
+      { do: "plan", when: "next-week" },
       { do: "ask-tag" },
+      { do: "delete", scope: "one" },
     ]);
-    expect(acts("")).toEqual(["Open", "Mark done", "Plan for today", "Plan for tomorrow", "Add a tag"]);
+    expect(acts("")).toEqual(["Open details", "Mark done", "Plan for today", "Plan for tomorrow", "Plan for next week", "Add a tag", "Delete"]);
   });
 
   it("offers to open a done item again, leaves Open out for the selected item, and gives a note only open and tag", () => {
     expect(acts("", { ...task, done: true })).toContain("Mark open again");
-    expect(acts("", { ...task, href: null })).toEqual(["Mark done", "Plan for today", "Plan for tomorrow", "Add a tag"]);
-    expect(acts("", { ...task, type: "note" })).toEqual(["Open", "Add a tag"]);
+    expect(acts("", { ...task, href: null })).toEqual(["Mark done", "Plan for today", "Plan for tomorrow", "Plan for next week", "Add a tag", "Delete"]);
+    expect(acts("", { ...task, type: "note", quick: quickNote({ id: "k1", title: "dentist" }) })).toEqual(["Open", "Duplicate", "Add a tag", "Delete"]);
   });
 
   it("filters by the typing and its other words", () => {
@@ -221,7 +224,49 @@ describe("actSections", () => {
     expect(actSections("#", task)).toEqual([]);
   });
 
+  it("offers what the item allows: Inbox for a planned one, a copy to tomorrow, and the other type", () => {
+    const planned = makeItem({ title: "dentist", schedule: { kind: "day", on: "2026-10-07" as LocalDate } });
+    const target: Target = { key: planned.id, title: "dentist", type: "task", done: false, href: null, quick: quickItem(planned, "UTC") };
+    expect(acts("", target)).toEqual([
+      "Mark done",
+      "Plan for today",
+      "Plan for tomorrow",
+      "Plan for next week",
+      "Move to Inbox",
+      "Duplicate to tomorrow",
+      "Make event",
+      "Add a tag",
+      "Delete",
+    ]);
+    const event = { ...target, type: "event" as const, quick: { ...target.quick!, type: "event" as const, day: null } };
+    expect(acts("", event)).toContain("Make task");
+    expect(acts("", event)).not.toContain("Move to Inbox");
+    expect(acts("inbox", target)).toEqual(["Move to Inbox"]);
+    expect(acts("next week", target)).toEqual(["Plan for next week"]);
+  });
+
+  it("asks what Delete means for a series and for one time it happens, and never plans a series' own row", () => {
+    const quick = quickItem(makeItem({ title: "stretch" }), "UTC");
+    const time = { ...task, quick: { ...quick, series: "occurrence" as const } };
+    expect(acts("", time)).toEqual(expect.arrayContaining(["Skip on this day", "Delete every time"]));
+    expect(acts("", time)).not.toContain("Delete");
+    const own = { ...task, quick: { ...quick, series: "series" as const } };
+    expect(acts("", own)).toEqual(["Open details", "Mark done", "Duplicate to tomorrow", "Make event", "Add a tag", "Delete every time"]);
+    expect(actSections("skip", time)[0].commands.map((c) => (c.kind === "act" ? c.act : null))).toEqual([{ do: "delete", scope: "one" }]);
+  });
+
+  it("works out next week from the first day of the week", () => {
+    expect(planDay("next-week", today)).toBe("2026-10-12");
+    expect(planDay("next-week", today, 0)).toBe("2026-10-11");
+    expect(planDay("tomorrow", today)).toBe("tomorrow");
+  });
+
   it("says what each action did", () => {
+    expect(actedLine({ do: "plan", when: "next-week" }, "dentist")).toBe("“dentist” is planned for next week.");
+    expect(actedLine({ do: "inbox" }, "dentist")).toBe("“dentist” is in the Inbox.");
+    expect(actedLine({ do: "duplicate", tomorrow: true }, "dentist")).toBe("“dentist” is copied to tomorrow.");
+    expect(actedLine({ do: "type", type: "event" }, "dentist")).toBe("“dentist” is an event now.");
+    expect(actedLine({ do: "delete", scope: "all" }, "dentist")).toBe("“dentist” is deleted, every time.");
     expect(actedLine({ do: "done", done: true }, "dentist")).toBe("“dentist” is done.");
     expect(actedLine({ do: "done", done: false }, "dentist")).toBe("“dentist” is open again.");
     expect(actedLine({ do: "plan", when: "tomorrow" }, "dentist")).toBe("“dentist” is planned for tomorrow.");
@@ -241,5 +286,41 @@ describe("findQuery and findStatus", () => {
     expect(findStatus("bulbs", { status: "done", query: "bulb", rows: [] })).toBeNull();
     expect(findStatus("bulbs", { status: "failed", query: "bulbs" })).toMatch(/did not answer/);
     expect(findStatus("b", { status: "searching", query: "b" })).toBeNull();
+  });
+});
+
+describe("commandSections", () => {
+  const now = { density: "spacious", weekStart: "monday", theme: "system", reminders: null } as const;
+  const names = (input: string, over = {}) => commandSections(input, { ...now, ...over }).flatMap((s) => s.commands.map((c) => c.label));
+
+  it("offers nothing until something is typed, then only what matches", () => {
+    expect(names("")).toEqual([]);
+    expect(names("compact")).toEqual(["Density: compact"]);
+    expect(names("dark")).toEqual(["Theme: dark"]);
+    expect(names("sunday")).toEqual(["Week starts on Sunday"]);
+    expect(names("zzz")).toEqual([]);
+  });
+
+  it("leaves out the switch that is already made", () => {
+    expect(names("density", { density: "compact" })).toEqual(["Density: spacious"]);
+    expect(names("theme", { theme: "dark" })).toEqual(["Theme: light", "Theme: follow the system"]);
+    expect(names("week starts", { weekStart: "sunday" })).toEqual(["Week starts on Monday"]);
+  });
+
+  it("offers reminders only in the desktop app, as the opposite of what they are", () => {
+    expect(names("reminders")).toEqual([]);
+    expect(names("reminders", { reminders: true })).toEqual(["Turn reminders off"]);
+    expect(names("reminders", { reminders: false })).toEqual(["Turn reminders on"]);
+  });
+
+  it("offers the rest of today for tomorrow", () => {
+    const [section] = commandSections("rest of today", now);
+    expect(section.commands).toEqual([{ kind: "run", id: "run-rest", label: "Plan the rest of today for tomorrow", run: { do: "rest" } }]);
+    expect(names("plan the rest")).toEqual(["Plan the rest of today for tomorrow"]);
+  });
+
+  it("gives each command its own id", () => {
+    const ids = commandSections("e", now).flatMap((s) => s.commands.map((c) => c.id));
+    expect(new Set(ids).size).toBe(ids.length);
   });
 });

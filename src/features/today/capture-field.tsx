@@ -20,6 +20,7 @@ import {
   type CaptureArea,
   type Moment,
 } from "./capture-syntax";
+import { filteredArea, withDefaultArea } from "./capture-area";
 import { CAPTURE_PARAM, readPrefill } from "./capture-prefill";
 import { TITLE_MAX } from "./model";
 import { useQueueCapture } from "@/components/shell/outbox";
@@ -125,7 +126,9 @@ export function CaptureField({
   // Read when a key is pressed, not while rendering: a repeat whose time today has passed says the day it starts.
   const [moment, setMoment] = useState<Moment | undefined>(undefined);
   const areas = useAreas() as readonly CaptureArea[] | undefined;
-  const preview = plans ? previewWords(parseCapture(value, { weekStart, areas }), clock, moment) : null;
+  // A page narrowed to one area files what is captured there in it, unless the words name another.
+  const here = plans ? filteredArea(params, areas) : null;
+  const preview = plans ? previewWords(parseCapture(withDefaultArea(value, here, areas), { weekStart, areas }), clock, moment) : null;
   const paste = pasteActions ?? (captureAction === serverCapture ? serverPaste : undefined);
   // The lines of a block just pasted, while the choice of what to make of them stands. Any typing withdraws it.
   const [pasted, setPasted] = useState<string[] | null>(null);
@@ -149,8 +152,9 @@ export function CaptureField({
 
   function submit(e: FormEvent) {
     e.preventDefault();
-    const title = value.trim();
-    if (!title) return;
+    const typed = value.trim();
+    if (!typed) return;
+    const title = withDefaultArea(typed, here, areas);
     // Clear at once so the next thought can start while this one saves.
     setValue("");
     setStatus(null);
@@ -167,12 +171,12 @@ export function CaptureField({
           setStatus({ text: "Saved on this device. It will be sent when you are back online.", error: false });
           return;
         }
-        setValue((current) => current || title);
+        setValue((current) => current || typed);
         setStatus({ text: queued.error, error: true });
         return;
       }
       if (!result.ok) {
-        setValue((current) => current || title);
+        setValue((current) => current || typed);
         setStatus({ text: result.error, error: true });
         return;
       }

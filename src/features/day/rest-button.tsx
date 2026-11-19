@@ -5,7 +5,7 @@ import { useQuick } from "@/features/actions/context";
 import { planAction } from "@/features/inbox/actions";
 import type { ActionResult } from "@/features/today/commands";
 import { reach } from "@/lib/reach";
-import { restNews, type RestItem } from "./rest-of-day";
+import { moveRows, restNews, type RestItem } from "./rest-of-day";
 
 /**
  * One quiet button under what is left over: plan every task still open today for tomorrow. It says how many
@@ -26,10 +26,7 @@ export function RestOfDay({
   const [pending, startTransition] = useTransition();
   if (items.length === 0) return null;
 
-  async function move(rows: RestItem[], when: "today" | "tomorrow") {
-    const results = await Promise.all(rows.map((r) => reach(plan(r.id, when))));
-    return rows.filter((_, i) => results[i].ok);
-  }
+  const move = (rows: RestItem[], when: "today" | "tomorrow") => moveRows(plan, rows, when);
 
   function run() {
     if (!quick) {
