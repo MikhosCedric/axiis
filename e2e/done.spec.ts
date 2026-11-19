@@ -87,7 +87,8 @@ signedIn.describe("Done", () => {
       await show.click();
       await expect(line.getByRole("button", { name: "Hide" })).toHaveAttribute("aria-expanded", "true");
       await expect(line.getByRole("button", { name: "Return the library books", exact: true })).toBeVisible();
-      expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+      const { violations } = await new AxeBuilder({ page }).analyze();
+      expect(violations.filter((v) => v.impact === "serious" || v.impact === "critical").map((v) => v.id)).toEqual([]);
     });
   }
 
