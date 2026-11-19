@@ -35,8 +35,6 @@ export type DayGlance = {
   focus: TodayEntry[];
   /** What Focus folds away that is still open: the rest of the day's plan and of the Inbox. */
   folded: { planned: number; inbox: number };
-  /** The first item still to come at a time, for the at-a-glance line. */
-  nextTimed: TodayEntry | null;
   /** Open timed items whose time is over. */
   passed: number;
   /** Open items on the day or in the Inbox that fall due on it or before. */
@@ -73,28 +71,21 @@ export function dayGlance(view: TodayView, date: LocalDate, today: LocalDate, no
       planned: open.filter((e) => !inFocus.has(e.item.id)).length,
       inbox: view.waiting.filter((e) => e.state !== "done" && !inFocus.has(e.item.id)).length,
     },
-    nextTimed: ahead[0] ?? null,
     passed: isToday ? open.filter((e) => passed(e, now)).length : 0,
     due: due.length,
   };
 }
 
 /**
- * The at-a-glance line: "Today · 3 of 8 done · now: Focus block · next: Design sync at 16:00",
- * or "Nothing left today" once everything is done. `at` writes a time on the reader's clock.
+ * The at-a-glance line: "Today · 3 of 8 done", or "Nothing left today" once everything is done.
  * `scope` names a filter after the count (" in Work"), so a filtered day never reads as the whole day.
  */
-export function glanceLine(g: DayGlance, at: (d: Date) => string, scope = ""): string {
+export function glanceLine(g: DayGlance, scope = ""): string {
   const parts = [g.when];
   const isToday = g.when === "Today";
   if (g.total === 0) parts.push(isToday ? `Nothing planned${scope}` : `Nothing planned${scope} on this day`);
   else if (g.done === g.total) parts.push(isToday ? `Nothing left${scope} today` : `All ${g.total} done${scope}`);
-  else {
-    parts.push(`${g.done} of ${g.total} done${scope}`);
-    if (g.live.length) parts.push(`now: ${g.live.map((e) => e.item.title).join(", ")}`);
-    const n = g.nextTimed;
-    if (n && n.item.schedule.kind === "timed") parts.push(`next: ${n.item.title} at ${at(n.item.schedule.start)}`);
-  }
+  else parts.push(`${g.done} of ${g.total} done${scope}`);
   if (g.due) parts.push(`${g.due} due`);
   return parts.join(" · ");
 }
@@ -111,32 +102,9 @@ export function foldedWords(g: DayGlance, leftover: number): string {
 }
 
 /**
- * The at-a-glance line of a week or a month: "This week · 2 days left · 5 open · 2 due".
- * Days left counts today. A span wholly past or ahead says where it is from today instead.
+ * The at-a-glance line of a week or a month: "5 open · 2 due". The title above already says which span.
  */
-export function spanLine(
-  span: { first: LocalDate; last: LocalDate; noun: "week" | "month"; open: number; due: number },
-  today: LocalDate,
-  scope = "",
-): string {
-  const { first, last, noun, open, due } = span;
-  const counts = [open ? `${open} open${scope}` : `Nothing open${scope}`, ...(due ? [`${due} due`] : [])];
-  if (today < first || today > last) return [relativeSpan(first, today, noun), ...counts].join(" · ");
-  const left = Math.round((utcMidnight(last) - utcMidnight(today)) / 86_400_000) + 1;
-  return [`This ${noun}`, left === 1 ? "Last day" : `${left} days left`, ...counts].join(" · ");
-}
-
-function relativeSpan(first: LocalDate, today: LocalDate, noun: "week" | "month"): string {
-  const ahead = first > today;
-  if (noun === "week") {
-    // A week ahead starts 1 to 7 days on; a week behind started 7 to 13 days back.
-    const days = Math.abs(utcMidnight(first) - utcMidnight(today)) / 86_400_000;
-    const weeks = ahead ? Math.ceil(days / 7) : Math.floor(days / 7);
-    if (weeks === 1) return ahead ? "Next week" : "Last week";
-    return ahead ? `In ${weeks} weeks` : `${weeks} weeks ago`;
-  }
-  const months = (Number(first.slice(0, 4)) - Number(today.slice(0, 4))) * 12 + Number(first.slice(5, 7)) - Number(today.slice(5, 7));
-  if (months === 1) return "Next month";
-  if (months === -1) return "Last month";
-  return ahead ? `In ${months} months` : `${-months} months ago`;
+export function spanLine(span: { open: number; due: number }, scope = ""): string {
+  const { open, due } = span;
+  return [open ? `${open} open${scope}` : `Nothing open${scope}`, ...(due ? [`${due} due`] : [])].join(" · ");
 }

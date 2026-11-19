@@ -5,7 +5,6 @@ import { hydrated, SESSION_COOKIE, sessionSecret, signedIn } from "./session";
 const expect = defaultExpect.configure({ timeout: 30_000 });
 
 const LEAD = "Type one thing you have to do. Add a day or a time and it goes on that day, at that time.";
-const NOTE = "The faint blocks are examples. They go once you add your first item.";
 const FIRST_EXAMPLE = "dentist tomorrow 9:00 #health";
 
 const field = (page: Page) => page.locator("#capture");
@@ -53,16 +52,15 @@ for (const viewport of WIDTHS) {
         const d = await drawn(page);
         // The three examples, one per area, faint and out of reach of the pointer and of a screen reader.
         expect(d.beams).toEqual([
-          { text: expect.stringMatching(/^Write the plan 10:00 to 11:00$/), hidden: "true", events: "none" },
-          { text: expect.stringMatching(/^Groceries 18:00 to 18:45$/), hidden: "true", events: "none" },
-          { text: expect.stringMatching(/^Walk 12:30 to 13:00$/), hidden: "true", events: "none" },
+          { text: expect.stringMatching(/^Write the plan Example$/), hidden: "true", events: "none" },
+          { text: expect.stringMatching(/^Groceries Example$/), hidden: "true", events: "none" },
+          { text: expect.stringMatching(/^Walk Example$/), hidden: "true", events: "none" },
         ]);
         // The default hours (07:00 to 22:00) are on the hour axis, and nothing scrolls sideways.
         expect(d.hourCount).toBeGreaterThanOrEqual(13);
         expect(d.gridScrollsSideways).toBe(false);
         expect(d.pageScrolls).toBe(false);
 
-        await expect(page.getByText(NOTE)).toBeVisible();
         await expect(page.getByText(LEAD)).toBeVisible();
         await expect(page.getByRole("heading", { name: "Inbox", exact: true })).toHaveCount(0);
         await expect(page.getByText(/^\d+ open$/)).toHaveCount(0);
@@ -110,7 +108,7 @@ test.describe("first-day capture", () => {
     await expect(examples(page)).toHaveCount(0);
     await expect(page.getByText(LEAD)).toHaveCount(0);
     await expect(page.getByRole("heading", { name: "Inbox", exact: true })).toBeVisible();
-    await expect(field(page)).toHaveAttribute("placeholder", "Capture anything, then place it later");
+    await expect(field(page)).toHaveAttribute("placeholder", "Capture");
 
     await capture(page, "buy milk");
     await expect(status(page)).toHaveText("Captured. It is in the Inbox, below.");

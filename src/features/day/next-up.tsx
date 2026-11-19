@@ -15,14 +15,13 @@ import type { TodayEntry } from "@/features/today/model";
 import { formatClock } from "@/lib/clock";
 import { glanceLine, type DayGlance } from "./glance";
 
-/** The line under a day's date: where the day is, how far through it you are and what comes next, with a ruled progress line. */
-export function GlanceLine({ glance, timeZone, scope }: { glance: DayGlance; timeZone: string; scope?: string }) {
-  const clock = useClock();
+/** The line under a day's date: where the day is and how far through it you are, with a ruled progress line. */
+export function GlanceLine({ glance, scope }: { glance: DayGlance; scope?: string }) {
   const share = glance.total ? glance.done / glance.total : 0;
   return (
     <>
       <p className="page-summary max-rail:mt-2 max-rail:line-clamp-2 max-rail:text-sm" data-glance>
-        {glanceLine(glance, (d) => formatClock(d, timeZone, clock), scope)}
+        {glanceLine(glance, scope)}
       </p>
       {glance.total > 0 && <ProgressLine share={share} className="mt-2.5 w-40 text-ink-2 @min-[66rem]/page:hidden" />}
     </>

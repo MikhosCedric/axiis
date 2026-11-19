@@ -8,7 +8,6 @@ import { reorderChecklistsAction } from "@/features/order/actions";
 import { reach } from "@/lib/reach";
 import { AreaLabel } from "@/components/area-mark";
 import { ProgressLine } from "@/components/progress-line";
-import { place } from "@/components/shell/places";
 import { DetailAside } from "@/features/detail/detail-aside";
 import { useItemSelection } from "@/features/detail/use-item-selection";
 import { CaptureField } from "@/features/today/capture-field";
@@ -22,7 +21,7 @@ import { FilterChips } from "@/features/filter/filter-chip";
 import { GuideButton, NO_TOPICS } from "@/features/palette/guide";
 import { narrows, NO_FILTER, scopePrefix, type ViewFilter } from "@/features/filter/model";
 import { captureChecklistAction } from "./actions";
-import { listsSummary, progressShare, progressWords, type ListRow, type ListsData } from "./model";
+import { listsSummary, progressShare, progressShort, progressWords, type ListRow, type ListsData } from "./model";
 
 /** Every checklist, open first, with how far along each is. A row opens the detail panel, where its lines live. */
 export function ListsView({
@@ -94,7 +93,7 @@ export function ListsView({
           }
         >
           <p className="page-summary">
-            {place("lists").hint}. {scopePrefix(filter)}
+            {scopePrefix(filter)}
             {listsSummary(data.rows)}
           </p>
           <FilterChips filter={filter} className="mt-2.5" />
@@ -118,10 +117,7 @@ export function ListsView({
             })}
           </ul>
         ) : (
-          <p className="mt-2 max-w-[52ch] text-ink-2">
-            A checklist keeps the small steps of one thing together, like packing or a move. Name one above and its lines
-            go in beside it.
-          </p>
+          <p className="mt-2 max-w-[52ch] text-ink-2">Name a checklist above and its lines go in beside it.</p>
         )}
         {movable && <ReorderHint id={order.hintId} said={order.said} />}
         <p role="status" className="mt-2 text-[13px] text-ink-2 empty:hidden">
@@ -211,7 +207,8 @@ function ListRowView({
           {row.progress && (
             <span className="flex items-center gap-2">
               <ProgressLine share={progressShare(row.progress)} />
-              <span className="tabular">{progressWords(row.progress)}</span>
+              <span className="tabular" aria-hidden="true">{progressShort(row.progress)}</span>
+              <span className="sr-only">{progressWords(row.progress)}</span>
             </span>
           )}
           {row.when && <span className="tabular">{row.when}</span>}

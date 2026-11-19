@@ -176,7 +176,7 @@ describe("filtering loaded views", () => {
     expect(shown.view.scheduled.map((e) => e.item.title)).toEqual(["Deck", "Review"]);
     expect(shown.view.waiting.map((e) => e.item.title)).toEqual(["Inbox for work"]);
     const glance = dayGlance(shown.view, DAY, DAY, NOW);
-    expect(glanceLine(glance, () => "09:00", scopeWords(filter))).toBe("Today · 1 of 2 done in Work · next: Deck at 09:00");
+    expect(glanceLine(glance, scopeWords(filter))).toBe("Today · 1 of 2 done in Work");
     expect(filterDay(day, NO_FILTER)).toBe(day);
   });
 

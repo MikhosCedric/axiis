@@ -40,11 +40,15 @@ export function progressWords({ done, total }: ChildCount): string {
   return `${done} of ${total} done`;
 }
 
+/** The count beside a row's progress bar: "2/5". The words above it are read out in its place. */
+export function progressShort({ done, total }: ChildCount): string {
+  return total === 0 ? "No lines" : `${done}/${total}`;
+}
+
 export function listsSummary(rows: readonly { done: boolean }[]): string {
-  if (rows.length === 0) return "No checklists yet.";
+  if (rows.length === 0) return "No checklists";
   const done = rows.filter((r) => r.done).length;
   const open = rows.length - done;
-  const lists = (n: number) => (n === 1 ? "checklist" : "checklists");
-  if (done === 0) return `${open} ${lists(open)} open.`;
-  return `${open === 0 ? "None" : open} open, ${done} done.`;
+  if (done === 0) return `${open} open`;
+  return `${open === 0 ? "None" : open} open · ${done} done`;
 }

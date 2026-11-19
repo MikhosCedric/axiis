@@ -26,7 +26,7 @@ import { formatDayHeading } from "@/features/today/format";
 import { buildToday } from "@/features/today/model";
 import { formatClock } from "@/lib/clock";
 import { dayRangeFor, instantAt } from "@/lib/dates";
-import { EXAMPLES_NOTE, exampleBlocks } from "./first-day";
+import { exampleBlocks } from "./first-day";
 import { dayGlance } from "./glance";
 import { ProgressLine } from "@/components/progress-line";
 import type { DueSoonData } from "./due-soon";
@@ -38,11 +38,9 @@ import { GlanceLine, NextUp } from "./next-up";
 import { PLAN_DAY_SHOWN, PlanDayStrip } from "./plan-day-strip";
 import { RestOfDay } from "./rest-button";
 import { restOfDay } from "./rest-of-day";
-import type { PulseData } from "./pulse";
 import { seriesTimeOffer } from "./series-time";
 import { Tour } from "./tour";
 import { DAY_VIEW_PARAM, type DayData, type DayViewMode } from "./types";
-import { WeekPulse } from "./week-pulse";
 
 /** The writes the day makes. Defaults to the server actions; a dev harness passes in-memory ones. */
 export type DayActions = CalendarActions & {
@@ -68,7 +66,7 @@ const MODES: { mode: DayViewMode; label: string }[] = [
 
 /**
  * A day: the calendar bar and capture, the at-a-glance line, then the day as one column of the time grid
- * (or as a list), with Next up, what is left over from earlier days and the week's pulse beside it on today.
+ * (or as a list), with Next up, what is left over from earlier days beside it on today.
  * Focus dims everything on the grid but what is happening now, and leaves only Next up beside it.
  */
 export function DayView({
@@ -76,7 +74,6 @@ export function DayView({
   mode,
   detail,
   leftover,
-  pulse,
   dueSoon,
   focus: focusSaved = false,
   tour = false,
@@ -88,8 +85,6 @@ export function DayView({
   detail?: ReactNode;
   /** What is still open from earlier days. Today's page passes it; no other day does. */
   leftover?: LeftoverData | null;
-  /** The week's planned and done counts a day at a time. Today's page passes it; it shows beside the day on wide screens. */
-  pulse?: PulseData | null;
   /** The next few due dates, beside the day on wide screens. Today's page passes it. */
   dueSoon?: DueSoonData | null;
   /** Focus, as this device last left it. */
@@ -157,7 +152,6 @@ export function DayView({
           data={data}
           mode={mode}
           leftover={leftover ?? null}
-          pulse={pulse ?? null}
           dueSoon={dueSoon ?? null}
           trayRef={setTrayHost}
           focus={focus}
@@ -202,7 +196,6 @@ function DayPage({
   data,
   mode,
   leftover,
-  pulse,
   dueSoon,
   trayRef,
   focus,
@@ -218,7 +211,6 @@ function DayPage({
   data: DayData;
   mode: DayViewMode;
   leftover: LeftoverData | null;
-  pulse: PulseData | null;
   dueSoon: DueSoonData | null;
   trayRef: (el: HTMLElement | null) => void;
   focus: boolean;
@@ -246,7 +238,7 @@ function DayPage({
   // An empty today with things waiting in the Inbox gets a nudge to pull some in.
   const waitingOpen = view.waiting.filter((e) => e.item.status === "open");
   const nudge = isToday && !firstDay && !focus && view.scheduled.length === 0 && waitingOpen.length > 0;
-  const entries = focus ? glance.focus : glance.next;
+  const entries = focus ? glance.focus : glance.next.slice(0, 1);
 
   const nextNode =
     isToday && !firstDay && entries.length > 0 ? (
@@ -262,7 +254,6 @@ function DayPage({
   ) : null;
   // Focus leaves only what is next beside the day: what is left over and the week come back with it off.
   const leftNode = isToday && leftover && !focus ? <LeftoverStrip data={leftover} onSelect={ctx.select} onStatus={ctx.say} /> : null;
-  const pulseNode = isToday && !firstDay && !focus && pulse && pulse.total > 0 ? <WeekPulse pulse={pulse} today={today} /> : null;
   const dueNode = dueSoon && !firstDay && !focus ? <DueSoonStrip data={dueSoon} onSelect={ctx.select} /> : null;
   // The day's own progress, in the side column on wide screens (a narrow page keeps it under the summary).
   const progressNode =
@@ -276,7 +267,7 @@ function DayPage({
   // The rest of today: open tasks still to do, offered for tomorrow while the day is going. Focus folds it away with the rest.
   const rest = useMemo(() => (isToday && !firstDay && !focus && mode === "grid" ? restOfDay(view.scheduled) : []), [isToday, firstDay, focus, mode, view]);
   const restNode = rest.length > 0 ? <RestOfDay items={rest} onStatus={ctx.say} /> : null;
-  const hasSide = Boolean(restNode || nextNode || planNode || leftNode || pulseNode || dueNode || progressNode || mode === "grid");
+  const hasSide = Boolean(restNode || nextNode || planNode || leftNode || dueNode || progressNode || mode === "grid");
 
   const dayNode =
     mode === "list" ? (
@@ -294,10 +285,7 @@ function DayPage({
         onToggleDone={ctx.toggleDone}
       />
     ) : (
-      <>
-        {grid}
-        {firstDay && <p className="mt-3 text-[13px] text-ink-3">{EXAMPLES_NOTE}</p>}
-      </>
+      grid
     );
 
   return (
@@ -310,7 +298,7 @@ function DayPage({
         inline={!firstDay}
         capture={<CaptureField inline={!firstDay} captureAction={capture} pasteActions={paste} firstDay={firstDay} screenStatus={ctx.status} />}
       >
-        <GlanceLine glance={glance} timeZone={timeZone} scope={scopeWords(filter)} />
+        <GlanceLine glance={glance} scope={scopeWords(filter)} />
         <FilterChips filter={filter} className="mt-2.5" />
       </PageHeader>
 
@@ -333,7 +321,6 @@ function DayPage({
             {/* Not a scroll anchor: it mounts after the page has scrolled to now, and must not nudge that. */}
             {restNode && <div className="order-5 mt-3 mb-3 [overflow-anchor:none] @min-[58rem]/page:mt-0 @min-[58rem]/page:px-4 @min-[58rem]/page:py-3">{restNode}</div>}
             {dueNode && <div className="order-6 hidden @min-[58rem]/page:block">{dueNode}</div>}
-            {pulseNode && <div className="order-7 hidden @min-[58rem]/page:block">{pulseNode}</div>}
           </div>
         )}
         <div className="order-3 min-w-0 @min-[58rem]/page:col-start-1 @min-[58rem]/page:row-span-2 @min-[58rem]/page:row-start-1">{dayNode}</div>

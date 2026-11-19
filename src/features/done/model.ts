@@ -61,12 +61,9 @@ export function groupByDay(rows: readonly DoneRow[], today: LocalDate): DoneDay[
   return days;
 }
 
-/** A plain count for a day heading: "1 item", "3 items". */
-export const dayCount = (n: number) => `${n} ${n === 1 ? "item" : "items"}`;
-
 export function doneSummary(shown: number, more: boolean): string {
-  if (shown === 0) return "Nothing finished yet.";
-  return more ? `The latest ${shown} you finished.` : `${dayCount(shown)} finished.`;
+  if (shown === 0) return "Nothing yet";
+  return more ? `Latest ${shown}` : `${shown} finished`;
 }
 
 /**

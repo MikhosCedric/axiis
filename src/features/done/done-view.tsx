@@ -8,7 +8,6 @@ import type { ReactNode } from "react";
 import type { LocalDate } from "@/domain/item";
 import type { QuickItem } from "@/features/actions/model";
 import { AreaLabel } from "@/components/area-mark";
-import { place } from "@/components/shell/places";
 import { renameKey, useQuick, type Quick } from "@/features/actions/context";
 import { canDo } from "@/features/actions/model";
 import { dayHref } from "@/features/day/nav";
@@ -22,7 +21,7 @@ import { NO_FILTER, scopePrefix, type ViewFilter } from "@/features/filter/model
 import { RowTags } from "@/features/tags/row-tags";
 import { setDoneAction } from "@/features/today/actions";
 import { DoneToggle, useDoneToggles, type SetDone } from "@/features/today/done-toggle";
-import { dayCount, DONE_PAGE_PARAM, doneSummary, groupByDay, weekDoneLine, type DoneData, type DoneRow } from "./model";
+import { DONE_PAGE_PARAM, doneSummary, groupByDay, weekDoneLine, type DoneData, type DoneRow } from "./model";
 
 /**
  * What was finished, newest day first, one section per day. A row is the ordinary row: opening it shows
@@ -51,7 +50,7 @@ export function DoneView({
       <div className="mx-auto w-full max-w-[880px] min-w-0 px-4 pt-6 pb-14 rail:px-9 rail:pt-8">
         <PageHeader heading={<h1 className="headline">Done</h1>} controls={<GuideButton topics={NO_TOPICS} />}>
           <p className="page-summary">
-            {place("done").hint}. {scopePrefix(filter)}
+            {scopePrefix(filter)}
             {doneSummary(data.rows.length, data.more)}
           </p>
           <p className="mt-1 text-[13px] text-ink-2 tabular">{weekDoneLine(data.rows, data.today, data.more)}</p>
@@ -64,8 +63,8 @@ export function DoneView({
         {data.rows.length === 0 ? (
           <p className="mt-2 max-w-[52ch] text-ink-2">
             {data.more
-              ? "Nothing in this view among the latest items. Show earlier ones to look further back."
-              : "Tick a task or a list off and it is kept here, under the day you finished it. Unticking it brings it back."}
+              ? "Nothing here among the latest. Show earlier to look further back."
+              : "Ticked items are kept here, by the day you finished them."}
           </p>
         ) : (
           days.map((day) => (
@@ -74,7 +73,6 @@ export function DoneView({
                 <Link href={keep(dayHref(day.date, data.today, "grid"))} className="rounded hover:underline">
                   {day.heading}
                 </Link>
-                <span className="text-[13px] font-normal text-ink-3 tabular">{dayCount(day.rows.length)}</span>
               </h2>
               <ul className="surface overflow-hidden px-3 py-1.5 [&_li:last-child]:border-b-0">
                 {day.rows.map((row) => (

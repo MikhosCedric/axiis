@@ -593,8 +593,13 @@ export function CalendarGrid({
       <section
         data-drop="tray"
         aria-labelledby="calendar-tray-h"
+        aria-describedby="calendar-tray-help"
         className={`${styles.tray} ${trayHost ? styles.trayRail : styles.trayStrip} ${overTray ? styles.over : ""}`}
       >
+        {/* How to plan an item, read out as the tray's description and drawn nowhere: the Guide has it in words. */}
+        <p id="calendar-tray-help" className="sr-only">
+          No day yet. Drag one onto the grid to plan it for that time{trayHost ? ", or click it to plan it for today" : ""}. On a touch screen, press and hold one first. Drag a block back here to clear its day.
+        </p>
         {strip ? (
           <div className={styles.trayRow}>
             <TrayHeading as="h3">{INBOX}</TrayHeading>
@@ -603,14 +608,11 @@ export function CalendarGrid({
                 Drop here to clear its day
               </p>
             ) : (
-              <p className="flex-none text-[13px] text-ink-3">
-                {tray.items.length === 0 && !tray.full ? "Empty. What you capture lands here first." : "No day yet."}
-              </p>
+              tray.items.length === 0 && !tray.full && <p className="flex-none text-[13px] text-ink-3">Empty.</p>
             )}
             {tray.items.length > 0 && <ul className={styles.trayScroll}>{tray.items.map(trayChip)}</ul>}
             {tray.full && <p className="flex-none text-[13px] text-ink-3">{TRAY_FULL}</p>}
             <p className="ml-auto flex-none text-[13px] text-ink-3">
-              <span className="sr-only">Drag one onto the grid to plan it for that time. Drag a block back here to clear its day. </span>
               <SameInInbox />
             </p>
           </div>
@@ -618,12 +620,10 @@ export function CalendarGrid({
           <>
             <TrayHeading as="h2">{INBOX}</TrayHeading>
             {tray.items.length === 0 && !tray.full ? (
-              <p className="mt-1 text-[13px] text-ink-3">Empty. What you capture lands here first.</p>
+              <p className="mt-1 text-[13px] text-ink-3">Empty.</p>
             ) : (
               <>
                 <p className="mt-1 mb-3 text-[13px] text-ink-3">
-                  No day yet. <span className="pointer-coarse:hidden">Drag one onto the grid to plan it for that time, or click it to plan it for today. </span>
-                  <span className="hidden pointer-coarse:inline">Press and hold one, then drag it onto a day to plan it for that time. </span>
                   <SameInInbox />
                 </p>
                 {tray.items.length ? <ul className={`flex flex-wrap gap-2 ${styles.trayList}`}>{tray.items.map(trayChip)}</ul> : <p className="text-[13px] text-ink-3">{EMPTY_TRAY}</p>}
@@ -756,7 +756,7 @@ export function CalendarGrid({
                     className={styles.example}
                     style={{ ...(ex.color ? ({ "--tint": `var(--area-${ex.color})` } as CSSProperties) : {}), top: yAt(ex.start, scale), height: (ex.end - ex.start) * scale.ppm - 1 }}
                   >
-                    {ex.title} <span className={styles.meta}>{range(ex.start, ex.end)}</span>
+                    {ex.title} <span className={styles.meta}>Example</span>
                   </div>
                 ))}
               {mode === "day" && col.blocks.length === 0 && examples.length === 0 && (

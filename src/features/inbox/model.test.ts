@@ -57,10 +57,10 @@ describe("inboxSummary", () => {
   it("counts what is still open", () => {
     const open = makeItem();
     const done = makeItem({ status: "done" });
-    expect(inboxSummary([])).toBe("Nothing here now.");
-    expect(inboxSummary([done])).toBe("Everything here is done.");
-    expect(inboxSummary([open, done])).toBe("1 to plan.");
-    expect(inboxSummary([open, open])).toBe("2 to plan.");
+    expect(inboxSummary([])).toBe("Nothing here now");
+    expect(inboxSummary([done])).toBe("Everything here is done");
+    expect(inboxSummary([open, done])).toBe("1 to plan");
+    expect(inboxSummary([open, open])).toBe("2 to plan");
   });
 });
 
