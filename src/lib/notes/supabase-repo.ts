@@ -3,7 +3,7 @@ import { z } from "zod";
 import type { AreaId, ItemId, ItemType } from "@/domain/item";
 import { ITEM_COLUMNS, itemFromRow } from "@/lib/items/mappers";
 import { LINK_COLUMNS, NOTE_COLUMNS, NOTE_SUMMARY_COLUMNS, linkFromRow, noteFromRow, noteSummaryFromRow, searchHitFromRow } from "./mappers";
-import { SEARCH_LIMIT, type LinkId, type LinkedItem, type Note, type NoteContent, type NoteSummary, type NotesRepo, type SearchHit } from "./repo";
+import { NOTES_LIMIT, SEARCH_LIMIT, type LinkId, type LinkedItem, type Note, type NoteContent, type NoteSummary, type NotesRepo, type SearchHit } from "./repo";
 
 type QueryResult = { data: unknown; error: { message: string; code?: string } | null };
 
@@ -26,8 +26,11 @@ export class SupabaseNotesRepo implements NotesRepo {
     return this.db.from("items").select(columns).eq("type", "note").is("deleted_at", null);
   }
 
-  async listNotes(): Promise<NoteSummary[]> {
-    const result = await this.notes(NOTE_SUMMARY_COLUMNS).order("updated_at", { ascending: false });
+  async listNotes(limit: number = NOTES_LIMIT): Promise<NoteSummary[]> {
+    const result = await this.notes(NOTE_SUMMARY_COLUMNS)
+      .order("updated_at", { ascending: false })
+      .order("id")
+      .limit(Math.max(1, Math.min(limit, NOTES_LIMIT + 1)));
     return unwrap("listNotes", result, (raw) => rows(raw).map(noteSummaryFromRow));
   }
 

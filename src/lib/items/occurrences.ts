@@ -1,4 +1,4 @@
-import type { Item, SpanRange, VirtualItem } from "@/domain/item";
+import type { Item, LocalDate, SpanRange, VirtualItem } from "@/domain/item";
 import { occurrenceKey, type ParsedItemKey } from "@/domain/item-key";
 import { addDays, dayRangeFor } from "@/lib/dates";
 import { expandSeries, liveOccurrences, type Occurrence, type SeriesSource } from "./expand";
@@ -74,6 +74,15 @@ export async function materialize(repo: ItemsRepo, key: ParsedItemKey, timeZone:
   }
 }
 
+/** What `loadOccurrences` returns. */
+export type LoadedOccurrences = { occurrences: VirtualItem[]; series: Item[] };
+
+/** The span of one local date, as the day and the nav rail both read it. */
+export function daySpan(date: LocalDate, timeZone: string): SpanRange {
+  const range = dayRangeFor(date, timeZone);
+  return { from: range.from, to: range.to, fromDate: date, toDate: addDays(date, 1) };
+}
+
 /**
  * Every virtual occurrence in the span: each live series expanded, minus the
  * dates an override stands for. The live series come back too, for views that
@@ -83,7 +92,7 @@ export async function loadOccurrences(
   repo: ItemsRepo,
   span: SpanRange,
   timeZone: string,
-): Promise<{ occurrences: VirtualItem[]; series: Item[] }> {
+): Promise<LoadedOccurrences> {
   const [series, overrides] = await Promise.all([repo.listSeries(), repo.listOverrides(span.fromDate, span.toDate)]);
   const byId = new Map(series.map((s) => [s.id, s]));
   const sources = series.map(seriesSource).filter((s) => s !== null);

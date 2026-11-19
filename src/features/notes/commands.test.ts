@@ -15,6 +15,8 @@ import {
   unlinkItems,
 } from "./commands";
 import { BODY_MAX_BYTES } from "./doc";
+import { NOTES_PAGE, readNotePages } from "./model";
+import { NOTES_LIMIT } from "@/lib/notes/repo";
 
 const NOW = new Date("2026-10-06T12:00:00Z");
 const TZ = "Europe/Lisbon";
@@ -83,7 +85,7 @@ describe("listNoteRows", () => {
     const task = makeItem({ title: "A task" });
     const w = world([older, newer, task]);
     w.store.bodyText.set(older.id, "\nFirst line\nsecond line");
-    const rows = await listNoteRows(w.notes, w.items, null, NOW, TZ, "24");
+    const { rows } = await listNoteRows(w.notes, w.items, null, NOW, TZ, "24");
     expect(rows).toEqual([
       { id: newer.id, title: "Untitled note", firstLine: "", areaId: null, areaName: null, areaColor: null, edited: "Edited today, 11:05" },
       { id: older.id, title: "Older", firstLine: "First line", areaId: home.id, areaName: "Home", areaColor: null, edited: "Edited 30 Sept" },
@@ -93,8 +95,42 @@ describe("listNoteRows", () => {
   it("filters to notes that match a search", async () => {
     const garden = makeItem({ type: "note", title: "Garden" });
     const w = world([garden, makeItem({ type: "note", title: "Trip" }), makeItem({ title: "Garden task" })]);
-    const rows = await listNoteRows(w.notes, w.items, "garden", NOW, TZ, "24");
+    const { rows } = await listNoteRows(w.notes, w.items, "garden", NOW, TZ, "24");
     expect(rows.map((r) => r.id)).toEqual([garden.id]);
+  });
+});
+
+describe("listNoteRows paging", () => {
+  const many = (n: number) =>
+    Array.from({ length: n }, (_, i) => makeItem({ type: "note", title: `N${i}`, updatedAt: new Date(NOW.getTime() - i * 60_000) }));
+
+  it("shows the first 50 newest and says more wait", async () => {
+    const w = world(many(120));
+    const { rows, more } = await listNoteRows(w.notes, w.items, null, NOW, TZ, "24");
+    expect(rows).toHaveLength(NOTES_PAGE);
+    expect(rows[0].title).toBe("N0");
+    expect(more).toBe(true);
+  });
+
+  it("adds a page at a time, and stops saying more at the end", async () => {
+    const w = world(many(120));
+    const two = await listNoteRows(w.notes, w.items, null, NOW, TZ, "24", 2);
+    expect(two.rows).toHaveLength(100);
+    expect(two.more).toBe(true);
+    const three = await listNoteRows(w.notes, w.items, null, NOW, TZ, "24", 3);
+    expect(three.rows).toHaveLength(120);
+    expect(three.more).toBe(false);
+  });
+
+  it("caps the list at 200 notes and offers no more past it", async () => {
+    const w = world(many(260));
+    const { rows, more } = await listNoteRows(w.notes, w.items, null, NOW, TZ, "24", 99);
+    expect(rows).toHaveLength(NOTES_LIMIT);
+    expect(more).toBe(false);
+  });
+
+  it("reads the page count from the address, one by default", () => {
+    expect([undefined, "x", "0", "2.5", "3", "99", ["2", "3"]].map(readNotePages)).toEqual([1, 1, 1, 1, 3, 4, 2]);
   });
 });
 
