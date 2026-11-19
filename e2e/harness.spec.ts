@@ -117,7 +117,7 @@ for (const view of ["", "&view=list"]) {
   test(`day${view}: an empty tray does not claim everything has a time while some are at any time`, async ({ page }) => {
     await page.goto(`/dev/day?tray=empty${view}`);
     await expect(page.getByText(/Take vitamins/).first()).toBeVisible();
-    await expect(page.getByText(view ? "The Inbox is empty. What you capture lands here first." : "Empty. What you capture lands here first.")).toBeVisible();
+    await expect(page.getByText(view ? "The Inbox is empty. What you capture lands here first." : "Empty.", { exact: true })).toBeVisible();
     await expect(page.getByText(/Everything has a/)).toHaveCount(0);
   });
 }
@@ -580,7 +580,7 @@ test.describe("lists", () => {
   test("checklists show open first with their progress, a repeating one once", async ({ page }) => {
     await page.goto("/dev/lists");
     await expect(page.getByRole("heading", { level: 1, name: "Lists" })).toBeVisible();
-    await expect(page.getByText("4 open, 1 done.")).toBeVisible();
+    await expect(page.getByText("4 open · 1 done")).toBeVisible();
     await expect(page.getByRole("list").first().locator("button:not([data-reorder-handle])")).toHaveText([
       "Ideas for the garden",
       "Pack for the coast",
@@ -619,7 +619,7 @@ test.describe("lists", () => {
     await field.press("Enter");
     const details = page.getByRole("complementary", { name: "Details" });
     await expect(details.getByRole("textbox", { name: "Title" })).toHaveValue("Groceries for Sunday");
-    await expect(page.getByText("1 checklist open.")).toBeVisible();
+    await expect(page.getByText("1 open", { exact: true })).toBeVisible();
 
     await details.getByRole("textbox", { name: "Add a subtask" }).fill("Bread");
     await details.getByRole("textbox", { name: "Add a subtask" }).press("Enter");
