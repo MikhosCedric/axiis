@@ -4,7 +4,7 @@ import { z } from "zod";
 import { idSchema, type AreaId, type Item, type ItemId } from "@/domain/item";
 import { sameTag, type TagName } from "@/domain/tag";
 import type { ItemsRepo } from "@/lib/items/repo";
-import type { LinkId, NotesRepo } from "@/lib/notes/repo";
+import { NOTES_LIMIT, type LinkId, type NotesRepo } from "@/lib/notes/repo";
 import { saveFailure } from "@/lib/quota";
 import { parseItemId } from "@/features/detail/commands";
 import { splitTagTerms } from "@/features/tags/model";
@@ -22,6 +22,7 @@ import {
   type NoteRow,
   type NoteView,
   type SearchRow,
+  NOTES_PAGE,
 } from "./model";
 
 const titleSchema = z
@@ -52,12 +53,14 @@ export async function listNoteRows(
   now: Date,
   timeZone: string,
   clock: Clock,
-): Promise<NoteRow[]> {
+  pages = 1,
+): Promise<{ rows: NoteRow[]; more: boolean }> {
   const areas = new Map((await items.listAreas()).map((a) => [a.id as string, a]));
   const areaName = (id: AreaId | null) => areas.get(id ?? "")?.name ?? null;
   const areaColor = (id: AreaId | null) => areas.get(id ?? "")?.color ?? null;
   if (query) {
-    return (await notes.search(query, { type: "note" })).map(({ item, snippet }) => ({
+    const hits = await notes.search(query, { type: "note" });
+    return { more: false, rows: hits.map(({ item, snippet }) => ({
       id: item.id,
       title: displayTitle(item),
       firstLine: snippet,
@@ -65,9 +68,12 @@ export async function listNoteRows(
       areaName: areaName(item.areaId),
       areaColor: areaColor(item.areaId),
       edited: formatEdited(item.updatedAt, now, timeZone, clock),
-    }));
+    })) };
   }
-  return (await notes.listNotes()).map((n) => ({
+  // One row past the page says whether "Show more" has anything to show.
+  const size = Math.min(pages * NOTES_PAGE, NOTES_LIMIT);
+  const found = await notes.listNotes(size + 1);
+  return { more: found.length > size && size < NOTES_LIMIT, rows: found.slice(0, size).map((n) => ({
     id: n.id,
     title: displayTitle({ type: "note", title: n.title }),
     firstLine: firstLine(n.excerpt),
@@ -75,7 +81,7 @@ export async function listNoteRows(
     areaName: areaName(n.areaId),
     areaColor: areaColor(n.areaId),
     edited: formatEdited(n.updatedAt, now, timeZone, clock),
-  }));
+  })) };
 }
 
 export async function loadNote(

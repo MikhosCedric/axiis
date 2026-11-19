@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { listNoteRows, parseQuery } from "@/features/notes/commands";
+import { NOTES_PAGE_PARAM, readNotePages } from "@/features/notes/model";
 import { NotesList } from "@/features/notes/notes-list";
 import { notesActions, requestTimeZone } from "@/features/notes/server";
 import { getClock } from "@/features/day/server";
@@ -15,9 +16,10 @@ export default async function NotesPage({ searchParams }: PageProps<"/notes">) {
   const query = parseQuery(params.q);
   const deleted = typeof params.deleted === "string" && /^[0-9a-f-]{36}$/i.test(params.deleted) ? params.deleted : undefined;
   const [notes, items, timeZone] = await Promise.all([getNotesRepo(), getItemsRepo(), requestTimeZone()]);
-  const [rows, filter] = await Promise.all([
-    getClock().then((clock) => listNoteRows(notes, items, query, new Date(), timeZone, clock)),
+  const pages = readNotePages(params[NOTES_PAGE_PARAM]);
+  const [{ rows, more }, filter] = await Promise.all([
+    getClock().then((clock) => listNoteRows(notes, items, query, new Date(), timeZone, clock, pages)),
     getFilter(searchParams, false),
   ]);
-  return <NotesList rows={filterRows(rows, filter)} filter={filter} query={query ?? ""} create={notesActions.create} deleted={deleted} restore={notesActions.restore} />;
+  return <NotesList rows={filterRows(rows, filter)} more={more} pages={pages} filter={filter} query={query ?? ""} create={notesActions.create} deleted={deleted} restore={notesActions.restore} />;
 }
