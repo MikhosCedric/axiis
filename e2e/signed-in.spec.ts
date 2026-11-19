@@ -155,7 +155,7 @@ signedIn.describe("signed in", () => {
     await hydrated(page);
     await page.getByRole("navigation", { name: "Primary" }).getByRole("button", { name: /^Search or go to/ }).click();
     await expect(page.getByRole("dialog", { name: "Search and commands" })).toBeVisible();
-    await page.getByRole("option", { name: "Search, Find any task or note" }).click();
+    await page.getByRole("option", { name: "Search", exact: true }).click();
     await expect(page).toHaveURL("/search");
     await expect(page.getByRole("heading", { level: 1, name: "Search" })).toBeVisible();
   });
@@ -413,7 +413,7 @@ signedIn.describe("signed in", () => {
     await page.goto("/day/2099-05-20?item=e2e00000-0000-4000-8000-000000000007");
     await hydrated(page);
     const details = page.getByRole("complementary", { name: "Details" });
-    await details.getByRole("button", { name: "Link an existing note or task" }).click();
+    await details.getByRole("button", { name: "Add a note" }).click();
     await details.getByRole("combobox", { name: "Find a task or note to link" }).fill("Garden");
     await details.getByRole("option", { name: /Garden through the winter/ }).click();
     await expect(details.getByRole("link", { name: "Garden through the winter" })).toBeVisible();

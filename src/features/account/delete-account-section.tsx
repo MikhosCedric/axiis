@@ -54,13 +54,10 @@ function Scheduled({ actions, deletesOn }: { actions: DeletionActions; deletesOn
           here or from the notice at the top of every page.
         </p>
       ) : (
-        <div className="space-y-2 text-ink-2">
-          <p>
-            This removes your account and everything in it: every item, note, checklist, area, tag and link. Axiis waits{" "}
-            {DELETION_GRACE_DAYS} days before it deletes anything. Until then you can sign in as usual and undo it.
-          </p>
-          <p>If you might want any of it later, download your export first.</p>
-        </div>
+        <p className="text-ink-2">
+          Removes your account and everything in it, after {DELETION_GRACE_DAYS} days. Until then you can undo it. Export
+          your data first if you may want it.
+        </p>
       )}
       <button
         type="button"
@@ -104,9 +101,7 @@ function DeleteNow({ action }: { action: DeleteAccountAction }) {
       <h3 id={`${id}-heading`} className="font-medium text-ink">
         Delete now
       </h3>
-      <p className="mt-1 max-w-[60ch] text-ink-2">
-        If you do not want to wait, delete everything at once. This cannot be undone.
-      </p>
+      <p className="mt-1 max-w-[60ch] text-ink-2">Skips the wait. This cannot be undone.</p>
       <form onSubmit={submit} autoComplete="off" aria-labelledby={`${id}-heading`} className="mt-3 max-w-[440px]">
         <label htmlFor={`${id}-phrase`} className="block text-ink">
           To confirm, type <span className="font-semibold">{DELETE_PHRASE}</span>

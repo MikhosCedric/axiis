@@ -92,15 +92,15 @@ signedIn.describe("settings", () => {
     await page.setViewportSize({ width: 1280, height: 900 });
     await page.goto("/settings");
     const index = page.getByRole("navigation", { name: "Settings sections" });
-    await expect(index.getByRole("link")).toHaveText(["Areas", "Tags", "Display", "Keyboard", "Help", "Your data"]);
-    await expect(page.getByRole("heading", { name: "Keyboard" })).toBeVisible();
+    await expect(index.getByRole("link")).toHaveText(["Areas", "Tags", "Display", "Your data and help"]);
+    await expect(page.getByText("Keyboard shortcuts")).toBeVisible();
     await expect(page.getByRole("heading", { name: "Desktop app" })).toHaveCount(0);
     expect(await axe(page)).toEqual([]);
 
     await context.addCookies([{ name: "axiis_desktop", value: "1", url: baseURL }]);
     await page.reload();
     await hydrated(page);
-    await expect(index.getByRole("link")).toHaveText(["Areas", "Tags", "Display", "Keyboard", "Desktop app", "Help", "Your data"]);
+    await expect(index.getByRole("link")).toHaveText(["Areas", "Tags", "Display", "Desktop app", "Your data and help"]);
     await page.getByRole("group", { name: "Reminders" }).getByRole("button", { name: "Off" }).click();
     await expect(page.getByText("Reminders are off.")).toBeVisible();
     expect((await context.cookies()).find((c) => c.name === "reminders")?.value).toBe("off");
@@ -166,7 +166,7 @@ signedIn.describe("settings", () => {
     await expect(headings).toContainText("5 to 11 October");
   });
 
-  signedIn("the Keyboard section is left out on a touch screen", async ({ browser, baseURL }) => {
+  signedIn("the keyboard shortcuts line is left out on a touch screen", async ({ browser, baseURL }) => {
     const touch = await browser.newContext({ hasTouch: true, isMobile: true, viewport: { width: 375, height: 812 } });
     await touch.addCookies([
       { name: SESSION_COOKIE, value: sessionSecret(), url: baseURL },
@@ -175,8 +175,8 @@ signedIn.describe("settings", () => {
     const phone = await touch.newPage();
     await phone.goto("/settings");
     await expect(phone.getByRole("heading", { name: "Display" })).toBeVisible();
-    await expect(phone.getByRole("heading", { name: "Keyboard" })).toBeHidden();
-    await expect(phone.getByRole("navigation", { name: "Settings sections" }).getByRole("link", { name: "Keyboard" })).toBeHidden();
+    await expect(phone.getByRole("heading", { name: "Your data and help" })).toBeVisible();
+    await expect(phone.getByText("Keyboard shortcuts")).toBeHidden();
     await touch.close();
   });
 });

@@ -389,16 +389,16 @@ test.describe("settings layout", () => {
       await page.setViewportSize({ width, height: 900 });
       await page.goto("/dev/settings");
       const index = page.getByRole("navigation", { name: "Settings sections" });
-      await expect(index.getByRole("link")).toHaveText(["Areas", "Tags", "Display", "Keyboard", "Help", "Your data"]);
+      await expect(index.getByRole("link")).toHaveText(["Areas", "Tags", "Display", "Your data and help"]);
 
       const nav = (await index.boundingBox())!;
       const areas = (await page.getByRole("region", { name: "Areas" }).boundingBox())!;
       expect(nav.x + nav.width).toBeLessThan(areas.x);
       expect(Math.abs(nav.y - areas.y)).toBeLessThan(4);
 
-      await index.getByRole("link", { name: "Your data" }).click();
+      await index.getByRole("link", { name: "Your data and help" }).click();
       await expect(page).toHaveURL(/#your-data$/);
-      await expect(page.getByRole("heading", { name: "Export your data" })).toBeInViewport();
+      await expect(page.getByRole("link", { name: "Export your data" })).toBeInViewport();
       await expect(index).toBeInViewport();
     });
   }
