@@ -125,6 +125,12 @@ export function fakeRepo(items: Item[] = [], areas: Area[] = []) {
         .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
         .slice(0, INBOX_LIMIT);
     },
+    async countInbox() {
+      return items.filter((i) => i.schedule.kind === "unscheduled" && i.parentId === null && i.recurrence.kind === "none" && i.status === "open" && i.type !== "note").length;
+    },
+    async countOverdueDue(today) {
+      return items.filter((i) => i.dueOn !== null && i.dueOn < today && i.parentId === null && i.recurrence.kind === "none" && i.type !== "note" && i.status === "open").length;
+    },
     async listChecklists() {
       return items
         .filter((i) => i.type === "checklist" && i.parentId === null && i.recurrence.kind !== "override" && i.status !== "dropped")

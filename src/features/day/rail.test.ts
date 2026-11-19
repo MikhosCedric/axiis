@@ -101,3 +101,29 @@ describe("one series read per request", () => {
     expect([seriesReads, overrideReads]).toEqual([2, 2]);
   });
 });
+
+describe("rail badge counts", () => {
+  it("count the same as the lists they replaced", async () => {
+    const today = d("2026-10-08");
+    const DAY_MS = 86_400_000;
+    const items = [
+      makeItem({ title: "In 1" }),
+      makeItem({ title: "In 2" }),
+      makeItem({ title: "A note", type: "note" }),
+      makeItem({ title: "Done in", status: "done", completedAt: new Date("2026-10-07T10:00:00Z") }),
+      makeItem({ title: "Planned", schedule: { kind: "day", on: today } }),
+      makeItem({ title: "Late", dueOn: d("2026-10-01") }),
+      makeItem({ title: "Late too", dueOn: d("2026-10-07"), schedule: { kind: "day", on: today } }),
+      makeItem({ title: "Due today", dueOn: today }),
+      makeItem({ title: "Due soon", dueOn: d("2026-10-20") }),
+      makeItem({ title: "Late done", dueOn: d("2026-10-02"), status: "done", completedAt: new Date("2026-10-08T01:00:00Z") }),
+      makeItem({ title: "Late note", dueOn: d("2026-10-02"), type: "note" }),
+    ];
+    const { repo } = fakeRepo(items);
+    const [inbox, due] = await Promise.all([repo.listInbox(), repo.listDue(new Date(new Date("2026-10-08T06:00:00Z").getTime() - DAY_MS))]);
+    const old = { inbox: inbox.length, overdue: due.filter((i) => i.status === "open" && i.dueOn !== null && i.dueOn < today).length };
+    expect(old).toEqual({ inbox: 5, overdue: 2 });
+    expect({ inbox: await repo.countInbox(), overdue: await repo.countOverdueDue(today) }).toEqual(old);
+    expect(await fakeRepo([]).repo.countInbox()).toBe(0);
+  });
+});
