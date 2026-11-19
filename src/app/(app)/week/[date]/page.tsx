@@ -10,6 +10,8 @@ import { filterWeek } from "@/features/filter/apply";
 import { getFilter } from "@/features/filter/server";
 import { TagColorsProvider } from "@/features/tags/tag-colors";
 import { getItemsRepo } from "@/lib/items";
+import { getLeftover } from "@/features/day/leftover-server";
+import { getTodayDate } from "@/features/day/server";
 import { parseLocalDate } from "@/lib/dates";
 
 export async function generateMetadata({ params }: PageProps<"/week/[date]">): Promise<Metadata> {
@@ -22,11 +24,12 @@ export default async function WeekPage({ params, searchParams }: PageProps<"/wee
   const date = parseLocalDate((await params).date);
   if (!date) notFound();
   const { itemId } = readDayQuery(await searchParams);
-  const [data, filter, repo] = await Promise.all([getWeek(date), getFilter(searchParams, true), getItemsRepo()]);
+  const [data, filter, repo, today] = await Promise.all([getWeek(date), getFilter(searchParams, true), getItemsRepo(), getTodayDate()]);
+  const leftover = await getLeftover(today, filter);
   const calendar = await weekCalendar(repo, filterWeek(data, filter));
   return (
     <TagColorsProvider value={data.tagColors}>
-      <WeekView calendar={calendar} days={data.days} from={date} weekFull={data.weekFull} filter={filter} detail={<DetailPanel itemId={itemId} />} />
+      <WeekView calendar={calendar} days={data.days} from={date} weekFull={data.weekFull} leftover={leftover} filter={filter} detail={<DetailPanel itemId={itemId} />} />
     </TagColorsProvider>
   );
 }

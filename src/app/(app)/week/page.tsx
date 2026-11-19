@@ -10,6 +10,7 @@ import { filterWeek } from "@/features/filter/apply";
 import { getFilter } from "@/features/filter/server";
 import { TagColorsProvider } from "@/features/tags/tag-colors";
 import { getItemsRepo } from "@/lib/items";
+import { getLeftover } from "@/features/day/leftover-server";
 
 export async function generateMetadata(): Promise<Metadata> {
   return { title: weekTitle(weekOf(await getTodayDate())) };
@@ -19,10 +20,11 @@ export default async function ThisWeekPage({ searchParams }: PageProps<"/week">)
   const today = await getTodayDate();
   const { itemId } = readDayQuery(await searchParams);
   const [data, filter, repo] = await Promise.all([getWeek(today), getFilter(searchParams, true), getItemsRepo()]);
+  const leftover = await getLeftover(today, filter);
   const calendar = await weekCalendar(repo, filterWeek(data, filter));
   return (
     <TagColorsProvider value={data.tagColors}>
-      <WeekView calendar={calendar} days={data.days} from={today} weekFull={data.weekFull} filter={filter} detail={<DetailPanel itemId={itemId} />} />
+      <WeekView calendar={calendar} days={data.days} from={today} weekFull={data.weekFull} leftover={leftover} filter={filter} detail={<DetailPanel itemId={itemId} />} />
     </TagColorsProvider>
   );
 }

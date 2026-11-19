@@ -309,6 +309,23 @@ signedIn.describe("signed in", () => {
     await expect(row).toHaveCount(0);
   });
 
+  for (const path of ["/week", "/month"]) {
+    signedIn(`${path} keeps what is left over in one quiet line that opens to its items`, async ({ page }) => {
+      await page.goto(path);
+      await hydrated(page);
+      const line = page.getByRole("region", { name: "Left over from earlier days" });
+      await expect(line).toContainText("left over from earlier days");
+      await expect(line.getByRole("button", { name: "Move to today" })).toBeVisible();
+      const show = line.getByRole("button", { name: "Show" });
+      await expect(show).toHaveAttribute("aria-expanded", "false");
+      await expect(line.getByRole("button", { name: "Return the library books", exact: true })).toHaveCount(0);
+      await show.click();
+      await expect(line.getByRole("button", { name: "Hide" })).toHaveAttribute("aria-expanded", "true");
+      await expect(line.getByRole("button", { name: "Return the library books", exact: true })).toBeVisible();
+      expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+    });
+  }
+
   signedIn("Lists and Tags show the account's checklist and tag", async ({ page }) => {
     const packing = page.getByRole("listitem").filter({ hasText: "Packing for Lisbon" });
     await page.goto("/lists");

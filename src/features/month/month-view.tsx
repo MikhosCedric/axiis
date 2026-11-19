@@ -20,6 +20,8 @@ import {
 } from "react";
 import { AreaLabel, AreaMark } from "@/components/area-mark";
 import type { LocalDate } from "@/domain/item";
+import { LeftoverBar } from "@/features/day/leftover-bar";
+import type { LeftoverData } from "@/features/day/leftover-model";
 import { dayHref } from "@/features/day/nav";
 import { DetailAside } from "@/features/detail/detail-aside";
 import { useItemSelection } from "@/features/detail/use-item-selection";
@@ -102,9 +104,12 @@ export function MonthView({
   data,
   nav,
   detail,
+  leftover = null,
   filter = NO_FILTER,
 }: {
   data: MonthData;
+  /** Open items from earlier days, as one line above the grid. */
+  leftover?: LeftoverData | null;
   nav?: ReactNode;
   detail?: ReactNode;
   /** What the page narrowed its data to; the data passed in is already narrowed. */
@@ -290,6 +295,8 @@ export function MonthView({
           <p className="page-summary">{data.summary}</p>
           <FilterChips filter={filter} className="mt-2.5" />
         </PageHeader>
+
+        <LeftoverBar data={leftover} />
 
         <section aria-label="Days of the month" className="@container/month">
           <div
