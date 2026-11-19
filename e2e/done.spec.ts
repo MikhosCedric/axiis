@@ -22,7 +22,7 @@ signedIn.describe("Done", () => {
     await page.goto("/done");
     await expect(page.getByRole("heading", { level: 1, name: "Done" })).toBeVisible();
     const today = page.getByRole("region", { name: /^Today/ });
-    await expect(today.getByRole("heading", { level: 2 })).toContainText("3 items");
+    await expect(today.getByRole("listitem")).toHaveCount(3);
     await expect(today.getByText("Morning run")).toBeVisible();
     await expect(today.getByText("Write the Q4 plan")).toBeVisible();
     // No subtasks, no open items, no praise.
