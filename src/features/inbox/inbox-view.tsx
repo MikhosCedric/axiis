@@ -30,7 +30,6 @@ import { GuideButton, type GuideTopic } from "@/features/palette/guide";
 import { CaptureField } from "@/features/today/capture-field";
 import type { ActionResult } from "@/features/today/commands";
 import { DoneToggle } from "@/features/today/done-toggle";
-import { place } from "@/components/shell/places";
 import { RowTags } from "@/features/tags/row-tags";
 import { FilterChips } from "@/features/filter/filter-chip";
 import { NO_FILTER, scopePrefix, type ViewFilter } from "@/features/filter/model";
@@ -212,13 +211,13 @@ export function InboxView({
           }
         >
           <p className="page-summary">
-            {place("inbox").hint}. Plan each one when you are ready. {scopePrefix(filter)}
+            {scopePrefix(filter)}
             {inboxSummary(shown)}
           </p>
           <FilterChips filter={filter} className="mt-2.5" />
         </PageHeader>
 
-        <section aria-labelledby="inbox-list-h" className="group/inbox">
+        <section aria-labelledby="inbox-list-h">
           <h2 id="inbox-list-h" className="sr-only">
             Items with no day
           </h2>
@@ -258,9 +257,9 @@ export function InboxView({
               </p>
             </div>
           )}
-          {/* Read out as the list's description always; drawn only while the keyboard is in the list, where the keys matter. */}
+          {/* Read out as the list's description; the keys are drawn in the Guide's shortcuts, not on the page. */}
           {shown.length > 0 && (
-            <p id="inbox-keys" className="sr-only group-has-[:focus-visible]/inbox:not-sr-only group-has-[:focus-visible]/inbox:mt-3 text-[13px] text-ink-3 pointer-coarse:hidden">
+            <p id="inbox-keys" className="sr-only">
               J and K move between items. 1 plans the one in focus for today, 2 for tomorrow, 3 for next week, 4 for another day.
             </p>
           )}

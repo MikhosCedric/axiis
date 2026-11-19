@@ -26,10 +26,10 @@ describe("listsSummary", () => {
   ];
 
   it("counts open and done checklists in plain words", () => {
-    expect(listsSummary([])).toBe("No checklists yet.");
-    expect(listsSummary(rows(1, 0))).toBe("1 checklist open.");
-    expect(listsSummary(rows(3, 0))).toBe("3 checklists open.");
-    expect(listsSummary(rows(2, 1))).toBe("2 open, 1 done.");
-    expect(listsSummary(rows(0, 2))).toBe("None open, 2 done.");
+    expect(listsSummary([])).toBe("No checklists");
+    expect(listsSummary(rows(1, 0))).toBe("1 open");
+    expect(listsSummary(rows(3, 0))).toBe("3 open");
+    expect(listsSummary(rows(2, 1))).toBe("2 open · 1 done");
+    expect(listsSummary(rows(0, 2))).toBe("None open · 2 done");
   });
 });

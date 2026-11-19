@@ -54,6 +54,11 @@ describe("loadDue", () => {
     expect(data.rows[0].when).toBe("Saturday 10 October");
   });
 
+  it("leaves the plan out when it is for the due day itself", async () => {
+    const data = await run([makeItem({ title: "Same day", dueOn: d("2026-10-10"), schedule: { kind: "day", on: d("2026-10-10") } })]);
+    expect(data.rows[0].when).toBeNull();
+  });
+
   it("is empty when nothing is dated", async () => {
     expect(await run([makeItem()])).toEqual({ today: "2026-10-08", rows: [], full: false });
   });

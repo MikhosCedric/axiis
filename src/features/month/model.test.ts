@@ -237,9 +237,9 @@ describe("buildMonth", () => {
       timed("2026-10-31", 23 * 60, 25 * 60),
     ]);
     expect(b.open).toBe(2);
-    expect(monthSummary(ym("2026-10"), d("2026-10-23"), b.open, b.due)).toBe("This month · 9 days left · 2 open");
-    expect(monthSummary(ym("2026-10"), d("2026-10-31"), 0, 1)).toBe("This month · Last day · Nothing open · 1 due");
-    expect(monthSummary(ym("2026-11"), d("2026-10-23"), 3, 0)).toBe("Next month · 3 open");
+    expect(monthSummary(b.open, b.due)).toBe("2 open");
+    expect(monthSummary(0, 1)).toBe("Nothing open · 1 due");
+    expect(monthSummary(3, 0)).toBe("3 open");
   });
 
   it("draws state by line form: done and live are told apart from planned", () => {

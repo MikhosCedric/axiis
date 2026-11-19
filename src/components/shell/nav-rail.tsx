@@ -114,18 +114,18 @@ const navTitle = (p: Place) => (p.span ? `${p.hint} ( ${p.span.key.toUpperCase()
 const NO_BADGES: NavBadges = { inbox: 0, overdue: 0 };
 const NO_HIDDEN: readonly string[] = [];
 
-/** The number for a place, if it has one: the Inbox counts quietly, overdue in full ink. */
-function badgeFor(id: PlaceId, badges: NavBadges): { n: number; word: string; hot: boolean } | null {
-  if (id === "inbox" && badges.inbox > 0) return { n: badges.inbox, word: `${badges.inbox} waiting for a day`, hot: false };
-  if (id === "due" && badges.overdue > 0) return { n: badges.overdue, word: `${badges.overdue} past due`, hot: true };
+/** The number for a place, if it has one: the Inbox and Due both count quietly, in plain muted ink. */
+function badgeFor(id: PlaceId, badges: NavBadges): { n: number; word: string } | null {
+  if (id === "inbox" && badges.inbox > 0) return { n: badges.inbox, word: `${badges.inbox} waiting for a day` };
+  if (id === "due" && badges.overdue > 0) return { n: badges.overdue, word: `${badges.overdue} due` };
   return null;
 }
 
-function Badge({ n, hot, className = "" }: { n: number; hot: boolean; className?: string }) {
+function Badge({ n, className = "" }: { n: number; className?: string }) {
   return (
     <span
       aria-hidden="true"
-      className={`rounded-full px-1.5 text-xs leading-5 font-semibold tabular ${hot ? "bg-ink text-paper" : "bg-hover text-ink-2"} ${className}`}
+      className={`rounded-full px-1.5 text-xs leading-5 font-semibold tabular bg-hover text-ink-2 ${className}`}
     >
       {n > 99 ? "99+" : n}
     </span>
@@ -235,14 +235,17 @@ function Rail({
         <SearchField />
       </div>
 
-      <MiniMonth
-        today={today}
-        anchor={calendar.view.anchor}
-        from={calendar.view.from}
-        to={calendar.view.to}
-        hrefFor={calendar.dayHref}
-        className="group-data-[min]/rail:hidden"
-      />
+      {/* The Month page is the month: its small copy would say the same twice. */}
+      {!place("month").here(pathname, today) && (
+        <MiniMonth
+          today={today}
+          anchor={calendar.view.anchor}
+          from={calendar.view.from}
+          to={calendar.view.to}
+          hrefFor={calendar.dayHref}
+          className="group-data-[min]/rail:hidden"
+        />
+      )}
 
       {areas.length > 0 && (
         <section aria-labelledby="areas-h" className="group-data-[min]/rail:hidden">
@@ -306,7 +309,7 @@ function PlaceList({
                 {ICONS[p.id]}
                 <span className="group-data-[min]/rail:sr-only">{navName(p)}</span>
                 {badge && (
-                  <Badge n={badge.n} hot={badge.hot} className="ml-auto group-data-[min]/rail:absolute group-data-[min]/rail:top-0 group-data-[min]/rail:right-0 group-data-[min]/rail:ml-0 group-data-[min]/rail:px-1 group-data-[min]/rail:text-[10px] group-data-[min]/rail:leading-4" />
+                  <Badge n={badge.n} className="ml-auto group-data-[min]/rail:absolute group-data-[min]/rail:top-0 group-data-[min]/rail:right-0 group-data-[min]/rail:ml-0 group-data-[min]/rail:px-1 group-data-[min]/rail:text-[10px] group-data-[min]/rail:leading-4" />
                 )}
               </Link>
               {badge && (
@@ -559,7 +562,7 @@ function PhoneBar({ pathname, today, areas, badges, shown }: { pathname: string;
               >
                 {ICONS[p.id]}
                 {navName(p)}
-                {badge && <Badge n={badge.n} hot={badge.hot} className="absolute top-1.5 left-1/2 ml-1.5 min-w-5 text-center" />}
+                {badge && <Badge n={badge.n} className="absolute top-1.5 left-1/2 ml-1.5 min-w-5 text-center" />}
               </Link>
               {badge && (
                 <span id={`${tabId}-${p.id}`} className="sr-only">

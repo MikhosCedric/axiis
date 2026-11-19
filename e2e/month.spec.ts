@@ -44,8 +44,8 @@ signedIn.describe("the Month", () => {
 
     await page.goto("/month/2099-06");
     await expect(cell(page, /^Monday 1 June, 1 item\b/).getByRole("button", { name: /^Due, Renew the lease/ })).toBeVisible();
-    // Seen from today, June 2099 is many months ahead; the line says so before what it holds.
-    await expect(page.getByText(/^In \d+ months · Nothing open · 1 due$/)).toBeVisible();
+    // The line counts what the month holds; the title says which month.
+    await expect(page.getByText(/^Nothing open · 1 due$/)).toBeVisible();
   });
 
   signedIn("changes month with Previous and Next, the bracket keys and T, and G then M goes to it", async ({ page }) => {

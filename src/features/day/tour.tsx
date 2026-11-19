@@ -3,19 +3,15 @@
 import { useRef, useState } from "react";
 import { TOUR_COOKIE } from "@/components/shell/cookies";
 
-/** Four steps, each one thing a newcomer needs before the rest makes sense. */
+/** Three steps, each one thing a newcomer needs before the rest makes sense. Capture is explained by its own field. */
 const TOUR_STEPS: { title: string; body: string }[] = [
   {
-    title: "Capture first, sort later",
-    body: "Type anything into the field above and press Enter. Add a day or a time, as in “dentist tomorrow 9:00”, and it is planned; without one it goes to the Inbox.",
-  },
-  {
     title: "The grid is your day",
-    body: "Hours run down the page. A block is something with a time, tinted with its area’s colour. The small mark inside it is dashed while planned, solid while it happens and hollow once done. Click empty time to add something there. The green line is now.",
+    body: "Hours run down the page. A block is something with a time, tinted with its area’s colour. Click empty time to add something there. The green line is now.",
   },
   {
     title: "Inbox or Today",
-    body: "The Inbox holds what has no day yet. Today holds what is planned for today, at a time or at any time. Plan from the Inbox when you are ready; nothing there is late.",
+    body: "The Inbox holds what has no day yet. Today holds what is planned for today. Nothing in the Inbox is late.",
   },
   {
     title: "The Guide explains the rest",

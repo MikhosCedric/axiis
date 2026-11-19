@@ -117,7 +117,7 @@ for (const view of ["", "&view=list"]) {
   test(`day${view}: an empty tray does not claim everything has a time while some are at any time`, async ({ page }) => {
     await page.goto(`/dev/day?tray=empty${view}`);
     await expect(page.getByText(/Take vitamins/).first()).toBeVisible();
-    await expect(page.getByText(view ? "The Inbox is empty. What you capture lands here first." : "Empty. What you capture lands here first.")).toBeVisible();
+    await expect(page.getByText(view ? "The Inbox is empty. What you capture lands here first." : "Empty.", { exact: true })).toBeVisible();
     await expect(page.getByText(/Everything has a/)).toHaveCount(0);
   });
 }
@@ -516,7 +516,7 @@ test.describe("inbox", () => {
       page.getByRole("status").filter({ hasText: /^Return the library books is planned for \w+day \d+ \w+\.$/ }),
     ).toBeVisible();
     await expect(list.getByRole("button", { name: "Return the library books" })).toHaveCount(0);
-    await expect(page.getByText("4 to plan.")).toBeVisible();
+    await expect(page.getByText("4 to plan")).toBeVisible();
   });
 
   test("Escape closes the day choices and returns to the button", async ({ page }) => {
@@ -539,7 +539,7 @@ test.describe("inbox", () => {
     await page.keyboard.press("Space");
     await expect(page.getByRole("status").filter({ hasText: "Book the dentist is done." })).toBeVisible();
     await expect(done).toBeChecked();
-    await expect(page.getByText("4 to plan.")).toBeVisible();
+    await expect(page.getByText("4 to plan")).toBeVisible();
 
     await done.focus();
     await page.keyboard.press("Space");
@@ -566,13 +566,13 @@ test.describe("inbox", () => {
 
   test("an empty inbox says so", async ({ page }) => {
     await page.goto("/dev/inbox?empty");
-    await expect(page.getByText("Nothing here now.")).toBeVisible();
+    await expect(page.getByText("Nothing here now")).toBeVisible();
     await expect(page.getByText("Anything you capture without a day lands here, safe until you plan it.")).toBeVisible();
 
     await page.getByLabel("Capture anything").fill("Fix the gate");
     await page.getByLabel("Capture anything").press("Enter");
     await expect(page.getByRole("button", { name: "Plan for: Fix the gate" })).toBeVisible();
-    await expect(page.getByText("1 to plan.")).toBeVisible();
+    await expect(page.getByText("1 to plan")).toBeVisible();
   });
 });
 
@@ -580,7 +580,7 @@ test.describe("lists", () => {
   test("checklists show open first with their progress, a repeating one once", async ({ page }) => {
     await page.goto("/dev/lists");
     await expect(page.getByRole("heading", { level: 1, name: "Lists" })).toBeVisible();
-    await expect(page.getByText("4 open, 1 done.")).toBeVisible();
+    await expect(page.getByText("4 open · 1 done")).toBeVisible();
     await expect(page.getByRole("list").first().locator("button:not([data-reorder-handle])")).toHaveText([
       "Ideas for the garden",
       "Pack for the coast",
@@ -611,15 +611,15 @@ test.describe("lists", () => {
 
   test("a new checklist opens at once, ready for its lines", async ({ page }) => {
     await page.goto("/dev/lists?empty");
-    await expect(page.getByText("No checklists yet.")).toBeVisible();
-    await expect(page.getByText(/^A checklist keeps the small steps of one thing together/)).toBeVisible();
+    await expect(page.getByText("No checklists")).toBeVisible();
+    await expect(page.getByText(/^Name a checklist above/)).toBeVisible();
 
     const field = page.getByLabel("New checklist");
     await field.fill("Groceries for Sunday");
     await field.press("Enter");
     const details = page.getByRole("complementary", { name: "Details" });
     await expect(details.getByRole("textbox", { name: "Title" })).toHaveValue("Groceries for Sunday");
-    await expect(page.getByText("1 checklist open.")).toBeVisible();
+    await expect(page.getByText("1 open", { exact: true })).toBeVisible();
 
     await details.getByRole("textbox", { name: "Add a subtask" }).fill("Bread");
     await details.getByRole("textbox", { name: "Add a subtask" }).press("Enter");
@@ -723,10 +723,10 @@ test("with a mouse, the grid's help lives in the Guide and shows no press-and-ho
   await expect(guide.getByRole("heading", { name: "Keyboard shortcuts" })).toBeVisible();
   await page.keyboard.press("Escape");
   await expect(guide).toBeHidden();
-  await expect(page.getByText(/^Drag one onto the grid/)).toBeVisible();
+  // The Inbox tray's how-to is a description only: clipped to a pixel, never printed beside the chips.
+  expect((await page.getByText(/^No day yet\. Drag one onto the grid/).boundingBox())!.width).toBeLessThanOrEqual(1);
+  await expect(page.getByRole("region", { name: "Inbox", exact: true })).toHaveAccessibleDescription(/Drag one onto the grid/);
   await expect(page.locator("kbd", { hasText: /^C$/ })).toBeVisible();
-  await expect(page.getByText(/Press and hold/)).toHaveCount(1);
-  for (const hint of await page.getByText(/Press and hold/).all()) await expect(hint).toBeHidden();
 });
 
 test.describe("on a touch phone", () => {
@@ -737,8 +737,7 @@ test.describe("on a touch phone", () => {
   }) => {
     await page.goto("/dev/day");
     await hydrated(page);
-    await expect(page.getByText(/^Press and hold one, then drag it onto a day/)).toBeVisible();
-    await expect(page.getByText(/^Drag one onto the grid/)).toBeHidden();
+    await expect(page.getByRole("region", { name: "Inbox", exact: true })).toHaveAccessibleDescription(/press and hold one first/);
     await expect(page.locator("kbd", { hasText: /^C$/ })).toBeHidden();
 
     expect((await page.getByText(/^Arrow keys move between items/).boundingBox())!.width).toBeLessThanOrEqual(1);

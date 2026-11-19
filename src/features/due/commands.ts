@@ -1,3 +1,4 @@
+import type { Item, LocalDate } from "@/domain/item";
 import { quickItem } from "@/features/actions/quick-item";
 import { displayTitle } from "@/features/notes/model";
 import { whenOf } from "@/features/tags/commands";
@@ -12,6 +13,10 @@ const DAY_MS = 86_400_000;
  * Every task and checklist with a due date, soonest first. Items done in the
  * last day stay listed, so a mistaken tick can be undone.
  */
+function plannedDay(schedule: Item["schedule"], timeZone: string): LocalDate | null {
+  return schedule.kind === "day" ? schedule.on : schedule.kind === "timed" ? toLocalDate(schedule.start, timeZone) : null;
+}
+
 export async function loadDue(repo: ItemsRepo, now: Date, timeZone: string, clock: Clock): Promise<DueData> {
   const today = toLocalDate(now, timeZone);
   const [items, areas] = await Promise.all([repo.listDue(new Date(now.getTime() - DAY_MS)), repo.listAreas()]);
@@ -32,7 +37,8 @@ export async function loadDue(repo: ItemsRepo, now: Date, timeZone: string, cloc
           dueOn: item.dueOn,
           due: dueWords(item.dueOn, today, done),
           group: dueGroup(item.dueOn, today),
-          when: item.schedule.kind === "unscheduled" ? null : whenOf(item, timeZone, clock),
+          // Said only when the plan is for another day than the deadline: the same day adds nothing.
+          when: item.schedule.kind === "unscheduled" || (item.recurrence.kind !== "series" && plannedDay(item.schedule, timeZone) === item.dueOn) ? null : whenOf(item, timeZone, clock),
           areaId: item.areaId,
           area: areaOf.get(item.areaId ?? "")?.name ?? null,
           areaColor: areaOf.get(item.areaId ?? "")?.color ?? null,

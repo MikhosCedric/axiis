@@ -59,20 +59,20 @@ describe("dueSummary", () => {
   const row = (group: "past" | "week" | "later", done = false) => ({ group, done });
 
   it("says when nothing has a due date, and when it is all done", () => {
-    expect(dueSummary([])).toBe("Nothing has a due date.");
-    expect(dueSummary([row("week", true), row("later", true)])).toBe("Everything with a due date is done.");
+    expect(dueSummary([])).toBe("No due dates");
+    expect(dueSummary([row("week", true), row("later", true)])).toBe("All done");
   });
 
   it("counts open items due this week, and past due ones when there are any", () => {
-    expect(dueSummary([row("week")])).toBe("1 is due this week.");
-    expect(dueSummary([row("week"), row("week"), row("later")])).toBe("2 are due this week.");
-    expect(dueSummary([row("later")])).toBe("Nothing is due this week.");
-    expect(dueSummary([row("past")])).toBe("1 past due, nothing due this week.");
-    expect(dueSummary([row("past"), row("past"), row("week")])).toBe("2 past due, 1 is due this week.");
+    expect(dueSummary([row("week")])).toBe("1 this week");
+    expect(dueSummary([row("week"), row("week"), row("later")])).toBe("2 this week");
+    expect(dueSummary([row("later")])).toBe("None this week");
+    expect(dueSummary([row("past")])).toBe("1 past due");
+    expect(dueSummary([row("past"), row("past"), row("week")])).toBe("2 past due · 1 this week");
   });
 
   it("leaves done items out of the counts", () => {
-    expect(dueSummary([row("week", true), row("week")])).toBe("1 is due this week.");
+    expect(dueSummary([row("week", true), row("week")])).toBe("1 this week");
   });
 });
 

@@ -92,10 +92,10 @@ export function inGroup(rows: readonly DueRow[], group: DueGroup): DueRow[] {
 
 export function dueSummary(rows: readonly Pick<DueRow, "done" | "group">[]): string {
   const open = rows.filter((r) => !r.done);
-  if (rows.length === 0) return "Nothing has a due date.";
-  if (open.length === 0) return "Everything with a due date is done.";
+  if (rows.length === 0) return "No due dates";
+  if (open.length === 0) return "All done";
   const week = open.filter((r) => r.group === "week").length;
   const past = open.filter((r) => r.group === "past").length;
-  const thisWeek = week === 0 ? (past > 0 ? "nothing due this week" : "Nothing is due this week") : `${week} ${week === 1 ? "is" : "are"} due this week`;
-  return `${[...(past > 0 ? [`${past} past due`] : []), thisWeek].join(", ")}.`;
+  if (past + week === 0) return "None this week";
+  return [...(past > 0 ? [`${past} past due`] : []), ...(week > 0 ? [`${week} this week`] : [])].join(" · ");
 }
