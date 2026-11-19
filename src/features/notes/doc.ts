@@ -6,7 +6,7 @@ import { safeHref } from "./safe-href";
 export type DocMark = { type: string; attrs?: Record<string, unknown> };
 export type DocNode = { type: string; attrs?: Record<string, unknown>; content?: DocNode[]; marks?: DocMark[]; text?: string };
 
-export const NODE_TYPES = [
+const NODE_TYPES = [
   "doc",
   "paragraph",
   "text",
@@ -21,7 +21,7 @@ export const NODE_TYPES = [
   "hardBreak",
   "horizontalRule",
 ] as const;
-export const MARK_TYPES = ["bold", "italic", "code", "link", "strike", "underline"] as const;
+const MARK_TYPES = ["bold", "italic", "code", "link", "strike", "underline"] as const;
 
 /** The most a note's body may weigh, as serialized JSON. */
 export const BODY_MAX_BYTES = 200 * 1024;

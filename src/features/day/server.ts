@@ -6,6 +6,7 @@ import type { LocalDate } from "@/domain/item";
 import { getAreas } from "@/features/filter/server";
 import { getItemsRepo } from "@/lib/items";
 import { instantAt, resolveTimeZone, toLocalDate } from "@/lib/dates";
+import { daySpan, loadOccurrences } from "@/lib/items/occurrences";
 import { getFakePinnedMinutes } from "@/lib/supabase/fake-session";
 import { loadDay } from "./load";
 import { loadRailCounts } from "./rail";
@@ -37,13 +38,22 @@ export const getNow = cache(async () => {
 /** The user's current local date. */
 export const getTodayDate = cache(async () => toLocalDate(await getNow(), await getTimeZone()));
 
+/** The day's series occurrences: one read of the series and overrides per date per request, shared by the day and the nav rail. */
+const getOccurrences = cache(async (date: LocalDate) => {
+  const timeZone = await getTimeZone();
+  return loadOccurrences(await getItemsRepo(), daySpan(date, timeZone), timeZone);
+});
+
 /** One load per date per request. */
-export const getDay = cache(async (date: LocalDate) => loadDay(await getItemsRepo(), date, await getNow(), await getTimeZone()));
+export const getDay = cache(async (date: LocalDate) =>
+  loadDay(await getItemsRepo(), date, await getNow(), await getTimeZone(), getOccurrences(date)),
+);
 
 /** The nav rail's areas with today's open count for each, once per request. */
 export const getRailAreas = cache(async () => {
   const repo = await getItemsRepo();
-  const [areas, open] = await Promise.all([getAreas(), loadRailCounts(repo, await getTodayDate(), await getTimeZone())]);
+  const today = await getTodayDate();
+  const [areas, open] = await Promise.all([getAreas(), loadRailCounts(repo, today, await getTimeZone(), getOccurrences(today))]);
   return areas.map((a) => ({ id: a.id, name: a.name, color: a.color, open: open.get(a.id) ?? 0 }));
 });
 
@@ -56,13 +66,9 @@ export const getTrayRows = cache(async () => {
 /** What the desktop shell may notify about today. Asked for only in the shell, and from the day the page loads anyway. */
 export const getReminders = cache(async () => reminderRows((await getDay(await getTodayDate())).view, await getNow()));
 
-const DAY_MS = 86_400_000;
-
 /** What waits in the Inbox, and how many due dates have passed, for the badges on the places. Once per request. */
 export const getRailBadges = cache(async () => {
   const repo = await getItemsRepo();
-  const now = await getNow();
-  const today = await getTodayDate();
-  const [inbox, due] = await Promise.all([repo.listInbox(), repo.listDue(new Date(now.getTime() - DAY_MS))]);
-  return { inbox: inbox.length, overdue: due.filter((i) => i.status === "open" && i.dueOn !== null && i.dueOn < today).length };
+  const [inbox, overdue] = await Promise.all([repo.countInbox(), repo.countOverdueDue(await getTodayDate())]);
+  return { inbox, overdue };
 });

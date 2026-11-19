@@ -1,7 +1,7 @@
 import type { TodayView } from "@/features/today/model";
 
 /** What the desktop shell is told about, at most: more than a day holds is a day nobody planned. */
-export const REMINDER_MAX = 20;
+const REMINDER_MAX = 20;
 const TITLE_MAX = 80;
 
 export type ReminderRow = { id: string; at: number; title: string };

@@ -31,8 +31,8 @@ export type NoteContent = { title: string; body: unknown; bodyText: string };
  * including items at the far end of a link.
  */
 export interface NotesRepo {
-  /** Live notes, most recently edited first. */
-  listNotes(): Promise<NoteSummary[]>;
+  /** Live notes, most recently edited first, at most `limit` (never more than one past `NOTES_LIMIT`, so a caller can tell whether more exist). */
+  listNotes(limit?: number): Promise<NoteSummary[]>;
   getNote(id: ItemId): Promise<Note | null>;
   createNote(input: { title: string; areaId: AreaId | null }): Promise<Note>;
   /** Writes title and body of a live note. Throws if there is no such note. */
@@ -46,3 +46,6 @@ export interface NotesRepo {
 }
 
 export const SEARCH_LIMIT = 30;
+
+/** The most notes one list read returns; the notes page asks for more a page at a time. */
+export const NOTES_LIMIT = 200;

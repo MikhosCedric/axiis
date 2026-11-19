@@ -3,6 +3,7 @@ import type { AreaId, Item, ItemId, LocalDate } from "@/domain/item";
 import type { Rule } from "@/domain/recurrence";
 import { area, fakeRepo, makeItem } from "@/features/today/test-support";
 import { loadDay } from "./load";
+import { daySpan, loadOccurrences } from "@/lib/items/occurrences";
 import { loadRailCounts } from "./rail";
 
 const d = (s: string) => s as LocalDate;
@@ -68,5 +69,61 @@ describe("loadRailCounts", () => {
         [home, 1],
       ]),
     );
+  });
+});
+
+describe("one series read per request", () => {
+  it("reads the series and overrides once when the day and the rail share one load", async () => {
+    const series = makeItem({
+      title: "Standup",
+      schedule: { kind: "timed", start: new Date("2026-10-01T09:00:00Z"), end: new Date("2026-10-01T09:15:00Z") },
+      recurrence: { kind: "series", rule: daily },
+    });
+    const { repo } = fakeRepo([series]);
+    let seriesReads = 0;
+    let overrideReads = 0;
+    const counting: typeof repo = {
+      ...repo,
+      listSeries: () => (seriesReads++, repo.listSeries()),
+      listOverrides: (...a) => (overrideReads++, repo.listOverrides(...a)),
+    };
+    const date = d("2026-10-08");
+    const now = new Date("2026-10-08T06:00:00Z");
+    const shared = loadOccurrences(counting, daySpan(date, "UTC"), "UTC");
+    const [day, rail] = await Promise.all([loadDay(counting, date, now, "UTC", shared), loadRailCounts(counting, date, "UTC", shared)]);
+    expect([seriesReads, overrideReads]).toEqual([1, 1]);
+    expect(day.view.scheduled).toHaveLength(1);
+    expect(rail).toEqual(new Map());
+
+    // Unshared, each of the two reads loads the occurrences itself.
+    seriesReads = overrideReads = 0;
+    await Promise.all([loadDay(counting, date, now, "UTC"), loadRailCounts(counting, date, "UTC")]);
+    expect([seriesReads, overrideReads]).toEqual([2, 2]);
+  });
+});
+
+describe("rail badge counts", () => {
+  it("count the same as the lists they replaced", async () => {
+    const today = d("2026-10-08");
+    const DAY_MS = 86_400_000;
+    const items = [
+      makeItem({ title: "In 1" }),
+      makeItem({ title: "In 2" }),
+      makeItem({ title: "A note", type: "note" }),
+      makeItem({ title: "Done in", status: "done", completedAt: new Date("2026-10-07T10:00:00Z") }),
+      makeItem({ title: "Planned", schedule: { kind: "day", on: today } }),
+      makeItem({ title: "Late", dueOn: d("2026-10-01") }),
+      makeItem({ title: "Late too", dueOn: d("2026-10-07"), schedule: { kind: "day", on: today } }),
+      makeItem({ title: "Due today", dueOn: today }),
+      makeItem({ title: "Due soon", dueOn: d("2026-10-20") }),
+      makeItem({ title: "Late done", dueOn: d("2026-10-02"), status: "done", completedAt: new Date("2026-10-08T01:00:00Z") }),
+      makeItem({ title: "Late note", dueOn: d("2026-10-02"), type: "note" }),
+    ];
+    const { repo } = fakeRepo(items);
+    const [inbox, due] = await Promise.all([repo.listInbox(), repo.listDue(new Date(new Date("2026-10-08T06:00:00Z").getTime() - DAY_MS))]);
+    const old = { inbox: inbox.length, overdue: due.filter((i) => i.status === "open" && i.dueOn !== null && i.dueOn < today).length };
+    expect(old).toEqual({ inbox: 5, overdue: 2 });
+    expect({ inbox: await repo.countInbox(), overdue: await repo.countOverdueDue(today) }).toEqual(old);
+    expect(await fakeRepo([]).repo.countInbox()).toBe(0);
   });
 });

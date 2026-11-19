@@ -40,7 +40,7 @@ export function addMonths(month: YearMonth, n: number): YearMonth {
 }
 
 /** The fewest weeks the grid draws, so a February that fits in four keeps the page's shape. */
-export const MIN_WEEKS = 5;
+const MIN_WEEKS = 5;
 
 /**
  * The days the grid draws: whole weeks from the week start on or before the
@@ -90,7 +90,7 @@ export function monthNavTarget(action: MonthNavAction, month: YearMonth, today: 
 }
 
 /** Months in a row of the Jump to month picker. */
-export const PICKER_COLUMNS = 3;
+const PICKER_COLUMNS = 3;
 
 /** Where a key press moves the month picker's focus, or null for any other key or a move past the span Axiis plans on. */
 export function pickerStep(key: string, from: YearMonth): YearMonth | null {

@@ -4,7 +4,7 @@ import type { TodayView } from "@/features/today/model";
 import { dayGlance } from "./glance";
 
 /** Rows the desktop tray menu shows for Today: the day in one line, then what is next, at most this many in all. */
-export const TRAY_ROWS = 4;
+const TRAY_ROWS = 4;
 const TITLE_MAX = 48;
 
 const clip = (text: string) => (text.length > TITLE_MAX ? `${text.slice(0, TITLE_MAX - 1)}…` : text);

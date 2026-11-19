@@ -4,7 +4,7 @@ import { useRef, useState } from "react";
 import { TOUR_COOKIE } from "@/components/shell/cookies";
 
 /** Three steps, each one thing a newcomer needs before the rest makes sense. Capture is explained by its own field. */
-export const TOUR_STEPS: { title: string; body: string }[] = [
+const TOUR_STEPS: { title: string; body: string }[] = [
   {
     title: "The grid is your day",
     body: "Hours run down the page. A block is something with a time, tinted with its area’s colour. Click empty time to add something there. The green line is now.",

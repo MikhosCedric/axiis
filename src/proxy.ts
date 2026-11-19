@@ -44,5 +44,5 @@ export async function proxy(request: NextRequest) {
 export const config = {
   // Only real files skip the proxy: Next's static output and the exact files in public/. A dynamic route whose path ends in
   // .png or .txt (/tags/x.png) still gets the nonce policy and the session refresh. Add a new public/ file here by name.
-  matcher: ["/((?!_next/static|_next/image|favicon\\.ico$|sw\\.js$|film/|(?:file|globe|next|vercel|window)\\.svg$).*)"],
+  matcher: ["/((?!_next/static|_next/image|favicon\\.ico$|sw\\.js$|film/|vercel\\.svg$).*)"],
 };

@@ -74,7 +74,7 @@ const SEARCH_DELAY_MS = 180;
 /** How long after a change of page its title is read, since the new title is written a beat after the address. */
 const TITLE_DELAY_MS = 400;
 /** What the empty palette suggests typing. */
-export const EMPTY_HINT = "Try “next friday”, “nov 3”, a #tag, or a line to capture.";
+const EMPTY_HINT = "Try “next friday”, “nov 3”, a #tag, or a line to capture.";
 
 /**
  * Remembers each page this browser opens that is not a place, so the palette can offer it again. A page that

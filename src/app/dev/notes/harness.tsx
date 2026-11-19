@@ -49,11 +49,11 @@ function useLoaded<T>(load: () => Promise<T>) {
 export function HarnessList({ query, timeZone }: { query: string; timeZone: string }) {
   const clock = useClock();
   const load = useCallback(() => listNoteRows(store.notes, store.items, query || null, new Date(), timeZone, clock), [query, timeZone, clock]);
-  const [rows] = useLoaded<NoteRow[]>(load);
+  const [rows] = useLoaded<{ rows: NoteRow[]; more: boolean }>(load);
   return (
     <>
       <Bar />
-      {rows && <NotesList rows={rows} query={query} create={actions.create} basePath={BASE} />}
+      {rows && <NotesList rows={rows.rows} query={query} create={actions.create} basePath={BASE} />}
     </>
   );
 }

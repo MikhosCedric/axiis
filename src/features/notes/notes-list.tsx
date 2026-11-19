@@ -4,11 +4,11 @@ import { quickNote } from "@/features/actions/quick-item";
 import { useQuick } from "@/features/actions/context";
 import { RowActions, rowProps } from "@/features/actions/row-actions";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState, useTransition } from "react";
 import { AreaMark } from "@/components/area-mark";
 import { PlusIcon, SearchIcon } from "./icons";
-import type { NoteRow, NotesActions } from "./model";
+import { NOTES_PAGE_PARAM, type NoteRow, type NotesActions } from "./model";
 import { reach } from "@/lib/reach";
 import { PageHeader } from "@/components/shell/page-header";
 import { FilterChips } from "@/features/filter/filter-chip";
@@ -21,6 +21,8 @@ const FILTER_DELAY_MS = 250;
 /** The notes list: newest edit first, a quick "New note", and a search box that filters through full-text search. */
 export function NotesList({
   rows,
+  more = false,
+  pages = 1,
   query,
   create,
   basePath = "/notes",
@@ -29,6 +31,9 @@ export function NotesList({
   restore,
 }: {
   rows: NoteRow[];
+  /** More notes wait beyond these rows, so "Show more" has something to show. */
+  more?: boolean;
+  pages?: number;
   query: string;
   create: NotesActions["create"];
   basePath?: string;
@@ -176,6 +181,22 @@ export function NotesList({
           })}
         </ul>
       )}
+      {more && <ShowMore pages={pages} />}
     </div>
+  );
+}
+
+/** The same page with one more page of older notes; every other part of the address stays. */
+function ShowMore({ pages }: { pages: number }) {
+  const pathname = usePathname();
+  const params = useSearchParams();
+  const next = new URLSearchParams(params.toString());
+  next.set(NOTES_PAGE_PARAM, String(pages + 1));
+  return (
+    <p className="mt-5 print:hidden">
+      <Link href={`${pathname}?${next.toString()}`} scroll={false} className="pill h-9 px-3">
+        Show more
+      </Link>
+    </p>
   );
 }
