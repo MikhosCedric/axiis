@@ -54,6 +54,15 @@ test.describe("calendar grid", () => {
     await open(page);
   });
 
+  test("a day head is a link that opens the day, its name holding the visible text", async ({ page }) => {
+    const wed = page.locator("[data-head]").getByRole("link", { name: /^Wed 11\b/ });
+    await expect(wed).toHaveAttribute("href", "/day/2026-03-11");
+    await expect(wed).toContainText("Wed 11");
+    await expect(page.locator("[data-head]").getByRole("link")).toHaveCount(7);
+    await page.goto(`${WEEK}&area=work`);
+    await expect(page.locator("[data-head]").getByRole("link", { name: /^Wed 11\b/ })).toHaveAttribute("href", /^\/day\/2026-03-11\?.*area=work/);
+  });
+
   test("draws the week as columns, with overlapping items side by side and an any-time row", async ({ page }) => {
     await expect(page.locator("[data-day-col]")).toHaveCount(7);
     await expect(page.getByRole("heading", { name: "Monday 9 March" })).toBeVisible();

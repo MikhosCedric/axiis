@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { createPortal } from "react-dom";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
 import { AreaLabel } from "@/components/area-mark";
@@ -10,6 +11,8 @@ import { useQuick, type RowHooks } from "@/features/actions/context";
 import type { QuickItem } from "@/features/actions/model";
 import { quickItem } from "@/features/actions/quick-item";
 import { rowProps } from "@/features/actions/row-actions";
+import { dayHref } from "@/features/day/nav";
+import { useKeepFilter } from "@/features/filter/keep-filter";
 import { SameInInbox } from "@/features/inbox/same-in-inbox";
 import type { ActionResult, CaptureResult } from "@/features/today/commands";
 import { DoneToggle } from "@/features/today/done-toggle";
@@ -129,6 +132,7 @@ export function CalendarGrid({
   className = "",
 }: CalendarGridProps) {
   const quick = useQuick();
+  const keep = useKeepFilter();
   const scroller = useRef<HTMLDivElement>(null);
   const refocus = useRef<{ id: string; until: number } | null>(null);
   /** Set by a double-click, so the press that ended it does not also open the block in brief. */
@@ -623,9 +627,15 @@ export function CalendarGrid({
           <div className={styles.corner} />
           {days.map((day) => (
             <h3 key={day} className={`${styles.dayHead} ${day === today ? styles.today : ""}`} aria-current={day === today ? "date" : undefined}>
-              <time dateTime={day} aria-label={`${formatDayHeading(day)}${day === today ? ", today" : ""}`}>
-                <span className={styles.dayName}>{weekday.format(utcMidnight(day))}</span> <span className={styles.dayNum}>{Number(day.slice(8))}</span>
-              </time>
+              <Link
+                href={keep(dayHref(day, today, "grid"))}
+                className={styles.dayLink}
+                aria-label={`${weekday.format(utcMidnight(day))} ${Number(day.slice(8))}, open ${formatDayHeading(day)}${day === today ? ", today" : ""}`}
+              >
+                <time dateTime={day}>
+                  <span className={styles.dayName}>{weekday.format(utcMidnight(day))}</span> <span className={styles.dayNum}>{Number(day.slice(8))}</span>
+                </time>
+              </Link>
             </h3>
           ))}
           <div className={styles.anyLabel}>Any time</div>
