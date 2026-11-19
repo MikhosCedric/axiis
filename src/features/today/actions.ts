@@ -9,7 +9,7 @@ import { captureLines, captureList, captureTask, queuedId, setDone, typedAt, typ
 // write, so a direct POST without a session cannot touch anyone's rows.
 
 export async function captureAction(title: string, entry?: QueuedEntry): Promise<CaptureResult> {
-  const now = getNow();
+  const now = await getNow();
   const areas = await areasNamedIn(title);
   const result = await captureTask(await getItemsRepo(), title, typedAt(entry, now), await getTimeZone(), null, queuedId(entry), await getWeekStart(), areas);
   if (result.ok) refresh();
@@ -18,7 +18,7 @@ export async function captureAction(title: string, entry?: QueuedEntry): Promise
 
 /** A pasted block as one task per line. The lines are untrusted; the command validates them. */
 export async function captureLinesAction(lines: string[]): Promise<CaptureResult> {
-  const result = await captureLines(await getItemsRepo(), lines, getNow(), await getTimeZone(), null, await getWeekStart(), await areasNamedIn(lines));
+  const result = await captureLines(await getItemsRepo(), lines, await getNow(), await getTimeZone(), null, await getWeekStart(), await areasNamedIn(lines));
   // Some lines may have saved before one failed, so the screen is redrawn either way.
   refresh();
   return result;
