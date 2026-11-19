@@ -521,6 +521,8 @@ export function CalendarGrid({
     preview?.kind === "move" && preview.placement?.schedule.kind === "day" && preview.placement.schedule.on === day && preview.item.schedule.kind !== "day";
 
   const overTray = preview?.kind === "move" && preview.placement?.schedule.kind === "unscheduled" && preview.item.schedule.kind !== "unscheduled";
+  /** A placed block is being dragged: the Inbox strip says what dropping on it does. */
+  const clearing = preview?.kind === "move" && preview.item.schedule.kind !== "unscheduled";
 
   const trayChip = (item: ShownItem) => {
     if (hidden(item)) return null;
@@ -584,24 +586,51 @@ export function CalendarGrid({
     );
   };
 
+  // The Week's Inbox is a strip under the grid, one line tall, so it stays in view and a drag reaches it from any hour. The Day's is a card in its side column.
+  const strip = !trayHost;
   const trayNode =
     tray && examples.length === 0 ? (
-      <section data-drop="tray" aria-labelledby="calendar-tray-h" className={`${styles.tray} ${trayHost ? styles.trayRail : ""} ${overTray ? styles.over : ""}`}>
-        <TrayHeading as={trayHost ? "h2" : "h3"}>
-          {INBOX}
-        </TrayHeading>
-        {tray.items.length === 0 && !tray.full ? (
-          <p className="mt-1 text-[13px] text-ink-3">Empty. What you capture lands here first.</p>
+      <section
+        data-drop="tray"
+        aria-labelledby="calendar-tray-h"
+        className={`${styles.tray} ${trayHost ? styles.trayRail : styles.trayStrip} ${overTray ? styles.over : ""}`}
+      >
+        {strip ? (
+          <div className={styles.trayRow}>
+            <TrayHeading as="h3">{INBOX}</TrayHeading>
+            {clearing ? (
+              <p className="flex-none text-[13px] font-medium text-ink" aria-hidden="true">
+                Drop here to clear its day
+              </p>
+            ) : (
+              <p className="flex-none text-[13px] text-ink-3">
+                {tray.items.length === 0 && !tray.full ? "Empty. What you capture lands here first." : "No day yet."}
+              </p>
+            )}
+            {tray.items.length > 0 && <ul className={styles.trayScroll}>{tray.items.map(trayChip)}</ul>}
+            {tray.full && <p className="flex-none text-[13px] text-ink-3">{TRAY_FULL}</p>}
+            <p className="ml-auto flex-none text-[13px] text-ink-3">
+              <span className="sr-only">Drag one onto the grid to plan it for that time. Drag a block back here to clear its day. </span>
+              <SameInInbox />
+            </p>
+          </div>
         ) : (
-        <>
-        <p className="mt-1 mb-3 text-[13px] text-ink-3">
-          No day yet. <span className="pointer-coarse:hidden">Drag one onto the grid to plan it for that time{trayHost ? ", or click it to plan it for today. " : ". Drag a block back here to clear its day. "}</span>
-          <span className="hidden pointer-coarse:inline">Press and hold one, then drag it onto a day to plan it for that time. </span>
-          <SameInInbox />
-        </p>
-        {tray.items.length ? <ul className={`flex flex-wrap gap-2 ${trayHost ? styles.trayList : ""}`}>{tray.items.map(trayChip)}</ul> : <p className="text-[13px] text-ink-3">{EMPTY_TRAY}</p>}
-        {tray.full && <p className="mt-3 text-[13px] text-ink-3">{TRAY_FULL}</p>}
-        </>
+          <>
+            <TrayHeading as="h2">{INBOX}</TrayHeading>
+            {tray.items.length === 0 && !tray.full ? (
+              <p className="mt-1 text-[13px] text-ink-3">Empty. What you capture lands here first.</p>
+            ) : (
+              <>
+                <p className="mt-1 mb-3 text-[13px] text-ink-3">
+                  No day yet. <span className="pointer-coarse:hidden">Drag one onto the grid to plan it for that time, or click it to plan it for today. </span>
+                  <span className="hidden pointer-coarse:inline">Press and hold one, then drag it onto a day to plan it for that time. </span>
+                  <SameInInbox />
+                </p>
+                {tray.items.length ? <ul className={`flex flex-wrap gap-2 ${styles.trayList}`}>{tray.items.map(trayChip)}</ul> : <p className="text-[13px] text-ink-3">{EMPTY_TRAY}</p>}
+                {tray.full && <p className="mt-3 text-[13px] text-ink-3">{TRAY_FULL}</p>}
+              </>
+            )}
+          </>
         )}
       </section>
     ) : null;

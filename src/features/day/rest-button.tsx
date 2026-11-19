@@ -34,7 +34,8 @@ export function RestOfDay({
   function run() {
     if (!quick) {
       startTransition(async () => {
-        const moved = await move(items, "tomorrow");
+        const said = await reach(move(items, "tomorrow"));
+        const moved = Array.isArray(said) ? said : [];
         onStatus(restNews(moved.length, items.length - moved.length), moved.length === 0);
       });
       return;

@@ -608,6 +608,49 @@
   border-top: 0;
 }
 
+/* The Week's Inbox: one line under the grid, so it never sits below the fold. Its chips scroll sideways; a drag over it takes the accent wash. */
+.trayStrip {
+  padding: 8px 14px;
+}
+
+.trayStrip:not(.over) {
+  background: var(--sheet);
+}
+
+@media (min-width: 760px) {
+  .trayStrip {
+    position: sticky;
+    bottom: 0;
+    z-index: 5;
+  }
+}
+
+.trayRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.trayRow h3 {
+  flex: none;
+  font-size: 15px;
+}
+
+.trayScroll {
+  display: flex;
+  flex: 0 1 auto;
+  min-width: 0;
+  gap: 8px;
+  overflow-x: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+}
+
+.trayScroll .trayChip {
+  flex: none;
+}
+
 .trayList {
   max-height: 11.5rem;
   overflow-y: auto;

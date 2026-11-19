@@ -264,6 +264,28 @@ test.describe("calendar grid", () => {
   });
 });
 
+test.describe("the Week's Inbox strip", () => {
+  test.use({ viewport: { width: 1280, height: 900 } });
+
+  test("stays in view under the grid, and says what dropping a block on it does", async ({ page }) => {
+    await open(page);
+    const tray = page.locator('[data-drop="tray"]');
+    const box = (await tray.boundingBox())!;
+    expect(box.height).toBeLessThan(80);
+    expect(box.y + box.height).toBeLessThanOrEqual(900);
+    await expect(tray.getByText("Drop here to clear its day")).toHaveCount(0);
+
+    const from = await middle(block(page, /^Review pull requests /));
+    await page.mouse.move(from.x, from.y);
+    await page.mouse.down();
+    await page.mouse.move(box.x + 300, box.y + box.height / 2, { steps: 12 });
+    await expect(tray.getByText("Drop here to clear its day")).toBeVisible();
+    await page.keyboard.press("Escape");
+    await page.mouse.up();
+    await expect(tray.getByText("Drop here to clear its day")).toHaveCount(0);
+  });
+});
+
 test.describe("calendar grid, where it opens", () => {
   test.use({ viewport: { width: 1280, height: 720 } });
 
