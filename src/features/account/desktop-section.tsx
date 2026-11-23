@@ -2,11 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { REMINDERS_COOKIE } from "@/components/shell/cookies";
-
-function saveReminders(on: boolean) {
-  document.cookie = `${REMINDERS_COOKIE}=${on ? "on" : "off"}; path=/; max-age=31536000; samesite=lax`;
-}
+import { saveReminders } from "@/components/shell/prefs";
 
 /**
  * Shown only in the desktop app. Reminders are on unless turned off here: the page then hands the app no

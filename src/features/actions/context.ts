@@ -29,6 +29,8 @@ export type QuickActions = {
   /** Brings back a skipped occurrence, by its occurrence key. */
   unskip: (key: string) => Promise<ActionResult>;
   duplicate: (key: string) => Promise<DuplicateResult>;
+  /** Starts a note linked to the item, and says where it is. */
+  addNote?: (key: string) => Promise<{ ok: true; id: string } | { ok: false; error: string }>;
   setType: (key: string, type: TypeChoice) => Promise<ActionResult>;
   /** The item's tags and every tag, or null when the item is gone. */
   tagChoices: (key: string) => Promise<TagChoices | null>;
@@ -98,6 +100,8 @@ export type Quick = {
   save: (item: QuickItem, patch: Patch, call: () => Promise<ActionResult>, news?: string | null, undo?: () => void) => void;
   remove: (item: QuickItem, scope: "one" | "all", row: HTMLElement | null) => void;
   tell: (text: string, undo?: () => void) => void;
+  /** Goes to a page, as a link would. */
+  go: (href: string) => void;
   prefetch: () => void;
   /** The rows chosen for one change to many, by key, in the order chosen. */
   picked: ReadonlyMap<string, RowEntry>;

@@ -2,6 +2,7 @@
 
 import { clearTimeAction, deleteItemAction, renameItemAction, restoreOccurrenceAction, setAreaAction, setTimeAction, setTypeAction, unplanAction } from "@/features/detail/actions";
 import { planAction } from "@/features/inbox/actions";
+import { createLinkedNoteAction } from "@/features/notes/actions";
 import { addTagAction, removeTagAction } from "@/features/tags/actions";
 import { setDoneAction } from "@/features/today/actions";
 import { duplicateItemAction, restoreItemsAction, tagChoicesAction } from "./actions";
@@ -21,6 +22,7 @@ export const serverActions: QuickActions = {
   restore: restoreItemsAction,
   unskip: restoreOccurrenceAction,
   duplicate: duplicateItemAction,
+  addNote: createLinkedNoteAction,
   setType: setTypeAction,
   tagChoices: tagChoicesAction,
 };

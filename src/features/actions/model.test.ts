@@ -58,9 +58,9 @@ describe("what a row can do", () => {
   });
 
   it("offers a planned one-off the Inbox and an event, and an event a task", () => {
-    expect(moreEntries(task)).toEqual(["duplicate", "make-event", "inbox", "open"]);
-    expect(moreEntries({ ...task, type: "event" })).toEqual(["duplicate", "make-task", "inbox", "open"]);
-    expect(moreEntries({ ...task, day: null })).toEqual(["duplicate", "make-event", "open"]);
+    expect(moreEntries(task)).toEqual(["duplicate", "make-event", "inbox", "note", "open"]);
+    expect(moreEntries({ ...task, type: "event" })).toEqual(["duplicate", "make-task", "inbox", "note", "open"]);
+    expect(moreEntries({ ...task, day: null })).toEqual(["duplicate", "make-event", "note", "open"]);
   });
 
   it("never offers an occurrence the Inbox, and offers it Delete every time", () => {

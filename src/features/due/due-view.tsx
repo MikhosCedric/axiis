@@ -162,6 +162,21 @@ function DueRowView({
             </span>
           )}
           {row.area && <AreaLabel name={row.area} color={row.areaColor} />}
+          {quick && !row.done && !row.when && row.type !== "note" && (
+            <span className="inline-flex gap-1 pointer-fine:opacity-0 pointer-fine:group-hover/row:opacity-100 pointer-fine:focus-within:opacity-100">
+              {(["today", "tomorrow"] as const).map((when) => (
+                <button
+                  key={when}
+                  type="button"
+                  aria-label={`Plan ${title} for ${when}`}
+                  onClick={() => quick.save(qi, {}, () => quick.actions.plan(row.id, when), `${title} is planned for ${when}.`)}
+                  className="pill h-6 px-2 text-xs"
+                >
+                  {when === "today" ? "Today" : "Tomorrow"}
+                </button>
+              ))}
+            </span>
+          )}
         </p>
       </div>
       <RowActions item={qi} hooks={hooks} className="quick-over" />
