@@ -36,7 +36,12 @@ describe("the tray list", () => {
 
   it("gives the day in a line, then what is next with its time", () => {
     const view = buildToday({ scheduled: [timed("Design sync", 16), timed("Standup", 11), item({ title: "Pay rent" })], unscheduled: [] }, range, now);
-    expect(trayRows(view, today, now, zone, "24")).toEqual(["Today · 0 of 3 done", "11:00  Standup", "16:00  Design sync", "Pay rent"]);
+    expect(trayRows(view, today, now, zone, "24").map((r) => r.label)).toEqual(["Today · 0 of 3 done", "11:00  Standup", "16:00  Design sync", "Pay rent"]);
+  });
+
+  it("names the item each line opens, and none for the day's own line", () => {
+    const view = buildToday({ scheduled: [timed("Design sync", 16), item({ title: "Pay rent" })], unscheduled: [] }, range, now);
+    expect(trayRows(view, today, now, zone, "24").map((r) => r.id)).toEqual([null, "Design sync", "Pay rent"]);
   });
 
   it("keeps long titles to one short line and stops at four rows", () => {
@@ -44,7 +49,7 @@ describe("the tray list", () => {
     const view = buildToday({ scheduled: [item({ title: long }), item({ title: "b" }), item({ title: "c" }), item({ title: "d" })], unscheduled: [] }, range, now);
     const rows = trayRows(view, today, now, zone, "24");
     expect(rows).toHaveLength(4);
-    expect(rows[1]).toHaveLength(48);
-    expect(rows[1].endsWith("…")).toBe(true);
+    expect(rows[1].label).toHaveLength(48);
+    expect(rows[1].label.endsWith("…")).toBe(true);
   });
 });

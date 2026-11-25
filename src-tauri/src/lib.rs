@@ -33,9 +33,9 @@ const FOCUS_CAPTURE: &str = "(() => { const f = document.getElementById('capture
 /// where a sign-in link returns to.
 const DESKTOP_COOKIE_SCRIPT: &str = "(() => { const https = location.protocol === 'https:'; if (https || location.hostname === 'localhost') document.cookie = 'axiis_desktop=1; path=/; max-age=31536000; SameSite=Lax' + (https ? '; Secure' : ''); })();";
 
-/// Reads what the app shell carries (`data-inbox`, `data-overdue`, `data-tray` for today's list, `data-reminders` for the
-/// items still to start) and tells Rust, which draws the taskbar badge and the tray menu and speaks the reminders. Our pages can call this one command and nothing else (see `capabilities/default.json`).
-const BADGE_SCRIPT: &str = "(() => { if (!window.__TAURI_INTERNALS__) return; let last = ''; let lastR = ''; let queued = false; const send = () => { queued = false; if (document.readyState === 'loading') return; const shell = document.getElementById('app-shell'); const inbox = shell ? Number(shell.dataset.inbox) || 0 : 0; const overdue = shell ? Number(shell.dataset.overdue) || 0 : 0; const raw = shell ? shell.dataset.tray || '' : ''; let rows = []; try { const v = JSON.parse(raw || '[]'); if (Array.isArray(v)) rows = v.filter((r) => typeof r === 'string'); } catch (e) {} const rraw = shell ? shell.dataset.reminders || '' : ''; if (rraw !== lastR) { lastR = rraw; let items = []; try { const v = JSON.parse(rraw || '[]'); if (Array.isArray(v)) items = v.filter((r) => r && typeof r.id === 'string' && typeof r.title === 'string' && Number.isFinite(r.at)); } catch (e) {} window.__TAURI_INTERNALS__.invoke('set_reminders', { items }).catch(() => {}); } const key = inbox + ',' + overdue + ',' + raw; if (key === last) return; last = key; window.__TAURI_INTERNALS__.invoke('set_badge', { inbox, overdue, rows }).catch(() => {}); }; const queue = () => { if (!queued) { queued = true; requestAnimationFrame(send); } }; new MutationObserver(queue).observe(document, { subtree: true, childList: true, attributes: true, attributeFilter: ['data-inbox', 'data-overdue', 'data-tray', 'data-reminders'] }); document.addEventListener('DOMContentLoaded', queue); queue(); })();";
+/// Reads what the app shell carries (`data-inbox`, `data-overdue`, `data-tray` for today's list and `data-tray-ids` for the
+/// item each line opens, `data-reminders` for the items still to start) and tells Rust, which draws the taskbar badge and the tray menu and speaks the reminders. Our pages can call this one command and nothing else (see `capabilities/default.json`).
+const BADGE_SCRIPT: &str = "(() => { if (!window.__TAURI_INTERNALS__) return; let last = ''; let lastR = ''; let queued = false; const send = () => { queued = false; if (document.readyState === 'loading') return; const shell = document.getElementById('app-shell'); const inbox = shell ? Number(shell.dataset.inbox) || 0 : 0; const overdue = shell ? Number(shell.dataset.overdue) || 0 : 0; const raw = shell ? shell.dataset.tray || '' : ''; const iraw = shell ? shell.dataset.trayIds || '' : ''; let lines = []; let keys = []; try { const v = JSON.parse(raw || '[]'); if (Array.isArray(v)) lines = v; } catch (e) {} try { const v = JSON.parse(iraw || '[]'); if (Array.isArray(v)) keys = v; } catch (e) {} const rows = []; const ids = []; lines.forEach((r, i) => { if (typeof r !== 'string') return; rows.push(r); ids.push(typeof keys[i] === 'string' ? keys[i] : ''); }); const rraw = shell ? shell.dataset.reminders || '' : ''; if (rraw !== lastR) { lastR = rraw; let items = []; try { const v = JSON.parse(rraw || '[]'); if (Array.isArray(v)) items = v.filter((r) => r && typeof r.id === 'string' && typeof r.title === 'string' && Number.isFinite(r.at)); } catch (e) {} window.__TAURI_INTERNALS__.invoke('set_reminders', { items }).catch(() => {}); } const key = inbox + ',' + overdue + ',' + raw + ',' + iraw; if (key === last) return; last = key; window.__TAURI_INTERNALS__.invoke('set_badge', { inbox, overdue, rows, ids }).catch(() => {}); }; const queue = () => { if (!queued) { queued = true; requestAnimationFrame(send); } }; new MutationObserver(queue).observe(document, { subtree: true, childList: true, attributes: true, attributeFilter: ['data-inbox', 'data-overdue', 'data-tray', 'data-tray-ids', 'data-reminders'] }); document.addEventListener('DOMContentLoaded', queue); queue(); })();";
 
 /// Settings' "Download export" link, in the app: the page fetches the file as usual and hands its text to
 /// `save_export`, which asks where to save it with the system dialog. In a browser this script is absent and the link
@@ -260,20 +260,37 @@ fn badge_pixels(count: u32, hot: bool) -> Vec<u8> {
 const TRAY_ROWS: usize = 4;
 const TRAY_ROW_CHARS: usize = 80;
 
-/// The lines the page sent, made safe for a menu: no control characters, trimmed, cut short, none empty, few.
-fn clean_rows(rows: Vec<String>) -> Vec<String> {
+/// One tray line and the item it opens, if it names one.
+#[derive(Debug, PartialEq)]
+struct TrayRow {
+    label: String,
+    item: Option<String>,
+}
+
+/// What a tray line's menu entry is called: `item:<key>` for a line that opens an item, `today` for the others.
+const TRAY_ITEM: &str = "item:";
+
+/// The lines the page sent, made safe for a menu: no control characters, trimmed, cut short, none empty, few. An id is
+/// kept only when it is an item key (`item_key`); a page that sends none, or an older page, gives lines that only show
+/// the window.
+fn clean_rows(rows: Vec<String>, ids: Vec<String>) -> Vec<TrayRow> {
+    let mut ids = ids.into_iter();
     rows.into_iter()
-        .map(|r| r.chars().filter(|c| !c.is_control()).take(TRAY_ROW_CHARS).collect::<String>().trim().to_string())
-        .filter(|r| !r.is_empty())
+        .map(|r| {
+            let id = ids.next().unwrap_or_default();
+            TrayRow { label: plain(&r, TRAY_ROW_CHARS), item: item_key(&id).then_some(id) }
+        })
+        .filter(|r| !r.label.is_empty())
         .take(TRAY_ROWS)
         .collect()
 }
 
 /// The tray menu: today's lines when there are any, then the three fixed entries.
-fn tray_menu(app: &AppHandle, rows: &[String]) -> tauri::Result<Menu<tauri::Wry>> {
+fn tray_menu(app: &AppHandle, rows: &[TrayRow]) -> tauri::Result<Menu<tauri::Wry>> {
     let menu = Menu::new(app)?;
     for row in rows {
-        menu.append(&MenuItem::with_id(app, "today", row, true, None::<&str>)?)?;
+        let id = row.item.as_ref().map_or_else(|| "today".to_string(), |key| format!("{TRAY_ITEM}{key}"));
+        menu.append(&MenuItem::with_id(app, id, &row.label, true, None::<&str>)?)?;
     }
     if !rows.is_empty() {
         menu.append(&PredefinedMenuItem::separator(app)?)?;
@@ -285,9 +302,9 @@ fn tray_menu(app: &AppHandle, rows: &[String]) -> tauri::Result<Menu<tauri::Wry>
 }
 
 /// The one thing our pages may ask of the shell: show these counts on the taskbar button and in the tray tooltip, and
-/// today's lines in the tray menu.
+/// today's lines in the tray menu, each with the item it opens (`ids`, in step with `rows`; absent from older pages).
 #[tauri::command]
-fn set_badge(app: AppHandle, inbox: u32, overdue: u32, rows: Vec<String>) {
+fn set_badge(app: AppHandle, inbox: u32, overdue: u32, rows: Vec<String>, ids: Option<Vec<String>>) {
     let (inbox, overdue) = (inbox.min(9999), overdue.min(9999));
     if let Some(window) = app.get_webview_window("main") {
         let icon = match (overdue, inbox) {
@@ -306,7 +323,7 @@ fn set_badge(app: AppHandle, inbox: u32, overdue: u32, rows: Vec<String>) {
             tip.push_str(&format!(" · {inbox} in Inbox"));
         }
         let _ = tray.set_tooltip(Some(tip));
-        if let Ok(menu) = tray_menu(&app, &clean_rows(rows)) {
+        if let Ok(menu) = tray_menu(&app, &clean_rows(rows, ids.unwrap_or_default())) {
             let _ = tray.set_menu(Some(menu));
         }
     }
@@ -417,8 +434,10 @@ fn item_key(id: &str) -> bool {
     }
 }
 
-/// Where a click on a reminder goes: Today with that item open, as the app's own links do (`/today?item=<key>`).
-fn reminder_target(origin: &Url, id: &str) -> Option<Url> {
+/// Where a click on a reminder or a tray line goes: Today with that item open in the detail panel, as the app's own links
+/// do (`/today?item=<key>`). Both only ever name today's items, and an occurrence's key carries its own day. Nothing but
+/// a checked item key is put in the address, and the address is always on our own origin.
+fn item_target(origin: &Url, id: &str) -> Option<Url> {
     if !item_key(id) {
         return None;
     }
@@ -428,14 +447,22 @@ fn reminder_target(origin: &Url, id: &str) -> Option<Url> {
     Some(target)
 }
 
-/// A click on a reminder (the toast itself, while it is on screen) brings the window forward on that item. Windows
-/// reports no click once the toast has gone to the Action Center; the tray icon still brings the window back.
-fn open_reminder(app: &AppHandle, performed: &tauri_plugin_notification::ActionPerformed) {
-    let id = performed.notification().and_then(|n| n.extra().get("item")).and_then(|v| v.as_str());
-    if let (Some(target), Some(window)) = (id.and_then(|id| reminder_target(&site_origin(), id)), app.get_webview_window("main")) {
+/// Brings the window forward on that item, or just forward when `id` is not an item key.
+fn open_item(app: &AppHandle, id: Option<&str>) {
+    if let (Some(target), Some(window)) = (id.and_then(|id| item_target(&site_origin(), id)), app.get_webview_window("main")) {
         let _ = window.navigate(target);
     }
     show_main(app);
+}
+
+/// A click on a reminder (the toast itself, while it is on screen) brings the window forward on that item. Windows
+/// reports no click once the toast has gone to the Action Center; the tray icon still brings the window back.
+///
+/// No Snooze or Done buttons: the plugin draws them on Windows, but a press is reported only while the toast is on
+/// screen, so one pressed from the Action Center would silently do nothing. The opened item's detail panel offers Done
+/// and moving it instead.
+fn open_reminder(app: &AppHandle, performed: &tauri_plugin_notification::ActionPerformed) {
+    open_item(app, performed.notification().and_then(|n| n.extra().get("item")).and_then(|v| v.as_str()));
 }
 
 /// A page of ours (not the bundled offline page), which is the only place an export can come from.
@@ -628,6 +655,7 @@ pub fn run() {
                 .show_menu_on_left_click(false)
                 .on_menu_event(|app, event| match event.id.as_ref() {
                     "open" | "today" => show_main(app),
+                    id if id.starts_with(TRAY_ITEM) => open_item(app, id.strip_prefix(TRAY_ITEM)),
                     "capture" => capture(app),
                     "quit" => app.exit(0),
                     _ => {}
@@ -730,12 +758,32 @@ mod tests {
     #[test]
     fn the_tray_list_is_kept_short_and_plain() {
         let long = "x".repeat(200);
-        let rows = clean_rows(vec!["  Today · 1 of 2 done ".into(), "".into(), "bell\x07ing\n".into(), long, "d".into(), "e".into(), "f".into()]);
+        let rows = clean_rows(vec!["  Today · 1 of 2 done ".into(), "".into(), "bell\x07ing\n".into(), long, "d".into(), "e".into(), "f".into()], vec![]);
         assert_eq!(rows.len(), TRAY_ROWS);
-        assert_eq!(rows[0], "Today · 1 of 2 done");
-        assert_eq!(rows[1], "belling");
-        assert_eq!(rows[2].chars().count(), TRAY_ROW_CHARS);
-        assert!(rows.iter().all(|r| !r.chars().any(|c| c.is_control())));
+        assert_eq!(rows[0].label, "Today · 1 of 2 done");
+        assert_eq!(rows[1].label, "belling");
+        assert_eq!(rows[2].label.chars().count(), TRAY_ROW_CHARS);
+        assert!(rows.iter().all(|r| !r.label.chars().any(|c| c.is_control()) && r.item.is_none()));
+    }
+
+    #[test]
+    fn a_tray_line_opens_its_item_only_by_a_real_item_key() {
+        let id = "0b7c1d2e-1111-4222-8333-444455556666";
+        let occurrence = format!("{id}~2026-11-09");
+        let rows = clean_rows(
+            vec!["Today · 0 of 3 done".into(), "".into(), "11:00  Standup".into(), "Pay rent".into(), "Odd".into()],
+            vec!["".into(), id.into(), occurrence.clone(), "https://evil.example/".into()],
+        );
+        // The empty line is dropped with its id, so the ids stay in step with the lines they came with.
+        assert_eq!(
+            rows,
+            vec![
+                TrayRow { label: "Today · 0 of 3 done".into(), item: None },
+                TrayRow { label: "11:00  Standup".into(), item: Some(occurrence) },
+                TrayRow { label: "Pay rent".into(), item: None },
+                TrayRow { label: "Odd".into(), item: None },
+            ]
+        );
     }
 
     fn rem(id: &str, at: u64) -> Reminder {
@@ -774,7 +822,7 @@ mod tests {
     }
 
     #[test]
-    fn only_an_item_key_is_put_in_a_reminder_address() {
+    fn only_an_item_key_is_put_in_an_item_address() {
         let id = "0b7c1d2e-1111-4222-8333-444455556666";
         assert!(item_key(id));
         assert!(item_key(&format!("{id}~2026-11-09")));
@@ -782,10 +830,10 @@ mod tests {
             assert!(!item_key(bad), "{bad}");
         }
         assert_eq!(
-            reminder_target(&origin(), &format!("{id}~2026-11-09")).map(|u| u.to_string()).as_deref(),
+            item_target(&origin(), &format!("{id}~2026-11-09")).map(|u| u.to_string()).as_deref(),
             Some("https://axiis-lovat.vercel.app/today?item=0b7c1d2e-1111-4222-8333-444455556666%7E2026-11-09")
         );
-        assert_eq!(reminder_target(&origin(), "../settings"), None);
+        assert_eq!(item_target(&origin(), "../settings"), None);
     }
 
     #[test]

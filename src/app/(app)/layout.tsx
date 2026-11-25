@@ -46,7 +46,10 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
         // The desktop shell reads these for the taskbar badge, the tray list and the reminders; nothing else uses them.
         data-inbox={badges.inbox}
         data-overdue={badges.overdue}
-        data-tray={tray.length > 0 ? JSON.stringify(tray) : undefined}
+        // The lines stay plain strings so an older installed shell still draws them; the ids, in step with them, let a
+        // newer shell open each line's item.
+        data-tray={tray.length > 0 ? JSON.stringify(tray.map((r) => r.label)) : undefined}
+        data-tray-ids={tray.length > 0 ? JSON.stringify(tray.map((r) => r.id)) : undefined}
         data-reminders={reminders.length > 0 ? JSON.stringify(reminders) : undefined}
         style={{ "--rail-w": min ? "64px" : "216px" } as React.CSSProperties}
         className="min-h-dvh rail:grid rail:grid-cols-[var(--rail-w,216px)_minmax(0,1fr)] motion-safe:rail:transition-[grid-template-columns] motion-safe:rail:duration-200"
