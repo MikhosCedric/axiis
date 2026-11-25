@@ -7,11 +7,15 @@ import { dayRangeFor, instantAt } from "@/lib/dates";
 import {
   addMonths,
   buildMonth,
+  cellRoom,
+  fitMarks,
   MARKS_PER_DAY,
+  MARKS_UNMEASURED,
   monthGrid,
   monthHref,
   monthNavTarget,
   monthRange,
+  type MonthCell,
   monthSummary,
   namesNoMonth,
   parseYearMonth,
@@ -26,9 +30,9 @@ const d = (s: string) => s as LocalDate;
 const ym = (s: string) => s as YearMonth;
 const NOW = new Date("2026-10-14T12:00:00Z");
 
-function build(month: string, items: Item[], { due = [] as Item[], areas = [] as Area[], timeZone = "UTC", clock = "24" as Clock } = {}) {
+function build(month: string, items: Item[], { due = [] as Item[], areas = [] as Area[], timeZone = "UTC", clock = "24" as Clock, perDay = 3 } = {}) {
   const days = monthGrid(ym(month));
-  return buildMonth({ month: ym(month), days, scheduled: items, due, areas, timeZone, clock, now: NOW });
+  return buildMonth({ month: ym(month), days, scheduled: items, due, areas, timeZone, clock, now: NOW, perDay });
 }
 
 const cell = (b: ReturnType<typeof build>, date: string) => b.cells.find((c) => c.date === date)!;
@@ -187,12 +191,22 @@ describe("buildMonth", () => {
       makeItem({ title: "Work thing", schedule: on, areaId: work.id }),
     ];
     const c = cell(build("2026-10", items, { areas: [home, work] }), "2026-10-20");
-    expect(c.marks).toHaveLength(MARKS_PER_DAY);
+    expect(c.marks).toHaveLength(3);
     expect(c.marks.map((m) => [m.title, m.area, m.areaColor])).toEqual([
       ["Work thing", "Work", "slate"],
       ["Home thing", "Home", null],
       ["No area", null, null],
     ]);
+    expect(c.more).toBe(2);
+  });
+
+  it("sends up to MARKS_PER_DAY marks a day by default, so a tall cell has enough to fill it", () => {
+    const on = { kind: "day" as const, on: d("2026-10-20") };
+    const items = Array.from({ length: MARKS_PER_DAY + 2 }, (_, i) => makeItem({ title: `Item ${i}`, schedule: on, position: i }));
+    const month = ym("2026-10");
+    const b = buildMonth({ month, days: monthGrid(month), scheduled: items, due: [], areas: [], timeZone: "UTC", clock: "24", now: NOW });
+    const c = cell(b, "2026-10-20");
+    expect(c.marks).toHaveLength(MARKS_PER_DAY);
     expect(c.more).toBe(2);
   });
 
@@ -314,5 +328,33 @@ describe("month navigation", () => {
     expect(sameDayIn(d("2028-03-31"), -1)).toBe("2028-02-29");
     expect(sameDayIn(d("2026-10-14"), -1)).toBe("2026-09-14");
     expect(sameDayIn(d("2026-12-05"), 1)).toBe("2027-01-05");
+  });
+});
+
+describe("fitting a day's marks to its cell", () => {
+  const sent = (marks: number, more = 0): MonthCell => ({
+    date: d("2026-10-20"),
+    marks: Array.from({ length: marks }, (_, i) => ({ key: `k${i}` }) as MonthCell["marks"][number]),
+    more,
+  });
+
+  it("works out the room from the cell's space, the mark pitch and the more line", () => {
+    // 22px marks 1px apart: 68px holds three marks (22 + 1 + 22 + 1 + 22), and 18px of "+N more" leaves two.
+    expect(cellRoom(68, 23, 18)).toEqual({ all: 3, withMore: 2 });
+    expect(cellRoom(10, 23, 18)).toEqual({ all: 0, withMore: 0 });
+  });
+
+  it("draws every mark when they all fit, and no more line", () => {
+    expect(fitMarks(sent(4), { all: 4, withMore: 3 })).toEqual({ shown: 4, more: 0 });
+  });
+
+  it("keeps a line for +N more when they do not, counting what the server held back", () => {
+    expect(fitMarks(sent(5), { all: 4, withMore: 3 })).toEqual({ shown: 3, more: 2 });
+    expect(fitMarks(sent(10, 6), { all: 12, withMore: 11 })).toEqual({ shown: 10, more: 6 });
+  });
+
+  it("draws the usual three when the cell is not measured", () => {
+    expect(fitMarks(sent(MARKS_PER_DAY, 1), null)).toEqual({ shown: MARKS_UNMEASURED, more: MARKS_PER_DAY + 1 - MARKS_UNMEASURED });
+    expect(fitMarks(sent(2), null)).toEqual({ shown: 2, more: 0 });
   });
 });
