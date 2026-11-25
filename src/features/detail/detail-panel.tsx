@@ -26,7 +26,7 @@ import {
 import { planAction } from "@/features/inbox/actions";
 import { reorderChildrenAction } from "@/features/order/actions";
 import { loadDetail } from "./commands";
-import { DetailSheet, MissingItem } from "./detail-sheet";
+import { DetailSheet, MissingItem } from "./detail-sheet-lazy";
 import type { DetailActions } from "./model";
 
 const actions: DetailActions = {

@@ -59,6 +59,8 @@ export function MiniMonth({
   const [was, setWas] = useState(anchor);
   const [month, setMonth] = useState<YearMonth>(monthOf(anchor));
   const [focused, setFocused] = useState(anchor);
+  // The one day fetched ahead, as the calendar bar fetches its steps (`StepLink`).
+  const [warm, setWarm] = useState<LocalDate | null>(null);
   const moved = useRef(false);
   // The page moved on (a step, a pick, another view): the month follows it.
   if (was !== anchor) {
@@ -142,8 +144,10 @@ export function MiniMonth({
                 >
                   <Link
                     href={ok ? hrefFor(date) : "#"}
-                    // A month of links would each fetch a page; a day is fetched when it is chosen.
-                    prefetch={false}
+                    // A month of links would each fetch a page; a day is fetched once a pointer rests on it or focus reaches it.
+                    prefetch={ok && date === warm}
+                    onPointerEnter={() => setWarm(date)}
+                    onFocus={() => setWarm(date)}
                     data-date={date}
                     data-today={isToday || undefined}
                     data-autofocus={autoFocus && date === tabStop ? "" : undefined}

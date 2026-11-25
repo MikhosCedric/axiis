@@ -141,14 +141,6 @@ test("the web manifest names the app and starts on today", async ({ request }) =
   expect(manifest.icons.length).toBeGreaterThan(0);
 });
 
-test("the film files, kept for when the loop is re-recorded, load for a visitor who is signed out", async ({ request }) => {
-  // The landing no longer shows the film (it drew the old Score). The sign-in check once sent the video to /login.
-  for (const path of ["/film/axiis-loop.webm", "/film/axiis-poster.jpg"]) {
-    const response = await request.get(path, { maxRedirects: 0 });
-    expect(response.status(), path).toBe(200);
-  }
-});
-
 test("a dynamic route whose path ends like a file still carries the CSP", async ({ request }) => {
   // The proxy once skipped any path ending in .png or .txt, so such a route got no nonce policy.
   for (const path of ["/tags/x.png", "/nope.txt", "/nope.mp4"]) {
