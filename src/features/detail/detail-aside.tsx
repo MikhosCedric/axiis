@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, ViewTransition, type ReactNode } from "react";
+import { useEffect, useLayoutEffect, useRef, ViewTransition, type ReactNode } from "react";
 import { isTypingTarget } from "@/features/day/nav";
 import { useItemSelection } from "./use-item-selection";
 
@@ -26,11 +26,13 @@ export function DetailAside({ pending, children }: { pending: boolean; children:
   const { select } = useItemSelection();
   const close = useRef(select);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     close.current = select;
   });
 
-  useEffect(() => {
+  // Attached as the panel is committed, before it is painted: a passive effect can run a frame or more after the
+  // panel shows on a busy machine, and an Escape pressed on sight in that gap would be lost.
+  useLayoutEffect(() => {
     function onKey(e: KeyboardEvent) {
       if (e.key !== "Escape" || e.defaultPrevented || e.isComposing) return;
       if (isTypingTarget(e.target as HTMLElement | null)) return;
@@ -42,7 +44,8 @@ export function DetailAside({ pending, children }: { pending: boolean; children:
     return () => document.removeEventListener("keydown", onKey);
   }, []);
 
-  useEffect(() => {
+  // Also before paint, so the opener is known even when the panel is closed the moment it shows.
+  useLayoutEffect(() => {
     const aside = ref.current;
     if (pending || !aside) return;
     const active = document.activeElement;
