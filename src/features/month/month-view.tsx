@@ -71,10 +71,10 @@ const COMPACT_PX = 576;
 
 const ARRIVAL_KEY = "axiis-month-focus";
 
-/** A cell mark is 22px tall with 1px between marks; "+N more" takes this much under them; the cell pads 4px below. */
-const MARK_PITCH = 23;
-const MORE_LINE = 16;
-const CELL_PAD = 4;
+/** A cell mark is 19px tall with 1px between marks; "+N more" takes 14px under them; the cell pads 2px below, over its 1px border. */
+const MARK_PITCH = 20;
+const MORE_LINE = 14;
+const CELL_PAD = 3;
 /** The least a week row gets when the grid fills the window, so a short window scrolls rather than crushing the days. */
 const ROW_MIN_PX = 88;
 
@@ -541,7 +541,7 @@ function DayCell({
       onPointerDown={onPointerDown}
       onClick={onClick}
       onKeyDown={onKeyDown}
-      className={`group/day relative flex min-h-14 min-w-0 cursor-pointer flex-col border-r border-b border-rule-soft px-0.5 pt-1 pb-1 transition-colors focus-visible:outline-offset-[-3px] @min-[36rem]/month:px-1 ${fitted ? "" : "@min-[36rem]/month:min-h-32"} ${
+      className={`group/day relative flex min-h-14 min-w-0 cursor-pointer flex-col border-r border-b border-rule-soft px-0.5 pt-1 pb-1 transition-colors focus-visible:outline-offset-[-3px] @min-[36rem]/month:px-1 @min-[36rem]/month:pt-0.5 @min-[36rem]/month:pb-0.5 ${fitted ? "" : "@min-[36rem]/month:min-h-32"} ${
         over ? "bg-accent-wash" : active ? "bg-hover @min-[36rem]/month:bg-transparent" : "hover:bg-hover"
       } ${inMonth ? (isToday ? "bg-[color-mix(in_srgb,var(--ink)_3.5%,transparent)]" : "") : "bg-[color-mix(in_srgb,var(--paper-2)_45%,transparent)]"}`}
     >
@@ -549,7 +549,7 @@ function DayCell({
       <span className="sr-only">{cellLabel(cell)}</span>
       <span aria-hidden="true" className="flex items-center justify-center @min-[36rem]/month:justify-start">
         <span
-          className={`inline-flex h-7 min-w-7 items-center justify-center rounded-full px-1 font-display text-[15px] tabular ${
+          className={`inline-flex h-7 min-w-7 items-center justify-center rounded-full px-1 font-display text-[15px] tabular @min-[36rem]/month:h-5 @min-[36rem]/month:min-w-5 @min-[36rem]/month:text-[13px] ${
             isToday ? "bg-ink font-semibold text-paper" : inMonth ? "font-medium text-ink" : "text-ink-3"
           }`}
         >
@@ -575,7 +575,7 @@ function DayCell({
           e.stopPropagation();
           onAdd();
         }}
-        className={`absolute top-1 right-1 hidden size-6 items-center justify-center rounded-full text-ink-2 hover:bg-hover hover:text-ink focus-visible:opacity-100 group-focus-within/day:opacity-100 group-hover/day:opacity-100 @min-[36rem]/month:flex pointer-coarse:size-9 ${
+        className={`absolute top-0.5 right-0.5 hidden size-5 items-center justify-center rounded-full text-ink-2 hover:bg-hover hover:text-ink focus-visible:opacity-100 group-focus-within/day:opacity-100 group-hover/day:opacity-100 @min-[36rem]/month:flex pointer-coarse:size-9 ${
           active ? "opacity-0 pointer-coarse:opacity-100" : "pointer-events-none opacity-0 group-hover/day:pointer-events-auto pointer-coarse:hidden"
         }`}
       >
@@ -593,7 +593,7 @@ function DayCell({
         </span>
       )}
 
-      <ul className="mt-1 hidden min-w-0 gap-px @min-[36rem]/month:grid">
+      <ul className="mt-0.5 hidden min-w-0 gap-px @min-[36rem]/month:grid">
         {children}
       </ul>
       {more > 0 && (
@@ -601,7 +601,7 @@ function DayCell({
           href={href}
           tabIndex={-1}
           onClick={(e) => e.stopPropagation()}
-          className="mt-auto hidden self-start rounded px-1 text-xs font-medium text-ink-2 hover:bg-hover hover:text-ink @min-[36rem]/month:inline"
+          className="mt-auto hidden self-start rounded px-1 text-[11px] leading-[14px] font-medium text-ink-2 hover:bg-hover hover:text-ink @min-[36rem]/month:inline"
         >
           +{more} more
         </Link>
@@ -642,7 +642,7 @@ function MarkButton({
   const label = monthMarkName(mark, variant);
   const shape =
     variant === "cell"
-      ? "flex h-[22px] items-center gap-1 rounded px-0.5 text-xs"
+      ? "flex h-[19px] items-center gap-1 rounded px-0.5 text-xs"
       : "flex min-h-11 items-center gap-2 rounded-md px-1.5 text-sm";
   return (
     <div

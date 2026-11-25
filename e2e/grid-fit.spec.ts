@@ -311,6 +311,18 @@ for (const width of [900, 1100, 1180, 1280, 1440, 1600]) {
       await hydrated(page);
       await expect(page.locator("[data-calendar-grid]")).toBeVisible();
       await expect.poll(() => blankBeside(page)).toBeLessThanOrEqual(120);
+      if (width >= 1100) {
+        // The head keeps the page's width, so the date title stays on one line.
+        const lines = await page.evaluate(() => {
+          const range = document.createRange();
+          range.selectNodeContents(document.querySelector("#day-title")!);
+          // A second line starts below where the first line's boxes end.
+          const rects = [...range.getClientRects()].filter((r) => r.width > 0);
+          const firstBottom = Math.min(...rects.map((r) => r.bottom));
+          return rects.some((r) => r.top >= firstBottom - 1) ? 2 : 1;
+        });
+        expect(lines).toBe(1);
+      }
     });
 
     signedIn("the Week and the Month fit the window without scrolling sideways", async ({ page }) => {

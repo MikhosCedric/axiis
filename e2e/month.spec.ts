@@ -273,6 +273,8 @@ signedIn.describe("the Month fitted to the window", () => {
     await page.setViewportSize({ width: 1440, height: 900 });
     const laptop = await today(page);
     expect(laptop.scrollsDown).toBe(false);
+    // A laptop keeps at least the three items a day showed before the grid was fitted (today holds about ten).
+    expect(laptop.drawn).toBeGreaterThanOrEqual(3);
     // Every drawn item fits inside its cell, and so does "+N more".
     expect(laptop.inside).toBe(laptop.drawn);
     expect(laptop.moreInside).toBe(true);

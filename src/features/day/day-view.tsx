@@ -291,8 +291,6 @@ function DayPage({
   return (
     <>
       <TitleBar heading="day-title">{formatDayHeading(date)}</TitleBar>
-      {/* The head keeps the day's edges: centred with it while the side column stacks, the page's width once it sits beside. */}
-      <div className={`mx-auto w-full max-w-[45rem] ${hasSide ? "@min-[57.5rem]/page:max-w-none" : ""}`}>
       <PageHeader
         heading={<CalendarBar span="day" date={date} today={today} mode={mode} titleId="day-title" />}
         controls={controls}
@@ -303,7 +301,6 @@ function DayPage({
         <GlanceLine glance={glance} scope={scopeWords(filter)} />
         <FilterChips filter={filter} className="mt-2.5" />
       </PageHeader>
-      </div>
 
       {isToday && tour && <Tour />}
 
