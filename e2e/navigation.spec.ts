@@ -327,6 +327,16 @@ signedIn.describe("the desktop tray list", () => {
     expect(rows.length).toBeGreaterThan(1);
     expect(rows.length).toBeLessThanOrEqual(4);
     expect(rows[0]).toMatch(/^Today · \d+ of \d+ done$/);
+
+    // Each line's item, in step with the lines: none for the day's own line, then an item key the shell opens at
+    // /today?item=<key>, which shows that line's item in the detail panel.
+    const ids = JSON.parse((await page.locator("#app-shell").getAttribute("data-tray-ids")) ?? "[]") as (string | null)[];
+    expect(ids).toHaveLength(rows.length);
+    expect(ids[0]).toBeNull();
+    expect(ids[1]).toMatch(/^[0-9a-f-]{36}(~\d{4}-\d{2}-\d{2})?$/);
+    await open(page, `/today?item=${encodeURIComponent(ids[1]!)}`);
+    const title = rows[1].replace(/^\d{1,2}[:.]\d{2}(\s?[AP]M)?\s+/i, "").replace(/…$/, "");
+    await expect(details(page).getByRole("textbox", { name: "Title" })).toHaveValue(new RegExp(`^${title.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`));
   });
 });
 
