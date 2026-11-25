@@ -50,12 +50,12 @@ export function PlanDayStrip({
 
   return (
     <ViewTransition enter="none" exit="card-out" default="none">
-    <section aria-labelledby="plan-day-h" className="surface side-part mb-3 max-w-[720px] px-4 py-2.5 motion-safe:animate-toast-in @min-[58rem]/page:mb-5 @min-[58rem]/page:py-3.5">
+    <section aria-labelledby="plan-day-h" className="surface side-part mb-3 max-w-[720px] px-4 py-2.5 motion-safe:animate-toast-in @min-[57.5rem]/page:mb-5 @min-[57.5rem]/page:py-3.5">
       <div className="flex items-center gap-3">
         <h2 id="plan-day-h" className="font-display text-lg leading-tight font-medium">
           Plan your day
         </h2>
-        <p className="min-w-0 flex-1 truncate text-[13px] text-ink-3 @min-[58rem]/page:hidden">
+        <p className="min-w-0 flex-1 truncate text-[13px] text-ink-3 @min-[57.5rem]/page:hidden">
           {total === 1 ? "1 item" : `${total} items`} in the Inbox
         </p>
         <button
@@ -63,13 +63,13 @@ export function PlanDayStrip({
           aria-expanded={open}
           aria-controls={listId}
           onClick={() => setOpen((v) => !v)}
-          className={`${button} @min-[58rem]/page:hidden`}
+          className={`${button} @min-[57.5rem]/page:hidden`}
         >
           {open ? "Hide" : "Show"}
           <span className="sr-only"> the Inbox items</span>
         </button>
       </div>
-      <div id={listId} className={open ? "" : "hidden @min-[58rem]/page:block"}>
+      <div id={listId} className={open ? "" : "hidden @min-[57.5rem]/page:block"}>
         <p className="mt-0.5 text-[13px] text-ink-3">Pull something in from the Inbox.</p>
         <ul className="mt-2">
           {rows.map((row) => (

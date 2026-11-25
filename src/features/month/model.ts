@@ -13,8 +13,11 @@ export type YearMonth = string & { readonly __brand: "YearMonth" };
 
 export const MONTH_PATH = "/month";
 
-/** Most marks one day sends to the page. The rest are a count, and the day itself lists them. */
-export const MARKS_PER_DAY = 3;
+/**
+ * Most marks one day sends to the page. The rest are a count, and the day itself lists them. The page draws as many
+ * of these as its cells have room for (a tall window shows more), so this is the most a cell can ever show.
+ */
+export const MARKS_PER_DAY = 10;
 
 /** Under a month whose read hit `RANGE_LIMIT`, so later planned items are not drawn. */
 export const MONTH_FULL = `Showing the first ${RANGE_LIMIT} planned items around this month. Later ones may be missing.`;
@@ -159,7 +162,7 @@ type Placed = { mark: MonthMark; rank: [number, number, number] };
  * every day it covers in the user's zone; a day-only item on its date; a due
  * date as a due mark, folded into the planned mark when both fall on one day.
  * Each day keeps day-only items first in area order, then timed by start,
- * then due-only marks, and sends at most `MARKS_PER_DAY` of them.
+ * then due-only marks, and sends at most `perDay` of them (`MARKS_PER_DAY` unless given).
  */
 export function buildMonth(input: {
   month: YearMonth;
@@ -170,8 +173,9 @@ export function buildMonth(input: {
   timeZone: string;
   clock: Clock;
   now: Date;
+  perDay?: number;
 }): MonthBuild {
-  const { month, days, timeZone, clock, now } = input;
+  const { month, days, timeZone, clock, now, perDay = MARKS_PER_DAY } = input;
   const first = days[0];
   const last = days[days.length - 1];
   const areaOf = new Map(input.areas.map((a) => [a.id as string, a]));
@@ -234,12 +238,12 @@ export function buildMonth(input: {
   }
 
   const cells = days.map((date) => {
-    // Done marks go last, so a day's three shown marks are what is still to do.
+    // Done marks go last, so the marks a day shows are what is still to do.
     const done = (p: Placed) => (p.mark.state === "done" ? 1 : 0);
     const placed = byDay
       .get(date)!
       .sort((a, b) => done(a) - done(b) || a.rank[0] - b.rank[0] || a.rank[1] - b.rank[1] || a.rank[2] - b.rank[2]);
-    return { date, marks: placed.slice(0, MARKS_PER_DAY).map((p) => p.mark), more: Math.max(0, placed.length - MARKS_PER_DAY) };
+    return { date, marks: placed.slice(0, perDay).map((p) => p.mark), more: Math.max(0, placed.length - perDay) };
   });
   return { cells, open, due };
 }
@@ -258,6 +262,30 @@ export function monthSummary(open: number, due: number, scope = ""): string {
 
 /** How many items a day holds, sent and counted. */
 export const dayTotal = (cell: MonthCell) => cell.marks.length + cell.more;
+
+/** How many marks a cell draws when its room is not measured (a phone, or before the page wakes). */
+export const MARKS_UNMEASURED = 3;
+
+/** How many marks a measured cell has room for: with nothing under them, and with a "+N more" line under them. */
+export type CellRoom = { all: number; withMore: number };
+
+/**
+ * How many of a day's sent marks its cell draws, and the count its "+N more" says. Every mark fits when the day holds
+ * no more than `room.all`; otherwise the cell keeps a line for "+N more" and draws `room.withMore`.
+ */
+export function fitMarks(cell: MonthCell, room: CellRoom | null): { shown: number; more: number } {
+  const total = dayTotal(cell);
+  const want = room === null ? MARKS_UNMEASURED : total <= room.all ? total : room.withMore;
+  const shown = Math.max(0, Math.min(want, cell.marks.length));
+  return { shown, more: total - shown };
+}
+
+/** The room a measured cell has: `space` px under the day's number, marks `pitch` px apart, "+N more" `moreLine` px tall. */
+export function cellRoom(space: number, pitch: number, moreLine: number): CellRoom {
+  // The last mark needs its height, not its gap below: one pitch less the gap fits one more mark exactly.
+  const fits = (px: number) => Math.max(0, Math.floor((px + 1) / pitch));
+  return { all: fits(space), withMore: fits(space - moreLine) };
+}
 
 /** "3 items", "1 item", "Nothing planned". */
 export function countWords(n: number): string {

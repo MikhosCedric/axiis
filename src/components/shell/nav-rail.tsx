@@ -599,17 +599,20 @@ function PhoneBar({ pathname, today, areas, badges, shown }: { pathname: string;
         <ul className="px-2">
           <SheetPlace place={SEARCH} here={SEARCH.here(pathname, today)} onGo={close} />
         </ul>
-        <div className="mt-3 border-t border-rule-soft px-5 pt-4">
-          <MiniMonth
-            today={today}
-            anchor={calendar.view.anchor}
-            from={calendar.view.from}
-            to={calendar.view.to}
-            hrefFor={calendar.dayHref}
-            onGo={close}
-            className="mx-auto max-w-[340px]"
-          />
-        </div>
+        {/* As in the side panel: on the Month page the small month would say the same twice. */}
+        {!place("month").here(pathname, today) && (
+          <div className="mt-3 border-t border-rule-soft px-5 pt-4">
+            <MiniMonth
+              today={today}
+              anchor={calendar.view.anchor}
+              from={calendar.view.from}
+              to={calendar.view.to}
+              hrefFor={calendar.dayHref}
+              onGo={close}
+              className="mx-auto max-w-[340px]"
+            />
+          </div>
+        )}
         {areas.length > 0 && (
           <div className="mt-3 border-t border-rule-soft pt-3">
             <h2 className={`mx-5 mb-1 ${overline}`}>Areas</h2>

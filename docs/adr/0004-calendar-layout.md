@@ -53,3 +53,11 @@ Match Google Calendar unless `PRODUCT.md` forbids it.
 - The panel is taller than the rail was. It scrolls between its top and the account row, which stays in view.
 - Hiding an area hides its items everywhere on that device. A quiet line under each page's summary says how many are hidden and offers to show them all.
 - A hard load of the Week on a phone draws seven columns until the page wakes, then three: the server cannot know the width. A page reached from inside the app is right from the start.
+
+## Amendments
+
+2026-11-25, layout at large and middling windows (the owner delegated these calls; recorded as decided):
+
+- **The Month fills the window's height.** On a desktop window (760px and wider, the grid wide enough for item lines) the weeks share the height under the head and the page does not scroll. Each cell draws as many items as fit, measured in the page (`useMonthFit` in `month-view.tsx`, `fitMarks` and `cellRoom` in `model.ts`), with "+N more" opening the day. The server now sends up to ten marks a day (`MARKS_PER_DAY`); a phone, or a page not yet awake, draws three. A short window keeps a least row height (88px) and scrolls rather than crushing the days. The width stays capped at the Week's 1600px, centred. To keep at least three items in a laptop's row (about 100px at 1440 by 900), a cell's chrome is tight on a desktop: a 20px day number, 19px item lines 1px apart, and a 14px "+N more" line kept only when the day's items do not all fit.
+- **The Day has no blank strip from 900 to 1600px.** The side column sits beside the grid as soon as the capped day (40rem), the gap (1.5rem) and the side's least width (16rem) fit: a page 57.5rem wide, down from 58rem. When it cannot, the day and what surrounds it stack in one column of at most 720px, centred in the page. The head keeps the page's full width, so the date title stays on one line.
+- **The phone's More sheet leaves out the small month on the Month page**, as the side panel already did.
