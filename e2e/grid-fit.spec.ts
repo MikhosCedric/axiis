@@ -266,6 +266,34 @@ signedIn.describe("an empty day, 1819 by 1030", () => {
   });
 });
 
+// A full day on a laptop: the side column holds Next up, the Inbox, what is left over and the due dates, and still the
+// page does not scroll. The side column fits the grid's height like the grid fits the window; its longer lists cap and
+// link to their page. The busy account seeds its week around the server's today in the server's zone.
+for (const [width, height] of [[1440, 900], [1280, 800]] as const) {
+  signedIn.describe(`a busy Today, ${width} by ${height}`, () => {
+    signedIn.use({ viewport: { width, height }, timezoneId: Intl.DateTimeFormat().resolvedOptions().timeZone });
+
+    signedIn("the page does not scroll and the side column ends inside the window", async ({ page, baseURL }) => {
+      await page.context().addCookies([
+        { name: "axiis-e2e-account", value: "busy", url: baseURL },
+        { name: "tour", value: "done", url: baseURL },
+      ]);
+      await page.goto("/today");
+      await hydrated(page);
+      await expect(page.getByRole("region", { name: "Next up" })).toBeVisible();
+      await page.evaluate(() => document.fonts.ready);
+      await expect.poll(async () => (await fit(page)).step).toBeGreaterThan(0);
+      await expect.poll(async () => (await fit(page)).pageScrollsDown).toBe(false);
+      const side = await page.evaluate(() => {
+        const box = document.querySelector<HTMLElement>("[data-day-layout]")!.firstElementChild!.getBoundingClientRect();
+        return { bottom: box.bottom, left: box.left, innerHeight: window.innerHeight };
+      });
+      expect(side.bottom).toBeLessThanOrEqual(side.innerHeight);
+      expect(side.left).toBeGreaterThan(0);
+    });
+  });
+}
+
 /**
  * The widest empty space between the page's content edges and the Day: left of the grid, or right of the side column
  * when it sits beside the grid, else right of the grid.

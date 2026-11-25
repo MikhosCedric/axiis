@@ -307,14 +307,16 @@ function DayPage({
       {/* Wide: the day takes the left, and what surrounds it (Next up, the plan, left-overs, the week) stacks on the right.
           Narrow: one column, in the order they read, the week left out, at most 720px and centred so no blank strip sits
           beside it. The side column comes beside the day as soon as both fit: the capped day, the gap and the side's
-          least width (40 + 1.5 + 16 = 57.5rem). */}
+          least width (40 + 1.5 + 16 = 57.5rem). Beside the day, the side column is as tall as the grid and scrolls
+          inside itself, its longer lists capped with a link to their page. It is positioned, so the screen-reader text
+          in its cards (absolute, sr-only) is clipped with them rather than hanging below the window and scrolling the page. */}
       <div
         data-focus={focus ? "" : undefined}
         data-day-layout=""
         className={`mx-auto flex w-full max-w-[45rem] flex-col ${hasSide ? "@min-[57.5rem]/page:mx-0 @min-[57.5rem]/page:grid @min-[57.5rem]/page:max-w-none @min-[57.5rem]/page:grid-cols-[minmax(0,40rem)_minmax(16rem,1fr)] @min-[57.5rem]/page:grid-rows-[auto_1fr] @min-[57.5rem]/page:justify-start @min-[57.5rem]/page:gap-x-6" : ""}`}
       >
         {hasSide && (
-          <div className="contents @min-[57.5rem]/page:surface @min-[57.5rem]/page:max-w-[27rem] @min-[57.5rem]/page:col-start-2 @min-[57.5rem]/page:row-start-1 @min-[57.5rem]/page:block @min-[57.5rem]/page:max-h-[var(--calendar-fit,none)] @min-[57.5rem]/page:divide-y @min-[57.5rem]/page:divide-rule-soft @min-[57.5rem]/page:self-start @min-[57.5rem]/page:overflow-y-auto">
+          <div className="contents @min-[57.5rem]/page:surface @min-[57.5rem]/page:max-w-[27rem] @min-[57.5rem]/page:col-start-2 @min-[57.5rem]/page:row-start-1 @min-[57.5rem]/page:relative @min-[57.5rem]/page:block @min-[57.5rem]/page:max-h-[var(--calendar-fit,none)] @min-[57.5rem]/page:divide-y @min-[57.5rem]/page:divide-rule-soft @min-[57.5rem]/page:self-start @min-[57.5rem]/page:overflow-y-auto">
             {progressNode && <div className="order-[0] hidden @min-[57.5rem]/page:block">{progressNode}</div>}
             {nextNode && <div className="order-1">{nextNode}</div>}
             {planNode && <div className="order-2">{planNode}</div>}
