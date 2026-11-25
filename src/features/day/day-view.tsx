@@ -291,6 +291,8 @@ function DayPage({
   return (
     <>
       <TitleBar heading="day-title">{formatDayHeading(date)}</TitleBar>
+      {/* The head keeps the day's edges: centred with it while the side column stacks, the page's width once it sits beside. */}
+      <div className={`mx-auto w-full max-w-[45rem] ${hasSide ? "@min-[57.5rem]/page:max-w-none" : ""}`}>
       <PageHeader
         heading={<CalendarBar span="day" date={date} today={today} mode={mode} titleId="day-title" />}
         controls={controls}
@@ -301,29 +303,33 @@ function DayPage({
         <GlanceLine glance={glance} scope={scopeWords(filter)} />
         <FilterChips filter={filter} className="mt-2.5" />
       </PageHeader>
+      </div>
 
       {isToday && tour && <Tour />}
 
       {/* Wide: the day takes the left, and what surrounds it (Next up, the plan, left-overs, the week) stacks on the right.
-          Narrow: one column, in the order they read, the week left out. */}
+          Narrow: one column, in the order they read, the week left out, at most 720px and centred so no blank strip sits
+          beside it. The side column comes beside the day as soon as both fit: the capped day, the gap and the side's
+          least width (40 + 1.5 + 16 = 57.5rem). */}
       <div
         data-focus={focus ? "" : undefined}
-        className={`flex max-w-[40rem] flex-col @min-[58rem]/page:max-w-none ${hasSide ? "@min-[58rem]/page:grid @min-[58rem]/page:grid-cols-[minmax(0,40rem)_minmax(16rem,1fr)] @min-[58rem]/page:grid-rows-[auto_1fr] @min-[58rem]/page:justify-start @min-[58rem]/page:gap-x-8" : ""}`}
+        data-day-layout=""
+        className={`mx-auto flex w-full max-w-[45rem] flex-col ${hasSide ? "@min-[57.5rem]/page:mx-0 @min-[57.5rem]/page:grid @min-[57.5rem]/page:max-w-none @min-[57.5rem]/page:grid-cols-[minmax(0,40rem)_minmax(16rem,1fr)] @min-[57.5rem]/page:grid-rows-[auto_1fr] @min-[57.5rem]/page:justify-start @min-[57.5rem]/page:gap-x-6" : ""}`}
       >
         {hasSide && (
-          <div className="contents @min-[58rem]/page:surface @min-[58rem]/page:max-w-[27rem] @min-[58rem]/page:col-start-2 @min-[58rem]/page:row-start-1 @min-[58rem]/page:block @min-[58rem]/page:max-h-[var(--calendar-fit,none)] @min-[58rem]/page:divide-y @min-[58rem]/page:divide-rule-soft @min-[58rem]/page:self-start @min-[58rem]/page:overflow-y-auto">
-            {progressNode && <div className="order-[0] hidden @min-[58rem]/page:block">{progressNode}</div>}
+          <div className="contents @min-[57.5rem]/page:surface @min-[57.5rem]/page:max-w-[27rem] @min-[57.5rem]/page:col-start-2 @min-[57.5rem]/page:row-start-1 @min-[57.5rem]/page:block @min-[57.5rem]/page:max-h-[var(--calendar-fit,none)] @min-[57.5rem]/page:divide-y @min-[57.5rem]/page:divide-rule-soft @min-[57.5rem]/page:self-start @min-[57.5rem]/page:overflow-y-auto">
+            {progressNode && <div className="order-[0] hidden @min-[57.5rem]/page:block">{progressNode}</div>}
             {nextNode && <div className="order-1">{nextNode}</div>}
             {planNode && <div className="order-2">{planNode}</div>}
             {/* The grid's Inbox: under the day on a narrow page, a card here on a wide one. */}
-            {mode === "grid" && <div ref={trayRef} className="order-4 mt-6 empty:hidden @min-[58rem]/page:order-3 @min-[58rem]/page:mt-0" />}
-            {leftNode && <div className="order-5 mt-7 @min-[58rem]/page:order-5 @min-[58rem]/page:mt-0">{leftNode}</div>}
+            {mode === "grid" && <div ref={trayRef} className="order-4 mt-6 empty:hidden @min-[57.5rem]/page:order-3 @min-[57.5rem]/page:mt-0" />}
+            {leftNode && <div className="order-5 mt-7 @min-[57.5rem]/page:order-5 @min-[57.5rem]/page:mt-0">{leftNode}</div>}
             {/* Not a scroll anchor: it mounts after the page has scrolled to now, and must not nudge that. */}
-            {restNode && <div className="order-5 mt-3 mb-3 [overflow-anchor:none] @min-[58rem]/page:mt-0 @min-[58rem]/page:px-4 @min-[58rem]/page:py-3">{restNode}</div>}
-            {dueNode && <div className="order-6 hidden @min-[58rem]/page:block">{dueNode}</div>}
+            {restNode && <div className="order-5 mt-3 mb-3 [overflow-anchor:none] @min-[57.5rem]/page:mt-0 @min-[57.5rem]/page:px-4 @min-[57.5rem]/page:py-3">{restNode}</div>}
+            {dueNode && <div className="order-6 hidden @min-[57.5rem]/page:block">{dueNode}</div>}
           </div>
         )}
-        <div className="order-3 min-w-0 @min-[58rem]/page:col-start-1 @min-[58rem]/page:row-span-2 @min-[58rem]/page:row-start-1">{dayNode}</div>
+        <div className="order-3 min-w-0 @min-[57.5rem]/page:col-start-1 @min-[57.5rem]/page:row-span-2 @min-[57.5rem]/page:row-start-1">{dayNode}</div>
       </div>
     </>
   );

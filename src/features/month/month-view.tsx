@@ -9,6 +9,7 @@ import { useRouter } from "next/navigation";
 import {
   Fragment,
   useEffect,
+  useLayoutEffect,
   useOptimistic,
   useRef,
   useState,
@@ -17,6 +18,7 @@ import {
   type MouseEvent,
   type PointerEvent as ReactPointerEvent,
   type ReactNode,
+  type RefObject,
 } from "react";
 import { AreaLabel, AreaMark } from "@/components/area-mark";
 import type { LocalDate } from "@/domain/item";
@@ -45,8 +47,10 @@ import { useKeepFilter } from "@/features/filter/keep-filter";
 import { NO_FILTER, type ViewFilter } from "@/features/filter/model";
 import {
   anchorOf,
+  cellRoom,
   countWords,
   dayTotal,
+  fitMarks,
   formatMonthHeading,
   MARKS_PER_DAY,
   monthHref,
@@ -55,6 +59,7 @@ import {
   MONTH_FULL,
   sameDayIn,
   selectedMarkKey,
+  type CellRoom,
   type MonthCell,
   type MonthMark,
 } from "./model";
@@ -65,6 +70,62 @@ const MONTH_GUIDE: GuideTopic[] = ["capture", "month"];
 const COMPACT_PX = 576;
 
 const ARRIVAL_KEY = "axiis-month-focus";
+
+/** A cell mark is 22px tall with 1px between marks; "+N more" takes this much under them; the cell pads 4px below. */
+const MARK_PITCH = 23;
+const MORE_LINE = 16;
+const CELL_PAD = 4;
+/** The least a week row gets when the grid fills the window, so a short window scrolls rather than crushing the days. */
+const ROW_MIN_PX = 88;
+
+/**
+ * On a desktop window the grid fills the height under the head, its weeks share it, and each cell draws as many marks
+ * as it has room for. Measured, since the head's height and the window's are not known to CSS. Null on a phone and
+ * before the page wakes: the cells keep their own height and draw three marks.
+ */
+function useMonthFit(grid: RefObject<HTMLDivElement | null>, weeks: number): { height: number; room: CellRoom } | null {
+  const [fit, setFit] = useState<{ height: number; room: CellRoom } | null>(null);
+
+  useLayoutEffect(() => {
+    const el = grid.current;
+    const page = el?.closest<HTMLElement>("[data-month-page]");
+    if (!el || !page) return;
+    const wide = window.matchMedia("(min-width: 760px)");
+    const measure = () => {
+      const cell = el.querySelector<HTMLElement>("[role=gridcell]");
+      const list = cell?.querySelector("ul");
+      // A phone, or a grid narrow enough to draw dots: the cells keep their own height.
+      if (!wide.matches || el.clientWidth < COMPACT_PX || !cell || !list || list.offsetParent === null) {
+        setFit(null);
+        return;
+      }
+      const box = el.getBoundingClientRect();
+      // What sits under the grid on the page (the bottom padding, a note) keeps its place under it.
+      const under = page.getBoundingClientRect().bottom - box.bottom;
+      const head = el.querySelector<HTMLElement>("[role=row]")?.offsetHeight ?? 0;
+      const height = Math.max(head + weeks * ROW_MIN_PX, Math.floor(window.innerHeight - (box.top + window.scrollY) - under));
+      // The weeks share what is left under the weekday heads (less the grid's own border); the marks start a fixed
+      // way down each cell, under its number, whatever the cell's height.
+      const row = (height - (el.offsetHeight - el.clientHeight) - head) / weeks;
+      const room = cellRoom(row - (list.getBoundingClientRect().top - cell.getBoundingClientRect().top) - CELL_PAD, MARK_PITCH, MORE_LINE);
+      setFit((was) =>
+        was?.height === height && was.room.all === room.all && was.room.withMore === room.withMore ? was : { height, room },
+      );
+    };
+    measure();
+    const watch = new ResizeObserver(measure);
+    watch.observe(page);
+    wide.addEventListener("change", measure);
+    window.addEventListener("resize", measure);
+    return () => {
+      watch.disconnect();
+      wide.removeEventListener("change", measure);
+      window.removeEventListener("resize", measure);
+    };
+  }, [grid, weeks]);
+
+  return fit;
+}
 
 /** The day to focus when a month arrives because the arrow keys walked off the edge of the last one. Read once. */
 function takeArrival(days: readonly LocalDate[]): LocalDate | null {
@@ -271,11 +332,14 @@ export function MonthView({
   };
 
   const weeks = Array.from({ length: cells.length / 7 }, (_, w) => cells.slice(w * 7, w * 7 + 7));
+  const fit = useMonthFit(grid, weeks.length);
+  const room = fit?.room ?? null;
+  const fitted = fit !== null;
   const activeCell = cells.find((c) => c.date === active) ?? cells[0];
 
   return (
     <div className={selectedParam ? "min-[1180px]:grid min-[1180px]:grid-cols-[minmax(0,1fr)_328px]" : ""}>
-      <div className="@container/page mx-auto w-full min-w-0 max-w-[1600px] px-4 pt-6 pb-14 rail:px-9 rail:pt-8">
+      <div data-month-page="" className="@container/page mx-auto w-full min-w-0 max-w-[1600px] px-4 pt-6 pb-14 rail:px-9 rail:pt-8 rail:pb-4">
         <PageHeader
           bar
           inline
@@ -315,7 +379,9 @@ export function MonthView({
             role="grid"
             aria-labelledby="month-h"
             aria-describedby={KEYS_ID}
-            className="surface overflow-hidden [&>[role=row]]:-mr-px [&>[role=row]:last-child]:-mb-px"
+            data-fit={fitted ? "" : undefined}
+            style={fit ? { height: fit.height } : undefined}
+            className={`surface overflow-hidden [&>[role=row]]:-mr-px [&>[role=row]:last-child]:-mb-px ${fitted ? "flex flex-col" : ""}`}
           >
             <div role="row" className="grid grid-cols-7">
               {weeks[0].map((c) => (
@@ -333,11 +399,16 @@ export function MonthView({
               ))}
             </div>
             {weeks.map((week, w) => (
-              <div key={week[0].date} role="row" className="grid grid-cols-7">
-                {week.map((cell, i) => (
+              <div key={week[0].date} role="row" className={`grid grid-cols-7 ${fitted ? "min-h-0 flex-1" : ""}`}>
+                {week.map((cell, i) => {
+                  const { shown, more } = fitMarks(cell, room);
+                  return (
                   <DayCell
                     key={cell.date}
                     cell={cell}
+                    shown={shown}
+                    more={more}
+                    fitted={fitted}
                     inMonth={monthOf(cell.date) === month}
                     isToday={cell.date === today}
                     active={cell.date === active}
@@ -349,13 +420,14 @@ export function MonthView({
                     onAdd={() => addTo(cell.date)}
                     onKeyDown={(e) => cellKeyDown(e, cell.date, w * 7 + i)}
                   >
-                    {cell.marks.map((m) => (
+                    {cell.marks.slice(0, shown).map((m) => (
                       <li key={`${m.key}-${m.due}`} className="group/row relative min-w-0">
                         {mark(m, cell.date, cell.date === active, "cell")}
                       </li>
                     ))}
                   </DayCell>
-                ))}
+                  );
+                })}
               </div>
             ))}
           </div>
@@ -421,6 +493,9 @@ export function MonthView({
 
 function DayCell({
   cell,
+  shown,
+  more,
+  fitted,
   inMonth,
   isToday,
   active,
@@ -434,6 +509,11 @@ function DayCell({
   children,
 }: {
   cell: MonthCell;
+  /** How many of the sent marks the cell draws, and what its "+N more" counts. */
+  shown: number;
+  more: number;
+  /** The grid fills the window: the cell takes its row's height rather than its own least height. */
+  fitted: boolean;
   inMonth: boolean;
   isToday: boolean;
   active: boolean;
@@ -461,7 +541,7 @@ function DayCell({
       onPointerDown={onPointerDown}
       onClick={onClick}
       onKeyDown={onKeyDown}
-      className={`group/day relative flex min-h-14 min-w-0 cursor-pointer flex-col border-r border-b border-rule-soft px-0.5 pt-1 pb-1 transition-colors focus-visible:outline-offset-[-3px] @min-[36rem]/month:min-h-32 @min-[36rem]/month:px-1 ${
+      className={`group/day relative flex min-h-14 min-w-0 cursor-pointer flex-col border-r border-b border-rule-soft px-0.5 pt-1 pb-1 transition-colors focus-visible:outline-offset-[-3px] @min-[36rem]/month:px-1 ${fitted ? "" : "@min-[36rem]/month:min-h-32"} ${
         over ? "bg-accent-wash" : active ? "bg-hover @min-[36rem]/month:bg-transparent" : "hover:bg-hover"
       } ${inMonth ? (isToday ? "bg-[color-mix(in_srgb,var(--ink)_3.5%,transparent)]" : "") : "bg-[color-mix(in_srgb,var(--paper-2)_45%,transparent)]"}`}
     >
@@ -506,24 +586,24 @@ function DayCell({
 
       {cell.marks.length > 0 && (
         <span aria-hidden="true" className="mt-1 flex items-center justify-center gap-[3px] @min-[36rem]/month:hidden">
-          {cell.marks.map((m) => (
+          {cell.marks.slice(0, shown).map((m) => (
             <Dot key={`${m.key}-${m.due}`} state={m.state} />
           ))}
-          {cell.more > 0 && <span className="text-[11px] leading-none text-ink-3 tabular">+{cell.more}</span>}
+          {more > 0 && <span className="text-[11px] leading-none text-ink-3 tabular">+{more}</span>}
         </span>
       )}
 
       <ul className="mt-1 hidden min-w-0 gap-px @min-[36rem]/month:grid">
         {children}
       </ul>
-      {cell.more > 0 && (
+      {more > 0 && (
         <Link
           href={href}
           tabIndex={-1}
           onClick={(e) => e.stopPropagation()}
           className="mt-auto hidden self-start rounded px-1 text-xs font-medium text-ink-2 hover:bg-hover hover:text-ink @min-[36rem]/month:inline"
         >
-          +{cell.more} more
+          +{more} more
         </Link>
       )}
     </div>

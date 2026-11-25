@@ -242,3 +242,74 @@ signedIn.describe("the Month", () => {
     await expect(page).toHaveURL("/day/2099-05-20");
   });
 });
+
+// The Month fills a desktop window: its weeks share the height under the head, the page does not scroll, and each day
+// draws as many items as its cell has room for. The busy account plans about ten items on today.
+signedIn.describe("the Month fitted to the window", () => {
+  signedIn.beforeEach(async ({ page, baseURL }) => {
+    await page.context().addCookies([{ name: "axiis-e2e-account", value: "busy", url: baseURL }]);
+  });
+
+  /** Items drawn in today's cell, and whether the page scrolls, once the grid has measured itself. */
+  async function today(page: Page) {
+    await page.goto("/month");
+    await gridHydrated(page);
+    await expect(page.locator("[role=grid][data-fit]")).toBeAttached();
+    return page.evaluate(() => {
+      const cell = document.querySelector<HTMLElement>("[role=gridcell][aria-current=date]")!;
+      const box = cell.getBoundingClientRect();
+      const all = [...cell.querySelectorAll<HTMLElement>("li [data-item]")];
+      const more = [...cell.querySelectorAll<HTMLElement>("a")].find((a) => /^\+\d+ more$/.test(a.textContent ?? ""));
+      return {
+        drawn: all.length,
+        inside: all.filter((m) => m.getBoundingClientRect().bottom <= box.bottom + 0.5).length,
+        moreInside: more ? more.getBoundingClientRect().bottom <= box.bottom + 0.5 : true,
+        scrollsDown: document.documentElement.scrollHeight > window.innerHeight + 1,
+      };
+    });
+  }
+
+  signedIn("a very large window shows more of a day than a laptop does, with no page scroll", async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    const laptop = await today(page);
+    expect(laptop.scrollsDown).toBe(false);
+    // Every drawn item fits inside its cell, and so does "+N more".
+    expect(laptop.inside).toBe(laptop.drawn);
+    expect(laptop.moreInside).toBe(true);
+
+    await page.setViewportSize({ width: 2560, height: 1300 });
+    const large = await today(page);
+    expect(large.scrollsDown).toBe(false);
+    expect(large.inside).toBe(large.drawn);
+    expect(large.moreInside).toBe(true);
+    expect(large.drawn).toBeGreaterThan(laptop.drawn);
+    // The composition is capped at the Week's width and centred, not stretched across the screen.
+    const box = (await page.locator("[data-month-page]").boundingBox())!;
+    expect(box.width).toBeLessThanOrEqual(1600);
+  });
+
+  signedIn("+N more opens the day", async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await today(page);
+    const more = page.locator("[role=gridcell][aria-current=date]").getByRole("link", { name: /^\+\d+ more$/ });
+    await more.click();
+    await expect(page).toHaveURL(/\/today/);
+  });
+});
+
+signedIn.describe("the Month on a phone", () => {
+  signedIn.use({ viewport: { width: 375, height: 812 } });
+
+  signedIn("the More sheet leaves out the small month, which would repeat the page", async ({ page }) => {
+    for (const [path, count] of [["/week", 1], ["/month", 0]] as const) {
+      await page.goto(path);
+      await hydrated(page);
+      await page.getByRole("navigation", { name: "Primary" }).getByRole("button", { name: "More" }).click();
+      const sheet = page.getByRole("dialog", { name: "More" });
+      await expect(sheet).toBeVisible();
+      await expect(sheet.getByRole("link", { name: /, today/ }), path).toHaveCount(count);
+      await page.keyboard.press("Escape");
+      await expect(sheet).toBeHidden();
+    }
+  });
+});

@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { signedIn } from "./session";
+import { hydrated, signedIn } from "./session";
 
 // How the time grid fits its window. A desktop window: the Day is one comfortable column beside a side column (not
 // a bar the width of the window), the page does not scroll and the grid is its one scroll area, drawn over the
@@ -266,10 +266,30 @@ signedIn.describe("an empty day, 1819 by 1030", () => {
   });
 });
 
+/**
+ * The widest empty space between the page's content edges and the Day: left of the grid, or right of the side column
+ * when it sits beside the grid, else right of the grid.
+ */
+function blankBeside(page: Page) {
+  return page.evaluate(() => {
+    const layout = document.querySelector<HTMLElement>("[data-day-layout]")!;
+    let box: HTMLElement | null = layout.parentElement;
+    while (box && getComputedStyle(box).containerName !== "page") box = box.parentElement;
+    const css = getComputedStyle(box!);
+    const page = box!.getBoundingClientRect();
+    const left = page.left + parseFloat(css.paddingLeft);
+    const right = page.right - parseFloat(css.paddingRight);
+    const grid = document.querySelector<HTMLElement>("[data-calendar-grid]")!.getBoundingClientRect();
+    const side = layout.firstElementChild!.getBoundingClientRect();
+    const beside = side.width > 0 && side.left >= grid.right - 1;
+    return Math.round(Math.max(grid.left - left, right - (beside ? side.right : grid.right)));
+  });
+}
+
 // A window that is not maximised (900 to 1300 wide) with the real shell around the page: the side panel takes 216px, so
 // the page holds well under 1100px. The day is still one comfortable column there, never a bar the width of what is left,
-// and nothing on the page scrolls sideways.
-for (const width of [900, 1100, 1280]) {
+// it is centred in what is left rather than leaving a blank strip beside it, and nothing on the page scrolls sideways.
+for (const width of [900, 1100, 1180, 1280, 1440, 1600]) {
   signedIn.describe(`a middling window, ${width} by 760`, () => {
     signedIn.use({ viewport: { width, height: 760 } });
 
@@ -284,6 +304,13 @@ for (const width of [900, 1100, 1280]) {
       expect(a.columnWidth).toBeLessThanOrEqual(720);
       expect(a.scrollsSideways).toBe(false);
       expect(a.pageScrolls).toBe(false);
+    });
+
+    signedIn("no blank strip wider than 120px sits beside the Day", async ({ page }) => {
+      await page.goto("/today");
+      await hydrated(page);
+      await expect(page.locator("[data-calendar-grid]")).toBeVisible();
+      await expect.poll(() => blankBeside(page)).toBeLessThanOrEqual(120);
     });
 
     signedIn("the Week and the Month fit the window without scrolling sideways", async ({ page }) => {
