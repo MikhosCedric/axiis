@@ -256,6 +256,20 @@
   min-width: 0;
 }
 
+/*
+ * A taller block's words stop on the last whole line that fits (`--lines`, set from its height), ending in an
+ * ellipsis. The time or the count, drawn last, is what goes first. The max-height holds the cut to whole lines
+ * even where the clamp counts lines differently.
+ */
+.block:not(.short) .words {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: var(--lines, 1);
+  line-clamp: var(--lines, 1);
+  max-height: calc(var(--lines, 1) * 16px);
+  overflow: hidden;
+}
+
 .short .face,
 .chip .face {
   padding-block: 4px;
@@ -645,6 +659,12 @@
   overflow-x: auto;
   overscroll-behavior: contain;
   scrollbar-width: thin;
+  /*
+   * A chip cut by the edge fades out before the Inbox link rather than stopping hard against it. The end padding
+   * is as wide as the fade, so when every chip fits, or the row is scrolled to its end, the last chip is clear of it.
+   */
+  padding-inline-end: 24px;
+  mask-image: linear-gradient(to right, black calc(100% - 24px), transparent);
 }
 
 .trayScroll .trayChip {

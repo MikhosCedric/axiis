@@ -87,6 +87,7 @@ function WeekPage({
 }) {
   const { timeZone } = calendar;
   const { items, now, today } = ctx;
+  const narrow = useNarrow();
   // The line speaks of the whole week, whichever of its days a narrow screen shows.
   const summary = useMemo(() => {
     const week = bucketWeek(items.filter((i) => i.schedule.kind !== "unscheduled"), days, timeZone, now);
@@ -100,7 +101,8 @@ function WeekPage({
 
   return (
     <>
-      <TitleBar heading="week-title">{formatWeekHeading(days)}</TitleBar>
+      {/* The same span the calendar bar names: three days from the address on a narrow screen, else the week. */}
+      <TitleBar heading="week-title">{formatWeekHeading(narrow ? narrowDays(from) : days)}</TitleBar>
       <PageHeader
         bar
         inline

@@ -42,7 +42,7 @@ export type CaptureResult =
       /** How many items or lines a pasted block made, when it made more than this one. */
       count?: number;
     }
-  | { ok: false; error: string };
+  | { ok: false; error: string; notOwner?: true };
 
 /**
  * Where a capture was planned: its date, that date in words ("tomorrow"), and
@@ -84,8 +84,21 @@ export async function captureChecklist(repo: ItemsRepo, raw: unknown): Promise<C
  * day), else on today when it names a time, else nowhere. A line that repeats
  * ("every tuesday 7:30") is created as a series, on its first matching day.
  */
-/** A capture queued on the device: its own id, and the moment it was typed (ms since the epoch). */
-export type QueuedEntry = { id: string; at: number };
+/**
+ * A capture queued on the device: its own id, the moment it was typed (ms since the epoch), and the account whose
+ * outbox it sat in. A tab left open across a sign-out and someone else's sign-in still holds the first account's
+ * outbox, so the server checks the owner before it stores anything.
+ */
+export type QueuedEntry = { id: string; at: number; owner?: string };
+
+/** What a queued capture gets when it belongs to another account than the one signed in now. Never shown as an error. */
+export const NOT_OWNER: CaptureResult = { ok: false, error: "This capture belongs to another account.", notOwner: true };
+
+/** True when a capture may be stored for this session: typed live (no entry), or queued by the account signed in now. */
+export function ownedBySession(entry: QueuedEntry | undefined, sessionOwner: string | null): boolean {
+  if (entry === undefined) return true;
+  return typeof entry.owner === "string" && sessionOwner !== null && entry.owner === sessionOwner;
+}
 
 const DAY_MS = 86_400_000;
 

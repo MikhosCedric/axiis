@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useSyncExternalStore, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 import { captureAction } from "@/features/today/actions";
 import { enqueue, flush, purgeStale, readOutbox, remove, retitle, type Queued, type QueuedCapture } from "@/lib/outbox";
 import { reach, UNREACHABLE } from "@/lib/reach";
@@ -63,22 +63,27 @@ export function PendingCaptures() {
 
   // One run at a time: the open and online events can both fire for a single reconnect, and a second run would post the same entry again.
   const running = useRef(false);
+  // The owner the server said is no longer signed in. This tab stops sending for it: the entries stay on the device
+  // for that account, and the page is reloaded so it shows whoever is signed in now.
+  const [signedOut, setSignedOut] = useState<string | null>(null);
 
   const send = useCallback(async () => {
-    if (!owner || !navigator.onLine || running.current) return;
+    if (!owner || !navigator.onLine || running.current || signedOut === owner) return;
     running.current = true;
     try {
-      const { sent } = await flush(storage(), owner, async (title, entry) => {
+      const { sent, notOwner } = await flush(storage(), owner, async (title, entry) => {
         const answer = await reach(captureAction(title, entry));
         if (answer.ok) return { ok: true };
+        if ("notOwner" in answer && answer.notOwner) return { ok: false, error: answer.error, notOwner: true };
         return { ok: false, error: answer.error, unreachable: answer.error === UNREACHABLE };
       });
       window.dispatchEvent(new Event(CHANGED));
-      if (sent > 0) router.refresh();
+      if (notOwner) setSignedOut(owner);
+      if (sent > 0 || notOwner) router.refresh();
     } finally {
       running.current = false;
     }
-  }, [owner, router]);
+  }, [owner, router, signedOut]);
 
   useEffect(() => {
     purgeStale(storage(), Date.now());
@@ -88,7 +93,8 @@ export function PendingCaptures() {
     return () => window.removeEventListener("online", onOnline);
   }, [send]);
 
-  if (!owner || entries.length === 0) return null;
+  // Another account is signed in now: these captures are not theirs to see, send or discard.
+  if (!owner || entries.length === 0 || signedOut === owner) return null;
   const refused = entries.filter((e) => e.error);
   const waiting = entries.length - refused.length;
 

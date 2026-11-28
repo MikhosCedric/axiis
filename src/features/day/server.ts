@@ -66,9 +66,9 @@ export const getTrayRows = cache(async () => {
 /** What the desktop shell may notify about today. Asked for only in the shell, and from the day the page loads anyway. */
 export const getReminders = cache(async () => reminderRows((await getDay(await getTodayDate())).view, await getNow()));
 
-/** What waits in the Inbox, and how many due dates have passed, for the badges on the places. Once per request. */
+/** What waits in the Inbox, and how much is due today or earlier, for the badges on the places. Once per request. */
 export const getRailBadges = cache(async () => {
   const repo = await getItemsRepo();
-  const [inbox, overdue] = await Promise.all([repo.countInbox(), repo.countOverdueDue(await getTodayDate())]);
-  return { inbox, overdue };
+  const [inbox, due] = await Promise.all([repo.countInbox(), repo.countDueByToday(await getTodayDate())]);
+  return { inbox, due };
 });

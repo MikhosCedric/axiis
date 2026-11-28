@@ -219,6 +219,15 @@ export function layoutGrid({
   return { columns, now: nowLine(days, now, timeZone, scale) };
 }
 
+/** A block's line of text and the padding above and below it, in px, as `.face` in calendar.module.css draws them. */
+const TEXT_LINE = 16;
+const TEXT_PAD = 6;
+
+/** How many whole lines of text a block this tall shows (at least one), so its words never stop on a half-cut line. */
+export function textLines(height: number): number {
+  return Math.max(1, Math.floor((height - TEXT_PAD) / TEXT_LINE));
+}
+
 /** Left offset and width of a block inside its day column, as fractions of the column. */
 export function blockBox(block: Pick<Block, "column" | "columns" | "span">): { left: number; width: number } {
   return { left: block.column / block.columns, width: block.span / block.columns };

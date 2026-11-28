@@ -18,11 +18,12 @@ export const getDeletionPort = cache(async (): Promise<DeletionPort> => {
 
 /**
  * Server only. Who the offline outbox on this device belongs to: the user's id, or null when it cannot be
- * read (the outbox is then off, never shared). The e2e fake account has a fixed owner.
+ * read (the outbox is then off, never shared). Each e2e fake account has its own fixed owner.
  */
 export const getOutboxOwner = cache(async (): Promise<string | null> => {
   try {
-    if (await getFakeAccount()) return "fake-account";
+    const fake = await getFakeAccount();
+    if (fake) return fake.owner;
     const { data } = await (await createClient()).auth.getClaims();
     const sub = data?.claims?.sub;
     return typeof sub === "string" ? sub : null;

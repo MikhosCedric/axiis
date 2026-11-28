@@ -181,7 +181,7 @@ function createAccount(kind: FakeAccountKind) {
   };
 }
 
-export type FakeAccount = ReturnType<typeof createAccount> & { reset(): void };
+export type FakeAccount = ReturnType<typeof createAccount> & { reset(): void; /** Who its offline outbox belongs to, one per account, so two accounts in one browser stay apart. */ owner: string };
 
 const WEEKDAY_CODES = ["SU", "MO", "TU", "WE", "TH", "FR", "SA"] as const;
 
@@ -205,6 +205,7 @@ export function fakeAccount(kind: FakeAccountKind = "fixtures"): FakeAccount {
   const account = (accounts[kind] ??= createAccount(kind));
   return {
     ...account,
+    owner: `fake-${kind}`,
     reset() {
       accounts[kind] = createAccount(kind);
     },

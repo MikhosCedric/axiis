@@ -2,13 +2,16 @@
 
 import { refresh } from "next/cache";
 import { areasNamedIn, getNow, getTimeZone, getWeekStart } from "@/features/day/server";
+import { getOutboxOwner } from "@/lib/account";
 import { getItemsRepo } from "@/lib/items";
-import { captureLines, captureList, captureTask, queuedId, setDone, typedAt, type ActionResult, type CaptureResult, type QueuedEntry } from "./commands";
+import { captureLines, captureList, captureTask, NOT_OWNER, ownedBySession, queuedId, setDone, typedAt, type ActionResult, type CaptureResult, type QueuedEntry } from "./commands";
 
 // The repo is bound to the signed-in user's session and RLS scopes every
 // write, so a direct POST without a session cannot touch anyone's rows.
 
 export async function captureAction(title: string, entry?: QueuedEntry): Promise<CaptureResult> {
+  // A queued capture names the account whose outbox held it; a stale tab must not send it into whoever is signed in now.
+  if (!ownedBySession(entry, entry === undefined ? null : await getOutboxOwner())) return NOT_OWNER;
   const now = await getNow();
   const areas = await areasNamedIn(title);
   const result = await captureTask(await getItemsRepo(), title, typedAt(entry, now), await getTimeZone(), null, queuedId(entry), await getWeekStart(), areas);

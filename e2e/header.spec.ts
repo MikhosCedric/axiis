@@ -63,3 +63,20 @@ for (const width of [1160, 1440, 1920]) {
     }
   });
 }
+
+signedIn.describe("at 375px", () => {
+  signedIn.use({ viewport: { width: 375, height: 812 } });
+
+  signedIn("/week: the folded title names the same three days as the heading, not the whole week", async ({ page }) => {
+    await page.goto("/week");
+    await page.locator("html[data-hydrated]").waitFor({ state: "attached" });
+    const heading = page.locator("#week-title");
+    await expect(heading).toBeVisible();
+    const bar = page.locator(".title-bar-text");
+    const compare = async () => {
+      const [h, b] = [await heading.innerText(), ((await bar.textContent()) ?? "").trim()];
+      return b !== "" && h.includes(b) ? "same" : `bar "${b}" vs heading "${h}"`;
+    };
+    await expect.poll(compare).toBe("same");
+  });
+});

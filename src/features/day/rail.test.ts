@@ -121,9 +121,10 @@ describe("rail badge counts", () => {
     ];
     const { repo } = fakeRepo(items);
     const [inbox, due] = await Promise.all([repo.listInbox(), repo.listDue(new Date(new Date("2026-10-08T06:00:00Z").getTime() - DAY_MS))]);
-    const old = { inbox: inbox.length, overdue: due.filter((i) => i.status === "open" && i.dueOn !== null && i.dueOn < today).length };
-    expect(old).toEqual({ inbox: 5, overdue: 2 });
-    expect({ inbox: await repo.countInbox(), overdue: await repo.countOverdueDue(today) }).toEqual(old);
+    // Due is what is due today or earlier and not done: "Late", "Late too" and "Due today", as the Week and Month count it.
+    const old = { inbox: inbox.length, due: due.filter((i) => i.status === "open" && i.dueOn !== null && i.dueOn <= today).length };
+    expect(old).toEqual({ inbox: 5, due: 3 });
+    expect({ inbox: await repo.countInbox(), due: await repo.countDueByToday(today) }).toEqual(old);
     expect(await fakeRepo([]).repo.countInbox()).toBe(0);
   });
 });

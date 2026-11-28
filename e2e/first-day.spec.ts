@@ -138,7 +138,8 @@ signedIn.describe("first day on the real route", () => {
   signedIn("an empty account sees examples, and its first capture links to the Inbox, where it is", async ({ page }) => {
     await page.goto("/today");
     await expect(examples(page)).toHaveCount(3);
-    await expect(page.getByText(LEAD)).toBeVisible();
+    // Inside the page's main only: while the route streams, React holds a hidden copy outside it for a moment.
+    await expect(page.getByRole("main").getByText(LEAD)).toBeVisible();
     await expect(page.getByRole("heading", { name: "Inbox", exact: true })).toHaveCount(0);
 
     await capture(page, "buy milk");
