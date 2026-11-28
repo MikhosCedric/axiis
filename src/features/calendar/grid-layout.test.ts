@@ -21,6 +21,7 @@ import {
   segmentOn,
   visibleRange,
   emptyDayRange,
+  textLines,
   yAt,
 } from "./grid-layout";
 
@@ -292,5 +293,15 @@ describe("emptyDayRange", () => {
   it("is 08:00 to 17:00 when now is not on screen, and opens out on request", () => {
     expect(emptyDayRange(null)).toEqual({ from: 8 * 60, to: 17 * 60 });
     expect(emptyDayRange(null, { earlier: true, later: true })).toEqual({ from: 0, to: 1440 });
+  });
+});
+
+describe("textLines", () => {
+  it("counts only whole 16px lines inside the padding, and never fewer than one", () => {
+    expect(textLines(17)).toBe(1);
+    expect(textLines(37)).toBe(1);
+    expect(textLines(38)).toBe(2);
+    expect(textLines(49)).toBe(2);
+    expect(textLines(54)).toBe(3);
   });
 });

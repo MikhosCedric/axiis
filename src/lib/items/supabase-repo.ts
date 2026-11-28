@@ -198,14 +198,14 @@ export class SupabaseItemsRepo implements ItemsRepo {
     return unwrapCount("countInbox", result);
   }
 
-  async countOverdueDue(today: LocalDate): Promise<number> {
+  async countDueByToday(today: LocalDate): Promise<number> {
     const result = await this.countOf()
       .is("series_id", null)
       .is("parent_id", null)
-      .lt("due_on", today)
+      .lte("due_on", today)
       .eq("status", "open")
       .neq("type", "note");
-    return unwrapCount("countOverdueDue", result);
+    return unwrapCount("countDueByToday", result);
   }
 
   async listChecklists(): Promise<Item[]> {

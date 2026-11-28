@@ -77,6 +77,39 @@ signedIn("a capture that cannot reach the server is kept on the device and says 
   await context.setOffline(false);
 });
 
+signedIn("a capture queued by one account is never sent into the account signed in after it", async ({ page, context, baseURL }) => {
+  // Account A (`empty`) queues a capture offline. Then, as if another tab signed A out and B (`settings`) in, the
+  // session switches to B while A's page is still open. When the connection returns, A's stale page tries to send.
+  await context.addCookies([{ name: "axiis-e2e-account", value: "empty", url: baseURL! }]);
+  await page.goto("/today");
+  const field = page.locator("#capture");
+  await hydrated(page);
+
+  await context.setOffline(true);
+  await field.fill("cross-account capture 4417");
+  await field.press("Enter");
+  await expect(page.locator("#capture-status")).toHaveText("Saved on this device. It will be sent when you are back online.");
+  await expect(page.getByRole("region", { name: "Captures waiting" })).toBeVisible();
+
+  await context.addCookies([{ name: "axiis-e2e-account", value: "settings", url: baseURL! }]);
+  await context.setOffline(false);
+
+  // The server refuses it as not B's: the page reloads for B, the waiting note goes, and no error is listed.
+  await expect(page.getByRole("region", { name: "Captures waiting" })).toHaveCount(0);
+  await expect(page.getByText("This capture belongs to another account.")).toHaveCount(0);
+  // A's entry is still on the device, kept for A, not marked as refused.
+  const kept = await page.evaluate(() => JSON.parse(localStorage.getItem("axiis-outbox:fake-empty") ?? "[]"));
+  expect(kept).toEqual([expect.objectContaining({ title: "cross-account capture 4417" })]);
+  expect(kept[0].error).toBeUndefined();
+
+  for (const path of ["/inbox", "/today"]) {
+    await page.goto(path);
+    await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+    await expect(page.getByText("cross-account capture 4417")).toHaveCount(0);
+  }
+  await page.evaluate(() => Object.keys(localStorage).filter((k) => k.startsWith("axiis-outbox:")).forEach((k) => localStorage.removeItem(k)));
+});
+
 signedIn("a done tick that cannot reach the server puts the item back and says so", async ({ page, context }) => {
   await page.goto("/tags/errands");
   const tick = page.getByRole("checkbox", { name: "Done: Renew passport" });

@@ -76,11 +76,11 @@ describe("the outbox", () => {
     enqueue(store, "a", "two", 2, "id2");
     const seen: string[] = [];
     const send: Sender = async (title, entry) => {
-      seen.push(`${title}:${entry.id}:${entry.at}`);
+      seen.push(`${title}:${entry.id}:${entry.at}:${entry.owner}`);
       return { ok: true };
     };
-    expect(await flush(store, "a", send)).toEqual({ sent: 2, waiting: 0 });
-    expect(seen).toEqual(["one:id1:1", "two:id2:2"]);
+    expect(await flush(store, "a", send)).toEqual({ sent: 2, waiting: 0, notOwner: false });
+    expect(seen).toEqual(["one:id1:1:a", "two:id2:2:a"]);
   });
 
   it("stops at no connection and keeps the rest", async () => {
@@ -88,7 +88,21 @@ describe("the outbox", () => {
     enqueue(store, "a", "one", 1, "id1");
     enqueue(store, "a", "two", 2, "id2");
     const send: Sender = async () => ({ ok: false, error: "offline", unreachable: true });
-    expect(await flush(store, "a", send)).toEqual({ sent: 0, waiting: 2 });
+    expect(await flush(store, "a", send)).toEqual({ sent: 0, waiting: 2, notOwner: false });
+  });
+
+  it("stops when another account is signed in, keeping every entry unmarked for its owner", async () => {
+    const store = memory();
+    enqueue(store, "alice", "one", 1, "id1");
+    enqueue(store, "alice", "two", 2, "id2");
+    const owners: string[] = [];
+    const send: Sender = async (_title, entry) => (owners.push(entry.owner), { ok: false, error: "not yours", notOwner: true });
+    expect(await flush(store, "alice", send)).toEqual({ sent: 0, waiting: 2, notOwner: true });
+    expect(owners).toEqual(["alice"]);
+    expect(readOutbox(store, "alice").map((e) => [e.title, e.error])).toEqual([
+      ["one", undefined],
+      ["two", undefined],
+    ]);
   });
 
   it("marks a refused entry, goes on, and does not send it again until edited", async () => {
@@ -96,7 +110,7 @@ describe("the outbox", () => {
     enqueue(store, "a", "bad", 1, "id1");
     enqueue(store, "a", "good", 2, "id2");
     const send: Sender = async (title) => (title === "bad" ? { ok: false, error: "Too long" } : { ok: true });
-    expect(await flush(store, "a", send)).toEqual({ sent: 1, waiting: 1 });
+    expect(await flush(store, "a", send)).toEqual({ sent: 1, waiting: 1, notOwner: false });
     expect(readOutbox(store, "a")[0].error).toBe("Too long");
 
     const calls: string[] = [];

@@ -45,7 +45,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
         id="app-shell"
         // The desktop shell reads these for the taskbar badge, the tray list and the reminders; nothing else uses them.
         data-inbox={badges.inbox}
-        data-overdue={badges.overdue}
+        data-due={badges.due}
         // The lines stay plain strings so an older installed shell still draws them; the ids, in step with them, let a
         // newer shell open each line's item.
         data-tray={tray.length > 0 ? JSON.stringify(tray.map((r) => r.label)) : undefined}

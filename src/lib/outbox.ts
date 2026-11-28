@@ -98,26 +98,33 @@ export function retitle(store: Storage | undefined, owner: string, id: string, t
   write(store, owner, readOutbox(store, owner).map((e) => (e.id === id ? { id: e.id, at: e.at, title } : e)));
 }
 
-export type Sender = (title: string, entry: { id: string; at: number }) => Promise<{ ok: true } | { ok: false; error: string; unreachable?: boolean }>;
+export type Sender = (
+  title: string,
+  entry: { id: string; at: number; owner: string },
+) => Promise<{ ok: true } | { ok: false; error: string; unreachable?: boolean; notOwner?: boolean }>;
 
 /**
  * Sends the waiting captures, oldest first, one at a time. An entry leaves the outbox only after the server
  * answered for it. The server saying no marks that entry and moves on; no connection stops the run, and the
- * rest wait for the next. Entries already refused are not sent again until they are edited.
+ * rest wait for the next. Entries already refused are not sent again until they are edited. The server saying
+ * this outbox's owner is not the account signed in now also stops the run, and leaves every entry as it was:
+ * they are kept for that account and not marked as refused.
  */
-export async function flush(store: Storage | undefined, owner: string, send: Sender): Promise<{ sent: number; waiting: number }> {
+export async function flush(store: Storage | undefined, owner: string, send: Sender): Promise<{ sent: number; waiting: number; notOwner: boolean }> {
   let sent = 0;
   for (const entry of readOutbox(store, owner)) {
     if (entry.error) continue;
-    const answer = await send(entry.title, { id: entry.id, at: entry.at });
+    const answer = await send(entry.title, { id: entry.id, at: entry.at, owner });
     if (answer.ok) {
       remove(store, owner, entry.id);
       sent += 1;
+    } else if (answer.notOwner) {
+      return { sent, waiting: readOutbox(store, owner).length, notOwner: true };
     } else if (answer.unreachable) {
       break;
     } else {
       markRefused(store, owner, entry.id, answer.error);
     }
   }
-  return { sent, waiting: readOutbox(store, owner).length };
+  return { sent, waiting: readOutbox(store, owner).length, notOwner: false };
 }

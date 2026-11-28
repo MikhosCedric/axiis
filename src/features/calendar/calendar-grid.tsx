@@ -28,7 +28,7 @@ import type { ChildCount } from "@/lib/items/repo";
 import type { Box } from "@/lib/placement";
 import styles from "./calendar.module.css";
 import { DEFAULT_MINUTES, keyPlacement, toAnyTime, wallSpan, type KeyContext, type Placement, type Slot } from "./grid-drop";
-import { blockBox, DAY_MINUTES, emptyDayRange, fitHourPx, gridHeight, layoutGrid, openMinute, rangeSpans, scaleOf, segmentOn, visibleRange, yAt, type Block, type CalendarMode } from "./grid-layout";
+import { blockBox, textLines, DAY_MINUTES, emptyDayRange, fitHourPx, gridHeight, layoutGrid, openMinute, rangeSpans, scaleOf, segmentOn, visibleRange, yAt, type Block, type CalendarMode } from "./grid-layout";
 import { useItemMotion } from "./item-motion";
 import { QuickCreate } from "./quick-create";
 import { useGridDrag, type DragPreview } from "./use-grid-drag";
@@ -92,6 +92,11 @@ type Creating = { slot: Slot; at: Box };
 
 /** The narrowest an overlapping block may be drawn; in a column too narrow for that, the blocks overlap a little instead of becoming slivers. */
 const MIN_SHARE = "76px";
+
+/** The whole lines a block's words may take; the stylesheet clamps to them with an ellipsis. */
+function linesIn(height: number): CSSProperties {
+  return { "--lines": textLines(height) } as CSSProperties;
+}
 
 /** Where overlapping blocks sit in their column: side by side, or staggered when the column is too narrow to share. */
 function sideBySide(b: { column: number; columns: number }, box: { left: number; width: number }): CSSProperties {
@@ -488,7 +493,7 @@ export function CalendarGrid({
         data-item={item.id}
         data-state={state}
         className={cls}
-        style={{ ...tint(item), top: b.top, height: b.height - 1, ...sideBySide(b, box) }}
+        style={{ ...tint(item), top: b.top, height: b.height - 1, ...linesIn(b.height - 1), ...sideBySide(b, box) }}
       >
         {face({ item, state, day, startAt: b.start, roomy: !short, stack: b.height >= 50, onPointerDown: (e) => start(e, "move", day, item) })}
         {!b.after && <span className={styles.grip} aria-hidden="true" onPointerDown={(e) => start(e, "resize", day, item)} />}

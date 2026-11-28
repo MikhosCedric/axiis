@@ -128,8 +128,8 @@ export function fakeRepo(items: Item[] = [], areas: Area[] = []) {
     async countInbox() {
       return items.filter((i) => i.schedule.kind === "unscheduled" && i.parentId === null && i.recurrence.kind === "none" && i.status === "open" && i.type !== "note").length;
     },
-    async countOverdueDue(today) {
-      return items.filter((i) => i.dueOn !== null && i.dueOn < today && i.parentId === null && i.recurrence.kind === "none" && i.type !== "note" && i.status === "open").length;
+    async countDueByToday(today) {
+      return items.filter((i) => i.dueOn !== null && i.dueOn <= today && i.parentId === null && i.recurrence.kind === "none" && i.type !== "note" && i.status === "open").length;
     },
     async listChecklists() {
       return items

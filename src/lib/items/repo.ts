@@ -82,10 +82,11 @@ export interface ItemsRepo {
   /** How many rows `listInbox` matches, past its cap, read as a count with no rows. */
   countInbox(): Promise<number>;
   /**
-   * How many open, top-level, non-note items outside any series are due before
-   * `today` (a local date). Counted by the database, past `DUE_LIMIT`.
+   * How many open, top-level, non-note items outside any series are due on or
+   * before `today` (a local date): what the Week and Month call due. Counted by
+   * the database, past `DUE_LIMIT`.
    */
-  countOverdueDue(today: LocalDate): Promise<number>;
+  countDueByToday(today: LocalDate): Promise<number>;
   /**
    * Live top-level checklists, with or without a schedule, that are not
    * dropped. A repeating one comes once, as its series; overrides are left

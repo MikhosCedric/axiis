@@ -56,11 +56,11 @@ describe("SupabaseItemsRepo and series", () => {
     expect(q.get("limit")).toBe("200");
   });
 
-  it("counts the inbox and the overdue due dates as head requests that return no rows", async () => {
+  it("counts the inbox and what is due by today as head requests that return no rows", async () => {
     const { repo, requests } = stubbed();
     expect(await repo.countInbox()).toBe(0);
-    expect(await repo.countOverdueDue(d("2026-10-06"))).toBe(0);
-    const [inbox, overdue] = requests;
+    expect(await repo.countDueByToday(d("2026-10-06"))).toBe(0);
+    const [inbox, due] = requests;
     expect(inbox.get("select")).toBe("id");
     expect(inbox.get("limit")).toBeNull();
     expect(Object.fromEntries(["deleted_at", "rrule", "start_at", "scheduled_on", "parent_id", "series_id", "status", "type"].map((k) => [k, inbox.get(k)]))).toEqual({
@@ -73,12 +73,12 @@ describe("SupabaseItemsRepo and series", () => {
       status: "eq.open",
       type: "neq.note",
     });
-    expect(Object.fromEntries(["deleted_at", "rrule", "parent_id", "series_id", "due_on", "status", "type"].map((k) => [k, overdue.get(k)]))).toEqual({
+    expect(Object.fromEntries(["deleted_at", "rrule", "parent_id", "series_id", "due_on", "status", "type"].map((k) => [k, due.get(k)]))).toEqual({
       deleted_at: "is.null",
       rrule: "is.null",
       parent_id: "is.null",
       series_id: "is.null",
-      due_on: "lt.2026-10-06",
+      due_on: "lte.2026-10-06",
       status: "eq.open",
       type: "neq.note",
     });

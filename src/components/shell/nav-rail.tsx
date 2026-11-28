@@ -37,7 +37,7 @@ import { place, PLACE_GROUPS, PLACES, type Place, type PlaceId } from "./places"
 import { ThemeToggle } from "./theme-toggle";
 
 /** Counts shown beside a place: the Inbox's waiting items, and the Due items already past their date. */
-export type NavBadges = { inbox: number; overdue: number };
+export type NavBadges = { inbox: number; due: number };
 
 export type NavArea = { id: string; name: string; color: AreaColor | null; open: number };
 
@@ -111,13 +111,16 @@ const navName = (p: Place) => p.navLabel ?? p.label;
 /** The tooltip: what the place holds, and the key that switches to it from another calendar view. */
 const navTitle = (p: Place) => (p.span ? `${p.hint} ( ${p.span.key.toUpperCase()} )` : p.hint);
 
-const NO_BADGES: NavBadges = { inbox: 0, overdue: 0 };
+const NO_BADGES: NavBadges = { inbox: 0, due: 0 };
 const NO_HIDDEN: readonly string[] = [];
 
-/** The number for a place, if it has one: the Inbox and Due both count quietly, in plain muted ink. */
+/**
+ * The number for a place, if it has one: the Inbox and Due both count quietly, in plain muted ink. Due counts
+ * what is due today or earlier and not done, the set the Week and Month call due, never only what has passed.
+ */
 function badgeFor(id: PlaceId, badges: NavBadges): { n: number; word: string } | null {
   if (id === "inbox" && badges.inbox > 0) return { n: badges.inbox, word: `${badges.inbox} waiting for a day` };
-  if (id === "due" && badges.overdue > 0) return { n: badges.overdue, word: `${badges.overdue} due` };
+  if (id === "due" && badges.due > 0) return { n: badges.due, word: `${badges.due} due` };
   return null;
 }
 
