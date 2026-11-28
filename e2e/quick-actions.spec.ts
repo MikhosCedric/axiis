@@ -224,6 +224,9 @@ signedIn.describe("quick actions on the grid", () => {
     // Dragging the block moves it too. Press where it has come to rest, then drag toward the side with room.
     const moved = blockOf(page, "Call the plumber");
     const label = await moved.getAttribute("aria-label");
+    // The move's status note sits at the foot of the window. Early in the day the grid opens on the morning, so the
+    // evening block rests at the foot too, under the note, and the press would land on the note. Bring it to the middle.
+    await moved.evaluate((el) => el.scrollIntoView({ block: "center" }));
     let box = (await moved.boundingBox())!;
     await expect(async () => {
       const again = (await moved.boundingBox())!;
